@@ -8,14 +8,16 @@ var fs =require('fs');
 var url = "https://www.packtpub.com/mapt-rest/products/9781786462558/metadata";
 
 
-var downloadDataPath = "./download/"
+var downloadDataPath = "d:/download/"
 request(url, function(error, response, body) {  
   if (error) throw error;
 
   var parserData = JSON.parse(body);
-
+  //console.log(parserData);
   if (parserData.status === 'success' && parserData.data.earlyAccess == false) {
+   
     if (!fs.existsSync(downloadDataPath + parserData.data.title)) {
+      //console.log(downloadDataPath + parserData.data.title)
       fs.mkdir(downloadDataPath + parserData.data.title, function(err) {
         
       })
