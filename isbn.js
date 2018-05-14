@@ -4,7 +4,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 var request = require("sync-request");  
 var cheerio = require("cheerio");
 var fs =require('fs');
-var num = 0; 
+var downBook = 0;
+const allBookCount = 4763;
+const pageBookLength = 48;
 
 var url = "https://www.packtpub.com/all-books?search=&availability_list%5BAvailable%5D=Available&offset=&rows=48&sort=&theme_raw=true";
 var checked = true;
@@ -12,8 +14,8 @@ var checked = true;
 let isbnlist = "";
 
 while(checked) {
-  console.log(num / 4751 * 100 +"%")
-  url = "https://www.packtpub.com/all-books?search=&availability_list%5BAvailable%5D=Available&offset="+num+"&rows=48&sort=&theme_raw=true";
+  console.log(downBook / allBookCount * 100 +"%")
+  url = "https://www.packtpub.com/all-books?search=&availability_list%5BAvailable%5D=Available&offset="+downBook+"&rows=48&sort=&theme_raw=true";
   
   var res = request("GET", url);
   var body = res.body.toString('utf-8');
@@ -25,9 +27,9 @@ while(checked) {
   //console.log($(this).attr("data-product-id"));   //isbn
     isbnlist = isbnlist + $(this).attr("data-product-id") + "\t"
   });
-  num += 48;
+  downBook += pageBookLength;
  
-  if (num > 4751) {
+  if (downBook > allBookCount) {
     checked = false;
   }
 }

@@ -13,16 +13,16 @@ request(url, function(error, response, body) {
   if (error) throw error;
 
   var parserData = JSON.parse(body);
-  //console.log(parserData);
-  if (parserData.status === 'success' && parserData.data.earlyAccess == false) {
+  console.log(parserData);
+  // if (parserData.status === 'success' && parserData.data.earlyAccess == false) {
    
-    if (!fs.existsSync(downloadDataPath + parserData.data.title)) {
-      //console.log(downloadDataPath + parserData.data.title)
-      fs.mkdir(downloadDataPath + parserData.data.title, function(err) {
+  //   if (!fs.existsSync(downloadDataPath + parserData.data.title)) {
+  //     //console.log(downloadDataPath + parserData.data.title)
+  //     fs.mkdir(downloadDataPath + parserData.data.title, function(err) {
         
-      })
-    }    
-  }
+  //     })
+  //   }    
+  // }
   
 
   // console.log(parserData.status)   // staus == 'success'
