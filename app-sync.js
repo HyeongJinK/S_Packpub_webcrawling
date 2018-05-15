@@ -6,11 +6,11 @@ var cheerio = require("cheerio");
 
 var fs =require('fs');
 let downloadDataPath = "./download/"
-const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZmNmNGI4MC0zNTBkLTRmZjEtODRlOC1jNWY4NWM2YmYzYzgiLCJ1c2VybmFtZSI6IndremtmbXhrMjNAZ21haWwuY29tIiwicGVybWlzc2lvbnMiOltdLCJpYXQiOjE1MjYzNDQ1OTksImV4cCI6MTUyNjM0ODE5OX0.Ub7FcrpaKkRMFZLNF_RREkL6appEJ7Wgqp9MTTHkyQfkaWw26aLtY9pa1J5HpgES3hRQVk75IkhasltJEJqU7xfGlfVUiC1YDvrOfvrOCa6WRSpiNDdDXDdPy9S1w4LvZEHnWfQYdBjwZ_Ry6GEPaC-cpzInIXfvQuCTPcJ9AQUZrkHBiUaCniWaPNLl8tGQdM8f7GVnS_HW7-oWqQJZB6kOwmeHe05cj4aRm_3UlEHj51iuvvgmaN0Glhnp7Z4Qw6gWsd09UjqqLg84fWdP5DemfML1_zqZsQCqfTQFivFd2CCI-eCAWlXUsFECXQGvz3OtJ0YmV0PWq89EmjNoLQ";
+const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZmNmNGI4MC0zNTBkLTRmZjEtODRlOC1jNWY4NWM2YmYzYzgiLCJ1c2VybmFtZSI6IndremtmbXhrMjNAZ21haWwuY29tIiwicGVybWlzc2lvbnMiOltdLCJpYXQiOjE1MjYzNTAzMDgsImV4cCI6MTUyNjM1MzkwOH0.L7QD_pGrs6tSJL7k9gBm41KPzRJHIoIRnQErpRa2PNx5LUlrtpa226U8Y1srwG6BhTcTwB3XAQUUhQ0ScNfK0lYTcLlOQ6pgVq4Jk2dqTtTkDeN6h26BrmrRhbdz6_I7jEaRZPALBXHLreVWflSfNmA_8iOS7UagIPcFB6RFjUQt2ZrKg6pOMv_GLIS19pHgGZ3744duqnwYR9ac47haE7BntH-IdSRqUk9jr1IafFGyZI2B5h6QDo9j_lDHTtwSN2V12ffEIJAgXx6R4WImUi5R2EqcH5fmJRc2Dj_cgmIHxfshVT9YoaGUJ3VI_aA__XuBHW8kiHIItjfoCCXZEw";
 
-fs.readFileSync("isbn.txt", 'utf8')
+let data = fs.readFileSync("isbn.txt", 'utf8')
     
-var isbns = data.split("\t")
+let isbns = data.split("\t")
 
 for (i in isbns) {
     let isbn = isbns[i];
