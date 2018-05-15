@@ -20,7 +20,7 @@ for (i in isbns) {
     
     let menuData = request("GET", menuUrl)
     let menuParserData = JSON.parse(menuData.getBody());
-    let bookPath = downloadDataPath + menuParserData.data.title+"_"+isbn;
+    let bookPath = downloadDataPath + replace(menuParserData.data.title)+"_"+isbn;
 
     if (menuParserData.status === 'success' && menuParserData.data.earlyAccess == false) {
         if (!fs.existsSync(bookPath)) {
