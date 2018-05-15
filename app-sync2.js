@@ -1,7 +1,7 @@
 //packpub.com 웹크롤링
 //동기적으로 데이터 가져오기 비동기로 하면 너무 빨라 Ddos공격으로 의심하는 거 같음...
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-let replace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&");
+let replace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace("\n", "");
 
 var request = require("sync-request");   
 var fs =require('fs');
@@ -47,7 +47,7 @@ for (i in isbns) {
                     }
                 });
 
-                if (contentData.getBody().toString('utf-8') != "") {
+                if (contentData.getBody() != null && contentData.getBody().toString('utf-8') != "") {
                     contentParserData = JSON.parse(contentData.getBody().toString('utf-8'));
 
                     if (contentParserData.status === 'success') {
