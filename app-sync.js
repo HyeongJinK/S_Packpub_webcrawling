@@ -3,10 +3,9 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 let replace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&");
 
-var request = require("sync-request");  
-var cheerio = require("cheerio"); 
-
+var request = require("sync-request");   
 var fs =require('fs');
+
 let downloadDataPath = "./download/"
 const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMDBjODk3NC05OTNjLTQ2MzItODQzMS04NjY3ZmU4ZTJhOWMiLCJ1c2VybmFtZSI6InhwdG14bWRrZWwxMkBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUyNjM2NjE0MSwiZXhwIjoxNTI2MzY5NzQxfQ.PdfBCQ15Ku8-zDfXhbjxp4La_DfPq5Wo_KkLzfwmknkq25N7x5eJMnKTpoyC9-_xtSunQEe7DlMMkNzdFY-igk7U3g2b7-6uqnwkqlM7Z1Yn5BDpqJgYs7YfSnxoxYAhbwQzDs8gQEv6rTEL86QjV-ZbWkDl__w2t8dMp0n2Lp4nC_o5iLE2saxWtxO19XBu4l_vc_Gq1ZHU0_LwoFNSqPod3qN4r1DTFacXIflYArHMRi9UPLpQCNDfdh3YPxwg4WDqCBiUiaebu2iXArQZJIxKzjBQowAOipOLD56lIYVplGtaqhmBAIcjBbM0AiahvlEUCvJIt3jdwwYZrNsjgA";
 

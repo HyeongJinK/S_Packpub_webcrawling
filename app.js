@@ -1,7 +1,7 @@
 //packpub.com 웹크롤링
 //TODO isbn 목록 가져오기 적용.. 파싱 적용
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-var request = require("sync-request");  
+var request = require("request");  
 var cheerio = require("cheerio"); 
 //var PDFDocument = require('pdfkit');
 var fs =require('fs');
