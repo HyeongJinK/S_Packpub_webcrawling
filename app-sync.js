@@ -1,7 +1,7 @@
 //packpub.com 웹크롤링
 //동기적으로 데이터 가져오기 비동기로 하면 너무 빨라 Ddos공격으로 의심하는 거 같음...
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-let replace = (s) => s.replace("?", "@").replace("<", "[").replace(">", "]").replace(":", ";").replace("*", "+").replace("\\", "-");
+let replace = (s) => s.replace("?", "@").replace("<", "[").replace(">", "]").replace(":", "-").replace("*", "+").replace("\\", " ").replace("/", "&");
 
 var request = require("sync-request");  
 var cheerio = require("cheerio"); 
