@@ -53,10 +53,10 @@ for (i in isbns) {
 
                     if (contentParserData.status === 'success') {
                         if (contentParserData.data.entitled) {
-                            fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".txt", contentData.getBody().toString('utf-8'));
-                            console.log(parentID+"_"+element.index+"_"+element.title)
+                            fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", contentParserData.data.content);
+                            console.log(parentIent.index+"_"+element.title)
                         } else {
-                            fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", contentData.getBody().toString('utf-8'));
+                            fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.html", contentParserData.data.content);
                             console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
                         }
                     }
