@@ -1,3 +1,4 @@
 /node_modules/
 /download/
 .DS_Store
+books.db
