@@ -19,3 +19,9 @@
 * namereplaceTest : 파일명을 쓸 수 없는 특수문자 변환
 * app : 위 파일 합체
 * file_list : 특정 폴더 파일 목록 가져오기
+
+## CSS ##
+
+* <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+* <link href="https://fonts.googleapis.com/css?family=Montserrat:500,400|Lato:300,400,500" rel="stylesheet" type="text/css" />
+* <link href="https://d3ginfw2u4xn7p.cloudfront.net/fef9eb5/app.eecc9b6106c78f582007d7c0ef20b462.bundle.css" rel="stylesheet"></head>
