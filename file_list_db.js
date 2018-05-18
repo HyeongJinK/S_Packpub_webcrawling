@@ -6,21 +6,11 @@ var db = new sqlite3.Database('./download/books.db');
 
 let replace2 = (s) => s.replace(/\@/g, "?").replace(/\[/g, "<").replace(/\]/g, ">").replace(/\-/g, ":").replace(/\+/g, "*").replace(/\\/g, " ").replace(/\&/g, "/").replace("\n", "");
 
-function insertData(isbn, menuNum, index, title, content) {
-    db.serialize(function() {
-        let stmt = db.prepare("INSERT INTO content VALUES (?,?,?,?,?)");
-        
-        stmt.run(isbn, menuNum, index, title, content);
-        
-        stmt.finalize();
-    });  
-}
-
-
 function getFiles (dir, files_){
     var files = fs.readdirSync(dir);
     for (var i in files){
-        var name = dir + '/' + files[i];
+        let name = dir + '/' + files[i];
+        
         let isbn = files[i].substr(files[i].lastIndexOf("_")+1, 13);
         let booktitle = replace2(files[i].substr(0, files[i].lastIndexOf("_")));
         db.get('SELECT * FROM book WHERE isbn = ?'
@@ -50,8 +40,14 @@ function getFiles (dir, files_){
                                 let inNum = temp.substring(0, temp.indexOf("_"));
                                 let title = replace2(temp.substring(temp.indexOf("_")+1, temp.lastIndexOf(".")));
                                 let content = fs.readFileSync(name+"/"+subfiles[j], 'utf8')
-                                
-                                insertData(isbn, chNum, inNum, title, content);                           
+                                //console.log(name+"/"+subfiles[j]);
+                                db.serialize(function() {
+                                    let stmt = db.prepare("INSERT INTO content VALUES (?,?,?,?,?)");
+                                    
+                                    stmt.run(isbn, chNum, inNum, title, content);
+                                    
+                                    stmt.finalize();
+                                });                           
                             }
                         }
                     }
@@ -59,4 +55,4 @@ function getFiles (dir, files_){
             )   
     }
 }
-getFiles('./download4')
+getFiles('./ebook1')
