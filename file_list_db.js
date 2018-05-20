@@ -2,7 +2,7 @@
 
 var fs =require('fs');
 var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('./download/books.db');
+var db = new sqlite3.Database('./books.db');
 
 let replace2 = (s) => s.replace(/\@/g, "?").replace(/\[/g, "<").replace(/\]/g, ">").replace(/\-/g, ":").replace(/\+/g, "*").replace(/\\/g, " ").replace(/\&/g, "/").replace("\n", "");
 
@@ -55,4 +55,4 @@ function getFiles (dir, files_){
             )   
     }
 }
-getFiles('./ebook1')
+getFiles('./qwer2')
