@@ -2,7 +2,7 @@
 
 var fs =require('fs');
 var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('./books.db');
+var db = new sqlite3.Database('./DB/books.db');
 
 let replace2 = (s) => s.replace(/\@/g, "?").replace(/\[/g, "<").replace(/\]/g, ">").replace(/\-/g, ":").replace(/\+/g, "*").replace(/\\/g, " ").replace(/\&/g, "/").replace("\n", "");
 
@@ -25,9 +25,9 @@ function getFiles (dir, files_){
                     {
                         db.serialize(function() {
             
-                            let stmt = db.prepare("INSERT INTO book VALUES (?,?,?,?,?,?)");
+                            let stmt = db.prepare("INSERT INTO book VALUES (?,?,?,?,?,?, ?)");
                             
-                            stmt.run(isbn, booktitle, "", "", "", "");
+                            stmt.run(isbn, booktitle, "", "", "", "", "");
                             
                             stmt.finalize();
                         }); 
@@ -55,4 +55,4 @@ function getFiles (dir, files_){
             )   
     }
 }
-getFiles('./qwer2')
+getFiles('./123')
