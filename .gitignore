@@ -1,5 +1,6 @@
 /node_modules/
 /download/
+/DB/
 .DS_Store
 books.db
 package-lock.json

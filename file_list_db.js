@@ -3,6 +3,8 @@
 var fs =require('fs');
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('./DB/books.db');
+let input = 0;
+let noinput= 0;
 
 let replace2 = (s) => s.replace(/\@/g, "?").replace(/\[/g, "<").replace(/\]/g, ">").replace(/\-/g, ":").replace(/\+/g, "*").replace(/\\/g, " ").replace(/\&/g, "/").replace("\n", "");
 
@@ -20,6 +22,7 @@ function getFiles (dir, files_){
                     if(rows && err === null)
                     {
                         console.log("있음 = "+rows.isbn);
+                        noinput++;
                     }
                     else
                     {
@@ -28,7 +31,7 @@ function getFiles (dir, files_){
                             let stmt = db.prepare("INSERT INTO book VALUES (?,?,?,?,?,?, ?)");
                             
                             stmt.run(isbn, booktitle, "", "", "", "", "");
-                            
+                            input++;
                             stmt.finalize();
                         }); 
                         
@@ -47,12 +50,14 @@ function getFiles (dir, files_){
                                     stmt.run(isbn, chNum, inNum, title, content);
                                     
                                     stmt.finalize();
+                                    
                                 });                           
                             }
                         }
                     }
+                    console.log("input = " +input+ "  noinput = " + noinput);
                 }
             )   
     }
 }
-getFiles('./123')
+getFiles('./1232')
