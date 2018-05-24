@@ -6,8 +6,8 @@ var request = require("sync-request");
 var cheerio = require("cheerio");
 var fs =require('fs');
 
-const search = "spring"
-const allBookCount = 52;
+const search = "Elasticsearch"
+const allBookCount = 100;
 
 
 
