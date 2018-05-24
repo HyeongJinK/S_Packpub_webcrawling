@@ -1,0 +1,98 @@
+<html>
+<head>
+        <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+        <link href="https://fonts.googleapis.com/css?family=Montserrat:500,400|Lato:300,400,500" rel="stylesheet" type="text/css" />
+        <link href="https://d3ginfw2u4xn7p.cloudfront.net/fef9eb5/app.eecc9b6106c78f582007d7c0ef20b462.bundle.css" /> -->
+        <link href="./css/book-font.css" rel="stylesheet" type="text/css" />
+        <link href="./css/book.css" rel="stylesheet" type="text/css" />
+        <link href="./css/book2.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div class="reader-container">
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec19"></a>System clipboard</h2></div></div><hr /></div><p>Usually, the copy/paste functionality involves system clipboard. <code class="literal">NW.js</code> provides an API to control it (<a class="ulink" href="http://docs.nwjs.io/en/latest/References/Clipboard/" target="_blank"><span>http://docs.nwjs.io/en/latest/References/Clipboard/</span></a>). Unfortunately, it's quite limited; we cannot transfer an arbitrary file between applications, which you may expect of a file manager. Yet, some things are still available to us.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec28"></a>Transferring text</h3></div></div></div><p>In order to examine text transferring with the clipboard, we modify the method copy of <code class="literal">FileService</code>:</p><pre class="programlisting">copy( file ){ 
+    this.copiedFile = this.dir.getFile( file ); 
+    const clipboard = nw.Clipboard.get(); 
+
+
+    clipboard.set( this.copiedFile, "text" ); 
+}</pre><p>What does it do? As soon as we obtain the file full path, we create an instance of <code class="literal">nw.Clipboard</code> and save the file path there as text. So now, after copying a file within the File Explorer, we can switch to an external program (for example, a text editor) and paste the copied path from the clipboard:</p><div class="mediaobject"><img src="https://www.packtpub.com/graphics/9781788295697/graphics/image_02_004.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec29"></a>Transferring graphics</h3></div></div></div><p>It doesn't look very handy, does it? It would be more interesting if we could copy/paste a file. Unfortunately, <code class="literal">NW.js</code> doesn't give us many options when it comes to file exchange. However, we can transfer PNG and JPEG images between the <code class="literal">NW.js</code> application and external programs:</p><p><code class="literal">./js/Service/File.js</code></p><pre class="programlisting">//... 
+  copyImage( file, type ){ 
+    const clip = nw.Clipboard.get(), 
+          // load file content 
+
+as Base64 
+          data = fs.readFileSync( file ).toString( "base64" ), 
+          // image as HTML 
+      
+
+    html = `&lt;img src="file:///${encodeURI( data.replace( /^//, "" ) )}"&gt;`; 
+
+    // write both options 
+
+(raw image and HTML) to the clipboard 
+    clip.set([ 
+      { type, data: data, raw: true }, 
+      { type: 
+
+"html", data: html } 
+    ]); 
+  } 
+
+  copy( file ){ 
+    this.copiedFile = this.dir.getFile( 
+
+file ); 
+    const ext = path.parse( this.copiedFile ).ext.substr( 1 ); 
+    switch ( ext ){ 
+      case 
+
+"jpg": 
+      case "jpeg": 
+        return this.copyImage( this.copiedFile, "jpeg" ); 
+      case "png": 
+        return this.copyImage( this.copiedFile, "png" ); 
+    } 
+  } 
+//...</pre><p>We extended our <code class="literal">FileService</code> with the <code class="literal">copyImage</code> private method. It reads a given file, converts its contents in Base64 and passes the resulting code in a clipboard instance. In addition, it creates HTML with an image tag with the Base64-encoded image in the data <span class="strong"><strong>Uniform Resource Identifier</strong></span> (<span class="strong"><strong>URI</strong></span>). Now, after copying an image (PNG or JPEG) in File Explorer, we can paste it in an external program, such as the graphical editor or text processor.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec30"></a>Receiving text and graphics</h3></div></div></div><p>We've learned how to pass text and graphics from our <code class="literal">NW.js</code> application to external programs, but how can we receive data from outside? As you can guess, it is accessible through the <code class="literal">get</code> method of <code class="literal">nw.Clipboard</code>. Text can be retrieved as follows:</p><pre class="programlisting"> const clip = nw.Clipboard.get(); 
+console.log( clip.get( "text" ) );</pre><p>When the graphic is put on the clipboard, we can get it with NW.js only as Base64-encoded content or as HTML. To see it in practice, we add a few methods to <code class="literal">FileService</code>:</p><p><code class="literal">./js/Service/File.js</code></p><pre class="programlisting">//... 
+  hasImageInClipboard(){ 
+    const clip = nw.Clipboard.get(); 
+    return 
+
+clip.readAvailableTypes().indexOf( "png" ) !== -1; 
+  } 
+
+  pasteFromClipboard(){ 
+    const clip = 
+
+nw.Clipboard.get(); 
+    if ( this.hasImageInClipboard() ) { 
+      const base64 = clip.get( "png", true ), 
+            binary = Buffer.from( base64, "base64" ), 
+            filename = Date.now() + "--img.png"; 
+      
+
+fs.writeFileSync( this.dir.getFile( filename ), binary ); 
+      this.dir.notify(); 
+    } 
+  } 
+//...</pre><p>The <code class="literal">hasImageInClipboard</code> method checks whether the clipboard keeps any graphics. The <code class="literal">pasteFromClipboard</code> method takes graphical content from the clipboard as a Base64-encoded PNG; it converts the content into binary code, writes it into a file, and requests <code class="literal">DirService</code> subscribers to update it.</p><p>To make use of these methods, we need to edit the <code class="literal">ContextMenu</code> view:</p><p><code class="literal">./js/View/ContextMenu.js</code></p><pre class="programlisting">getItems( fileName ){ 
+    const file = this.file, 
+          isCopied = Boolean( file.copiedFile ); 
+       return [ 
+     //... 
+      { 
+        label: this.i18n.translate( "PASTE_FROM_CLIPBOARD", "Paste 
+
+image from clipboard" ), 
+        enabled: file.hasImageInClipboard(), 
+        click: () =&gt; 
+
+file.pasteFromClipboard() 
+      }, 
+      //... 
+    ]; 
+  }</pre><p>We add a new item, <strong class="userinput"><code><code class="literal">Paste image from clipboard</code></code></strong>, to the menu, which is enabled only when there are some graphics in the clipboard.</p></div></div>
+</div>
+</body>
+</html>
