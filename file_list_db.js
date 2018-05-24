@@ -60,4 +60,4 @@ function getFiles (dir, files_){
             )   
     }
 }
-getFiles('./1232')
+getFiles('./download8')
