@@ -12,7 +12,7 @@ var request = require("sync-request");
 var fs =require('fs');
 
 let downloadDataPath = "./download/"
-const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMDBjODk3NC05OTNjLTQ2MzItODQzMS04NjY3ZmU4ZTJhOWMiLCJ1c2VybmFtZSI6InhwdG14bWRrZWwxMkBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUyNzA2MDkwMiwiZXhwIjoxNTI3MDY0NTAyfQ.x5sAgq39Biq8KwKnnnVwE3W7gpHI76wAui3Nvs6WZv6rNaBGcfm0s0NAtKgL0j8mYK_-i7ffIXYm2sJ4CsP_8APEfWATmFnH_arw3wgMgM4TOt_WiW9Q7DiF6fTw5A6-3ud2qzMLhssSr0KeNonUCHDPj6wGmnsjWB0HOKtXVgQW9dlJ985vAl6PKjLX7QIlLkNkuGoktOXSpXlQRg3Xyr5ABUQg2SOawt57sexrTZ_Q3aMSDyqDuc6pIZrCHk625CflXum_d5YorEnjlyULiGisWYAKG4rXVdYY1BJ9etAcoEBMcVG8FmT-Olh4zwEfHo3P4istMHl4D-QNluMPlA";
+const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMDBjODk3NC05OTNjLTQ2MzItODQzMS04NjY3ZmU4ZTJhOWMiLCJ1c2VybmFtZSI6InhwdG14bWRrZWwxMkBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUyNzEzNjU5MiwiZXhwIjoxNTI3MTQwMTkyfQ.uRsGwzIwkYHCBNPfHKBoWFdMkFtZWh0UY6cvdRaneiz9s-vtwYAyxP8pZD21eUp8tsJHCKZ0pRAT2nAoZOV8ZhJiQ__OEq4rxRHkgpBp-IYX6U-zf4Mx5kgePKYk1EarYNqo04_fmzfsmL5x4YV0BqDHdphx94Dq53SLL6W2aZ7A6KmNTJwpVM8V5kqyWOCf5g0L2OtLxRyvThylObAUS35kYJS3JLy7sktLIPZDP8TRcsAjmdSYio3X_YA9v58uQIsz1eAcU_JfiULa6RMpW_246l1RxQkIFezAyaMm9bjom-I5_tpOQfb8K9JhpsJefkN2Si8ZI9PB-rsDqylfmw";
 
 let data = fs.readFileSync("./downlist/isbn_r.txt", 'utf8')
     
@@ -24,51 +24,53 @@ for (i in isbns) {
     
     let menuData = request("GET", menuUrl)
     let menuParserData = JSON.parse(menuData.getBody());
-    let bookPath = downloadDataPath + replace(menuParserData.data.title)+"_"+isbn;
+	if (menuParserData.data.title.indexOf("[Video]") == -1) {
+		let bookPath = downloadDataPath + replace(menuParserData.data.title)+"_"+isbn;
 
-    if (menuParserData.status === 'success' && menuParserData.data.earlyAccess == false) {
-        if (!fs.existsSync(bookPath)) {
-            fs.mkdirSync(bookPath, function(err) {
-                console.log(err);
-            })
-        }
-        // console.log(mParserData.data.imageUrl) // 이미지
-        menuParserData.data.tableOfContents.forEach(element => {
-            let parentID = element.id
-            let baseContentUrl = "https://www.packtpub.com/mapt-rest/users/me/products/"+isbn+"/chapters/"+parentID;
-            let contentUrl;
-            let contentData;
-            let contentParserData;
-            element.children.forEach(element => {
-                if (parentID != element.id) {
-                    contentUrl = baseContentUrl + "/sections/" + element.id
-                } else {
-                    contentUrl = baseContentUrl;
-                }
+		if (menuParserData.status === 'success' && menuParserData.data.earlyAccess == false) {
+			if (!fs.existsSync(bookPath)) {
+				fs.mkdirSync(bookPath, function(err) {
+					console.log(err);
+				})
+			}
+			// console.log(mParserData.data.imageUrl) // 이미지
+			menuParserData.data.tableOfContents.forEach(element => {
+				let parentID = element.id
+				let baseContentUrl = "https://www.packtpub.com/mapt-rest/users/me/products/"+isbn+"/chapters/"+parentID;
+				let contentUrl;
+				let contentData;
+				let contentParserData;
+				element.children.forEach(element => {
+					if (parentID != element.id) {
+						contentUrl = baseContentUrl + "/sections/" + element.id
+					} else {
+						contentUrl = baseContentUrl;
+					}
 
-                contentData = request("GET", contentUrl, {
-                    headers: {
-                        "Authorization" : user
-                    }
-                });
+					contentData = request("GET", contentUrl, {
+						headers: {
+							"Authorization" : user
+						}
+					});
 
-                if (contentData.getBody().toString('utf-8') != "") {
-                    contentParserData = JSON.parse(contentData.getBody().toString('utf-8'));
+					if (contentData.getBody().toString('utf-8') != "") {
+						contentParserData = JSON.parse(contentData.getBody().toString('utf-8'));
 
-                    if (contentParserData.status === 'success') {
-                        if (contentParserData.data.entitled) {
-                            fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", contentParserData.data.content);
-                            console.log(parentID+"_"+element.index+"_"+element.title)
-                            //sleep(200);
-                        } else {
-                            fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", contentParserData.data.content);
-                            console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
-                        }
-                    }
-                } else {
-                    console.log("error :" +parentID+"_"+element.index+"_"+element.title)
-                } 
-            })
-        });    
-    }
+						if (contentParserData.status === 'success') {
+							if (contentParserData.data.entitled) {
+								fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", contentParserData.data.content);
+								console.log(parentID+"_"+element.index+"_"+element.title)
+								//sleep(200);
+							} else {
+								fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", contentParserData.data.content);
+								console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
+							}
+						}
+					} else {
+						console.log("error :" +parentID+"_"+element.index+"_"+element.title)
+					} 
+				})
+			});    
+		}
+	}
 }
