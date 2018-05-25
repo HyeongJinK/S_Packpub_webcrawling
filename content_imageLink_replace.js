@@ -1,7 +1,6 @@
 /**
  * db 안에 있는 이미지 링크 주소 변경 
  */
-var fs =require('fs');
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('./DB/books.db');
 const len = 1000;
