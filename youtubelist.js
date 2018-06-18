@@ -13,6 +13,7 @@ function playlist(url) {
  var size = 0;
   video.on('info', function(info) {
     size = info.size;
+    console.log(info._filename);
     video.pipe(fs.createWriteStream("./download/"+info._filename));
   });
  

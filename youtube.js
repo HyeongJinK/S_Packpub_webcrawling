@@ -76,12 +76,11 @@ https://www.youtube.com/watch?v=3o6KIKNcvhU
 https://www.youtube.com/watch?v=OamWYK50ahU
 https://www.youtube.com/watch?v=xfIrPCe6ask
 */
-let filename = "tt.mp4"
 var video = youtubedl('https://www.youtube.com/watch?v=xfIrPCe6ask',
   ['--format=18'],
   { cwd: __dirname });
 
-let size = 0'
+let size = 0;
 video.on('info', function(info) {
   size = info.size;
   video.pipe(fs.createWriteStream("./download/"+info._filename));  
