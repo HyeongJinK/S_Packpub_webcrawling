@@ -13,7 +13,7 @@ function playlist(url) {
  var size = 0;
   video.on('info', function(info) {
     size = info.size;
-    console.log(info._filename);
+    console.log("\n" + info._filename);
     video.pipe(fs.createWriteStream("./download/"+info._filename));
   });
  
@@ -33,4 +33,10 @@ function playlist(url) {
  
 }
 //PLFoH8spXdgNFPgSiQR4JuZPz9mxecgBo0
-playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNFPgSiQR4JuZPz9mxecgBo0');
+//PLFoH8spXdgNFdScIFw1gL-1lSr_e9D07b
+//PLFoH8spXdgNHUPpEhqktU9IPawKXFpn4B
+//PLFoH8spXdgNGBWTpdSX2GyZunmn0_oThl
+//PLFoH8spXdgNEfNduCuZmwjLzg9ofY_ZZC
+//PLFoH8spXdgNE69tdZlGB92KNWBXr6_Nqa
+//PLFoH8spXdgNGU-UFwASZvjN3frQ1d97nr
+playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNGU-UFwASZvjN3frQ1d97nr');
