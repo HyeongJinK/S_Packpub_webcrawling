@@ -1,0 +1,73 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec39"></a>Working a finite-state machine</h2></div></div><hr /></div><p>Another <a id="id146" class="indexterm"></a>interesting yet easy-to-implement technique is <span class="strong"><strong>finite-state machines</strong></span> (<span class="strong"><strong>FSM</strong></span>). They move us to change the train of thought from what it was in the previous recipe. FSMs are great when our train of thought is more event-oriented, and we think in terms of holding behavior until a condition is met changing to another.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec127"></a>Getting ready</h3></div></div></div><p>This is a technique mostly based on automata behavior, and will lay the grounds for the next recipe, which is an improved version of the current one.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec128"></a>How to do it...</h3></div></div></div><p>This recipe breaks down into implementing three classes from the ground up, and everything will make sense by the final step:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Implement the <code class="literal">Condition</code> class:</p><div class="informalexample"><pre class="programlisting">public class Condition
+{
+    public virtual bool Test()
+    {
+        return false;
+    }
+}</pre></div></li><li><p>Define <a id="id147" class="indexterm"></a>the <code class="literal">Transition</code> class:</p><div class="informalexample"><pre class="programlisting">public class Transition
+{
+    public Condition condition;
+    public State target;    
+}</pre></div></li><li><p>Define the <code class="literal">State</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+
+public class State : MonoBehaviour
+{
+    public List&lt;Transition&gt; transitions;
+}</pre></div></li><li><p>Implement the Awake function:</p><div class="informalexample"><pre class="programlisting">public virtual void Awake()
+{
+    transitions = new List&lt;Transition&gt;();
+    // TO-DO
+    // setup your transitions here</pre></div></li><li><p>Define the initialization function:</p><div class="informalexample"><pre class="programlisting">public virtual void OnEnable()
+{
+    // TO-DO
+    // develop state's initialization here
+}</pre></div></li><li><p>Define the finalization function:</p><div class="informalexample"><pre class="programlisting">public virtual void OnDisable()
+{
+    // TO-DO
+    // develop state's finalization here
+}</pre></div></li><li><p>Define the function for developing the proper behavior for the state:</p><div class="informalexample"><pre class="programlisting">public virtual void Update()
+{
+    // TO-DO
+    // develop behaviour here
+}</pre></div></li><li><p>Implement the <a id="id148" class="indexterm"></a>function for deciding if and which state to enable next:</p><div class="informalexample"><pre class="programlisting">public void LateUpdate()
+{
+    foreach (Transition t in transitions)
+    {
+        if (t.condition.Test())
+        {
+            t.target.enabled = true;
+            this.enabled = false;
+            return;
+        }
+    }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec129"></a>How it works...</h3></div></div></div><p>Each state is a <code class="literal">MonoBehaviour</code> script that is enabled or disabled according to the transitions it comes from; we take advantage of <code class="literal">LateUpdate</code> in order not to change the usual train of thought when developing behaviors, and we use it to check whether it is time to transition to a different state. It is important to disable every state in the game object apart from the initial one.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3570_03_02.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec130"></a>There's more...</h3></div></div></div><p>In order to illustrate how to develop child classes deriving from <code class="literal">Condition</code>, let's take a look at a couple of examples: one that is aimed at validating a value in a range and the other one at being a logic comparer between two conditions:</p><p>The code for <code class="literal">ConditionFloat</code> is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ConditionFloat : Condition
+{
+    public float valueMin;
+    public float valueMax;
+    public float valueTest;
+
+    public override bool Test()
+    {
+        if (valueMax &gt;= valueTest &amp;&amp; valueTest &gt;= valueMin)
+            return true;
+        return false;
+    }
+}</pre></div><p>The following is <a id="id149" class="indexterm"></a>an example of code for <code class="literal">ConditionAnd</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ConditionAnd : Condition
+{
+    public Condition conditionA;
+    public Condition conditionB;
+
+    public override bool Test()
+    {
+        if (conditionA.Test() &amp;&amp; conditionB.Test())
+            return true;
+        return false;
+    }
+}</pre></div></div></div>

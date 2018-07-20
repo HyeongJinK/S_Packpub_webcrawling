@@ -1,0 +1,30 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec89"></a>Player Controller</h2></div></div><hr /></div><p>In the previous section, we implemented a script to move the character. However, if we hit Play, the character won't move, aside from idling. The reason lies in the fact that we have two functions to move the character, but no script calls them. If you go back to the <span class="emphasis"><em>Control Scheme</em></span> section, you see that we need a Player Controller (or a UI interface in case of mobile games, but we will explore that later in <a class="link" href="#" linkend="ch12">Chapter 12</a>, <span class="emphasis"><em>The Nature of Export</em></span>), which sends the input to the <strong class="userinput"><code>Player</code></strong>. In this section, we are going to implement that script.</p><p>Create a new C# script and name it <code class="literal">PlayerController</code>. The script per se is very simple; however, we want to compile it only if the game is running either in the Editor or on a standalone version of the game (such as on Windows or macOS). As a result, we need to use compiler directives. So, after the name of the class, let's open the <strong class="userinput"><code>Compile Directive</code></strong>, which will compile all the code we are going to write if, and only if, we are running either in the <strong class="userinput"><code>Editor</code></strong> or in a standalone version of the game:</p><pre class="programlisting">public class PlayerController : MonoBehaviour {
+<span class="strong"><strong>    #if UNITY_STANDALONE || UNITY_EDITOR
+</strong></span>    //[...]
+}</pre><p>Now, it's time to think what the script should do. First of all, we need to retrieve the <code class="literal">MovementComponent</code> attached to the character. To do so, let's create a new variable of the type <code class="literal">MovementComponent</code>:</p><pre class="programlisting">   MovementComponent movementComponent;</pre><p>Then, in order to initialize the variable, we can set its value in the <code class="literal">Awake()</code> function. We can achieve that by using <code class="literal">GetComponent()</code> to retrieve the <code class="literal">MovementComponent</code>. Furthermore, we need to launch a warning in case the <code class="literal">MovementComponent</code> is missing, and remove this very script from the <strong class="userinput"><code>Panda Hero</code></strong><span class="strong"><strong>:</strong></span></p><pre class="programlisting">   void Awake () {
+        //Retrieve reference to the Movement Component
+        movementComponent = GetComponent&lt;MovementComponent&gt;();
+
+        //Disable this script in case the Movement Component is not found, 
+          and leave an error message.
+        if(movementComponent == null) {
+            Debug.LogError("Missing MovementComponent on " 
+            + gameObject.name + " to run PlayerController. 
+            Please add one.");
+            Destroy(this);
+        }
+            }</pre><p>Next, we need to send the input to the <code class="literal">MovementComponent</code>. If you recall, the character needs to move left and right as well as jump. For the first two, we can just gather the value of the <code class="literal">Horizontal</code> axis value and use it as a normalized speed for the <code class="literal">MoveCharacter()</code> function. As a result, we will be able to use the arrows on our keyboard to move the character. As for the jump, we can use the up arrow to make the character jump. This is great, but we need to keep in mind that the <code class="literal">MovementComponent</code> uses <code class="literal">Rigidbody2D</code>. Hence, as we have seen for the previous projects, we need to use the <code class="literal">LateUpdate()</code> function. Here is how the code should be:</p><pre class="programlisting">   void FixedUpdate() {
+        //Send input to the Movement Component in order to move the character
+        movementComponent.MoveCharacter(Input.GetAxis("Horizontal"));
+
+        //Check if the Up Arrow has been pressed, and if so, 
+          send the Jump input to the Movement Component
+        if (Input.GetKeyDown(KeyCode.UpArrow)) {
+            movementComponent.Jump();
+        }
+    }</pre><p>Finally, we need to close the compiler directive by closing the if-statement, shown as follows:</p><pre class="programlisting">public class PlayerController : MonoBehaviour {
+
+    #if UNITY_STANDALONE || UNITY_EDITOR
+    //[...]
+<span class="strong"><strong>    #endif
+</strong></span>}</pre><p>Save the script and attach it to the <strong class="userinput"><code>Panda Hero</code></strong>. There are no settings to set here, so we are good to go.</p></div>

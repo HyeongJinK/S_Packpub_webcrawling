@@ -1,0 +1,84 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec258"></a>C# Addendum</h2></div></div><hr /></div><p>This was <a id="id821" class="indexterm"></a>another very straightforward port to C#. The only thing that could potentially trip you up is realizing that in C# version of the <span class="strong"><strong>FallingObject</strong></span> script, the built-in array's <code class="literal">Length</code> property starts with a capital L, while Unity JavaScript uses a lowercase l.</p><p>Here's the code:</p><p>
+<span class="strong"><strong>FallingObjectCSharp.cs</strong></span>
+</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class FallingObjectCSharp : MonoBehaviour {
+
+  public GameObject prefab;
+  public int speed;
+  public AudioClip[] audioClips;
+
+  void Update ()
+  {
+    transform.position = new Vector3(transform.position.x, transform.position.y - speed * Time.deltaTime, transform.position.z);
+    if(transform.position.y &lt; 0)
+    {
+      audio.PlayOneShot(audioClips[Random.Range(0,audioClips.Length)]);
+      Instantiate(prefab, transform.position, Quaternion.identity);
+      transform.position = new Vector3(Random.Range(0,60), 50, -16);
+    }
+  }
+}</pre></div><p>
+<span class="strong"><strong>CharacterCSharp.cs</strong></span>
+</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class CharacterCSharp : MonoBehaviour {
+
+  private float lastX; // this will store the last position of the character
+  private bool isMoving = false; //flags whether or not the player is in motion
+  public GameObject explosion;
+
+  void Start() 
+  {
+    animation.Stop();  // this stops Unity from playing the character's default animation.
+  }
+
+  void Update()
+  {
+
+    transform.position = new Vector3((Input.mousePosition.x)/20, transform.position.y, transform.position.z);
+
+    if(lastX != transform.position.x)
+    {
+      // x values between this Update cycle and the last one
+      // aren't the same! That means the player is moving the mouse
+      if(!isMoving)
+      {
+        // the player was standing still.
+        // Let's flag him to "isMoving"
+        isMoving = true;
+        if(!animation.IsPlaying("catch")){
+          animation.CrossFade("step");
+        }
+      }
+    } else {
+      // The player's x position is the same this Update cycle
+      // as it was the last! The player has stopped moving the mouse
+      if(isMoving)
+      {
+        // The player has stopped moving, so let's update the flag
+        isMoving = false;
+        if(!animation.IsPlaying("catch")){
+          animation.CrossFade("idle");
+        }
+      }
+    }
+    lastX = transform.position.x;
+
+  }
+
+  void OnCollisionEnter(Collision col)
+  {
+
+    if(col.gameObject.CompareTag("bomb"))
+    {
+      // I got hit by a bomb! 
+      Instantiate(explosion, col.gameObject.transform.position, Quaternion.identity);
+    } else if (col.gameObject.CompareTag("stein")) {
+      animation.CrossFade("catch"); // Ima catch that stein!
+    }
+    col.gameObject.transform.position = new Vector3(Random.Range(0,60), 50, -16);
+  }
+}</pre></div></div>

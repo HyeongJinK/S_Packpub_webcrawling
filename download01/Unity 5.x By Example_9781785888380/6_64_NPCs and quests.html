@@ -1,0 +1,163 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec65"></a>NPCs and quests</h2></div></div><hr /></div><p>
+<span class="strong"><strong>NPC</strong></span> stands <a id="id402" class="indexterm"></a>for <span class="strong"><strong>Non-player Character</strong></span> and typically refers to any friendly or neutral characters other than the player-controlled character. In our adventure, Level 3 should feature an NPC character standing outside their <a id="id403" class="indexterm"></a>house, and they provide us with a quest; specifically, to collect a gem item from Level 2, which features many hazards, including pits and gun turrets, as we've seen. To create the NPC character, we'll simply duplicate the player and adjust the character color, making them appear distinct. Thus, simply drag and drop the <span class="strong"><strong>Player</strong></span> prefab from the <span class="strong"><strong>Project</strong></span> panel to the Level 2 scene and position it near the house area. Then, remove all additional components (such as the Player Controller and Collider) to return this character back to a standard sprite that is not player-controlled. See <span class="emphasis"><em>Figure 6.34</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_34.jpg" /><div class="caption"><p>Figure 6.34: Creating an NPC from the player character prefab</p></div></div><p>Now, let's invert the character's <span class="strong"><strong>X</strong></span> scale to make him or her face left instead of right. Select the parent NPC object as opposed to its constituent limbs, such as hands and arms, and invert its <span class="strong"><strong>X</strong></span> <a id="id404" class="indexterm"></a>scale. All child objects will flip to face the direction of their parent. See <span class="emphasis"><em>Figure 6.35</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_35.jpg" /><div class="caption"><p>Figure 6.35: Flipping the X scale for a character NPC</p></div></div><p>We should also change the color of the NPC from green to red to distinguish him from the player. Now, the character is a multipart object composed from several sprite renderers. We <a id="id405" class="indexterm"></a>could select each object and change its color individually via the <span class="strong"><strong>Object Inspector</strong></span>. However, it's easier to select all the objects and change their color together; Unity 5 supports multi-object editing for common properties. See <span class="emphasis"><em>Figure 6.36</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_36.jpg" /><div class="caption"><p>Figure 6.36: Setting the NPC color</p></div></div><p>The NPC should talk to the player on approach. This means that when the player approaches the NPC, the NPC should display dialog text. The text to be displayed varies, depending on the status of their quest. On a first visit, the NPC will give the player a quest. On a second visit, the NPC will respond differently, depending on whether the quest has been completed in the meantime. To start creating this functionality, we need to determine when the player approaches the NPC. This is achieved using a Collider. Consequently, select the NPC object in the scene and then choose <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics 2D</strong></span> | <span class="strong"><strong>Box Collider 2D</strong></span> from the application menu. Size the collider not to approximate the NPC specifically, but to approximate the area around the NPC in which the player should enter to have a conversation. Be sure to mark the collider as a Trigger object, allowing the player to <a id="id406" class="indexterm"></a>enter and pass through. See <a id="id407" class="indexterm"></a>
+<span class="emphasis"><em>Figure 6.37</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_37.jpg" /><div class="caption"><p>Figure 6.37: Configuring the NPC Collider</p></div></div><p>At this stage, we need a GUI element to act as the conversation panel to display conversation text when the NPC speaks. This configuration simply consists of a GUI Canvas object with a Text object child. Both of these objects can be created from the application menu with <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>UI</strong></span> | <span class="strong"><strong>Canvas and GameObject</strong></span> | <span class="strong"><strong>UI</strong></span> | <span class="strong"><strong>Text</strong></span> respectively. The Canvas object should also have a CanvasGroup component attached using the <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Layout</strong></span> | <span class="strong"><strong>CanvasGroup</strong></span> menu option. This lets you set the alpha transparency for the panel and child objects as one complete unit. The Alpha member can be changed from the <a id="id408" class="indexterm"></a>
+<span class="strong"><strong>Object Inspector</strong></span>. A value of <code class="literal">1</code> means fully visible and value of <code class="literal">0</code> means fully transparent. See <span class="emphasis"><em>Figure 6.38</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_38.jpg" /><div class="caption"><p>Figure 6.38: Adding a Canvas Group component to the GUI conversation panel</p></div></div><p>Excellent. We now have the ability, if we need to, to fade the panel in and out simply by animating the Alpha value from <code class="literal">0</code> to <code class="literal">1</code> over time. However, we still need functionality to maintain quest information to determine whether a quest has been assigned and to determine which <a id="id409" class="indexterm"></a>text should be displayed in the conversation, based on the quest completion status. To do this, a new class must be created, <code class="literal">QuestManager.cs</code>. This class will allow us to create and maintain quest information. Refer to the  <span class="emphasis"><em>Code Sample 6.8</em></span>:</p><div class="informalexample"><pre class="programlisting">//--------------------------------
+using UnityEngine;
+using System.Collections;
+//--------------------------------
+[System.Serializable]
+public class Quest
+{
+    //Quest completed status
+    public enum QUESTSTATUS {UNASSIGNED=0,ASSIGNED=1,COMPLETE=2};
+    public QUESTSTATUS Status = QUESTSTATUS.UNASSIGNED;
+    public string QuestName = string.Empty;
+}
+//--------------------------------
+public class QuestManager : MonoBehaviour
+{
+    //--------------------------------
+    //All quests in game
+    public Quest[] Quests;
+    private static QuestManager SingletonInstance = null;
+    public static QuestManager ThisInstance
+    {
+        get{
+                if(SingletonInstance==null)
+                {
+                    GameObject QuestObject = new GameObject ("Default");
+                    SingletonInstance = QuestObject.AddComponent&lt;QuestManager&gt;();
+                }
+                return SingletonInstance;
+            }
+    }
+    //--------------------------------
+    void Awake()
+    {
+        //If there is an existing instance, then destory
+        if(SingletonInstance)
+        {
+            DestroyImmediate(gameObject);
+            return;
+        }
+
+        //This is only instance
+        SingletonInstance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+    //--------------------------------
+    public static Quest.QUESTSTATUS GetQuestStatus(string QuestName)
+    {
+        foreach(Quest Q in ThisInstance.Quests)
+        {
+            if(Q.QuestName.Equals(QuestName))
+                return Q.Status;
+        }
+
+        return Quest.QUESTSTATUS.UNASSIGNED;
+    }
+    //--------------------------------
+    public static void SetQuestStatus(string QuestName, Quest.QUESTSTATUS NewStatus)
+    {
+        foreach(Quest Q in ThisInstance.Quests)
+        {
+            if(Q.QuestName.Equals(QuestName))
+            {
+                Q.Status = NewStatus;
+                return;
+            }
+        }
+    }
+    //--------------------------------
+    //Resets quests back to unassigned state
+    public static void Reset()
+    {
+        if(ThisInstance==null)return;
+
+        foreach(Quest Q in ThisInstance.Quests)
+            Q.Status = Quest.QUESTSTATUS.UNASSIGNED;
+        
+    }
+    //--------------------------------
+}
+//--------------------------------</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec27"></a>Code Sample 6.8</h3></div></div></div><p>The following points summarize the code sample:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">QuestManager</code> maintains a list of all quests (<code class="literal">Quest</code>). That is, a list of all possible <a id="id410" class="indexterm"></a>quests within the game and not a list of only assigned or completed quests. The <code class="literal">Quest</code> class defines the name and status for a single and specific quest.</p></li><li style="list-style-type: disc"><p>Any single quest can be <code class="literal">UNASSIGNED</code> (meaning that the player hasn't collected it), <code class="literal">ASSIGNED</code> (the player has collected it but not completed it), and <code class="literal">COMPLETE</code> (the player has collected and completed it).</p></li><li style="list-style-type: disc"><p>The <code class="literal">GetQuestStatus</code> function retrieves the completed status of the specified quest. The <code class="literal">SetQuestStatus</code> function assigns a new status to the specified quest. These are static functions, and so any script can set or get this data from any place.</p></li></ul></div><p>To use this object, create an instance in the scene (the first scene of the game), and then define all the quests that can be collected via the <span class="strong"><strong>Object Inspector</strong></span>. In our game, there is only quest available: the quest given by an NPC character to collect a stolen gemstone from Level 2, the hazardous scene protected by gun turrets. See <span class="emphasis"><em>Figure 6.39</em></span> for how I configured quests to work with <span class="strong"><strong>Quest Manager</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_39.jpg" /><div class="caption"><p>Figure 6.39: Defining in-game quests via QuestManager</p></div></div><p>
+<code class="literal">QuestManager</code> defines all the possible quests in the game, whether or not they're collected <a id="id411" class="indexterm"></a>by the player. However, the NPC still needs to assign the quest to the player on approach. This can be achieved with the script file, <code class="literal">QuestGiver.cs</code>. See the following code. This script file should be attached to anything that gives quests, such as the NPC:</p><div class="informalexample"><pre class="programlisting">//--------------------------------
+using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+//--------------------------------
+public class QuestGiver : MonoBehaviour
+{
+    //--------------------------------
+    //Human readable quest name
+    public string QuestName = string.Empty;
+    //Reference to UI Text Box
+    public Text Captions = null;
+    //List of strings to say
+    public string[] CaptionText;
+    //--------------------------------
+    void OnTriggerEnter2D(Collider2D other) 
+    {
+        if(!other.CompareTag("Player"))return;
+
+        Quest.QUESTSTATUS Status = QuestManager.GetQuestStatus(QuestName);
+        Captions.text = CaptionText[(int) Status]; //Update GUI text
+    }
+    //--------------------------------
+    void OnTriggerExit2D(Collider2D other) 
+    {
+        Quest.QUESTSTATUS Status = QuestManager.GetQuestStatus(QuestName);
+        if(Status == Quest.QUESTSTATUS.UNASSIGNED)
+            QuestManager.SetQuestStatus(QuestName, Quest.QUESTSTATUS.ASSIGNED);
+
+        if(Status == Quest.QUESTSTATUS.COMPLETE)
+            Application.LoadLevel(5); //Game completed, go to win screen
+    }
+}
+//--------------------------------</pre></div><p>After <a id="id412" class="indexterm"></a>attaching this script to the NPC, give the game a test by pressing the play icon on the toolbar. Approach the NPC, and the GUI text should change to the specified quest as defined for the <span class="strong"><strong>QuestName</strong></span> field for the <span class="strong"><strong>QuestGiver</strong></span> component in the <span class="strong"><strong>Object Inspector</strong></span>. This name should match <span class="strong"><strong>QuestName</strong></span>, as defined in the <code class="literal">QuestManager</code> class. See <span class="emphasis"><em>Figure 6.40</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_40.jpg" /><div class="caption"><p>Figure 6.40: Defining the QuestGiver component</p></div></div><p>The assigned quest is to collect a gemstone, but our levels lack a stone. Let's now add one for the <a id="id413" class="indexterm"></a>player to collect. To do this, drag and drop the GemStone texture from the project panel (<code class="literal">Texture</code> folder) to scene 2 on the topmost ledge so that the player has to climb to reach it (a challenge!). See <span class="emphasis"><em>Figure 6.41</em></span>. Be sure to attach a <span class="strong"><strong>Circle Collider</strong></span> trigger to the object, allowing it to collide with the player.</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_41.jpg" /><div class="caption"><p>Figure 6.41: Creating a Quest object</p></div></div><p>Finally, we'll need a <code class="literal">QuestItem</code> script to set the quest status on the <code class="literal">QuestManager</code> class when the item is collected, allowing <code class="literal">QuestGiver</code> to determine whether the gem has been collected the next time the player visits. The <code class="literal">QuestItem</code> script should be attached to the Gem object. Refer to the following code:</p><div class="informalexample"><pre class="programlisting">//--------------------------------
+using UnityEngine;
+using System.Collections;
+//--------------------------------
+public class QuestItem : MonoBehaviour 
+{
+    //--------------------------------
+    public string QuestName;
+    private AudioSource ThisAudio = null;
+    private SpriteRenderer ThisRenderer = null;
+    private Collider2D ThisCollider = null;
+    //--------------------------------
+    void Awake()
+    {
+        ThisAudio = GetComponent&lt;AudioSource&gt;();
+        ThisRenderer = GetComponent&lt;SpriteRenderer&gt;();
+        ThisCollider = GetComponent&lt;Collider2D&gt;();
+    }
+    //--------------------------------
+    // Use this for initialization
+    void Start () 
+    {
+        //Hide object
+        gameObject.SetActive(false);
+
+        //Show object if quest is assigned
+        if(QuestManager.GetQuestStatus(QuestName) == Quest.QUESTSTATUS.ASSIGNED)
+            gameObject.SetActive(true);
+    }
+    //--------------------------------
+    //If item is visible and collected
+    void OnTriggerEnter2D(Collider2D other) 
+    {
+        if(!other.CompareTag("Player"))return;
+
+        if(!gameObject.activeSelf)return;
+        
+        //We are collected. Now complete quest
+        QuestManager.SetQuestStatus(QuestName, Quest.QUESTSTATUS.COMPLETE);
+
+        ThisRenderer.enabled=ThisCollider.enabled=false;
+
+        if(ThisAudio!=null)ThisAudio.Play(); //Play sound if any attached
+    }
+    //-------------------------------
+}</pre></div><p>The <a id="id414" class="indexterm"></a>preceding code is responsible for setting the quest status to completed when the gem (quest item) object is collected as the player enters the trigger volume. This happens through the <code class="literal">QuestManager</code> class.</p><p>Excellent work! You now have a completed integrated quest system and an NPC character. The complete files for this project can be found in the <code class="literal">Chapter06/End</code> folder. I highly recommend checking them out and playing the game. See <span class="emphasis"><em>Figure 6.42</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_42.jpg" /><div class="caption"><p>Figure 6.42: The completed game!</p></div></div></div></div>

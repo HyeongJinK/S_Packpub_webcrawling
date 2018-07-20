@@ -1,0 +1,51 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec21"></a>Creating a picture-in-picture effect</h2></div></div><hr /></div><p>Having more<a id="id73" class="indexterm"></a> than one viewport displayed can be useful in many situations. For example, you might want to show simultaneous events going on in different locations, or maybe you want to have a separate window for hot-seat multiplayer games. Although you could do it manually by adjusting the <span class="strong"><strong>Normalized Viewport Rect</strong></span> parameters on your camera, this recipe includes a series of extra preferences to make it more independent from the user's display configuration.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec50"></a>Getting ready</h3></div></div></div><p>For this recipe, we have prepared a package named <code class="literal">basicLevel</code> containing a scene. The package is in the <code class="literal">0423_02_01_02</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec51"></a>How to do it...</h3></div></div></div><p>To create a<a id="id74" class="indexterm"></a> picture-in-picture display, just follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the <code class="literal">basicLevel</code> packag<a id="id75" class="indexterm"></a>e into your Unity project.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, open <span class="strong"><strong>basicScene</strong></span>, inside the folder <code class="literal">02_01_02</code>. This is a basic scene featuring a directional light, a camera, and some geometry.</p></li><li><p>Add the <span class="strong"><strong>Camera</strong></span> option to the scene through the <span class="strong"><strong>Create</strong></span> dropdown menu on top of the <span class="strong"><strong>Hierarchy</strong></span> view, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_02_01.jpg" /></div></li><li><p>Select the camera you have created and, in the <span class="strong"><strong>Inspector</strong></span> view, set its <span class="strong"><strong>Depth</strong></span> to <span class="strong"><strong>1</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_02_02.jpg" /></div></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, create a new C# script and rename it <code class="literal">PictureInPicture</code>.</p></li><li><p>Open your<a id="id76" class="indexterm"></a> script and replace everything with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class PictureInPicture: MonoBehaviour {
+    public enum HorizontalAlignment{left, center, right};
+    public enum VerticalAlignment{top, middle, bottom};
+    public HorizontalAlignment horizontalAlignment = HorizontalAlignment.left;
+    public VerticalAlignment verticalAlignment = VerticalAlignment.top;
+    public enum ScreenDimensions{pixels, screen_percentage};
+    public ScreenDimensions dimensionsIn = ScreenDimensions.pixels;
+    public int width = 50;
+    public int height= 50;
+    public float xOffset = 0f;
+    public float yOffset = 0f;
+    public bool  update = true;
+    private int hsize, vsize, hloc, vloc;
+    
+    void Start (){
+	    AdjustCamera ();
+    }
+    void Update (){
+	    if(update)
+		    AdjustCamera ();
+    }
+
+    void AdjustCamera(){
+	    if(dimensionsIn == ScreenDimensions.screen_percentage){
+		    hsize = Mathf.RoundToInt(width * 0.01f * Screen.width);
+		    vsize = Mathf.RoundToInt(height * 0.01f * Screen.height);
+	    } else {
+		    hsize = width;
+		    vsize = height;
+	    }
+		
+	    if(horizontalAlignment == HorizontalAlignment.left){
+			hloc = Mathf.RoundToInt(xOffset * 0.01f * Screen.width);
+		} else if(horizontalAlignment == HorizontalAlignment.right){
+			hloc = Mathf.RoundToInt((Screen.width - hsize) - (xOffset * 0.01f * Screen.width));
+		} else {
+			hloc = Mathf.RoundToInt(((Screen.width * 0.5f) - (hsize * 0.5f)) - (xOffset * 0.01f * Screen.height));
+		}
+		
+	    if(verticalAlignment == VerticalAlignment.top){
+			vloc = Mathf.RoundToInt((Screen.height - vsize) - (yOffset * 0.01f * Screen.height));
+		} else if(verticalAlignment == VerticalAlignment.bottom){
+			vloc = Mathf.RoundToInt(yOffset * 0.01f * Screen.height);
+		} else {
+			vloc = Mathf.RoundToInt(((Screen.height * 0.5f) - (vsize * 0.5f)) - (yOffset * 0.01f * Screen.height));
+		}					
+	    camera.pixelRect = new Rect(hloc,vloc,hsize,vsize);		
+    }	
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note02"></a>Note</h3><p>In case you haven't noticed, we are not achieving percentage by dividing numbers by 100, but rather multiplying them by 0.01. The reason behind that is performance: computer processors are faster multiplying than dividing.</p></div></li><li><p>Save your <a id="id77" class="indexterm"></a>script and attach it to the new camera that you created previously.</p></li><li><p>Uncheck the new camera's <span class="strong"><strong>Audio Listener</strong></span> component and change some of the <span class="strong"><strong>PictureInPicture</strong></span> parameters: change <span class="strong"><strong>Horizontal Alignment</strong></span> to <span class="strong"><strong>Right</strong></span>, <span class="strong"><strong>Vertical Alignment</strong></span> to <span class="strong"><strong>Top</strong></span>, and <span class="strong"><strong>Dimensions In</strong></span> to <span class="strong"><strong>pixels</strong></span>. Leave <span class="strong"><strong>XOffset</strong></span> and <span class="strong"><strong>YOffset</strong></span> as <span class="strong"><strong>0</strong></span>, change <span class="strong"><strong>Width</strong></span> to <span class="strong"><strong>400</strong></span> and <span class="strong"><strong>Height</strong></span> to <span class="strong"><strong>200</strong></span>, as shown below:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_02_03.jpg" /></div></li><li><p>Play your scene. <a id="id78" class="indexterm"></a>The new camera's viewport should be visible on the top right of the screen:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_02_04.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec52"></a>How it works...</h3></div></div></div><p>Our script<a id="id79" class="indexterm"></a> changes the camera's <span class="strong"><strong>Normalized Viewport Rect</strong></span> parameters, thus resizing and positioning the viewport according to the user preferences.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec53"></a>There's more...</h3></div></div></div><p>The following are some aspects of your picture-in-picture you could change.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec10"></a>Making the picture-in-picture proportional to the screen's size</h4></div></div></div><p>If you <a id="id80" class="indexterm"></a>change the <span class="strong"><strong>Dimensions In</strong></span> option to <code class="literal">screen_percentage</code>, the viewport size will be based on the actual screen's dimensions instead of pixels.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec11"></a>Changing the position of the picture-in-picture</h4></div></div></div><p><span class="strong"><strong>Vertical Alignment</strong></span> and <span class="strong"><strong>Horizontal Alignment</strong></span> can be<a id="id81" class="indexterm"></a> used to change the viewport's origin. Use them to place it where you wish.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec12"></a>Preventing the picture-in-picture from updating on every frame</h4></div></div></div><p>Leave the <span class="strong"><strong>Update</strong></span> option <a id="id82" class="indexterm"></a>unchecked if you don't plan to change the viewport position in running mode. Also, it's a good idea to leave it checked when testing and then uncheck it once the position has been decided and set up.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec54"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Displaying a mini-map</em></span> recipe.</p></li></ul></div></div></div>

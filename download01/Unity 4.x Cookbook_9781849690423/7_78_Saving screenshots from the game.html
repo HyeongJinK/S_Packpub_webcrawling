@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec78"></a>Saving screenshots from the game</h2></div></div><hr /></div><p>In this recipe, <a id="id535" class="indexterm"></a>we will learn how to take in-game snapshots and save them to an external file. Better yet, we will make it possible to choose between two different methods.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note24"></a>Note</h3><p>This technique only works when you compile to a Windows or Mac <span class="emphasis"><em>standalone executable</em></span>. It will not work for Web Player builds, for example.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec271"></a>Getting ready</h3></div></div></div><p>In order to follow this recipe, please import the <code class="literal">screenshots</code> package, available in the <code class="literal">0423_07_06</code> folder, into your project. This package includes a basic terrain and a camera that can be rotated via a mouse.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec272"></a>How to do it...</h3></div></div></div><p>To save screenshots from your game, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the <code class="literal">screenshots</code> package and open the <code class="literal">screenshotLevel</code> scene.</p></li><li><p>Add the following C# script to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: TakeScreenshot.cs
+using UnityEngine;
+using System.Collections;
+using System;
+using System.IO;
+public class TakeScreenshot : MonoBehaviour {
+  public string prefix = "Screenshot";
+  public int scale = 1;	
+  public bool useReadPixels = false;
+  private Texture2D texture;
+  
+  void  Update (){
+   if (Input.GetKeyDown (KeyCode.P))
+          StartCoroutine(TakeShot());
+  }
+
+  IEnumerator  TakeShot (){
+    string date = System.DateTime.Now.ToString("_d-MMM-yyyy-HH-mm-ss-f");
+    int sw = Screen.width;
+    int sh = Screen.height;
+    Rect sRect = new Rect(0,0,sw,sh);
+  
+    if (useReadPixels){
+      yield return new WaitForEndOfFrame();
+      texture = new Texture2D (sw,sh,TextureFormat.RGB24,false);
+      texture.ReadPixels(sRect,0,0);
+      texture.Apply();
+      byte[] bytes= texture.EncodeToPNG();
+      Destroy (texture);
+      File.WriteAllBytes(Path.GetDirectoryName(Application.dataPath) + Path.DirectorySeparatorChar + prefix + date + ".png", bytes);
+    
+    } else {
+       Application.CaptureScreenshot(prefix + date + ".png", scale);
+     }
+  }
+}</pre></div></li><li><p>Save your <a id="id536" class="indexterm"></a>script and attach it to the <span class="strong"><strong>Main Camera</strong></span> game object by dragging it from the <span class="strong"><strong>Project</strong></span> view to the <span class="strong"><strong>Main Camera</strong></span> game object in the <span class="strong"><strong>Hierarchy</strong></span> view.</p></li><li><p>Access the <span class="strong"><strong>Take Screenshot</strong></span> component. Set <span class="strong"><strong>Scale</strong></span> to <span class="strong"><strong>2</strong></span> and leave <span class="strong"><strong>Use Read Pixels</strong></span> unchecked.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note25"></a>Note</h3><p>If you want your image file's name to start with something other than <span class="strong"><strong>Screenshot</strong></span>, change it in the <span class="strong"><strong>Prefix</strong></span> field.</p></div><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_07_01.jpg" /></div></li><li><p>Play <a id="id537" class="indexterm"></a>the scene. A new screenshot, with twice the original size, will be saved in your project folder every time you press <span class="emphasis"><em>P</em></span>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note26"></a>Note</h3><p>Please note that depending on the method used the file will be saved on a specific location within your game's folder. Mac users will have to right-click the executable file and select <span class="strong"><strong>Show Package Contents</strong></span> in order to locate the file among the game data.</p></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec273"></a>How it works...</h3></div></div></div><p>Once the script has detected that the <span class="emphasis"><em>P</em></span> key has been pressed, the screen is captured and stored as an image file in the same folder where the executable is. Unless <span class="strong"><strong>Use Read Pixels</strong></span> is selected, the script will call a built-in Unity function called <code class="literal">CaptureScreenshot()</code><a id="id538" class="indexterm"></a>, which is capable of scaling up the original screen size (in our case, based on the <code class="literal">Scale</code> variable of our script).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec274"></a>There's more...</h3></div></div></div><p>We have included the <span class="strong"><strong>Use Read Pixel</strong></span> option as a demonstration of how to save your images to disk without using Unity's <code class="literal">CaptureScreenshot()</code> function<a id="id539" class="indexterm"></a>. One advantage of this method is that it can be adapted to capture and save only a portion of the screen. The <code class="literal">Scale</code> variable from our script will not affect it needs, though.</p></div></div>

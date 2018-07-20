@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec69"></a>AB Negamaxing</h2></div></div><hr /></div><p>There is still room for <a id="id306" class="indexterm"></a>improving the Negamax algorithm. Despite its efficiency, the downside of the Negamax algorithm is that it examines more nodes than necessary (for example, board positions). To overcome this problem, we use Negamax with a search strategy called alpha-beta pruning.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec238"></a>Getting ready…</h3></div></div></div><p>It is important to know the difference between a dynamic member function and a static member function, as well as recursion. A dynamic member function is bound to the instance of the class, while the static member function is bound to the class itself. The static method allows us to call it without instantiating an object. This is great for general-purpose algorithms, such as the one we are developing in this recipe.</p><p>In the case of recursion, it's not always clear that (unlike iteration) this is an iterative process that requires a base case (also called the stop condition) and a recursive case (the one to keep iterating).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec239"></a>How to do it…</h3></div></div></div><p>We will add a new function to the <code class="literal">BoardAI</code> class as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">ABNegamax</code> function:</p><div class="informalexample"><pre class="programlisting">public static float ABNegamax(
+        Board board,
+        int player,
+        int maxDepth,
+        int currentDepth,
+        ref Move bestMove,
+        float alpha,
+        float beta)
+{
+    // next steps here
+}</pre></div></li><li><p>Validate the base case:</p><div class="informalexample"><pre class="programlisting">if (board.IsGameOver() || currentDepth == maxDepth)
+    return board.Evaluate(player);</pre></div></li><li><p>Set the initial values:</p><div class="informalexample"><pre class="programlisting">bestMove = null;
+float bestScore = Mathf.NegativeInfinity;</pre></div></li><li><p>Loop through <a id="id307" class="indexterm"></a>every available move and return the best score:</p><div class="informalexample"><pre class="programlisting">foreach (Move m in board.GetMoves())
+{
+    // next steps here
+}
+return bestScore;</pre></div></li><li><p>Create a new game state from the current move:</p><div class="informalexample"><pre class="programlisting">Board b = board.MakeMove(m);</pre></div></li><li><p>Set the values for calling the recursion:</p><div class="informalexample"><pre class="programlisting">float recursedScore;
+Move currentMove = null;
+int cd = currentDepth + 1;
+float max = Mathf.Max(alpha, bestScore);</pre></div></li><li><p>Start the recursion:</p><div class="informalexample"><pre class="programlisting">recursedScore = ABNegamax(b, player, maxDepth, cd, ref currentMove, -beta, max);</pre></div></li><li><p>Set the current score and update the best score and move if necessary. Also, stop the iteration if necessary:</p><div class="informalexample"><pre class="programlisting">float currentScore = -recursedScore;
+if (currentScore &gt; bestScore)
+{
+    bestScore = currentScore;
+    bestMove = m;
+
+    if (bestScore &gt;= beta)
+        return bestScore;
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec240"></a>How it works…</h3></div></div></div><p>Since we know the basic principle of the algorithm, let's concentrate on the search strategy. There are two values: alpha and beta. The alpha value is the lower score a player can achieve, thus avoiding considering any move where the opponent has the opportunity to lessen it. Similarly, the beta value is the upper limit; no matter how tempting the new option is, the algorithm assumes that the opponent won't give the opportunity to take it.</p><p>Given the alternation between each player (minimizing and maximizing), only one value needs to be checked at <a id="id308" class="indexterm"></a>each step.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec241"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Working with the game-tree class</em></span> recipe</p></li><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Minimax</em></span> recipe</p></li><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Negamaxing</em></span> recipe</p></li></ul></div></div></div>

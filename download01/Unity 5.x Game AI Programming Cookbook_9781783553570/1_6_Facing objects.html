@@ -1,0 +1,72 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec13"></a>Facing objects</h2></div></div><hr /></div><p>Real-world <a id="id18" class="indexterm"></a>aiming, just like in combat simulators, works a little differently from the widely-used <span class="emphasis"><em>automatic</em></span> aiming in almost every game. Imagine that you need to implement an agent controlling a tank turret or a humanized sniper; that's when this recipe comes in handy.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec23"></a>Getting ready</h3></div></div></div><p>We need to make some modifications to our <code class="literal">AgentBehaviour</code> class:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add new member values to limit some of the existing ones:</p><div class="informalexample"><pre class="programlisting">public float maxSpeed;
+public float maxAccel;
+public float maxRotation;
+public float maxAngularAccel;</pre></div></li><li><p>Add a function called <code class="literal">MapToRange</code>. This function helps in finding the actual direction of rotation after two orientation values are subtracted:</p><div class="informalexample"><pre class="programlisting">public float MapToRange (float rotation) {
+    rotation %= 360.0f;
+    if (Mathf.Abs(rotation) &gt; 180.0f) {
+        if (rotation &lt; 0.0f)
+            rotation += 360.0f;
+        else
+            rotation -= 360.0f;
+    }
+    return rotation;
+}</pre></div></li><li><p>Also, we need to create a basic behavior called <code class="literal">Align</code> that is the stepping stone for the facing algorithm. It uses the same principle as <code class="literal">Arrive</code>, but only in terms of rotation:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Align : AgentBehaviour
+{
+    public float targetRadius;
+    public float slowRadius;
+    public float timeToTarget = 0.1f;
+
+    public override Steering GetSteering()
+    {
+        Steering steering = new Steering();
+        float targetOrientation = target.GetComponent&lt;Agent&gt;().orientation;
+        float rotation = targetOrientation - agent.orientation;
+        rotation = MapToRange(rotation);
+        float rotationSize = Mathf.Abs(rotation);
+        if (rotationSize &lt; targetRadius)
+            return steering;
+        float targetRotation;
+        if (rotationSize &gt; slowRadius)
+            targetRotation = agent.maxRotation;
+        else
+            targetRotation = agent.maxRotation * rotationSize / slowRadius;
+        targetRotation *= rotation / rotationSize;
+        steering.angular = targetRotation - agent.rotation;
+        steering.angular /= timeToTarget;
+        float angularAccel = Mathf.Abs(steering.angular);
+        if (angularAccel &gt; agent.maxAngularAccel)
+        {
+            steering.angular /= angularAccel;
+            steering.angular *= agent.maxAngularAccel;
+        }
+        return steering;
+    }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec24"></a>How to do it...</h3></div></div></div><p>We now proceed to <a id="id19" class="indexterm"></a>implement our facing algorithm that derives from <code class="literal">Align</code>:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Face</code> class along with a private auxiliary target member variable:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Face : Align
+{
+    protected GameObject targetAux;
+}</pre></div></li><li><p>Override the <code class="literal">Awake</code> function to set up everything and swap references:</p><div class="informalexample"><pre class="programlisting">public override void Awake()
+{
+    base.Awake();
+    targetAux = target;
+    target = new GameObject();
+    target.AddComponent&lt;Agent&gt;();
+}</pre></div></li><li><p>Also, implement the <code class="literal">OnDestroy</code> function to handle references and avoid memory issues:</p><div class="informalexample"><pre class="programlisting">void OnDestroy ()
+{
+    Destroy(target);
+}</pre></div></li><li><p>Finally, define <a id="id20" class="indexterm"></a>the <code class="literal">GetSteering</code> function:</p><div class="informalexample"><pre class="programlisting">public override Steering GetSteering()
+{
+    Vector3 direction = targetAux.transform.position - transform.position;
+    if (direction.magnitude &gt; 0.0f)
+    {
+        float targetOrientation = Mathf.Atan2(direction.x, direction.z);
+        targetOrientation *= Mathf.Rad2Deg;
+        target.GetComponent&lt;Agent&gt;().orientation = targetOrientation;
+    }
+    <span class="strong"><strong>return base.GetSteering();</strong></span>
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec25"></a>How it works...</h3></div></div></div><p>The algorithm computes the internal target orientation according to the vector between the agent and the real target. Then, it just delegates the work to its parent class.</p></div></div>

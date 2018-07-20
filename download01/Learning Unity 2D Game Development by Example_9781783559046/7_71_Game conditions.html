@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec71"></a>Game conditions</h2></div></div><hr /></div><p>Game<a id="id485" class="indexterm"></a> conditions<a id="id486" class="indexterm"></a> are the<a id="id487" class="indexterm"></a> rules that dictate a<a id="id488" class="indexterm"></a> victory or loss. This game will include the following conditions:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Lives</p></li><li style="list-style-type: disc"><p>Timer</p></li><li style="list-style-type: disc"><p>Score</p></li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec68"></a>Lives</h3></div></div></div><p>The player will start the game with three lives. Each time Spongy comes into contact with the acid blobs, the player will lose a life.</p><p>Should the <a id="id489" class="indexterm"></a>player lose all three lives, then the game is over. To stop gameplay, we use the following line:</p><div class="informalexample"><pre class="programlisting">Time.timeScale = 0;</pre></div><p>It is also useful for not only pausing and resuming, but also for slow and fast forward effects.</p><p>Add the following script to <code class="literal">Spongy.js</code>:</p><div class="informalexample"><pre class="programlisting">var lives:int = 3;
+
+
+function OnCollisionEnter2D(other:Collision2D)
+{
+    if(other.gameObject.name=="Acid(Clone)")
+    {
+      lives = lives - 1;
+
+    if (lives == 0)
+    {
+    Time.timeScale = 0;
+
+    }
+
+  }
+
+  //will add score here
+
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec69"></a>Score</h3></div></div></div><p>The <a id="id490" class="indexterm"></a>main objective of victory is the score. For each grime that Spongy collects, the player receives an added score of 50 points.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following variable to <code class="literal">Spongy.js</code> at the very top:</p><div class="informalexample"><pre class="programlisting">var score:int = 0;</pre></div></li><li><p>Insert<a id="id491" class="indexterm"></a> the following script beneath the comment <code class="literal">//will add score here</code>:</p><div class="informalexample"><pre class="programlisting">if(other.gameObject.name=="Grime(Clone)")
+    {
+      score = score + 50;
+    }</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec70"></a>Time</h3></div></div></div><p>The game <a id="id492" class="indexterm"></a>will also include time as a secondary objective to show how long the player has survived each play. We will add our time <a id="id493" class="indexterm"></a>using <code class="literal">Time.time</code> within the <span class="strong"><strong>heads-up display</strong></span> (<span class="strong"><strong>HUD</strong></span>) mentioned next.</p></div></div>

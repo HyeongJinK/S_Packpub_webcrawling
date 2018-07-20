@@ -1,0 +1,60 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec34"></a>Customizing the Scene View</h2></div></div><hr /></div><p>In this section <a id="id198" class="indexterm"></a>we are going to take a look how to create a custom GUI in the Scene View and change its default behavior.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec43"></a>Using the OnSeceneGUI message method</h3></div></div></div><p>To start rendering a GUI in Scene View, we are going to make use of a message method part of the <code class="literal">Editor</code> class, <code class="literal">OnSeceneGUI</code>.</p><p>In terms <a id="id199" class="indexterm"></a>of GUI creation, we can make use of all the techniques we learned in the previous chapters working with custom inspectors and editor windows. In this case, we are going to use a toolbar component like the one used in the Palette window to simulate the tabs.</p><p>To see how this works, we are going to create a toolbar attached to the left top corner of the scene view. Each item of this toolbar will be one of the possible modes.</p><p>Let's add this method with the following code inside the <code class="literal">LevelInspector</code> class:</p><div class="informalexample"><pre class="programlisting">private void DrawModeGUI() {
+    List&lt;Mode&gt; modes = EditorUtils.GetListFromEnum&lt;Mode&gt;();
+    List&lt;string&gt; modeLabels = new List&lt;string&gt;();
+    foreach(Mode mode in modes) {
+        modeLabels.Add(mode.ToString());
+    }
+
+<span class="strong"><strong>    Handles.BeginGUI();</strong></span>
+
+    GUILayout.BeginArea(new Rect(10f, 10f, 360, 40f));
+    _selectedMode = (Mode) GUILayout.Toolbar(
+        (int) _currentMode,
+        modeLabels.ToArray(),
+        GUILayout.ExpandHeight(true));
+    GUILayout.EndArea();
+
+<span class="strong"><strong>    Handles.EndGUI();</strong></span>
+
+}</pre></div><p>Then, let's add the <code class="literal">OnSceneGUI</code> method and call <code class="literal">EditorModeGUI</code> method from there:</p><div class="informalexample"><pre class="programlisting">private void OnSceneGUI() {
+     DrawModeGUI();
+}</pre></div><p>
+<code class="literal">OnSceneGUI</code> is a method that handles the events from the Scene View. Here you can add your custom GUI with the help of the class <code class="literal">Handles</code>. You must place your GUI code between the <a id="id200" class="indexterm"></a>methods <code class="literal">BeginGUI</code> and <code class="literal">EndGUI</code> (the ones highlighted) to see it rendered in the Scene View.</p><p>We used the methods <code class="literal">BeginArea</code> and <code class="literal">EndArea</code> just to set the boundaries of the place for the layout methods we are going to be using. If you don't do this, all the GUI elements will be adjusted based on the Scene View size.</p><p>Save the changes and wait for Unity to compile. Now create a new level by going to <span class="strong"><strong>Tools</strong></span> | <span class="strong"><strong>Level Creator</strong></span> | <span class="strong"><strong>New Level Scene</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_03.jpg" /></div><p>Select the <code class="literal">Level</code> game object and you will see the toolbar GUI in the top-left corner of the Scene View:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_04.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note28"></a>Note</h3><p>Something <a id="id201" class="indexterm"></a>you may have noticed is that we aren't saving the value returned by <code class="literal">GUILayout.Toolbar</code> in <code class="literal">_currentMode</code>; instead, we are using a second variable called <code class="literal">_selectedMode</code>. We are going to use these two variables to detect when the current mode changes.</p><p>For now, this makes it impossible to change the current selection of the toolbar.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec44"></a>Playing with the Scene View tools</h3></div></div></div><p>In the top <a id="id202" class="indexterm"></a>part of the editor, you will find the Unity Toolbar, a set of controls related to different parts of the Unity editor:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_05.jpg" /></div><p>On the left are the Transform tools, which define how the interaction with the different game objects inside the Scene View will be. They are shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_06.jpg" /></div><p>Here you can choose, from left to right, whether you want to view, move, rotate, or scale game objects or deal with 2D Rects.</p><p>For our purposes, we want to choose when the Transform Tools are or are not activated based on the<a id="id203" class="indexterm"></a> current Level Creator mode. For example, we don't want to rotate a piece by accident when we are painting pieces on the level grid.</p><p>To do this, we are going to use the class <code class="literal">Tool</code>, part of the <code class="literal">UnityEditor</code> namespace, to manipulate the  activated tool in the Scene View.</p><p>Let's add this method with the following code inside the <code class="literal">LevelInspector</code> class:</p><div class="informalexample"><pre class="programlisting">private void ModeHandler () {
+  switch (_selectedMode) {
+    case Mode.Paint:
+    case Mode.Edit:
+    case Mode.Erase:
+      Tools.current = Tool.None;
+    break;
+  case Mode.View:
+  default:
+      Tools.current = Tool.View;
+    break;
+  }
+  // Detect Mode change
+    if(_selectedMode != _currentMode) {
+      _currentMode = _selectedMode;
+  }
+  // Force 2D Mode!
+  SceneView.currentDrawingSceneView.in2DMode = true;
+}</pre></div><p>The variable <code class="literal">current</code> from the class <code class="literal">Tools</code> has the information about the current tool selected in the editor. It is possible to overwrite its value using one of the available options in the <code class="literal">Tool</code> enum. The possible values are:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">Move</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Rotate</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Scale</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Rect</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">None</code>
+</p></li></ul></div><p>In the <code class="literal">ModeHandler</code> method we set <code class="literal">Tool.View</code> for when the Level Creator View mode is selected; otherwise, <code class="literal">Tool.None</code> is defined.</p><p>Here we compare the variables <code class="literal">_currentMode</code> and <code class="literal">_selectedMode</code> to check for a mode change; if this happens, we save the value in <code class="literal">_currentMode</code>. Later, we are going to add a few other lines to complete the Level Creator tool.</p><p>At the end, we <a id="id204" class="indexterm"></a>also force the view mode of the scene to 2D. You are going to notice the 2D button is always pressed.</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_07.jpg" /></div><p>Finally, call the <code class="literal">EditorModeHandler</code> function from inside the <code class="literal">OnSceneGUI</code> method:</p><div class="informalexample"><pre class="programlisting">private void OnSceneGUI() {
+  DrawModeGUI();
+<span class="strong"><strong>  ModeHandler();</strong></span>
+}</pre></div><p>Save the changes and wait for Unity to compile. Now create a level, select the game object, and then check Level Creator; the <span class="strong"><strong>View</strong></span> mode is selected:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_08.jpg" /></div><p>Independent of the Transform Tool selected on Unity, when the Level Creator View mode is selected, the Transform Tool changes to the Unity View tool. In fact, if you try to change the current Transform Tool manually, the code we created overwrites your choice. If you try the same with the <span class="strong"><strong>Paint</strong></span>, <span class="strong"><strong>Edit</strong></span> or <span class="strong"><strong>Erase</strong></span> Level Creator modes, no Transform Tool is selected.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec45"></a>Controlling the focus over our game objects</h3></div></div></div><p>By default, each time you click on a game object in the Scene View, this one will get focused; if you <a id="id205" class="indexterm"></a>click on the Scene View directly, the current game object will lose focus.</p><p>In Level Creator, if you select a mode different from <span class="strong"><strong>View</strong></span>, let's say <span class="strong"><strong>Paint</strong></span>, clicking in any part of the Scene View makes you lose focus of the level game object and the GUI disappears (remember that the code for the Scene View GUI is on the custom inspector script):</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_09.jpg" /></div><p>This happens because, when you use a Transform Tool different from <code class="literal">Tool.View</code> (and this includes <code class="literal">Tool.None</code>), a click on the Scene View changes the focus of the current game object selected. For the <span class="strong"><strong>Paint</strong></span>, <span class="strong"><strong>Edit</strong></span> and <span class="strong"><strong>Erase</strong></span> Level Creator modes, we need to use the mouse to <a id="id206" class="indexterm"></a>do the interaction, and this means a lot of clicks here and there. We need to find a way to keep the focus over the Level game object artificially.</p><p>Let's add this method with the following code inside the <code class="literal">LevelInspector</code> class:</p><div class="informalexample"><pre class="programlisting">private void EventHandler() {
+  HandleUtility.AddDefaultControl(
+    GUIUtility.GetControlID(FocusType.Passive));
+}</pre></div><p>Here we are using the class <code class="literal">HandleUtility</code>, part of the <code class="literal">UnityEditor</code> namespace. With <code class="literal">FocusType.Passive</code>, we are setting the Scene View to a passive mode. This means we need to take care of all the interactivity by our selfs instead of delegating this to Unity.</p><p>Then call the <code class="literal">EventHandler</code> function from inside the <code class="literal">OnSceneGUI</code> method:</p><div class="informalexample"><pre class="programlisting">private void OnSceneGUI() {
+    DrawModeGUI();
+    ModeHandler();
+<span class="strong"><strong>    EventHandler();</strong></span>
+}</pre></div><p>Save the changes and wait for Unity to compile. If you repeat the same experiment, you will notice you can't change the focus of the objects by making mouse clicks any more.</p></div></div>

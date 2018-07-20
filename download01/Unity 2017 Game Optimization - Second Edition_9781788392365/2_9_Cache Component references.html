@@ -1,0 +1,35 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec9"></a>Cache Component references</h2></div></div><hr /></div><p>Repeatedly recalculating a value is a common mistake when scripting in Unity, and particularly when it comes to the <code class="literal">GetComponent()</code> method. For example, the following script code is trying to check a creature's health value, and if its health goes below <code class="literal">0</code>, it will disable a series of Components to prepare it for a death animation:</p><pre class="programlisting">void TakeDamage() {
+
+  RigidBody rigidbody = GetComponent&lt;RigidBody&gt;();
+  Collider collider = GetComponent&lt;Collider&gt;();
+  AIControllerComponent ai = GetComponent&lt;AIControllerComponent&gt;();
+  Animator anim = GetComponent&lt;Animator&gt;();
+
+  if (GetComponent&lt;HealthComponent&gt;().health &lt; 0) {
+    rigidbody.enabled = false;
+    collider.enabled = false;
+    ai.enabled = false;
+    anim.SetTrigger("death");
+  }
+}</pre><p>Each time this poorly optimized method executes, it will reacquire five different Component references. This is not very friendly on CPU usage. This is particularly problematic if the main method was called during <code class="literal">Update()</code>. Even if it is not, it still might coincide with other important events, such as creating particle effects, replacing an object with a Ragdoll (thus invoking various activity in the Physics Engine), and so on. This coding style can seem harmless, but it can cause a lot of long-term problems and runtime work for very little benefit.</p><p>It costs us a small amount of memory space (only 32 or 64 bits each time; Unity version, platform, and fragmentation permitting) to cache these references for future use. So, unless you're extremely bottlenecked on memory, a better approach would be to acquire the references during initialization and keep them until they are needed:</p><pre class="programlisting">private HealthComponent _healthComponent;
+private Rigidbody _rigidbody;
+private Collider _collider;
+private AIControllerComponent _ai;
+private Animator _anim;
+
+void Awake() {
+  _healthComponent = GetComponent&lt;HealthComponent&gt;();
+  _rigidbody = GetComponent&lt;Rigidbody&gt;();
+  _collider = GetComponent&lt;Collider&gt;();
+  _ai = GetComponent&lt;AIControllerComponent&gt;();
+  _anim = GetComponent&lt;Animator&gt;();
+}
+
+void TakeDamage() {
+  if (_healthComponent.health &lt; 0) {
+    _rigidbody.detectCollisions = false;
+    _collider.enabled = false;
+    _ai.enabled = false;
+    _anim.SetTrigger("death");
+  }
+}</pre><p>Caching Component references in this way spares us from reacquiring them each time they're needed, saving us some CPU overhead each time. The cost is a small amount of additional memory consumption, which is very often worth the price.</p><p>The same tip applies to literally any piece of data we decide to calculate at runtime. There’s no need to ask the CPU to keep recalculating the same value every <code class="literal">Update()</code> when we can just store it in memory for future reference.</p></div>

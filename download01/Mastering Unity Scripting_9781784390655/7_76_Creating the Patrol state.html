@@ -1,0 +1,77 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec78"></a>Creating the Patrol state</h2></div></div><hr /></div><p>In the <code class="literal">Patrol</code> state, the enemy should wander the environment and look for the player. This state can be entered <a id="id582" class="indexterm"></a>from the <code class="literal">Idle</code> state, after the idle animation is completed, and also from the <code class="literal">Chase</code> state, if the enemy loses sight of the player during a chase. Patrol involves a looping logic. Specifically, the enemy should pick a random destination somewhere on the navigation mesh and then travel to that destination. When the destination is reached, the process should repeat and so on. The only condition that causes the enemy to leave this state is a sighting of the player, which demands a <code class="literal">Chase</code> state.</p><p>Though simple to explain, this state relies on two more complex issues: first, a random location must be selected and second, a player visibility check should be performed. First, let's consider the random location selection.</p><p>In the <span class="strong"><strong>Scene</strong></span> tab, I created a collection of waypoints (empty game objects) that are tagged <span class="strong"><strong>Waypoint</strong></span> and do nothing but mark locations on the <code class="literal">NavMesh</code> floor. Together, these represent all the possible<a id="id583" class="indexterm"></a> locations to which an enemy could travel during a patrol. The enemy, therefore, needs to randomly select one of these destinations, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_07_23.jpg" /><div class="caption"><p>Creating Waypoint destinations in the Scene tab</p></div></div><p>To implement the destination selection for a <code class="literal">Patrol</code> state, the <code class="literal">Awake</code> function of <code class="literal">AI_Enemy</code> will first retrieve a list of all waypoints in the scene to be used later. We can do this using <code class="literal">Linq</code>, as shown in the following code sample 7-5. This example code retrieves a static array of all transforms for waypoints in the scene, in a private variable named <code class="literal">Waypoints</code>:</p><div class="informalexample"><pre class="programlisting">01 //Find all gameobjects with waypoint
+02 GameObject[] Waypoints = GameObject.FindGameObjectsWithTag("Waypoint");
+03 
+04 //Select all transform components from waypoints using Linq
+05 WayPoints = (from GameObject GO in Waypoints
+06                   select GO.transform).ToArray();</pre></div><p>Having retrieved a list of all waypoints, the <code class="literal">Patrol</code> state can be coded, as shown in the following code sample 7-6, which regularly selects waypoints as move new targets:</p><div class="informalexample"><pre class="programlisting">01 //--------------------------------------------------
+02 //This coroutine runs when object is in patrol state
+03 public IEnumerator State_Patrol()
+04 {
+05 //Set current state
+06 CurrentState = AI_ENEMY_STATE.PATROL;
+07 
+08 //Set Patrol State
+09 ThisAnimator.SetTrigger((int) AI_ENEMY_STATE.PATROL);
+10 
+11 //Pick a random waypoint
+<span class="strong"><strong>12 Transform RandomDest = WayPoints[Random.Range(0, WayPoints.Length)];</strong></span>
+13 
+14 //Go to destination
+15 ThisAgent.SetDestination(RandomDest.position);
+16 
+17 //Loop forever while in patrol state
+<span class="strong"><strong>18 while(CurrentState == AI_ENEMY_STATE.PATROL)</strong></span>
+19 {
+20        //Check if we can see player
+21        if(CanSeePlayer)
+22        {
+23             //If we can see player, then chase to attack 
+24             StartCoroutine(State_Chase());
+25             yield break;
+26        }
+27 
+<span class="strong"><strong>28        //Check if we have reached destination</strong></span>
+29        if(Vector3.Distance(ThisTransform.position, RandomDest.position) &lt;= DistEps)
+
+30        {
+31              //Reached destination. Changed state back to Idle
+32              StartCoroutine(State_Idle());
+33              yield break;
+34        }
+35 
+36        //Wait for next frame
+37        yield return null;
+38 }
+39 }
+40 //--------------------------------------------------</pre></div><p>The following are the <a id="id584" class="indexterm"></a>comments for code sample 7-6:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 12</strong></span>: Here, the<a id="id585" class="indexterm"></a> <code class="literal">Random.Range</code> function selects a random destination from the <code class="literal">Waypoints</code> array. This is passed as a destination argument to the <code class="literal">SetDestination</code> function of the <code class="literal">NavMeshAgent</code> component that sends the enemy to the destination.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 28</strong></span>: The function <code class="literal">Vector3.Distance</code> is used to determine whether the agent has reached the destination. This does not check for equality between the enemy position and destination position, because floating-point inaccuracy means we cannot guarantee that the two will ever be the same. Instead, it checks whether the enemy has come within a specified distance of the destination (<code class="literal">DistEps</code>), classifying that as having arrived.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 32</strong></span>: If the destination is reached, the enemy would return to <code class="literal">Idle</code>. After waiting for one cycle of the idle animation, the enemy would again enter into the <code class="literal">Patrol</code> state.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 21</strong></span>: Again, the <code class="literal">Patrol</code> state depends on whether the player is visible to the enemy. If so, they enter the <code class="literal">Chase</code> state.</p></li></ul></div><p>The Boolean variable <code class="literal">CanSeePlayer</code> indicates, for any frame, whether the player is currently visible to the <a id="id586" class="indexterm"></a>enemy. This variable is updated on each frame. The process for this begins inside the <code class="literal">Update</code> function, as shown in the following code sample 7-7:</p><div class="informalexample"><pre class="programlisting">01 void Update()
+02 {
+03 //Assume we cannot see player
+04 CanSeePlayer = false;
+05 
+06 //If player not inside bounds then exit
+07 if(!ThisCollider.bounds.Contains(PlayerTransform.position)) return;
+
+08 
+09 //Player is inside bounds, update line of sight
+10 CanSeePlayer = HaveLineSightToPlayer(PlayerTransform);
+11 }</pre></div><p>The key question for the <code class="literal">Update</code> function<a id="id587" class="indexterm"></a> is whether the player is inside the box collider attached to the enemy; this box collider represents the enemy's view or range. If the player is inside that box, the player could possibly be visible to the enemy. In this case, further checks are required to be sure. This is where the <a id="id588" class="indexterm"></a>
+<code class="literal">HaveLineSightToPlayer</code> function is essential. This function returns a Boolean (<code class="literal">true</code>/<code class="literal">false</code>) value that indicates whether the player is visible to the enemy, as shown in the following code sample 7-8:</p><div class="informalexample"><pre class="programlisting">//Function to return whether player can be seen right now
+private bool HaveLineSightToPlayer(Transform Player)
+{
+//Get angle between enemy sight and player
+float Angle = Mathf.Abs(Vector3.Angle(ThisTransform.forward, (Player.position-ThisTransform.position).normalized));
+
+ 
+    //If angle is greater than field of view, we cannot see player
+    if(Angle &gt; FieldOfView) return false;
+ 
+    //Check with raycast- make sure player is not on other side of wall
+    if(Physics.Linecast(ThisTransform.position, Player.position, SightMask)) return false;
+ 
+    //We can see player
+    return true;
+ }</pre></div><p>As we saw in the earlier chapters, visibility is determined by a two-stage process. First, the angle between the enemy look at vector and the normalized vector, which points from the enemy to the player, decides the visibility. If the angle is less than the enemy's field-of-view angle, then the<a id="id589" class="indexterm"></a> player would be in front of the enemy and they would be seen, provided no obstacles, such as walls, lie between the enemy and the player. The second test, performed by <code class="literal">Physics.Linecast</code>, determines whether an unbroken line can be drawn between the enemy and the player. If it can, then no obstacle would exist between them and the player would be seen.</p></div>

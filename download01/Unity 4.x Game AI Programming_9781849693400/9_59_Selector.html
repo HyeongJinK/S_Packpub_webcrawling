@@ -1,0 +1,31 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec57"></a>Selector</h2></div></div><hr /></div><p>Selectors are like a nested <code class="literal">if</code> statements and tick each of their children once at a time from left to right. If a child returns <code class="literal">Success</code>, the selector also returns <code class="literal">Success</code> from that point. But if a child returns <code class="literal">Failure</code>, <a id="id423" class="indexterm"></a>the selector will move on to the next child in line and return <code class="literal">Running</code>. If a child returns <code class="literal">Running</code>, so does the selector and that same child will be ticked again the next time the selector is ticked. Once the selector reaches the end of its child list, it returns <code class="literal">Failure</code> and starts ticking from the first child again on the next tick of the selector.</p><p>In this exercise, we'll set up a tree as shown in the following screenshot; a selector and three actions: <span class="strong"><strong>Patrol</strong></span>, <span class="strong"><strong>Attack</strong></span>, and <span class="strong"><strong>Idle</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400OT_09_21.jpg" /><div class="caption"><p>Selector</p></div></div><p>In our <code class="literal">patrol</code> action we'll decrease the distance with the <code class="literal">enemy</code> variable and check if it's close enough to this agent. If it's not close enough we'll just return <code class="literal">Running</code> and the selector will also return <code class="literal">Running</code> from this point, as follows:</p><div class="informalexample"><pre class="programlisting">  private int distWithEnemy = 200;
+  private int enemyHealth = 100;
+
+  public BehaveResult TickPatrolAction (Tree sender) {
+    if (distWithEnemy &gt; 100) {
+      distWithEnemy-=10;
+      Debug.Log("Enemy is getting closers! " + distWithEnemy.ToString());
+      return BehaveResult.Running;
+    }
+    else {
+      Debug.Log("Enemy spotted!");
+      return BehaveResult.Failure;
+    }
+  }</pre></div><p>Once the <code class="literal">distance</code> variable is <a id="id424" class="indexterm"></a>less than <code class="literal">100</code> we'll return <code class="literal">Failure</code>, meaning that the enemy is close enough and we shouldn't stick at <code class="literal">patrol</code> action anymore. And our selector will move on to next child node, which is the <code class="literal">attack</code> action in our case.</p><p>We attack our enemy and decrease it's health in our <code class="literal">attack</code> action. While during the attack we will return <code class="literal">Running</code>. And only when the enemy is dead we return <code class="literal">Failure</code>, meaning that our enemy is now dead and we <a id="id425" class="indexterm"></a>shouldn't attack anymore. Then, the selector will move on to next child node, which is the <code class="literal">idle</code> action, as follows:</p><div class="informalexample"><pre class="programlisting">  public BehaveResult TickAttackAction (Tree sender) {
+    enemyHealth-=5;
+    Debug.Log("Attacking enemy! enemy health: " + enemyHealth.ToString ());
+    if (enemyHealth &lt; 10) {
+      Debug.Log("Enemy's dead!");
+      return BehaveResult.Failure;
+    }
+    else { 
+      return BehaveResult.Running;
+    }
+  }
+
+  public BehaveResult TickIdleAction (Tree sender) {
+    distWithEnemy = 200;
+    enemyHealth = 100;
+    Debug.Log("Idling for a while!");
+    return BehaveResult.Success;
+  }</pre></div><p>So if you run this behavior tree you should see a list of log messages in your console that looks something similar to the following <a id="id426" class="indexterm"></a>screenshot. Our AI agent is now patrolling, checking the distance with enemy, attacking accordingly to our behavior tree and script:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400OT_09_26.jpg" /><div class="caption"><p>The battle between robots and aliens</p></div></div></div>

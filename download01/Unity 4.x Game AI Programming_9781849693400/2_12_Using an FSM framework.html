@@ -1,0 +1,148 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec17"></a>Using an FSM framework</h2></div></div><hr /></div><p>The FSM framework we're going to use here is adapted from the C# FSM framework, which can be found at <a class="ulink" href="http://unifycommunity.com" target="_blank">unifycommunity.com</a>. That framework is again a part of the Deterministic Finite State Machine framework, based on <span class="emphasis"><em>Chapter 3.1</em></span> of <span class="emphasis"><em>Game Programming Gems 1</em></span>, by <span class="emphasis"><em>Eric Dybsend</em></span>. We'll only be looking at the differences between this FSM and the one we made earlier. The complete FSM can be found with the assets that come with the book. We'll now study how the framework works and how to use it to implement our tank AI.</p><p>The <code class="literal">AdvanceFSM</code> and the <code class="literal">FSMState</code> are the two main classes of our framework. Let's take a look at them.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec24"></a>The AdvanceFSM class</h3></div></div></div><p>The <code class="literal">AdvanceFSM</code> class <a id="id98" class="indexterm"></a>basically manages all the <code class="literal">FSMState</code>(s) implemented, and keeps updated with the transitions and the current state. So, the first thing to do before using our framework is to declare the transitions and states that we plan to implement for our AI tanks.</p><p>The code in the<code class="literal"> AdvancedFSM.cs</code> file is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public enum Transition
+{
+    None = 0,
+    SawPlayer,
+    ReachPlayer,
+    LostPlayer,
+    NoHealth,
+}
+
+public enum FSMStateID
+{
+    None = 0,
+    Patrolling,
+    Chasing,
+    Attacking,
+    Dead,
+}</pre></div><p>It has a list object to store the <a id="id99" class="indexterm"></a>
+<code class="literal">FSMState</code> objects, and two local variables to store the current ID of the <code class="literal">FSMState</code> class, and current <code class="literal">FSMState</code> itself.</p><div class="informalexample"><pre class="programlisting">private List&lt;FSMState&gt; fsmStates;
+    private FSMStateID currentStateID;
+    public FSMStateID CurrentStateID
+    {
+      get
+      {
+        return currentStateID; 
+      }
+    }
+    private FSMState currentState;
+    public FSMState CurrentState
+    {
+      get
+      {
+        return currentState;
+      }
+     }</pre></div><p>The <code class="literal">AddFSMState</code> and the <code class="literal">DeleteState</code> methods add and delete the instances of our <code class="literal">FSMState</code> class in our list respectively. <a id="id100" class="indexterm"></a>When the <code class="literal">PerformTransition</code> method is called, it updates the <code class="literal">CurrentState</code> variable with the new state based on the transition.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec25"></a>The FSMState class</h3></div></div></div><p><code class="literal">FSMState</code> manages the transitions <a id="id101" class="indexterm"></a>to other states. It has a dictionary object called <code class="literal">map</code> to store the key-value pairs of transitions and states. For example, the <code class="literal">SawPlayer</code> transition maps to the <code class="literal">Chasing</code> state, and <code class="literal">LostPlayer</code> maps to the <code class="literal">Patrolling</code> state, and so on.</p><p>The code in the<code class="literal"> FSMState.cs</code> file is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public abstract class FSMState
+{
+    protected Dictionary&lt;Transition, FSMStateID&gt; map = new 
+    Dictionary&lt;Transition, FSMStateID&gt;();
+...</pre></div><p>The <code class="literal">AddTransition</code> and the <code class="literal">DeleteTransition</code> methods simply add and delete transitions from its state-transition dictionary <code class="literal">map</code> object. The <code class="literal">GetOutputState</code> method looks up from the <code class="literal">map</code> object, and returns the state based on the input transition.</p><p>The <code class="literal">FSMState</code> class also declares two abstract methods that its child classes need to implement. They are as follows:</p><div class="informalexample"><pre class="programlisting">...
+public abstract void Reason(Transform player, Transform npc);
+public abstract void Act(Transform player, Transform npc);
+...</pre></div><p>The <code class="literal">Reason</code> method has to check whether the state should do the transition to another state. And the <code class="literal">Act</code> method does the actual execution of the tasks for the <code class="literal">currentState</code> variable such as moving towards a destination point, and then chasing or attacking the player. Both methods require transformed data of the player and the <code class="literal">NPC</code> entity, which can be obtained using this class.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec26"></a>The state classes</h3></div></div></div><p>Unlike in our previous SimpleFSM <a id="id102" class="indexterm"></a>example, the states for our <code class="literal">tank</code> AI are written in separate classes inherited from the <code class="literal">FSMState</code> class as <code class="literal">AttackState</code>, <code class="literal">ChaseState</code>, <code class="literal">DeadState</code>, and <code class="literal">PatrolState</code>, each of which implements the <code class="literal">Reason</code> and <code class="literal">Act</code> methods. Let's take a look at the <code class="literal">PatrolState</code> class as an example.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec06"></a>The PatrolState class</h4></div></div></div><p>It has three <a id="id103" class="indexterm"></a>methods: a constructor, a <code class="literal">Reason</code>, and an <code class="literal">Act</code>.</p><p>The code in the <code class="literal">PatrolState.cs</code> file is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PatrolState : FSMState
+{
+
+    public PatrolState(Transform[] wp) 
+    {
+      waypoints = wp;
+      stateID = FSMStateID.Patrolling;
+
+      curRotSpeed = 1.0f;
+      curSpeed = 100.0f;
+    }
+
+    public override void Reason(Transform player, 
+    Transform npc)
+    {
+      //Check the distance with player tank
+      //When the distance is near, transition to chase state
+      if (Vector3.Distance(npc.position, player.position) &lt;= 
+      300.0f)
+      {
+        Debug.Log("Switch to Chase State");
+
+        npc.GetComponent
+        &lt;NPCTankController&gt;().SetTransition(
+        Transition.SawPlayer);
+      }
+    }
+
+    public override void Act(Transform player, Transform npc)
+    {
+      //Find another random patrol point if the current 
+      //point is reached
+
+      if (Vector3.Distance(npc.position, destPos) &lt;= 100.0f)
+      {
+        Debug.Log("Reached to the destination" +
+        point\ncalculating the next point");
+        FindNextPoint();
+      }
+
+      //Rotate to the target point
+      Quaternion targetRotation = 
+      Quaternion.LookRotation(destPos - npc.position);
+
+      npc.rotation = Quaternion.Slerp(npc.rotation, 
+      targetRotation, Time.deltaTime * curRotSpeed);
+
+      //Go Forward
+      npc.Translate(Vector3.forward * 
+      Time.deltaTime * curSpeed);
+    }
+}</pre></div><p>The constructor method takes the <code class="literal">waypoints</code> array and stores them in a local array, and then it initializes properties such as movement and rotation speed. The <code class="literal">Reason</code> method checks the distance between itself (the AI tank) and the player tank. If the player tank is in range, it sets the transition ID <a id="id104" class="indexterm"></a>to the <code class="literal">SawPlayer</code> transition using the <code class="literal">SetTransition</code> <a id="id105" class="indexterm"></a>method of the <code class="literal">NPCTankController</code> class, which looks as follows:</p><p>The code in the <code class="literal">NPCTankController.cs</code> file is as follows:</p><div class="informalexample"><pre class="programlisting">public void SetTransition(Transition t)
+{
+    PerformTransition(t);
+}</pre></div><p>It's just a wrapper method that calls the <a id="id106" class="indexterm"></a>
+<code class="literal">PerformTransition</code> method of the <code class="literal">AdvanceFSM</code> class. This method will update the <code class="literal">CurrentState</code> variable, with the one responsible for this transition, using the <code class="literal">Transition</code> object, and the state-transition dictionary <code class="literal">map</code> object from the <code class="literal">FSMState</code> class. The <code class="literal">Act</code> method simply updates the AI tank's destination point, rotates the tank in that direction, and then moves forward. Other state classes also follow this template with different reasoning and acting procedures. We've already seen them in our previous simple FSM examples, so we won't describe them here again. See if you can figure out how to set these classes up on your own. If you get stuck, the assets that come with this book will have the code for you to look at.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec27"></a>The NPCTankController class</h3></div></div></div><p>Our tank AI, the <a id="id107" class="indexterm"></a>
+<code class="literal">NPCTankController</code> class will inherit from <code class="literal">AdvanceFSM</code>. This is how we set up the states for our <code class="literal">NPC</code> tanks:</p><div class="informalexample"><pre class="programlisting">...
+    private void ConstructFSM()
+    {
+    
+
+      PatrolState patrol = new PatrolState(waypoints);
+      patrol.AddTransition(Transition.SawPlayer, 
+      FSMStateID.Chasing);
+      patrol.AddTransition(Transition.NoHealth, 
+      FSMStateID.Dead);
+
+      ChaseState chase = new ChaseState(waypoints);
+      chase.AddTransition(Transition.LostPlayer, 
+      FSMStateID.Patrolling);
+      chase.AddTransition(Transition.ReachPlayer, 
+      FSMStateID.Attacking);
+      chase.AddTransition(Transition.NoHealth, 
+      FSMStateID.Dead);
+
+      AttackState attack = new AttackState(waypoints);
+      attack.AddTransition(Transition.LostPlayer, 
+      FSMStateID.Patrolling);
+      attack.AddTransition(Transition.SawPlayer, 
+      FSMStateID.Chasing);
+      attack.AddTransition(Transition.NoHealth, 
+      FSMStateID.Dead);
+
+      DeadState dead = new DeadState();
+      dead.AddTransition(Transition.NoHealth, 
+      FSMStateID.Dead);
+
+      AddFSMState(patrol);
+      AddFSMState(chase);
+      AddFSMState(attack);
+      AddFSMState(dead);
+    }</pre></div><p>Here's the beauty of using our FSM framework. Since the states are self-managed within their respective classes, our <code class="literal">NPCTankController</code> class only needs to call the <code class="literal">Reason</code> and <code class="literal">Act</code> methods of the current <a id="id108" class="indexterm"></a>active state. This eliminates the need to write a long list of the <code class="literal">if/else</code> and <code class="literal">switch</code> statements, and bloated code. Instead, now our states are nicely packaged in the classes of their own, making the code more manageable as the number of states to implement, and the transitions between them become more and more complex in bigger projects.</p><div class="informalexample"><pre class="programlisting">...
+    protected override void FSMFixedUpdate()
+    {
+      CurrentState.Reason(playerTransform, transform);
+      CurrentState.Act(playerTransform, transform);
+    }</pre></div><p>So, this is how our framework works. In summary, the main steps to use this framework are as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Declare transitions and states in the <code class="literal">AdvanceFSM</code> class.</p></li><li><p>Write the state classes inherited from the <code class="literal">FSMState</code> class, and then implement the <code class="literal">Reason</code> and <code class="literal">Act</code> methods.</p></li><li><p>Write the custom <code class="literal">NPC</code> AI class inherited from <code class="literal">AdvanceFSM.</code></p></li><li><p>Create states from the state <a id="id109" class="indexterm"></a>classes, and then add transition and state pairs using the <code class="literal">AddTransition</code> method of the <code class="literal">FSMState</code> class.</p></li><li><p>Add those states into the state <a id="id110" class="indexterm"></a>list of the <code class="literal">AdvanceFSM</code> class, using the <code class="literal">AddFSMState</code> method.</p></li><li><p>Call the <code class="literal">CurrentState</code> variable's <code class="literal">Reason</code> and <code class="literal">Act</code> methods in the game update cycle.</p></li></ol></div><p>You can play around with the <code class="literal">AdvancedFSM.scene</code> in Unity. It'll run in the same way as our previous SimpleFSM example. But now the code and classes are more organized and manageable.</p></div></div>

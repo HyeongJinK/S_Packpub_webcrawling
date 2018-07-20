@@ -1,0 +1,225 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec77"></a>Saving data - XML files</h2></div></div><hr /></div><p>Both the <code class="literal">PlayerPrefs</code> class and third-party INI file readers are useful for saving and loading miscellaneous settings, such as high score, resolution, and volume. For complicated data, such as the state of a level, the positions of objects, or an inventory of items, both <code class="literal">PlayerPrefs</code> and INI files quickly become impractical. Instead, more robust storage solutions are needed. At this stage, we have three main options in Unity; namely XML files, binary files, and JSON files. In this section, we'll focus on XML, which refers to an HTML-like language for storing structured, hierarchical data in human-readable text. Here, we'll focus on saving and loading the position, rotation, and scale of all objects in the scene. In essence, this lets us save the complete state of a scene to a file. To start, let's begin with a scene containing some objects:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_012.jpg" /></div><p>
+</p><p>Building a scene filled with objects, ready for Serialization</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note53"></a>Note</h3><p>You can find a copy of the XML Serialization project in this book's companion files, in the <code class="literal">XMLSerialization</code> folder.</p></div><p>Next, create a new script file, <code class="literal">SerializeTransformXML.cs</code>, and then attach the file to any empty object in the scene. This script will be responsible for saving all object data to an XML file. See the following sample code to do this for the script file and comments that follow:</p><pre class="programlisting">using System.Collections; 
+using System.Collections.Generic; 
+using UnityEngine; 
+using System.IO;
+using System.Xml.Serialization; 
+//------------------------------------------ 
+[System.Serializable] 
+public class TransformDataXML 
+{ 
+    public float PosX,PosY,PosZ; 
+    public float EulerX,EulerY,EulerZ; 
+    public float ScaleX,ScaleY,ScaleZ; 
+    public string ObjectName = string.Empty; 
+} 
+//------------------------------------------ 
+[System.Serializable]
+[XmlRoot("TransformCollectionXML")] 
+public class TransformCollectionXML 
+{ 
+    [XmlArray("Items"),XmlArrayItem("TransformDataXML")] 
+    public TransformDataXML[] DataArray; 
+} 
+//------------------------------------------ 
+public class serializeTransformXML : MonoBehaviour  
+{ 
+    public Transform[] TransformArray; 
+    public string FilePath = "/Saves/MyTransformData.json"; 
+    public TransformCollectionXML MyData; 
+    //------------------------------------------ 
+    // Use this for initialization 
+    void Start () { 
+        //Get transform component 
+        TransformArray = Object.FindObjectsOfType&lt;Transform&gt;(); 
+        TransformCollectionXML MyData = new TransformCollectionXML (); 
+    } 
+    //------------------------------------------ 
+    public void SaveData() 
+    { 
+        //Create new array 
+        MyData.DataArray = new TransformDataXML[TransformArray.Length]; 
+ 
+        for(int i=0; i&lt;MyData.DataArray.Length; i++) 
+        { 
+            MyData.DataArray[i] = new TransformDataXML (); 
+            MyData.DataArray[i].PosX = TransformArray[i].position.x; 
+            MyData.DataArray[i].PosY = TransformArray[i].position.y; 
+            MyData.DataArray[i].PosZ = TransformArray[i].position.z; 
+ 
+            MyData.DataArray[i].EulerX = TransformArray[i].rotation.eulerAngles.x; 
+            MyData.DataArray[i].EulerY = TransformArray[i].rotation.eulerAngles.y; 
+            MyData.DataArray[i].EulerZ = TransformArray[i].rotation.eulerAngles.z; 
+ 
+            MyData.DataArray[i].ScaleX = TransformArray[i].localScale.x; 
+            MyData.DataArray[i].ScaleY = TransformArray[i].localScale.y; 
+            MyData.DataArray[i].ScaleZ = TransformArray[i].localScale.z; 
+ 
+            MyData.DataArray[i].ObjectName = TransformArray[i].name; 
+        } 
+ 
+  string SavePath = Application.persistentDataPath + "/" + FilePath; 
+ 
+        XmlSerializer serializer = new XmlSerializer(typeof(TransformCollectionXML)); 
+        FileStream stream = new FileStream(SavePath, FileMode.Create); 
+        serializer.Serialize(stream, MyData); 
+        stream.Close(); 
+        Debug.Log ("Saving Data To: " + SavePath); 
+    } 
+    //------------------------------------------ 
+    public void LoadData() 
+    { 
+  string LoadPath = Application.persistentDataPath + "/" + FilePath; 
+     
+        var serializer = new XmlSerializer(typeof(TransformCollectionXML)); 
+        var stream = new FileStream(LoadPath, FileMode.Open); 
+        MyData = serializer.Deserialize(stream) as TransformCollectionXML; 
+        stream.Close(); 
+ 
+        //Update objects 
+        for (int i = 0; i &lt; MyData.DataArray.Length; i++)  
+        { 
+            //Find object of matching name 
+            GameObject Selected = GameObject.Find(MyData.DataArray[i].ObjectName); 
+ 
+            //Get transform component 
+            Transform SelectedTransform = Selected.GetComponent&lt;Transform&gt;(); 
+ 
+            SelectedTransform.position = new Vector3 (MyData.DataArray [i].PosX, MyData.DataArray [i].PosY, MyData.DataArray [i].PosZ); 
+            SelectedTransform.localScale = new Vector3 (MyData.DataArray [i].ScaleX, MyData.DataArray [i].ScaleY, MyData.DataArray [i].ScaleZ); 
+            SelectedTransform.rotation = Quaternion.Euler (MyData.DataArray[i].EulerX, MyData.DataArray[i].EulerY, MyData.DataArray[i].EulerZ); 
+        } 
+    } 
+    //------------------------------------------ 
+    void Update() 
+    { 
+        if (Input.GetKeyDown (KeyCode.S))  
+        { 
+            SaveData(); 
+            return; 
+        } 
+ 
+        if (Input.GetKeyDown (KeyCode.L))  
+        { 
+            LoadData(); 
+            return; 
+        } 
+    } 
+    //------------------------------------------ 
+} 
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec71"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>For Serialization to work, you'll need to import the <code class="literal">System.IO</code> and <code class="literal">System.Xml.Serialization</code> namespaces. The former library contains classes and functions for saving data to files on the local computer, and the latter for converting data in memory to an XML string.</p></li><li style="list-style-type: disc"><p>The <code class="literal">TransformationDataXML</code> class is declared using the <code class="literal">[System.Serializable]</code> attribute. This means the class contains properties that can be transformed to text for Serialization, and it can also show its values in the object <span class="strong"><strong>Inspector</strong></span>, if declared as a public object.</p></li><li style="list-style-type: disc"><p>The <code class="literal">TransformationDataXML</code> class contains all data needed to save a transform component to a string. The variables, <span class="strong"><strong>Vector3</strong></span> (for position and scale) and a <span class="strong"><strong>Quaternion </strong></span>(for rotation) do not, by default, serialize to a text stream, and thus must be converted into primitive data types, such as floats and strings. These types are more readably serialized to a file.</p></li><li style="list-style-type: disc"><p>The <code class="literal">SerializeTransformXML</code> class contains a <code class="literal">MyData</code> variable, which contains an array of <code class="literal">TransformationDataXML</code> objects. Each one defines an object in the scene; or more accurately, each instance describes a unique transform component in the scene.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Start</code> function is used to retrieve an array of all transform components in the scene; one per game object. This approach only saves data for all game objects extant at level start up. It does not save objects instantiated at runtime, or particles in a particle system, even though they could be seen as separate objects.</p></li><li style="list-style-type: disc"><p>Each transform component is retrieved at start up from the <code class="literal">FindObjectsOfType</code> function. This function returns a static array of all instances in the scene of a matching type.</p></li><li style="list-style-type: disc"><p>The <code class="literal">SaveData</code> function serializes our array of transform components to an XML string that can be saved to a file.</p></li><li style="list-style-type: disc"><p>The <code class="literal">SaveData</code> function begins the Serialization process by converting the position, rotation, and scale transformation properties from their original data types (Vector3 and Quaternion) into primitive types; specifically floating point values. These are converted from the transform component into unique float-variables, such as <code class="literal">PosX</code>, <code class="literal">ScaleX</code>, and more.</p></li><li style="list-style-type: disc"><p>An object of the <code class="literal">XMLSerializer</code> type is created for converting binary data to XML, and a <code class="literal">Stream</code> object is created, which represents a file on the local computer. The <code class="literal">Application.persistentDataPath</code> variable is used to represent a platform-agnostic location for saving data.</p></li><li style="list-style-type: disc"><p>The <code class="literal">XMLSerializer.Serialize</code> method is called, with the <code class="literal">MyData</code> variable as an argument, to write the binary data to a file in XML format.</p></li><li style="list-style-type: disc"><p>To complete the process, the <code class="literal">Stream.Close</code> function is called to close the file.</p></li><li style="list-style-type: disc"><p>The <code class="literal">LoadData</code> function is, essentially, the opposite of the <code class="literal">SaveData</code> function. It reads data from a file, loads it into memory, and converts the data from XML into a binary version that is ready to use.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">LoadData</code> begins by reading data from a specified file. To make sure each object in the scene receives the correct transform data, the object name has been saved too. Assuming each object has a unique name in the scene, the <code class="literal">GameObject.Find</code> function is used to search the scene for the named object, and then it is assigned the associated position, rotation, and scale data that was saved.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Update</code> function is added as a temporary test measure for quickly validating and verifying the code. You can press <span class="emphasis"><em>S</em></span> on the keyboard to save all object data, and <span class="emphasis"><em>L</em></span> to load the saved version.</p></li></ul></div><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_013.jpg" /></div><p>
+</p><p>Editing serializable data from the object Inspector; from classes declared with the [System.Serializable] attribute</p><p>Great work! Let's give this code a test. Simply press play on the toolbar to run the scene, and then move some objects around inside the <span class="strong"><strong>Scene</strong></span> view, to change the arrangement away from its default.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_014.jpg" /></div><p>
+</p><p>Moving objects away from their default arrangement</p><p>Next, press <span class="emphasis"><em>S</em></span> on the keyboard to save the scene (ensure that the <code class="literal">Save</code> script is attached to only one object in the scene). The local is then printed as a debug message in the console, confirming that the save operation was successful and showing the full name and saved path.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_015.jpg" /></div><p>
+</p><p>Pressing S saves data to a local XML file</p><p>Having saved the data, stop playback and check the file location for the saved XML. Depending on your operation system, version, and file structure this may be saved in a hidden folder, which is not accessible by default. To access hidden files on Windows, open an Explorer window and select the <span class="strong"><strong>View</strong></span> tab. From there, enable the <span class="strong"><strong>Hidden Items</strong></span> checkbox. This shows all hidden files and folders.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_016.jpg" /></div><p>
+</p><p>Enabling Hidden Items from Windows Explorer</p><p>On Mac, the <code class="literal">Application.persistentDataPath</code> folder usually refers to the library folder. This can be accessed by opening a Finder window, and choosing <span class="strong"><strong>Go</strong></span> | <span class="strong"><strong>Go to </strong></span>
+<span class="strong"><strong>Folder... </strong></span>from the application menu.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_017.jpg" /></div><p>
+</p><p>Selecting Go to Folder...</p><p>On selecting <span class="strong"><strong>Go To Folder...</strong></span>, a pop-up dialog appears. From here, enter the command <code class="literal">~/Library</code>, and then select <span class="strong"><strong>Go</strong></span>.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_018.jpg" /></div><p>
+</p><p>Accessing the Library folder</p><p>On running the <code class="literal">~/Library</code> command, a range of system-specific support folders are shown where many applications settings are saved. For Unity projects, data is typically saved in the <code class="literal">Application Support</code> folder.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_019.jpg" /></div><p>
+</p><p>The Application.persistentDataPath normally refers to the Library/Application Support folder</p><p>Whether you're using Windows or Mac, the XML file will be the same. You can open this inside MonoDevelop, by simply dragging and dropping the file into the editor. MonoDevelop then loads and displays the file, with line numbering and complete syntax highlighting. The file should display a transform component (section) for each saved object, alongside the object name.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_020.jpg" /></div><p>
+</p><p>Viewing and editing an XML file in MonoDevelop</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note54"></a>Note</h3><p>A newer feature added to MonoDevelop bundled with Unity 5.4 and above is a split-screen view, allowing you to view multiple source files side by side in the same editor. This is great for comparing files, copying and pasting between files, and debugging and issue tracking. To use this, simply open multiple files in MonoDevelop.</p></div><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_021.jpg" /></div><p>
+</p><p>Multiple files viewed side by side</p><p>With multiple files open, just drag and drop one tab to the left or right-hand side, and then release the mouse to dock the tab as a new panel!</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_022.jpg" /></div><p>
+</p><p>MonoDevelop split screen view</p><p>Here is an example of XML code saved from my scene. The great thing about Serialization, provided your game objects share the same names as mine, is that you can copy and paste my XML over to your scene and reload the same arrangement; the position, rotation, and scale of objects:</p><pre class="programlisting">&lt;?xml version="1.0" encoding="us-ascii"?&gt; 
+&lt;TransformCollectionXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"&gt; 
+  &lt;Items&gt; 
+    &lt;TransformDataXML&gt; 
+      &lt;PosX&gt;-1.54&lt;/PosX&gt; 
+      &lt;PosY&gt;3.45&lt;/PosY&gt; 
+      &lt;PosZ&gt;-2.84&lt;/PosZ&gt; 
+      &lt;EulerX&gt;0&lt;/EulerX&gt; 
+      &lt;EulerY&gt;0&lt;/EulerY&gt; 
+      &lt;EulerZ&gt;0&lt;/EulerZ&gt; 
+      &lt;ScaleX&gt;1&lt;/ScaleX&gt; 
+      &lt;ScaleY&gt;1&lt;/ScaleY&gt; 
+      &lt;ScaleZ&gt;1&lt;/ScaleZ&gt; 
+      &lt;ObjectName&gt;Sphere&lt;/ObjectName&gt; 
+    &lt;/TransformDataXML&gt; 
+    &lt;TransformDataXML&gt; 
+      &lt;PosX&gt;3.563&lt;/PosX&gt; 
+      &lt;PosY&gt;4.001&lt;/PosY&gt; 
+      &lt;PosZ&gt;2.41&lt;/PosZ&gt; 
+      &lt;EulerX&gt;0&lt;/EulerX&gt; 
+      &lt;EulerY&gt;0&lt;/EulerY&gt; 
+      &lt;EulerZ&gt;0&lt;/EulerZ&gt; 
+      &lt;ScaleX&gt;1&lt;/ScaleX&gt; 
+      &lt;ScaleY&gt;1&lt;/ScaleY&gt; 
+      &lt;ScaleZ&gt;1&lt;/ScaleZ&gt; 
+      &lt;ObjectName&gt;Cylinder&lt;/ObjectName&gt; 
+    &lt;/TransformDataXML&gt; 
+    &lt;TransformDataXML&gt; 
+      &lt;PosX&gt;0&lt;/PosX&gt; 
+      &lt;PosY&gt;3&lt;/PosY&gt; 
+      &lt;PosZ&gt;0&lt;/PosZ&gt; 
+      &lt;EulerX&gt;0&lt;/EulerX&gt; 
+      &lt;EulerY&gt;0&lt;/EulerY&gt; 
+      &lt;EulerZ&gt;0&lt;/EulerZ&gt; 
+      &lt;ScaleX&gt;1&lt;/ScaleX&gt; 
+      &lt;ScaleY&gt;1&lt;/ScaleY&gt; 
+      &lt;ScaleZ&gt;1&lt;/ScaleZ&gt; 
+      &lt;ObjectName&gt;Plane&lt;/ObjectName&gt; 
+    &lt;/TransformDataXML&gt; 
+    &lt;TransformDataXML&gt; 
+      &lt;PosX&gt;0&lt;/PosX&gt; 
+      &lt;PosY&gt;0&lt;/PosY&gt; 
+      &lt;PosZ&gt;0&lt;/PosZ&gt; 
+      &lt;EulerX&gt;0&lt;/EulerX&gt; 
+      &lt;EulerY&gt;0&lt;/EulerY&gt; 
+      &lt;EulerZ&gt;0&lt;/EulerZ&gt; 
+      &lt;ScaleX&gt;1&lt;/ScaleX&gt; 
+      &lt;ScaleY&gt;1&lt;/ScaleY&gt; 
+      &lt;ScaleZ&gt;1&lt;/ScaleZ&gt; 
+      &lt;ObjectName&gt;Env&lt;/ObjectName&gt; 
+    &lt;/TransformDataXML&gt; 
+    &lt;TransformDataXML&gt; 
+      &lt;PosX&gt;0.261338055&lt;/PosX&gt; 
+      &lt;PosY&gt;7.08&lt;/PosY&gt; 
+      &lt;PosZ&gt;1.13&lt;/PosZ&gt; 
+      &lt;EulerX&gt;0&lt;/EulerX&gt; 
+      &lt;EulerY&gt;0&lt;/EulerY&gt; 
+      &lt;EulerZ&gt;0&lt;/EulerZ&gt; 
+      &lt;ScaleX&gt;1&lt;/ScaleX&gt; 
+      &lt;ScaleY&gt;1&lt;/ScaleY&gt; 
+      &lt;ScaleZ&gt;1&lt;/ScaleZ&gt; 
+      &lt;ObjectName&gt;Cube&lt;/ObjectName&gt; 
+    &lt;/TransformDataXML&gt; 
+    &lt;TransformDataXML&gt; 
+      &lt;PosX&gt;0&lt;/PosX&gt; 
+      &lt;PosY&gt;3&lt;/PosY&gt; 
+      &lt;PosZ&gt;0&lt;/PosZ&gt; 
+      &lt;EulerX&gt;50&lt;/EulerX&gt; 
+      &lt;EulerY&gt;330&lt;/EulerY&gt; 
+      &lt;EulerZ&gt;0&lt;/EulerZ&gt; 
+      &lt;ScaleX&gt;1&lt;/ScaleX&gt; 
+      &lt;ScaleY&gt;1&lt;/ScaleY&gt; 
+      &lt;ScaleZ&gt;1&lt;/ScaleZ&gt; 
+      &lt;ObjectName&gt;Directional Light&lt;/ObjectName&gt; 
+    &lt;/TransformDataXML&gt; 
+    &lt;TransformDataXML&gt; 
+      &lt;PosX&gt;4.758632&lt;/PosX&gt; 
+      &lt;PosY&gt;6.48045349&lt;/PosY&gt; 
+      &lt;PosZ&gt;4.97736645&lt;/PosZ&gt; 
+      &lt;EulerX&gt;32.1784363&lt;/EulerX&gt; 
+      &lt;EulerY&gt;224.999954&lt;/EulerY&gt; 
+      &lt;EulerZ&gt;4.13574853E-05&lt;/EulerZ&gt; 
+      &lt;ScaleX&gt;1&lt;/ScaleX&gt; 
+      &lt;ScaleY&gt;1&lt;/ScaleY&gt; 
+      &lt;ScaleZ&gt;1&lt;/ScaleZ&gt; 
+      &lt;ObjectName&gt;Main Camera&lt;/ObjectName&gt; 
+    &lt;/TransformDataXML&gt; 
+  &lt;/Items&gt; 
+&lt;/TransformCollectionXML&gt; 
+ 
+</pre><p>Now, let's try loading the saved XML file to the level. To do this, replay the game, and press <span class="emphasis"><em>L</em></span> on the keyboard. This reloads the XML back, and each object is restored to their saved position.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_023.jpg" /></div><p>
+</p><p>Loading data back from a file</p><p>Excellent work! You can now save and load data of practically any scale to and from XML. This is an important and powerful ability. However, XML is not the only persistent format around. Let's see another; specifically, JSON.</p></div></div>

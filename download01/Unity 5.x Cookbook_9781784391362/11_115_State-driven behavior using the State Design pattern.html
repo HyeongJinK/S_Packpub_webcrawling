@@ -1,0 +1,130 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec112"></a>State-driven behavior using the State Design pattern</h2></div></div><hr /></div><p>The previous <a id="id1194" class="indexterm"></a>pattern illustrated not only the usefulness of modeling game states, but also how a game manager class can grow in size and become unmanageable. To manage the complexity of many states and complex behaviors of states, the State pattern has been proposed in the <a id="id1195" class="indexterm"></a>software development community. Design patterns are general purpose software component architectures that have been tried and tested and found to be good solutions to commonly occurring software system features. The key features of the State pattern are that each state is modeled by its own class and that all states inherit (are subclassed) from a single parent state class. The states need to know about each other in order to tell the game manager to change the current state. This is a small price to pay for the division of the complexity of the overall game behaviors into separate state classes.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note57"></a>Note</h3><p>NOTE: Many thanks to the contribution from Bryan Griffiths which has helped improve this recipe.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec350"></a>Getting ready</h3></div></div></div><p>This recipe builds upon the previous recipe. So, make a copy of that project, open it, and then follow the steps for this recipe.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec351"></a>How to do it...</h3></div></div></div><p>To manage<a id="id1196" class="indexterm"></a> an object's behavior using the state pattern architecture, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Replace<a id="id1197" class="indexterm"></a> the contents of C# script class <code class="literal">GameManager</code> with the following:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+
+public class GameManager : MonoBehaviour {
+  public Text textGameStateName;
+  public Button buttonWinGame;
+  public Button buttonLoseGame;
+
+  public StateGamePlaying stateGamePlaying{get; set;}
+  public StateGameWon stateGameWon{get; set;}
+  public StateGameLost stateGameLost{get; set;}
+
+  private GameState currentState;
+
+  private void Awake () {
+    stateGamePlaying = new StateGamePlaying(this);
+    stateGameWon = new StateGameWon(this);
+    stateGameLost = new StateGameLost(this);
+  }
+
+  private void Start () {
+    NewGameState( stateGamePlaying );
+  }
+
+  private void Update () {
+    if (currentState != null)
+      currentState.StateUpdate();
+  }
+
+  public void NewGameState(GameState newState)
+  {
+    if( null != currentState)
+      currentState.OnMyStateExit();
+
+    currentState = newState;
+    currentState.OnMyStateEntered();
+  }
+
+  public void DisplayStateEnteredMessage(string stateEnteredMessage){
+    textGameStateName.text = stateEnteredMessage;
+  }
+
+  public void BUTTON_CLICK_ACTION_WIN_GAME(){
+    if( null != currentState){
+currentState.OnButtonClick(GameState.ButtonType.ButtonWinGame);
+      DestroyButtons();
+    }
+  }
+
+  public void BUTTON_CLICK_ACTION_LOSE_GAME(){
+    if( null != currentState){
+currentState.OnButtonClick(GameState.ButtonType.ButtonLoseGame);
+      DestroyButtons();
+    }
+  }
+
+  private void DestroyButtons(){
+    Destroy (buttonWinGame.gameObject);
+    Destroy (buttonLoseGame.gameObject);
+  }
+}</pre></div></li><li><p>Create a <a id="id1198" class="indexterm"></a>new C# script<a id="id1199" class="indexterm"></a> class called <code class="literal">GameState</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public abstract class GameState {
+  public enum ButtonType {
+    ButtonWinGame,
+    ButtonLoseGame
+  }
+
+  protected GameManager gameManager;
+  public GameState(GameManager manager) {
+    gameManager = manager;
+  }
+
+  public abstract void OnMyStateEntered();
+  public abstract void OnMyStateExit();
+  public abstract void StateUpdate();
+  public abstract void OnButtonClick(ButtonType button);
+}</pre></div></li><li><p>Create a<a id="id1200" class="indexterm"></a> new C# script<a id="id1201" class="indexterm"></a> class called <code class="literal">StateGamePlaying</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class StateGamePlaying : GameState {
+  public StateGamePlaying(GameManager manager):base(manager){}
+
+  public override void OnMyStateEntered(){
+    string stateEnteredMessage = "ENTER state: StateGamePlaying";
+    gameManager.DisplayStateEnteredMessage(stateEnteredMessage);
+    Debug.Log(stateEnteredMessage);
+  }
+  public override void OnMyStateExit(){}
+  public override void StateUpdate() {}
+
+
+  public override void OnButtonClick(ButtonType button){
+    if( ButtonType.ButtonWinGame == button )
+      gameManager.NewGameState(gameManager.stateGameWon);
+
+    if( ButtonType.ButtonLoseGame == button )
+      gameManager.NewGameState(gameManager.stateGameLost);
+  }
+}</pre></div></li><li><p>Create a new C# script class called <code class="literal">StateGameWon</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class StateGameWon : GameState {
+  public StateGameWon(GameManager manager):base(manager){}
+
+  public override void OnMyStateEntered(){
+    string stateEnteredMessage = "ENTER state: StateGameWon";
+gameManager.DisplayStateEnteredMessage(stateEnteredMessage);
+    Debug.Log(stateEnteredMessage);
+  }
+  public override void OnMyStateExit(){}
+  public override void StateUpdate() {}
+  public override void OnButtonClick(ButtonType button){}
+}</pre></div></li><li><p>Create a<a id="id1202" class="indexterm"></a> new C# script class called <code class="literal">StateGameLost</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class StateGameLost : GameState {
+  public StateGameLost(GameManager manager):base(manager){}
+
+  public override void OnMyStateEntered(){
+    string stateEnteredMessage = "ENTER state: StateGameLost";
+gameManager.DisplayStateEnteredMessage(stateEnteredMessage);
+    Debug.Log(stateEnteredMessage);
+  }
+  public override void OnMyStateExit(){}
+  public override void StateUpdate() {}
+  public override void OnButtonClick(ButtonType button){}
+}</pre></div></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span>, select the <span class="strong"><strong>Button-win</strong></span> button, and for its <span class="strong"><strong>Button (Script)</strong></span> component, add an <code class="literal">OnClick</code> action to call the <code class="literal">BUTTON_CLICK_ACTION_WIN_GAME()</code> method from the <span class="strong"><strong>GameManager</strong></span> component in the <span class="strong"><strong>Main Camera</strong></span> GameObject.</p></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span>, select the <span class="strong"><strong>Button-lose</strong></span> button, and for its <span class="strong"><strong>Button (Script)</strong></span> component, add <a id="id1203" class="indexterm"></a>an <code class="literal">OnClick</code> action to call the <code class="literal">BUTTON_CLICK_ACTION_LOSE_GAME()</code> method from the <span class="strong"><strong>GameManager</strong></span> component in the <span class="strong"><strong>Main Camera</strong></span> GameObject.</p></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span>, select the <span class="strong"><strong>Main Camera</strong></span> GameObject. Next, drag into the <span class="strong"><strong>Inspector</strong></span> to ensure that all three <span class="strong"><strong>GameManager (Script)</strong></span> public variables, <span class="strong"><strong>Text State Messages</strong></span>, <span class="strong"><strong>Button Win Game</strong></span>, and<span class="strong"><strong> Button Lose Game</strong></span>, have the corresponding Canvas GameObjects dragged into them (the two buttons and the UI text GameObject).</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec352"></a>How it works...</h3></div></div></div><p>The scene is very straightforward for this recipe. There is the single <span class="strong"><strong>Main Camera</strong></span> GameObject that has the <code class="literal">GameManager</code> script object component attached to it.</p><p>A C# scripted class is defined for each state that the game needs to manage—for this example, the three states <code class="literal">StateGamePlaying</code>, <code class="literal">StateGameWon</code>, and <code class="literal">StateGameLost</code>. Each of these state classes is a subclass of <code class="literal">GameState</code>. <code class="literal">GameState</code> defines properties and methods that all subclass<a id="id1204" class="indexterm"></a> states will possess:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>An enumerated type <code class="literal">ButtonType</code>, which defines the two possible button clicks that the game might generate: <code class="literal">ButtonWinGame</code> and <code class="literal">ButtonLoseGame</code>.</p></li><li style="list-style-type: disc"><p>The <code class="literal">gameManager</code> variable: so that each state object has a link to the game manager.</p></li><li style="list-style-type: disc"><p>The constructor<a id="id1205" class="indexterm"></a> method that accepts a reference to the <code class="literal">GameManager</code>: that automatically makes the <code class="literal">gameManager</code> variable refer to the passed in <code class="literal">GameManager</code> object.</p></li><li style="list-style-type: disc"><p>The four abstract methods <code class="literal">OnMyStateEntered()</code>, <code class="literal">OnMyStateExit()</code>,<code class="literal"> OnButtonClick(…)</code>, and <code class="literal">StateUpdate()</code>. Note that abstract methods must have their own implementation for each subclass.</p></li></ul></div><p>When the <code class="literal">GameManager</code> class' <code class="literal">Awake()</code> method is executed, three state objects are created, one for each of the playing/win/lose classes. These state objects are stored in their corresponding variables: <code class="literal">stateGamePlaying</code>, <code class="literal">stateGameWon</code>, and <code class="literal">stateGameLost</code>.</p><p>The <code class="literal">GameManager</code> class has a variable called <code class="literal">currentState</code>, which is a reference to the current state object at any time while the game runs (initially, it will be <code class="literal">null</code>). Since it is of the <code class="literal">GameState</code> class (the parent of all state classes), it can refer to any of the different state objects.</p><p>After <code class="literal">Awake()</code>, <code class="literal">GameManager</code> will receive a <code class="literal">Start()</code> message. This method initializes the <code class="literal">currentState</code> to be the <code class="literal">stateGamePlaying</code> object.</p><p>For each frame, the <code class="literal">GameManager</code> will receive <code class="literal">Update()</code>messages. Upon receiving these messages, <code class="literal">GameManager</code> sends a <code class="literal">StateUpdate()</code>messages to the <code class="literal">currentState</code> object. So, for each frame, the object for the current state of the game will execute those methods. For example, when the <code class="literal">currentState</code> is set to game playing, for each frame, the <code class="literal">gamePlayingObject</code> will calls its (in this case, empty) <code class="literal">StateUpdate()</code> method.</p><p>The <code class="literal">StateGamePlaying</code> class implements statements in its <code class="literal">OnButtonClick()</code> method so that when the user clicks on a button, the <code class="literal">gamePlayingObject</code> will call the <code class="literal">GameManager</code> instance's <code class="literal">NewState()</code> method, passing it the object corresponding to the new state. So, if the user clicks on <span class="strong"><strong>Button-win</strong></span>, the <code class="literal">NewState()</code> method is passed to <code class="literal">gameManager.stateGameWon</code>.</p></div></div>

@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec84"></a>StopCoroutine</h2></div></div><hr /></div><p>
+<code class="literal">StopCoroutine</code> stops <a id="id1330" class="indexterm"></a>all <code class="literal">coroutines</code> for the specific method name running on this behavior.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip46"></a>Tip</h3><p>Note that only <code class="literal">StartCoroutine</code> using a string method name can be stopped using <code class="literal">StopCoroutine</code>.</p></div><p>An example <a id="id1331" class="indexterm"></a>of <code class="literal">StopCoroutine</code> is as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+function Start() {
+  // Start Coroutine DoSomething
+  StartCoroutine("DoSomething", 5.0); 
+  //  Wait for 2 seconds
+  yield WaitForSeconds(2.0);
+  // Stop Coroutine DoSomething
+  StopCoroutine("DoSomething");
+}
+
+function DoSomething (someParameter : float) {
+  while (true) {
+      // DoSomething Loop
+      Debug.Log ("DoSomething Loop = " + Time.time);
+  // Yield execution of this coroutine and return to the main loop until next frame
+      yield;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+IEnumerator Start() {
+  // Start Coroutine DoSomething
+  StartCoroutine("DoSomething", 5.0f); 
+  //  Wait for 2 seconds
+  yield return new WaitForSeconds(2.0f);
+  // Stop Coroutine DoSomething
+  StopCoroutine("DoSomething");
+}
+
+IEnumerator DoSomething (float someParameter) {
+  while (true) {
+        // DoSomething Loop
+           Debug.Log ("DoSomething Loop = " + Time.time);
+    // Yield execution of this coroutine and return to the main loop until next frame
+          yield return null;
+  }
+}</pre></div></div>

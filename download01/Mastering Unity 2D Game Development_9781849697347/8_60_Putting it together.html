@@ -1,0 +1,273 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec57"></a>Putting it together</h2></div></div><hr /></div><p>As with other areas in this book, we will just keep things simple when implementing the sample project. You can always extend or replace it later if you wish.</p><p>We will also look at two slightly different approaches: using a scene for the shop and a layer system for the inventory.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec102"></a>Gathering the shop assets</h3></div></div></div><p>For the <a id="id738" class="indexterm"></a>shop, we'll just create a new scene to keep things simple as we expect to enter a shop and leave it when we are done.</p><p>As I couldn't find anything I liked, I created a simple shop interface for use in the scene, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_07.jpg" /></div><p>These <a id="id739" class="indexterm"></a>are just enough features for what we need to implement in the shop. For items to show in the shop, I turned back to the Web and found a fantastic site, <a class="ulink" href="http://ccrgeek.wordpress.com/" target="_blank">http://ccrgeek.wordpress.com/</a>, where there are an astounding amount of free icon spritesheets to choose from. I picked one of the <code class="literal">Weapon Icons 1.png</code> weapon<a id="id740" class="indexterm"></a> spritesheet from the amazing <span class="strong"><strong>Icons to Characters RTP</strong></span> set found at <a class="ulink" href="http://ccrgeek.wordpress.com/2012/05/29/more-converted-graphics/" target="_blank">http://ccrgeek.wordpress.com/2012/05/29/more-converted-graphics/</a>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note100"></a>Note</h3><p>You can also find the image following in the supporting assets' <code class="literal">.zip</code> file that accompanies this title.</p></div><p>Here is what it looks like:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_08.jpg" /></div><p>This gives <a id="id741" class="indexterm"></a>us a nice array of weapons to choose from. For our character, you can always use the other icon sets for equipments, tools, food, and so on, if you wish.</p><p>Lastly, on the image front, we also need some buttons (included in the supporting assets with this title), so I created a <span class="strong"><strong>Back</strong></span> button, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_09.jpg" /></div><p>I also created a <span class="strong"><strong>Buy</strong></span> button as shown here:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_10.jpg" /></div><p>Nothing too <a id="id742" class="indexterm"></a>fancy, just enough to get the job done.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec103"></a>Building the shop scene</h3></div></div></div><p>To make<a id="id743" class="indexterm"></a> the best use of the new 2D system, we can create a new scene to place the shopping interface for the player to use; so we'll create a new scene named <code class="literal">Shop</code>.</p><p>With this in place, just copy the assets from the sample assets pack accompanying this title for the shop interface into your project's <code class="literal">Assets</code> folder (<code class="literal">ShopScreen</code> images for the environment and <code class="literal">BackButton</code>, <code class="literal">BuyButton</code>, and <code class="literal">Weapon Icons 1</code> images for props). Then, drag the <code class="literal">ShopScreen</code> image on to the new scene and check that the new game object is called <span class="strong"><strong>ShopScreen</strong></span>. Additionally, ensure that the sprite-sorting layer for each of the sprite renderers is appropriate so that they get drawn in front; to do this, set all of them to the foreground layer.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note101"></a>Note</h3><p>The <code class="literal">Weapon Icons 1</code> image is a spritesheet, so remember you'll need to set its <span class="strong"><strong>SpriteMode</strong></span> option to multiple and splice it with <span class="strong"><strong>Sprite Editor</strong></span>. Each image is of 32 x 32 pixels.</p></div><p>As we are using the 2D system for the shop screen, we have greater flexibility to design the screen without using Unity's native GUI system.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note102"></a>Note</h3><p>Unity is soon going to release a new GUI system in Version 4.6, which could be used to replace what we are building here; however, currently it is not available. Nevertheless, this section is written so that it will be easily translatable and you'd not need to replace the code of the current GUI framework.</p></div><p>So first, we need to create some empty game objects to place all the UI elements we need on the screen, adding<a id="id744" class="indexterm"></a> the following assets as children of the <span class="strong"><strong>ShopScreen</strong></span> game object:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="strong"><strong>BackButton</strong></span>: An object that will capture when the user wants to exit the screen</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>OwnerSlot</strong></span>: A place to display the sprite of the shop's owner</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Slot01</strong></span> and <span class="strong"><strong>Slot06</strong></span>: The available shop inventory slots</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Purchasing section</strong></span>: An empty grouping game object; this is used so that we will be able to enable/disable all the purchasing options together</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>BuyButton</strong></span>: An object to capture the user wanting to purchase an item; it is attached to the <span class="strong"><strong>PurchasingSection</strong></span> object</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>PurchasingItem</strong></span>: A place to display the object that the user has currently <a id="id745" class="indexterm"></a>selected to buy; it is attached to the <span class="strong"><strong>PurchasingSection</strong></span> object</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note103"></a>Note</h3><p>Remember that as this is 2D, check whether each of the game object's transform has only <span class="strong"><strong>X</strong></span> and <span class="strong"><strong>Y</strong></span> position values. Reset the <span class="strong"><strong>Z</strong></span> value to zero if it is not that already!</p></div><p>When<a id="id746" class="indexterm"></a> you have put all the game objects into the scene, you should have something like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_11.jpg" /></div><p>You can just assign appropriate sprites to the <span class="strong"><strong>Buy</strong></span> and <span class="strong"><strong>Back</strong></span> buttons. The rest of the object images are dynamic and are assigned at runtime. They will also need to be able to render sprites, so add a <span class="strong"><strong>Sprite Renderer</strong></span> component to each of them.</p><p>Next, arrange each of the items appropriately on the screen according to what the item is. You should end up with something like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_12.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note104"></a>Note</h3><p>Note<a id="id747" class="indexterm"></a> that I find it useful when I have dynamic items that can display different items to temporarily assign a sample sprite to the object while placing it and then remove the sprite later.</p></div><p>Lastly, for the layout, we need to add 2D colliders to all the objects that we intend the user to be able<a id="id748" class="indexterm"></a> to click on; so, add an appropriate 2D collider to the following objects:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="strong"><strong>Slots</strong></span>: Add a <span class="strong"><strong>Box Collider 2D</strong></span> component, scaling the collider's size to fit the graphics on the screen. For example, for a 32 x 32 image, scale the collider by <code class="literal">0.32</code> for both the <span class="strong"><strong>X</strong></span> and <span class="strong"><strong>Y</strong></span> position.</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Buy button</strong></span>: Add a <span class="strong"><strong>Box Collider 2D</strong></span> component. It should scale automatically, but it's good practice to check.</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Back button</strong></span>: Add a circle collider 2D component.</p></li></ul></div><p>With the layout in place, we need something for the screen to use. So, let's add some items.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec104"></a>Creating inventory items</h3></div></div></div><p>Like with <a id="id749" class="indexterm"></a>conversation items we created in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>The Game World</em></span>, we want to be able to simply manage items that can be used or bought in our game.</p><p>First, we need a scriptable object to describe our inventory items. So, create a new script in <code class="literal">Assets\Scripts\Classes</code> named <code class="literal">InventoryItem</code> and populate it with the following structure:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class InventoryItem : ScriptableObject
+{
+  public Sprite Sprite;
+  public Vector3 Scale;
+  public string ItemName;
+  public int Cost;
+  public int Strength;
+  public int Defense;
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note105"></a>Note</h3><p>Note that we haven't implemented all of the properties we described earlier, just a subset as an example. You can add more if you wish.</p></div><p>Now that we have our scriptable object, we need an editor script to create our inventory items. So, create another script in <code class="literal">Assets\Scripts\Editor</code> named <code class="literal">InventoryItemAssetCreator</code> and populate it with the following structure (note that we are again using our generic utility class to make this very easy to implement):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+
+public class InventoryItemAssetCreator : MonoBehaviour {
+
+  [MenuItem("Assets/Create/Inventory Item")]
+  public static void CreateAsset()
+  {
+    CustomAssetUtility.CreateAsset&lt;InventoryItem&gt;();
+  }
+}</pre></div><p>With this in place, we can now create some inventory items. Create a new folder in <code class="literal">Assets\Resources</code> named <code class="literal">Inventory Items</code>, navigate to that folder, and create a new <code class="literal">InventoryItem</code> class from the <span class="strong"><strong>Create</strong></span> menu (right-click on <span class="strong"><strong>Create</strong></span> or use the <code class="literal">Project</code> folder window's <span class="strong"><strong>Create</strong></span> menu option).</p><p>With<a id="id750" class="indexterm"></a> the new <code class="literal">InventoryItem</code> asset created, we can configure our first weapon. Rename the asset to <code class="literal">Lv0_Sword</code> and then configure its properties as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_13.jpg" /></div><p>You can <a id="id751" class="indexterm"></a>configure the properties using the following settings:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Set the <span class="strong"><strong>Sprite</strong></span> property to a sword sprite image from the weapon icons spritesheet (<span class="strong"><strong>Weapon Icons 1_11</strong></span>)</p></li><li style="list-style-type: disc"><p>Scale the image up as by default it is quite small (<span class="strong"><strong>X 2</strong></span>, <span class="strong"><strong>Y 2</strong></span>, <span class="strong"><strong>Z 0</strong></span>)</p></li><li style="list-style-type: disc"><p>Give it a name via the <span class="strong"><strong>Item Name</strong></span> field</p></li><li style="list-style-type: disc"><p>Set <span class="strong"><strong>Cost</strong></span> to <code class="literal">0</code> to denote it's a free item</p></li><li style="list-style-type: disc"><p>Set <span class="strong"><strong>Strength</strong></span> to <code class="literal">5</code> and <span class="strong"><strong>Defense</strong></span> to <code class="literal">0</code> so the weapon at least has some effect</p></li></ul></div><p>Save the sword Inventory Item and then create another weapon or two in the same manner. I also created an axe with the same values.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec105"></a>Managing the shop</h3></div></div></div><p>Now that<a id="id752" class="indexterm"></a> we have our shop interface and some stock we can put in it, it's time to bring them together.</p><p>First, we need to set up a shop manager who looks after the day-to-day running of the shop, then we will add the shelves to the shop to manage where we can put the stock.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note106"></a>Note</h3><p>As the <code class="literal">ShopSlot</code> and <code class="literal">ShopManager</code> folder depend on each other, we need to create them together. Until both are complete, you will most likely see errors; just keep this in mind as we progress.</p><p>It is always the same when you are creating codependent classes.</p></div><p>First, we need the shop manager itself. To keep things neat, create a new folder in the project's <code class="literal">Assets\Scripts</code> folder named <code class="literal">Shop</code>, then create a new script in the <code class="literal">Shop</code> folder named <code class="literal">ShopManager</code>. This just ensures that any script related to shopping is stored here if you want to expand it later. The manager is only used in this one scene, so we don't need to make it a singleton.</p><p>To start off, we will just add some parameters so we can control the shop we are creating and set it up as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class ShopManager : MonoBehaviour {
+
+  public Sprite ShopOwnerSprite;
+  public Vector3 ShopOwnerScale;
+  public GameObject ShopOwnerLocation;
+  public GameObject PurchasingSection;
+  public SpriteRenderer PurchaseItemDisplay;
+  public ShopSlot[] ItemSlots;
+  public InventoryItem[] ShopItems;
+  private static ShopSlot SelectedShopSlot;
+
+  private int nextSlotIndex = 0;
+}</pre></div><p>When the player enters the shop's screen, we want to be able to display the current shop owner and a selection of their wares. So, when <code class="literal">ShopManager</code> starts, we need to configure those items as follows:</p><div class="informalexample"><pre class="programlisting">void Start () {
+  var OwnerSpriteRenderer = ShopOwnerLocation.GetComponent&lt;SpriteRenderer&gt;();
+
+  OwnerSpriteRenderer.sprite = ShopOwnerSprite;
+  OwnerSpriteRenderer.transform.localScale = ShopOwnerScale;
+
+  if (ItemSlots.Length &gt; 0 &amp;&amp; ShopItems.Length &gt; 0)
+  {
+    for (int i = 0; i &lt; ShopItems.Length; i++)
+    {
+      if (nextSlotIndex &gt; ItemSlots.Length) break;
+      ItemSlots[nextSlotIndex].AddShopItem(ShopItems[i]);
+      ItemSlots[nextSlotIndex].Manager = this;
+      nextSlotIndex++;
+    }
+  }
+}</pre></div><p>Here, we<a id="id753" class="indexterm"></a> just took the configured sprite for the shop owner and assigned it to <code class="literal">SpriteRenderer</code> then scaled for the relevant game object, and then looped through all the available slots in the shop and picked out items from its inventory to place in them, ensuring we only stock as many items as the shop can handle.</p><p>You will notice that the last function actually has an error. This is because we did not add the actions/behaviors for the <code class="literal">ShopSlot</code> folder. We will fix that shortly.</p><p>Next, we need some helper functions that represent the actions/behaviors that the shop is capable of performing; first, we add the ability to select an item for purchase using the following function:</p><div class="informalexample"><pre class="programlisting">public void SetShopSelectedItem(ShopSlot slot)
+{
+  SelectedShopSlot = slot;
+  PurchaseItemDisplay.sprite = slot.Item.Sprite;
+  PurchasingSection.SetActive(true);
+}</pre></div><p>Then, we add the ability to clear the selected item from the shop using the following function:</p><div class="informalexample"><pre class="programlisting">public void ClearSelectedItem()
+{
+  SelectedShopSlot = null;
+  PurchaseItemDisplay.sprite = null;
+  PurchasingSection.SetActive(false);
+}</pre></div><p>Finally, we add the ability to purchase the currently selected shop item using the following function:</p><div class="informalexample"><pre class="programlisting">public static void PurchaseSelectedItem()
+{
+  SelectedShopSlot.PurchaseItem();
+}</pre></div><p>Each of the<a id="id754" class="indexterm"></a> preceding functions are self-contained and controls each of the steps necessary to perform each action. They do so by enabling or disabling the screen elements, such as <code class="literal">PurchasingSection</code>, to perform actions on dependent objects such as the shop slots.</p><p>You will note that this last function is also set as <code class="literal">static</code>. This is to enable it to be accessed from anywhere in the code without referencing it or performing <code class="literal">GetComponent</code> for the <code class="literal">ShopManager</code> script.</p><p>As stated in the previous sections, it might seem like you could make everything static and avoid using <code class="literal">GetComponent</code> altogether. However, using statics has certain overheads and can lead to a messy and hard-to-diagnose code; it should not be overly used. If in doubt, don't use it, unless necessary.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip56"></a>Tip</h3><p>If you wish, you can define <code class="literal">ShopManager</code> as a singleton. However, unlike the singletons used so far, this shop will need to be destroyed when the scene is unloaded. Otherwise, you will always get the same shop. This is unless you also change how we load the shop.</p></div><p>With the <code class="literal">ShopManager</code> set up, we can now create the missing definition for <code class="literal">ShopSlot.</code> This will define the slots in the shop that remember what is being stored on the shelf. Create a new script in <code class="literal">Assets\Scripts\Shop</code> and name it <code class="literal">ShopSlot</code> replacing its contents with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class ShopSlot : MonoBehaviour {
+
+  public InventoryItem Item;
+  public ShopManager Manager;
+}</pre></div><p>Now, to add other functions for the shop slots that will be used by the manager, add the following functions to the <code class="literal">ShopSlot</code> script:</p><div class="informalexample"><pre class="programlisting">public void AddShopItem(InventoryItem item)
+{
+  var spriteRenderer = GetComponent&lt;SpriteRenderer&gt;();
+  spriteRenderer.sprite = item.Sprite;
+  spriteRenderer.transform.localScale = item.Scale;
+  Item = item;
+}
+public void PurchaseItem()
+{
+  GameState.CurrentPlayer.Inventory.Add(Item);
+  Item = null;
+  var spriteRenderer = GetComponent&lt;SpriteRenderer&gt;();
+  spriteRenderer.sprite = null;
+  Manager.ClearSelectedItem();
+}</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip57"></a>Tip</h3><p>The previous line in the <code class="literal">PurchaseItem</code> method where we add an <code class="literal">InventoryItem</code> to a players inventory will give an error until we update the player definition in the upcoming <span class="emphasis"><em>Updating the player inventory definition</em></span> section.</p></div><p>The first<a id="id755" class="indexterm"></a> function enables the ability to add an inventory item to the current slot and display it, and the second function controls how an item is purchased. Again, each function is distinct, and is just related to the task that it is to perform. Wherever possible, you should follow this pattern as it will make maintaining or extending your game much easier later.</p><p>Finally, we need to add one last piece of code in order to enable the player to click on the items in the shop slots; so, add the following function to the <code class="literal">ShopSlots</code> script:</p><div class="informalexample"><pre class="programlisting">void OnMouseDown()
+{
+  if (Item != null)
+  {
+    Manager.SetShopSelectedItem(this);
+  }
+}</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip58"></a>Tip</h3><p>In these examples, I used <code class="literal">OnMouseDown</code> to capture the mouse click/touch tap from the user. However, this doesn't seem to work on all platforms. If your intended platform doesn't support it, you just need to add some <span class="strong"><strong>input raycasting</strong></span> to test whether the GameObject has been hit.</p><p>Check the following Unity forum post for a discussion on the subject: <a class="ulink" href="http://forum.unity3d.com/threads/unity-2d-raycast-from-mouse-to-screen.211708/" target="_blank">http://forum.unity3d.com/threads/unity-2d-raycast-from-mouse-to-screen.211708/</a></p></div><p>The preceding code simply uses the interaction between the <span class="strong"><strong>Box Collider 2D</strong></span> on the input <code class="literal">OnMouseDown</code> event, and as long as there is an item in the slot, it tells the <code class="literal">ShopManager</code> script that you have selected it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec106"></a>Adding 2D button behaviors</h3></div></div></div><p>Now that we <a id="id756" class="indexterm"></a>can stock our shop and purchase items from it, we just need the ability for users to buy items when selected, so create a new script named <code class="literal">BuyButton</code> and place it in <code class="literal">Assets\Scripts\Shop</code> with the following contents:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class BuyButton : MonoBehaviour {
+
+  void OnMouseDown()
+  {
+    ShopManager.PurchaseSelectedItem();
+  }
+}</pre></div><p>The preceding <a id="id757" class="indexterm"></a>code simply calls the static <code class="literal">Purchasing</code> function we created in the <code class="literal">ShopManager</code> script earlier to buy an item on any game object that has a 2D collider placed on it, as we did with the <code class="literal">ShopSlot</code> script.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec107"></a>Updating the player inventory definition</h3></div></div></div><p>Now that <a id="id758" class="indexterm"></a>we have a definition for <code class="literal">InventoryItem</code> folders, we can update the <code class="literal">Player</code> class so that the player can carry the correct item. So, open the <code class="literal">Player</code> class under <code class="literal">Assets\Scripts\Classes</code> and update the script to use the new <code class="literal">InventoryItem</code> class instead of a string:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>using System.Collections.Generic;</strong></span>
+public class Player : Entity
+{
+<span class="strong"><strong>  public List&lt;InventoryItem&gt; Inventory = new System.Collections.Generic.List&lt;InventoryItem&gt;();</strong></span>
+  public string[] Skills;
+  public int Money;
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec108"></a>Stocking the shop</h3></div></div></div><p>With all <a id="id759" class="indexterm"></a>our scripts in place, let us return to the shop scene, start applying them, and finally get some stock displayed on the shelves.</p><p>So first, let's attach the following scripts:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Attach the <code class="literal">ShopManager</code> script to the <code class="literal">ShopScreen</code> game object</p></li><li style="list-style-type: disc"><p>Attach the <code class="literal">BuyButton</code> script to the <code class="literal">BuyButton</code> game object</p></li><li style="list-style-type: disc"><p>Attach the <code class="literal">ShopSlot</code> script to each of the slots in the shop</p></li></ul></div><p>Now, our<a id="id760" class="indexterm"></a> shop is ready to receive its owner and some inventory items to stock. So, select the <code class="literal">ShopScreen</code> game object; once you do this, you should see the following configuration options in the <span class="strong"><strong>Inspector</strong></span> pane:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_14.jpg" /></div><p>I've preconfigured <span class="strong"><strong>Shop Manager </strong></span>as an example. So, let us walk through what is available:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>We have the sprite and scale for the shop owner. I selected one of Greandal's poses and scaled him appropriately. (The mayor is multitalented and also owns almost everything in town, including the shop.)</p></li><li style="list-style-type: disc"><p>I then attached the <span class="strong"><strong>Purchasing Section</strong></span> and <span class="strong"><strong>Purchase Item Display</strong></span> item to the scene. We could have discovered these in the scene by the name or tag if you so wished. There are often many ways of doing the same thing.</p></li><li style="list-style-type: disc"><p>Next, I set the <span class="strong"><strong>Item Slots</strong></span> pane's <span class="strong"><strong>Size</strong></span> to <code class="literal">6</code> and attached each of the available slots in the shop by dragging them from the <span class="strong"><strong>Project</strong></span> hierarchy on to the <span class="strong"><strong>Inspector</strong></span> pane. You can also achieve this by using the dot icon next to each element and finding the slots in the scene.</p></li><li style="list-style-type: disc"><p>Finally, I set the <span class="strong"><strong>Shop Items</strong></span> pane's <span class="strong"><strong>Size</strong></span> to <code class="literal">2</code> and dragged the two <code class="literal">Inventory Items </code>we created earlier in <code class="literal">Assets\Resources\InventoryItems</code> on to each element of the <span class="strong"><strong>Shop Items</strong></span> array.</p></li></ul></div><p>If you now <a id="id761" class="indexterm"></a>run the scene at this point, you should see the following output:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The owner along with your shop items are displayed.</p></li><li style="list-style-type: disc"><p>Clicking on an item connects the mouse or touches the box collider on the slot and tells the shop manager to select the item in that slot.</p></li><li style="list-style-type: disc"><p>When an item is selected, the <span class="strong"><strong>Buy</strong></span> button and the selected item appears. Clicking on the <span class="strong"><strong>Buy</strong></span> button adds the item to the player's inventory, clears the selection, and removes the item from the slot.</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec109"></a>Leaving the shop</h3></div></div></div><p>The player<a id="id762" class="indexterm"></a> can purchase items from the shop (actually, they can buy anything as it's all free at the moment), but they are stuck in the shop, the doors and windows are barred, and the owner has a very stern face.</p><p>As the shop could be used from anywhere in the game, it would not make much sense to navigate through all the scenes of the game in a cycle to go back to the earlier scene. So, we need to add the ability to go back to the previous location the player was in, the place where his shop is located.</p><p>To implement this, we need to make a minor modification to the navigation manager to remember the last place where it was. Open the <code class="literal">NavigationManager</code> script from <code class="literal">Assets\Scripts\Navigation</code> and first add a new <code class="literal">using</code> statement to the beginning of the class, as follows:</p><div class="informalexample"><pre class="programlisting">using System.Collections.Generic;
+<span class="strong"><strong>using UnityEngine;</strong></span>
+</pre></div><p>This will quickly enable us to discover what the current scene is. Next, add the following <code class="literal">static</code> property:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>private static string PreviousLocation;</strong></span>
+</pre></div><p>Then, in the <code class="literal">NavigateTo</code> method, we need to store the scene the player is travelling from before we <a id="id763" class="indexterm"></a>change it; to do this, add the following line:</p><div class="informalexample"><pre class="programlisting">public static void NavigateTo(string destination)
+{
+<span class="strong"><strong>  PreviousLocation = Application.loadedLevelName;</strong></span>
+  if (destination == "Home")
+  {
+    GameState.PlayerReturningHome = false;
+  }
+  FadeInOutManager.FadeToLevel(destination); 
+}</pre></div><p>Finally, we need to add a function to enable the scenes to tell the navigation manager to go back to the previous scene; this can be done using the following lines of code:</p><div class="informalexample"><pre class="programlisting">public static void GoBack()
+{
+  var backlocation = PreviousLocation;
+  PreviousLocation = Application.loadedLevelName;
+  FadeInOutManager.FadeToLevel(backlocation); 
+}</pre></div><p>All this <a id="id764" class="indexterm"></a>function does is that it gets the previous location to a separate variable, sets the current scene as the previous location (so if you go back again, you will return to the scene you just went back from), and then transitions to the previous scene.</p><p>Now that our navigation manager has the ability to go back, we can return to our shop scene to enable the user to leave the shop and go back to the real world.</p><p>Next, create another script named <code class="literal">BackButton</code> and place it in <code class="literal">Assets\Scripts\Shop</code> with the following contents, which just calls the new <code class="literal">Navigation</code> method:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class BackButton : MonoBehaviour {
+
+  void OnMouseDown()
+  {
+    NavigationManager.GoBack();
+  }
+}</pre></div><p>Attach the preceding script to the <code class="literal">BackButton</code> game object in the shop scene. Now, the player can click on the back button and leave the shop. Granted that this can only work once you <a id="id765" class="indexterm"></a>enter the shop from another location, so let's look at how to get into the shop now.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec110"></a>Entering the shop</h3></div></div></div><p>We can<a id="id766" class="indexterm"></a> buy items from the shop and we can leave the shop, but how do we get into the shop in the first place? As we did in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>The Big Wild World</em></span>, we just need to add trigger colliders where the user can enter the shop if they wish with the caveat that they can only enter when they are in front of the shop and have pressed a key (the up arrow button in this case).</p><p>To enable this, we need a very similar script to the <code class="literal">NavigationPrompt</code> script that we used in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>The Game World</em></span>, (always reuse) but with a few differences.</p><p>Create a new script named <code class="literal">ShopEntry</code> in <code class="literal">Assets\Scripts\Navigation</code>, then replace its contents to add a variable to control whether we can enter the shop or not; we do this using the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class ShopEntry : MonoBehaviour {
+
+  bool canEnterShop;
+}</pre></div><p>As with the <code class="literal">Navigation</code> script, we handle the changing of the state of this flag with a single function. So, if we need to change anything else, we can do so using the following code:</p><div class="informalexample"><pre class="programlisting">void DialogVisible(bool visibility)
+{
+  canEnterShop = visibility;
+  MessagingManager.Instance.BroadcastUIEvent(visibility);
+}</pre></div><p>Next, we need trigger handlers to detect when the player is in front of a shop; refer to the following code that tells you how to add trigger handlers:</p><div class="informalexample"><pre class="programlisting">void OnTriggerEnter2D(Collider2D col)
+{
+  DialogVisible(true);
+}
+
+void OnTriggerExit2D(Collider2D col)
+{
+  DialogVisible(false);
+}</pre></div><p>Now that<a id="id767" class="indexterm"></a> we can tell when the player is in front of the shop, we just need to capture whether they have pressed the up arrow button to enter the shop. We do that in the <code class="literal">Update</code> method as follows:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  if (canEnterShop &amp;&amp; Input.GetKeyDown(KeyCode.UpArrow))
+  {
+    if (NavigationManager.CanNavigate(this.tag))
+    {
+      NavigationManager.NavigateTo(this.tag);
+    }
+  }
+}</pre></div><p>Finally, we add a little GUI touch as follows to let the player know that they can enter the shop when they are in front of it:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  if (canEnterShop)
+  {
+    //layout start
+    GUI.BeginGroup(
+      new Rect(
+        Screen.width / 2 - 150, 
+        50, 
+        300, 
+    50));
+
+    //the menu background box
+    GUI.Box(new Rect(0, 0, 300, 250), "");
+
+    //Dialog detail—updated to get better detail
+    GUI.Label(
+      new Rect(15, 10, 300, 68), 
+    "Do you want to Enter the Shop?    (Press up)");
+
+    //layout end
+    GUI.EndGroup();
+  }
+}</pre></div><p>Trying to enter the shop isn't going to get us very far if the game doesn't know it exists, so add this scene to the project's <span class="strong"><strong>Build Settings</strong></span> and also update the <code class="literal">NavigationManager</code> script to include a new <code class="literal">Route</code> asset for the shop, as follows:<a id="id768" class="indexterm"></a></p><div class="informalexample"><pre class="programlisting">public static Dictionary&lt;string, Route&gt; RouteInformation = new Dictionary&lt;string, Route&gt;() {
+  {"Battle", new Route {CanTravel = true}},
+  {"World", new Route {RouteDescription = "The big bad world", CanTravel = true}},
+  {"Cave", new Route {RouteDescription = "The deep dark cave", CanTravel = false}},
+  {"Home", new Route {RouteDescription = "Home sweet home", CanTravel = true}},
+  {"Kirkidw", new Route {RouteDescription = "The grand city of Kirkidw", CanTravel = true}},
+<span class="strong"><strong>  {"Shop", new Route {CanTravel = true}},</strong></span>
+};</pre></div><p>With the scripts in place, we now need to add them to the player's home in front of the shop. Open the <code class="literal">Home</code> scene and add a new empty game object named <code class="literal">Shop</code> as a child of the <span class="strong"><strong>WorldBounds</strong></span> grouper game object (because it takes us out of the scene), attach the <code class="literal">ShopEntry</code> script, and add a <span class="strong"><strong>Box Collider 2D</strong></span> component (set as a trigger), as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_15.jpg" /></div><p>The collider just needs to be shaped or scaled enough so that our 2D character will collide with it when he passes in front of the shop.</p><p>Finally, to <a id="id769" class="indexterm"></a>ensure that we navigate to the new <span class="strong"><strong>Shop</strong></span> scene, we need to add a new tag named <code class="literal">Shop</code> and assign it to the new <code class="literal">Shop</code> game object, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_16.jpg" /></div><p>Now, when you run the <code class="literal">Home</code> scene and the player runs in front of the shop, you should get a nice new prompt in front of the shop; tapping the up arrow key will help you enter the shop and navigate inside it, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_08_17.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec111"></a>Managing your inventory</h3></div></div></div><p>Now that <a id="id770" class="indexterm"></a>you have got to grips with building a GUI with a 2D system as it stands, what about the existing GUI framework that Unity has? Well, as a comparison, let's put in a small player inventory viewer for the player and cover off the difficulties of using 2D with the GUI framework.</p><p>To start off, create a new script named <code class="literal">PlayerInventoryDisplay</code> in the <code class="literal">Scripts</code> root folder, <code class="literal">Assets\Scripts</code>, and replace its contents with the following code, adding some basic variables:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class PlayerInventoryDisplay : MonoBehaviour
+{
+  bool displayInventory = false;
+  Rect inventoryWindowRect;
+  private Vector2 inventoryWindowSize = new Vector2(150, 150);
+  Vector2 inventoryItemIconSize = new Vector2(130, 32);
+
+  float offsetX = 6;
+  float offsetY = 6;
+}</pre></div><p>The names <a id="id771" class="indexterm"></a>of each property should be fairly self-explanatory:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>A flag to confirm whether the inventory window is displayed or not</p></li><li style="list-style-type: disc"><p>Some sizes for the window and the inventory content sizes</p></li><li style="list-style-type: disc"><p>Offsets to space things out in the window</p></li></ul></div><p>Next, we add an <code class="literal">Awake</code> function to set up the display of the inventory window as follows. Based on <a id="id772" class="indexterm"></a>the size of the screen, it will be displayed on different devices (we don't want it to take up the whole screen):</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+  inventoryWindowRect = new Rect(
+    Screen.width - inventoryWindowSize.x,
+    Screen.height - 40 - inventoryWindowSize.y,
+    inventoryWindowSize.x,
+    inventoryWindowSize.y);
+}</pre></div><p>Then, in an <code class="literal">OnGUI</code> function, we will draw a button to open the inventory (this could instead be mapped to a key if you wish or both), and if the inventory is to be displayed, we will draw a custom window using the following code:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  if (GUI.Button(
+    new Rect(
+      Screen.width - 40, 
+      Screen.height - 40, 
+      40, 
+      40),
+  "INV"))
+  {
+    displayInventory = !displayInventory;
+  }
+  if (displayInventory)
+  {
+    inventoryWindowRect = GUI.Window(
+      0, 
+      inventoryWindowRect, 
+      DisplayInventoryWindow, 
+    "Inventory");
+
+    inventoryWindowSize = new Vector2(
+      inventoryWindowRect.width, 
+    inventoryWindowRect.height);
+  }
+}</pre></div><p>For the main <a id="id773" class="indexterm"></a>inventory window, we will use the custom ability of the Unity3D GUI to draw the window's contents (as opposed to the manual way, we applied it with the navigation prompt with <code class="literal">BeginGroup</code> and <code class="literal">EndGroup</code>). We implement this with a new function as follows, and this is where we but heads between the Unity3D GUI system and the new Unity3D 2D system:</p><div class="informalexample"><pre class="programlisting">void DisplayInventoryWindow(int windowID)
+{
+  var currentX = 0 + offsetX;
+  var currentY = 18 + offsetY;
+  foreach (var item in GameState.CurrentPlayer.Inventory)
+  {
+    Rect texcoords = item.Sprite.textureRect;
+
+    texcoords.x /= item.Sprite.texture.width;
+    texcoords.y /= item.Sprite.texture.height;
+    texcoords.width /= item.Sprite.texture.width;
+    texcoords.height /= item.Sprite.texture.height;
+
+    GUI.DrawTextureWithTexCoords(new Rect(
+      currentX,
+      currentY,
+      item.Sprite.textureRect.width,
+      item.Sprite.textureRect.height),
+      item.Sprite.texture,
+    texcoords);
+
+
+    currentX += inventoryItemIconSize.x;
+    if (currentX + inventoryItemIconSize.x + offsetX &gt; inventoryWindowSize.x)
+    {
+      currentX = offsetX;
+      currentY += inventoryItemIconSize.y;
+      if (currentY + inventoryItemIconSize.y + offsetY &gt; inventoryWindowSize.y)
+      {
+        return;
+      }
+    }
+  }
+}</pre></div><p>In this<a id="id774" class="indexterm"></a> window, we loop through all the items in the player inventory (if there are any) and display them as buttons. You could then wire up these buttons to actions, if the item has any, such as potions to be drank or bombs to be dropped.</p><p>Now, one thing to note is that the existing GUI system <span class="emphasis"><em>does not natively support sprites</em></span>; we have to use the GUI <code class="literal">Texture2D</code> drawing function to pick up the specific sprite out of the spritesheet manually.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note107"></a>Note</h3><p>The texture on the sprite is purely a reference to the full image the sprite came from. So, if your image is a single sprite, this is OK. However, in most cases, it will be from a spritesheet and will show the entire spritesheet.</p></div><p>So, we have to use the <code class="literal">GUI.DrawTextureWithTexCoords</code> function to grab the specific image <a id="id775" class="indexterm"></a>region from the spritesheet. You should also note that we have to scale the region to the size of the full image because the coordinates given for the specific sprite are unscaled.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip59"></a>Tip</h3><p>Thanks to one of the book reviewers, Trond Abusdal, for finding the preceding solution. I tried and couldn't get it to work. Fantastic find!</p></div><p>One warning is that if you try to read the pixels from the sprite's texture, you will get an <span class="strong"><strong>Access denied</strong></span> message because of the way sprites are imported.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip60"></a>Tip</h3><p>All is not lost, as in future, we will have the <span class="emphasis"><em>all new</em></span> <span class="strong"><strong>Unity UI</strong></span>, which will support <a id="id776" class="indexterm"></a>sprites fully.</p></div><p>Alternatively, if you want, you can use separate sprites (losing some of the performance you get from spritesheets) for buttons, which makes the GUI implementation easier; alternatively, you can have separate textures for things you want to draw with the GUI system (just alter the import settings from <span class="strong"><strong>Sprite</strong></span> to <span class="strong"><strong>Texture</strong></span> and click on <span class="strong"><strong>Apply</strong></span>).</p><p>With the <a id="id777" class="indexterm"></a>script in place, just add it to the <code class="literal">Player</code> game object in the <code class="literal">Home</code> scene so the player can rummage through their pockets.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec112"></a>Adding the Player inventory behavior</h3></div></div></div><p>Now that we<a id="id778" class="indexterm"></a> are done with the whole inventory saga, we need to ensure that when the player buys a weapon, they are able to use it and defend themselves when attacked.</p><p>There are a couple of ways of doing this as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Updating the player's statistics on acquiring the equipment</p></li><li style="list-style-type: disc"><p>Having assigned slots that affect the player's statistics</p></li><li style="list-style-type: disc"><p>All items in the inventory affect the statistics and are queried during the battle</p></li></ul></div><p>The first step is the simplest as it requires no additional UI, which we will implement in the next code.</p><p>Open up the <code class="literal">Player</code> script under <code class="literal">Assets\Scripts\Classes</code> and add the following additional function:</p><div class="informalexample"><pre class="programlisting">public void AddinventoryItem(InventoryItem item)
+{
+  this.Strength += item.Strength;
+  this.Defense += item.Defense;
+  Inventory.Add(item);
+}</pre></div><p>The preceding code gives us a single point to control how the player's statistics are affected when we grant them a new inventory item in the game.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip61"></a>Tip</h3><p>Ideally, you would want to add further control to this function, including making the player's <span class="strong"><strong>Inventory</strong></span> property read only to avoid accidental direct access, which would bypass the calculation of the player's statistics.</p></div><p>Now that <a id="id779" class="indexterm"></a>we have our helper function to control a player's <span class="strong"><strong>Inventory</strong></span> property, we just need to update the <code class="literal">ShopSlot</code> script we created earlier to use the following new function:</p><div class="informalexample"><pre class="programlisting">public void PurchaseItem()
+{
+<span class="strong"><strong>  GameState.CurrentPlayer.AddinventoryItem(Item);</strong></span>
+  Item = null;
+  var spriteRenderer = GetComponent&lt;SpriteRenderer&gt;();
+  spriteRenderer.sprite = null;
+  Manager.ClearSelectedItem();
+}</pre></div><p>Now, when the player receives a new weapon, their statistics will be improved. Our budding player is ready to return to the big bad world to take on those horrible goblins that block his way.</p></div></div>

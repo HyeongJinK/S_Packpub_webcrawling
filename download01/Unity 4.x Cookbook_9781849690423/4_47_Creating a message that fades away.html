@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec50"></a>Creating a message that fades away</h2></div></div><hr /></div><p>Often, <a id="id284" class="indexterm"></a>we want to show the user a message briefly, and then have that message disappear. A nice way to do this is to have the <a id="id285" class="indexterm"></a>message fade away, and then destroy itself when is it no longer visible. The following screenshot is an example of such a message:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_16.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec170"></a>How to do it...</h3></div></div></div><p>To display a message that fades away, please follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new <code class="literal">GUIText</code> object, position it and change the font size and text as desired.</p></li><li><p>Attach the following script class to this <code class="literal">GUIText</code> object:</p><div class="informalexample"><pre class="programlisting">// file: FadingMessage
+using UnityEngine;
+using System.Collections;
+public class FadingMessage : MonoBehaviour {
+  const float DURATION = 2.5f;
+
+  private void Update() {
+    if( Time.time &gt; DURATION){
+      Destroy(gameObject);
+    }
+    
+    Color newColor = guiText.material.color;
+    
+    float proportion = (Time.time / DURATION);
+    newColor.a = Mathf.Lerp(1, 0, proportion);
+    guiText.material.color = newColor;
+  }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec171"></a>How it works...</h3></div></div></div><p>The <code class="literal">DURATION</code> constant<a id="id286" class="indexterm"></a> defines the number of seconds the image is to be visible for. Once the scene has been running for this many seconds, the parent game object is destroyed. Dividing the elapsed time by <code class="literal">DURATION</code> gives the proportion of the life for this fading message (between 0.0 and 1.0). The <code class="literal">Mathf.Lerp()</code> method takes such a proportion as its third argument, and gives the corresponding value scaled between the first and second arguments—in this case, we wish to lerp from 1 (full alpha visibility) to 0 (invisible). This alpha value is assigned to a copy of the <code class="literal">guiText</code> material's color, and then this new color object is reassigned to the <code class="literal">guiText</code> object's material.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec172"></a>There's more...</h3></div></div></div><p>Here are some details you don't want to miss:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec46"></a>Facilitating several messages by using a prefab</h4></div></div></div><p>By creating a <a id="id287" class="indexterm"></a>prefab, and placing a copy of the <code class="literal">GUIText</code> object with this script attached, messages can be easily created as required by the main game manager. Assuming that the <code class="literal">fadingMessagePrefab</code> public variable has been assigned a value of the prefab via the Inspector view, then the following method could be called whenever a fading message is required. This will then create an instance of the <code class="literal">GUIText</code> prefab and sets its text property to whatever message is passed in to the method:</p><div class="informalexample"><pre class="programlisting">  private void CreateMessage(string message)
+  {
+    GameObject fadingMessageGO = (GameObject)Instantiate(fadingMessagePrefab);
+
+    fadingMessageGO.guiText.text = message;
+  }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec47"></a>Improving efficiency by re-using a single GUIText message</h4></div></div></div><p>Another strategy is to have a single <code class="literal">GUIText</code> object always present in the scene, but not always visible. Each time a message is to be displayed to the user, the new text is set and the alpha is set back to 1 (or its desired starting value), and then it will start fading again.</p></div></div></div>

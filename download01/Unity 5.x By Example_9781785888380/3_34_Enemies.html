@@ -1,0 +1,95 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec38"></a>Enemies</h2></div></div><hr /></div><p>The next step is to <a id="id216" class="indexterm"></a>create something for the player to shoot and destroy, which can also destroy us, namely, enemy characters. These take the form of roaming spaceships that will be spawned into the scene at regular intervals and will follow the player, drawing nearer and nearer. Essentially, each enemy represents a complex of multiple behaviors working together and these should be implemented as separate scripts. Let's <a id="id217" class="indexterm"></a>consider them in turn:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Health</strong></span>: Each enemy supports health functionality. They begin the scene with a specified amount of health and will be destroyed when that health falls below <span class="emphasis"><em>0</em></span>. We already have a <code class="literal">Health</code> script created to handle this behavior.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Movement</strong></span>: Each enemy will constantly be in motion, traveling in a straight line along a forward trajectory. That is, each enemy will continually travel forward in the direction it is looking.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Turning</strong></span>: Each enemy will rotate and turn toward the player even when the player moves. This ensures that the enemy always faces the player and, in combination with the movement functionality, will always be traveling toward the player.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Scoring</strong></span>: Each enemy rewards the player with a score value when destroyed. Thus, the death of an enemy will increase the player score.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Damage</strong></span>: Each enemy causes damage to the player on collision. Enemies cannot shoot but will harm the player on proximity.</p></li></ul></div><p>Now that we've identified the range of behaviors applicable to an enemy, let's create an enemy in the scene. We'll make one specific enemy, create a prefab from that, and use it as the basis to instantiate many enemies. Start by selecting the player character in the scene and duplicate the object with <span class="emphasis"><em>Ctrl</em></span> + <span class="strong"><strong>D</strong></span> or select <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Duplicate</strong></span> from the application menu. This <a id="id218" class="indexterm"></a>initially creates a second player. See <span class="emphasis"><em>Figure 3.34</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_34.png.jpg" /><div class="caption"><p>Figure 3.34: Duplicating the Player object</p></div></div><p>Rename the object to <code class="literal">Enemy</code> and ensure that it is not tagged as <code class="literal">Player</code>, as there should be one and only one object in the scene with the <code class="literal">Player</code> tag, namely, the real player. In addition, temporarily disable the <code class="literal">Player</code> game object, allowing us to focus more clearly on the <code class="literal">Enemy</code> object in the <span class="strong"><strong>Scene</strong></span> tab. See <span class="emphasis"><em>Figure 3.35</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_35.png.jpg" /><div class="caption"><p>Figure 3.35: Removing a Player tag from the enemy, if applicable</p></div></div><p>Select the sprite child object of the duplicated enemy, and from the <span class="strong"><strong>Object Inspector</strong></span>, click on the <span class="strong"><strong>Sprite</strong></span> field of the <span class="strong"><strong>Sprite Renderer</strong></span> component to pick a new sprite. Pick one of the darker imperial ships for the enemy character, and the sprite will update for the object in the <a id="id219" class="indexterm"></a>viewport. See <span class="emphasis"><em>Figure 3.36</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_36.png.jpg" /><div class="caption"><p>Figure 3.36: Selecting a sprite for the Sprite Renderer component</p></div></div><p>After changing the sprite to an enemy character, you may need to adjust the rotation values to align the sprite to the parent forward vector, ensuring that the sprite is looking in the same direction as the forward vector. See <span class="emphasis"><em>Figure 3.37</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_37.png.jpg" /><div class="caption"><p>Figure 3.37: Adjusting enemy sprite rotation</p></div></div><p>Now, select the parent object for the enemy and remove the <span class="strong"><strong>Rigidbody</strong></span>, <span class="strong"><strong>PlayerController</strong></span>, and <code class="literal">BoundsLock</code> components, but keep the <span class="strong"><strong>Health</strong></span> component as the enemy should support health. See <span class="emphasis"><em>Figure 3.38</em></span>. In addition, feel free to resize the <span class="strong"><strong>Capsule Collider</strong></span> <a id="id220" class="indexterm"></a>component to better approximate the <code class="literal">Enemy</code> object.</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_38.png.jpg" /><div class="caption"><p>Figure 3.38: Adjusting enemy sprite rotation</p></div></div><p>Let's start coding the enemy, focusing on movement. Specifically, the enemy should continually move in the forward direction at a specified speed. To achieve this, create a new script file named <code class="literal">Mover.cs</code>. This should be attached to the <code class="literal">Enemy</code> object. The code for this class is included in <span class="emphasis"><em>Code Sample 3.6</em></span>.</p><div class="informalexample"><pre class="programlisting">//------------------------------
+using UnityEngine;
+using System.Collections;
+//------------------------------
+public class Mover : MonoBehaviour
+{
+  //------------------------------
+  private Transform ThisTransform = null;
+  public float MaxSpeed = 10f;
+  //------------------------------
+  // Use this for initialization
+  void Awake () 
+  {
+    ThisTransform = GetComponent&lt;Transform&gt;();
+  }
+  //------------------------------
+  // Update is called once per frame
+  void Update () 
+  {
+    ThisTransform.position += ThisTransform.forward * MaxSpeed * Time.deltaTime;
+  }
+  //------------------------------
+}
+//------------------------------</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec15"></a>Code Sample 3.6</h3></div></div></div><p>The following points summarize the code sample:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <a id="id221" class="indexterm"></a>
+<code class="literal">Mover</code> script moves an object at a specified speed (<code class="literal">MaxSpeed</code> per second) along its forward vector. To do this, it uses the <span class="strong"><strong>Transform</strong></span> component.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Update</code> function is responsible for updating the position of the object. In short, it multiplies the forward vector by the object speed and adds this to its existing position to move the object further along its line of sight. The <code class="literal">Time.deltaTime</code> value is used to make the motion frame rate independent—moving the object per second as opposed to per frame. More information on <a id="id222" class="indexterm"></a>
+<code class="literal">deltaTime</code> can be found in the online Unity documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Time-deltaTime.html" target="_blank">http://docs.unity3d.com/ScriptReference/Time-deltaTime.html</a>.</p></li></ul></div><p>Press play on the toolbar to test run your code. It's always good practice to frequently test code like this. Your enemy may move too slow or too fast. If so, stop playback to exit game mode, and select the enemy in the scene. From the <span class="strong"><strong>Object Inspector</strong></span>, adjust the <span class="strong"><strong>Max Speed</strong></span> value of the <span class="strong"><strong>Mover</strong></span> component. See <span class="emphasis"><em>Figure 3.39</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_39.png.jpg" /><div class="caption"><p>Figure 3.39: Adjusting enemy speed</p></div></div><p>In addition to moving in a straight line, the enemy should also continually turn to face the player wherever they move. To achieve this, we'll need another script file that works similarly to the player controller script. While the player turns to face the cursor, the enemy turns to face the player. This functionality should be encoded in a new script file called <a id="id223" class="indexterm"></a>
+<code class="literal">ObjFace.cs</code>. This script should be attached to the enemy. See <span class="emphasis"><em>Code Sample 3.7</em></span>:</p><div class="informalexample"><pre class="programlisting">//------------------------------
+using UnityEngine;
+using System.Collections;
+//------------------------------
+public class ObjFace : MonoBehaviour
+{
+  //------------------------------
+  public Transform ObjToFollow = null;
+  public bool FollowPlayer = false;
+  private Transform ThisTransform = null;
+  //------------------------------
+  // Use this for initialization
+  void Awake () 
+  {
+    //Get local transform
+    ThisTransform = GetComponent&lt;Transform&gt;();
+
+    //Should face player?
+    if(!FollowPlayer)return;
+
+    //Get player transform
+    GameObject PlayerObj = GameObject.<span class="strong"><strong>FindGameObjectWithTag</strong></span>("Player");
+    if(PlayerObj != null)
+      ObjToFollow = PlayerObj.GetComponent&lt;Transform&gt;();
+  }
+  //------------------------------
+  // Update is called once per frame
+  void Update ()
+  {
+    //Follow destination object
+    if(ObjToFollow==null)return;
+
+    //Get direction to follow object
+    Vector3 DirToObject = ObjToFollow.position - ThisTransform.position;
+
+    if(DirToObject != Vector3.zero)
+      ThisTransform.localRotation = <span class="strong"><strong>Quaternion.LookRotation</strong></span>(DirToObject.normalized,Vector3.up);
+  }
+  //------------------------------
+}
+//------------------------------</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec16"></a>Code Sample 3.7</h3></div></div></div><p>The following points summarize the code sample:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <a id="id224" class="indexterm"></a>
+<code class="literal">ObjFace</code> script will always rotate an object so that its forward vector points towards a destination point in the scene.</p></li><li style="list-style-type: disc"><p>In the <code class="literal">Awake</code> event, the <code class="literal">FindGameObjectWithTag</code> function is called to retrieve a reference to the one and only object in the scene tagged as a player, which should be the player spaceship. The player represents the default look-at destination for an enemy object.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Update</code> function is called automatically once per frame and will generate a displacement vector from the object location to the destination location, and this represents the direction in which the object should be looking. The <code class="literal">Quaternion.LookRotation</code> function accepts a direction vector and will rotate an object to align the forward vector with the supplied direction. This keeps the object looking towards the destination. More information on <a id="id225" class="indexterm"></a>
+<code class="literal">LookRotation</code> can be found at the online Unity documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Quaternion.LookRotation.html" target="_blank">http://docs.unity3d.com/ScriptReference/Quaternion.LookRotation.html</a>.</p></li></ul></div><p>This is looking excellent! However, before testing this code, make sure that the <code class="literal">Player</code> object in the scene is tagged as <span class="strong"><strong>Player</strong></span>, is enabled, and the enemy is offset away from the player. Be sure to enable the <span class="strong"><strong>Follow Player</strong></span> checkbox from the <span class="strong"><strong>Obj Face</strong></span> component in the <span class="strong"><strong>Object Inspector</strong></span>. When you do this, the enemy will always turn to face the player. See <span class="emphasis"><em>Figure 3.40</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_40.png.jpg" /><div class="caption"><p>Figure 3.40: Enemy spaceship moving towards the player</p></div></div><p>Now, if and when the enemy finally collides with the player, it should deal out damage and <a id="id226" class="indexterm"></a>potentially kill the player. To achieve this, a collision between the enemy and player must be detected. Let's start by configuring the enemy. Select the <span class="strong"><strong>Enemy</strong></span> object, and from the <span class="strong"><strong>Object Inspector</strong></span>, enable the <span class="strong"><strong>Is Trigger</strong></span> checkbox in the <span class="strong"><strong>Capsule Collider</strong></span> component. This changes the <span class="strong"><strong>Capsule Collider</strong></span> component to allow a true intersection between the player and enemy and prevent Unity from blocking the collision. See <span class="emphasis"><em>Figure 3.41</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_41.png.jpg" /><div class="caption"><p>Figure 3.41: Changing the Enemy Collider to a trigger</p></div></div><p>Next, we'll create a script that detects collisions and will continually deal out damage to the player as and when they occur and for as long as the collision state remains. Refer to the following <a id="id227" class="indexterm"></a>code (<code class="literal">ProxyDamage.cs</code>), which should be attached to the enemy character:</p><div class="informalexample"><pre class="programlisting">//------------------------------
+using UnityEngine;
+using System.Collections;
+//------------------------------
+public class ProxyDamage : MonoBehaviour
+{
+  //------------------------------
+  //Damage per second
+  public float DamageRate = 10f;
+  //------------------------------
+  void OnTriggerStay(Collider Col)
+  {
+    Health H = Col.gameObject.GetComponent&lt;Health&gt;();
+
+    if(H == null)return;
+
+    H.HealthPoints -= DamageRate * Time.deltaTime;
+  }
+  //------------------------------
+}
+//------------------------------</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec17"></a>Code Sample 3.8</h3></div></div></div><p>The following points summarize the code sample:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <a id="id228" class="indexterm"></a>
+<code class="literal">ProxyDamage</code> script should be attached to an enemy character and it will deal out damage to any colliding object with a <code class="literal">Health</code> component.</p></li><li style="list-style-type: disc"><p>The <code class="literal">OnTriggerStay</code> event is called once every frame for as long as an intersection state persists. During this function, the <code class="literal">HealthPoints</code> value of the <code class="literal">Health</code> component is reduced by the <code class="literal">DamageRate</code> (which is measured as damage per second).</p></li></ul></div><p>After attaching the <code class="literal">ProxyDamage</code> script to an enemy, use the <span class="strong"><strong>Object Inspector</strong></span> to set the <span class="strong"><strong>Damage Rate</strong></span> of the <span class="strong"><strong>Proxy Damage</strong></span> component. This represents how much health should be reduced on the player, per second, during a collision. For a challenge, I've set the value to <code class="literal">100</code> health points. See <span class="emphasis"><em>Figure 3.42</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_42.png.jpg" /><div class="caption"><p>Figure 3.42: Setting the Damage Rate for a Proxy Damage component</p></div></div><p>Now let's give things a test run. Press play on the toolbar and attempt a collision between the player <a id="id229" class="indexterm"></a>and enemy. After one second, the player should be destroyed. Things are coming along well. However, we'll need more than one enemy to make things challenging.</p></div></div>

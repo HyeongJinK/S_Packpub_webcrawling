@@ -1,0 +1,65 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec73"></a>Data Serialization</h2></div></div><hr /></div><p>Data is a raw material for most games; even relatively simple games require characters to have health, damage points, shields, and others in addition to item data, such as <span class="emphasis"><em>sword-strength</em></span>, <span class="emphasis"><em>sword-fragility</em></span>, and so on. Thus, data is critically important for gameplay to behave as intended. When it comes to working with data, developers typically have two main needs. The need to save or export the state of a game at any time, allowing the player to save their progress and then to resume it at a later time even if the device has been powered-off between play sessions; and second, the need to import data, such as weapon-stats and character sheets (and the player's saves), from external sources created by designers, such as a spreadsheet or a database. The basic idea is that in-game objects and entities, and their relationships and states, should have a correspondence with data. We should be able to represent the state of a game in a way that can be meaningfully committed to a file or to text. </p><p>The process of saving and loading the state of a game to and from data is known as <span class="strong"><strong>Serialization</strong></span>. For example, if the complete state of a game object could be saved to a text file such that, on the basis of the data in the file alone, it would be possible to reconstruct the game object at any later time on any computer, the game object has, effectively, been serialized. Let's take a look at some possibilities for Serialization in Unity, based on the native feature-set, as opposed to commercial third-party add-ons:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Player preferences</strong></span>: You'll often need to store user-preferences for a game, regardless of platform: such as <span class="emphasis"><em>screen resolution</em></span>, <span class="emphasis"><em>full-screen/windowed </em></span>
+<span class="emphasis"><em>mode</em></span>, <span class="emphasis"><em>volume</em></span>, and <span class="emphasis"><em>graphical quality</em></span>. Typically, gamers adjust these settings from an options screen to improve the experience for their computer, and they expect these settings to be retained across play sessions. An easy way to achieve this in Unity is with <code class="literal">PlayerPrefs</code>, a platform-agonistic class for persistently saving and loading <span class="emphasis"><em>small data</em></span>- such as boolean, integer, string, and floating point values -these are characteristic of user preference data. This class is covered in-depth later in this chapter; more information can be found online (<a class="ulink" href="https://docs.unity3d.com/ScriptReference/PlayerPrefs.html" target="_blank">https://docs.unity3d.com/ScriptReference/PlayerPrefs.html</a>). In short, it works by saving key-value data pairs (such as <span class="emphasis"><em>HighScore=1000</em></span>, <span class="emphasis"><em>Name=Joe</em></span>) to a designated location on the computer where values can later be retrieved quickly and easily by specifying the <span class="emphasis"><em>key</em></span>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>INI files (Initialization files)</strong></span>: They are human-readable text files containing a line-by-line database of key-value pair settings (such as <span class="emphasis"><em>HighScore=1000</em></span>, <span class="emphasis"><em>Name=Joe</em></span>). These files are commonly used in PC games, for the Windows and Mac platforms, and they're an effective method for saving user-preference data. However, Unity has no native support for INI files, and instead migrates the equivalent functionality into the <code class="literal">PlayerPrefs</code> class, as mentioned in the previous point. Nevertheless, through free add-ons and scripts, Unity can read INI files, (see <a class="ulink" href="http://blog.kennyist.com/?p=864" target="_blank">http://blog.kennyist.com/?p=864</a>) and we'll see examples of this later and why we'd want to do this. An example INI file is given here for storing basic game information:</p></li></ul></div><pre class="programlisting">      [Player] 
+      ; Basic Player Data 
+      Name=John Doe 
+      Gender=Male 
+      Level=50 
+ 
+       [Score] 
+      ; Score information 
+      HighScore=8695088457694      
+      Player=John Doe 
+      LastScore=758596068896 
+ 
+       [Preferences] 
+      ; Settings 
+      Resolution=1920x1080      
+      Volume=0.8 
+      FullScreen=true 
+      MouseSpeed=75 
+</pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>XML (Extensible Markup Language)</strong></span>: XML is a dedicated, declarative language commonly used across the Web and related industries, for describing data in human-readable form. XML is, in essence, a general industry-standard for writing data (for exporting and importing data between applications). Using this standard, you can describe nearly anything, from user preferences to character sheets! XML has many advantages for encoding large quantities of game data. Firstly, it's easy to read and write; secondly, it's an established standard supported by many platforms and applications, making it easier for your game to inter-operate with third-party data sources; and thirdly, it features an intuitive hierarchical structure that matches Unity's scene hierarchy. Unity offers extensive support for XML through its mono library classes, as we'll see later. More information on XML can be found online at <a class="ulink" href="https://en.wikipedia.org/wiki/XML" target="_blank">https://en.wikipedia.org/wiki/XML</a>. An example XML file, which is content-equivalent to the INI file given previously, is shown here:</p></li></ul></div><pre class="programlisting">      &lt;root&gt; 
+          &lt;Player&gt; 
+              &lt;Name&gt;Jon Doe&lt;/Name&gt; 
+              &lt;Gender&gt;Male&lt;/Gender&gt; 
+              &lt;Level&gt;50&lt;/Level&gt; 
+          &lt;/Player&gt; 
+          &lt;Score&gt; 
+              &lt;HighScore&gt;8695088457694&lt;/HighScore&gt; 
+              &lt;Player&gt;Jon Doe&lt;/Player&gt; 
+              &lt;LastScore&gt;758596068896&lt;/LastScore&gt; 
+          &lt;/Score&gt; 
+          &lt;Preferences&gt; 
+              &lt;Resolution&gt;1920x1080&lt;/Resolution&gt; 
+              &lt;Volume&gt;0.8&lt;/Volume&gt; 
+              &lt;FullScreen&gt;true&lt;/FullScreen&gt; 
+              &lt;MouseSpeed&gt;75&lt;/MouseSpeed&gt; 
+          &lt;/Preferences&gt; 
+      &lt;/root&gt; 
+</pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>JSON</strong></span>: More recently, criticism has been leveled against XML for its verbose style in which values must be surrounded by opening and closing key tags in HTML style (for example: <code class="literal">&lt;FullScreen&gt;</code> and <code class="literal">&lt;/FullScreen&gt;</code>). This can make XML long, bloated, and larger in file size than needed. For this reason, <span class="strong"><strong>JSON</strong></span> (<span class="strong"><strong>JavaScript Object Notation</strong></span>) is often proposed as a lighter weight alternative for describing the same data. JSON is not yet as widely supported by the Web and other standards as XML, but nonetheless it is a popular standard that is increasingly adopted in games. Reflecting this popularity, Unity 5.3 onwards features native support for reading and writing JSON data: (<a class="ulink" href="https://docs.unity3d.com/Manual/JSONSerialization.html" target="_blank">https://docs.unity3d.com/Manual/JSONSerialization.html</a>). An example JSON file is featured here:</p></li></ul></div><pre class="programlisting">      { 
+        "root": { 
+          "Player": { 
+            "Name": "Jon Doe", 
+            "Gender": "Male", 
+            "Level": "50" 
+          }, 
+          "Score": { 
+            "HighScore": "8695088457694", 
+            "Player": "Jon Doe", 
+            "LastScore": "758596068896" 
+          }, 
+          "Preferences": { 
+            "Resolution": "1920x1080", 
+            "Volume": "0.8", 
+            "FullScreen": "true", 
+            "MouseSpeed": "75" 
+          } 
+        } 
+      } 
+</pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Binary</strong></span>: One problem surrounding <span class="emphasis"><em>INI</em></span>, <span class="emphasis"><em>XML</em></span>, and <span class="emphasis"><em>JSON</em></span> files when they are stored locally, is that gamers can open, read, and even change them-especially for Windows and Mac games. This opens up the possibility of cheating, as gamers can tweak files to confer benefits and advantages to themselves. For some genres and types, such open access to data files is not problematic, but often developers want to protect against cheating, and there are many reasons for why this is so. </p><p>One is to maintain a challenging and rewarding game experience. Another is to prevent cheating that could significantly impact the fun-factor in a multiplayer game. And another is to prevent the player from unlocking, modding, or circumventing monetization features and in-app purchases. The solution instead is to save and load data to and from formats that are not human-readable. One method is the binary format; and we'll consider this later too. More information can be found online here: <a class="ulink" href="https://gamedevelopment.tutsplus.com/tutorials/how-to-save-and-load-your-players-progress-in-unity--cms-20934" target="_blank">https://gamedevelopment.tutsplus.com/tutorials/how-to-save-and-load-your-players-progress-in-unity--cms-20934</a>. An example of a binary file opened and viewed in a text editor is shown here:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_001.jpg" /></div><p>
+</p><p>Binary files are difficult to edit successfully</p></li></ul></div></div>

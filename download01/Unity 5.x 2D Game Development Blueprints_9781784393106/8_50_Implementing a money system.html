@@ -1,0 +1,27 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec48"></a>Implementing a money system</h2></div></div><hr /></div><p>The player will earn money by killing enemies, and he is able to spend it by buying new towers to defend his fortress. By doing this, we need a game element that is able to handle a money system, in which the amount of money can increase and decrease according to the player's actions. This section will teach us how to create a money system and integrate it in the UI.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec30"></a>Creating and placing the money counter</h3></div></div></div><p>As we previously did in the Lives Counter, we need to create the UI structure. So, let's create a new UI Image by right-clicking on the Hierarchy panel and then <span class="strong"><strong>UI/Image</strong></span>. Rename it <code class="literal">MoneyCounter</code> and assign to the <span class="strong"><strong>Source Image</strong></span> the <code class="literal">currency_square</code> image of our package. Also, we should press the <span class="strong"><strong>Set Native Size</strong></span> button and then scale it down. As before, make it a tiny bit transparent by setting the alpha channel of the color variable to <code class="literal">232</code>. Finally, place it just under the <code class="literal">LivesCounter</code>, as in the following image:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_007.jpg" /></div><p>
+</p><p>Similarly to the <code class="literal">LivesCounter</code>, let's create a <code class="literal">uiText</code> and rename it <code class="literal">MoneyCounterText</code>. Its settings are the same as the <code class="literal">LivesCounterText</code>, except the text placeholder:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_008.jpg" /></div><p>
+</p><p>As a result, our scene will be like this:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_009.jpg" /></div><p>
+</p><p>Again, it looks nice, but it won't change if we press play. We still need to add a script on it. This will handle the interaction with all the rest of the game, by updating the amount of money. To create the script, select <code class="literal">MoneyCounter</code> and, in the Inspector, navigate to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>New Script</strong></span>. Name it <code class="literal">MoneyCounterScript</code>, and then click on <span class="strong"><strong>Create and Add</strong></span>. Double-click to open it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec31"></a>Scripting the money counter</h3></div></div></div><p>The money counter works similarly to the lives counter we already built in the previous section. Since we are going to use the <code class="literal">UI</code> classes once more, we need to add the following at the beginning of our script:</p><pre class="programlisting">using UnityEngine.UI; 
+</pre><p>Again, we need two public variables to store the reference to the <code class="literal">uiText</code> and the money of the player. However, we don't need a maximum, since the player is supposed to increase his money as much as he can:</p><pre class="programlisting">    private Text uiText; 
+    private int money = 0; 
+</pre><p>In the <code class="literal">Start()</code> function, just get the reference to the <code class="literal">uiText</code> and update the graphic through a function. We can write it in a few steps:</p><pre class="programlisting">  void Start () { 
+        uiText = this.GetComponentInChildren&lt;Text&gt;(); 
+        updateMoneyCounter(); 
+  } 
+</pre><p>Now, we need a generic function to increase or decrease money by a certain amount. We have to take into account that it is not possible to have a negative amount of money, and the graphic needs to be updated:</p><pre class="programlisting">    public void changeMoney(int ammount){ 
+        money += ammount; 
+        if (money &lt; 0){ 
+            money = 0; 
+        } 
+        updateMoneyCounter(); 
+    } 
+</pre><p>Furthermore, a function to get the amount of money is useful for many reasons, such as checking to see whether the player can afford a tower. We need this function, since the amount of money is a private variable, and we don't want to make it public since it can only change with the <code class="literal">changeMoney()</code> function, which updates the graphic too:</p><pre class="programlisting">    public int getMoney() { 
+        return money; 
+    } 
+</pre><p>Finally, the function to update the graphic, which is very similar to the one used for the lives counter:</p><pre class="programlisting">    private void updateMoneyCounter(){ 
+        uiText.text = "$" + money.ToString(); 
+    } 
+</pre><p>We don't have any parameters to set, so just save the script and our money system is ready to go.</p></div></div>

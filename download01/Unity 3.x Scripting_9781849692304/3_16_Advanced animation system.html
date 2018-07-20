@@ -1,0 +1,136 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec20"></a>Advanced animation system</h2></div></div><hr /></div><a id="id364" class="indexterm"></a><p>It is time for us to add additional animations to our character and teach it to hold a weapon and shoot. Open the <span class="strong"><strong>CH_Animation</strong></span> script that takes care of all of our animations. Declare a new <code class="literal">public</code> variable called <code class="literal">ShootingAnimationSpeed</code>
+<a id="id365" class="indexterm"></a>, which will take care of our animation speed. Next, we will go to the <code class="literal">DetermineDirection</code> function<a id="id366" class="indexterm"></a> and, at the very top, check whether the player is shooting; if not we will make our character play animation, with a specified speed:</p><div class="informalexample"><pre class="programlisting">public var ShootingAnimationSpeed : float = 1.0;
+...
+function DetermineDirection(){
+    if(Controller.bIsShooting ){
+animation["shoot"].speed = ShootingAnimationSpeed;
+animation.Play("shoot");
+...
+}</pre></div><p>That could have been all; our character can shoot and play animation that ensures that the projectile will shoot in the right direction. There is only one small problem—if we try to walk and shoot, we will notice that our character will stop playing walking animation and will translate with shooting animation playing. That is an obvious flaw that we will fix with animation mixing.</p><a id="id367" class="indexterm"></a><p>But before we get to it, let's cover some basic theory to understand how animations work and how they affect our character.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec23"></a>Working of an animation</h3></div></div></div><a id="id368" class="indexterm"></a><p>While we animate the character, we record all transforms and rotations of bones. Bones manipulate vertices to move them according to specified animation commands. But before we can transport our model to Unity, we have to perform animation baking.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip03"></a>Tip</h3><p><span class="strong"><strong>Warning</strong></span></p><p>Do not attempt to bake animations inside Unity. This could lead to various problems that will cause animations to break and deform.</p></div><p>Baking makes every bone remember the way it should be rotated and transformed over time (all transformations are done locally to the object). In other words, at every frame that animations are playing, they will have complete control over how bones transform and rotate, which is exactly what we want, if not trying to control every bone manually through code (this topic could use a book on its own, therefore will not be covered in here). Instead, we will use a trick mentioned previously—animation mixing.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec31"></a>Animation mixing</h4></div></div></div><a id="id369" class="indexterm"></a><p>The theory behind animation mixing is simple and can be explained in a few sentences. Basically, we are creating new animations by slicing the original animation to be able to influence a part of a body that we need to animate. Clear? Not really? Practically, we will take an animation of shooting and transform all spine manipulations to the new animation. This way we can have animation that animates only the top part of the body, without influencing the bottom, which could be used for walking or running animation (lower part of the body – play running animation, upper part – shooting). Let's see this in action:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>The code snippet given just after this list will go into the <code class="literal">Start</code> function, at the very top of the <code class="literal">CH_Animation</code> script.</p></li><li><p>Add mixing transformation to the spine bone of our character; it will now have a separate animation playing.</p></li><li><p>Put <code class="literal">idle</code>, <code class="literal">run</code>, <code class="literal">walk</code>, and <code class="literal">jump</code> animations at the lower layer in the <code class="literal">Start</code> function.</p></li><li><p>Set <code class="literal">WrapMode</code> for animations.</p></li><li><p>Set the playing speed for all animations.</p></li><li><p>Start playing the <code class="literal">idle</code> animation.<a id="id370" class="indexterm"></a></p></li></ol></div><p>Here is the <code class="literal">Start</code> function in the <code class="literal">CH_Animation</code> script:</p><div class="informalexample"><pre class="programlisting">function Start (){
+animation.AddClip(animation["shoot"].clip, "shootUpperBody");
+animation.AddClip(animation["shoot2"].clip, "shootUpperBody2");
+animation["shootUpperBody"].AddMixingTransform(transform.Find("COG/Spine"));
+animation["shootUpperBody2"].AddMixingTransform(transform.Find("COG/Spine"));
+animation["idle"].layer = -1;
+animation["run"].layer = -1;
+animation["jump"].layer = -1;
+animation["walk_forward"].layer = -1;
+animation["walk_backward"].layer = -1;
+animation["walk_side"].layer = -1;
+animation.wrapMode = WrapMode.Loop;
+animation["jump"].wrapMode = WrapMode.ClampForever;
+animation["shoot"].wrapMode = WrapMode.Once;
+animation["shoot2"].wrapMode = WrapMode.Once;
+animation["shootUpperBody"].wrapMode = WrapMode.Once;
+animation["shootUpperBody2"].wrapMode = WrapMode.Once;
+animation["idle"].speed = idleAnimationSpeed;
+animation["walk_forward"].speed = forwardAnimationSpeed;
+animation["run"].speed = runningAnimationSpeed;
+animation["walk_backward"].speed = backwardAnimationSpeed;
+animation["walk_side"].speed = strafingAnimationSpeed;
+animation["jump"].speed = jumpingAnimationSpeed;
+animation["shootUpperBody"].speed = ShootingAnimationSpeed;
+animation["shootUpperBody2"].speed = ShootingAnimationSpeed
+animation.Stop();
+animation.Play("idle");
+}</pre></div><p><code class="literal">AddClip</code> is a function within the animation component that we have attached to our character. It creates a new animation using <code class="literal">animation["shoot"].clip</code> as a reference, and we called it <code class="literal">shootUpperBody</code>. A new animation clip on its own doesn't do anything. To make it influence our character, we will add transforms to it at specific bones. Basically, we are manually specifying bones that will be animated while this clip will be playing, by using the <code class="literal">transform.Find</code> function that returns the object (bone in this case) from the hierarchy.</p><p>However, this is not the end of it. If we decide to play walking and <code class="literal">upper body shooting</code> animations at the same time, they will be in conflict, as both animations are playing and have the exact same priority. To fix this issue, Unity allows us to put animations at different layers and manually tweak the priority and influence of each layer.</p><p>By default, a higher animation layer has a higher priority of playing, and every single bone will be animated based on transforms that are specified at the highest levels. This way we can have walking and shooting animations playing at the same time without conflicting, as shooting animation doesn't affect the bottom part of the body.</p><a id="id371" class="indexterm"></a><p>As we've created animation just for shooting with upper body, we might replace all the <code class="literal">Shoot</code> animations by <code class="literal">shootUpperBody</code>
+<a id="id372" class="indexterm"></a>; similarly, we can replace <code class="literal">shoot2</code> by <code class="literal">shootUpperBody2</code>.</p><p>If character is shooting, we will continuously play shooting animation. If it is not shooting, we will play another animation. Change the code at the top of the <code class="literal">DetermineDirection</code> functio<a id="id373" class="indexterm"></a>n in the <code class="literal">CH_Animation</code> script as follows:</p><div class="informalexample"><pre class="programlisting">if(Controller.bIsShooting ){
+    if(!animation.IsPlaying("shootUpperBody"))
+        animation.Play("shootUpperBody");
+}
+if(Controller.bIsShootingAlt ){
+    if(!animation.IsPlaying("shootUpperBody2"))
+        animation.Play("shootUpperBody2");
+}</pre></div><p>There is one more fix that we need to make in our animation script. In the <code class="literal">DetermineDirection</code> function<a id="id374" class="indexterm"></a>, where we check if our character is moving forward, in the <code class="literal">else</code> statement:</p><div class="informalexample"><pre class="programlisting">else{
+Controller.Speed = forwardSpeed;
+if (!animation.IsPlaying("shootUpperBody") || !animation.IsPlaying("shootUpperBody2"))
+animation.CrossFade("walk_forward",0.5, PlayMode.StopSameLayer);
+else{
+ animation.CrossFade("walk_forward",0.5, PlayMode.StopSameLayer);
+}
+}    </pre></div><p>Same fix is required where we are playing the <code class="literal">idle</code> animation:</p><div class="informalexample"><pre class="programlisting">else if (Controller.MoveDirection == Vector3.zero &amp;&amp; (animation.IsPlaying("shootUpperBody") || !animation.IsPlaying("shootUpperBody2"))){    
+        animation.CrossFade("idle",0.5);    
+}</pre></div><p>This way we are smoothly changing the animation if we stopped shooting.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec32"></a>Animation script overview</h4></div></div></div><a id="id375" class="indexterm"></a><p>The following code snippet shows how the <code class="literal">CH_Animation</code> script<a id="id376" class="indexterm"></a> should look by now:</p><div class="informalexample"><pre class="programlisting">private var Controller : CH_Controller;
+public var forwardSpeed : float = 5.0;
+public var backwardSpeed : float = 3.0;
+public var strafingSpeed : float = 4.0;
+public var runningSpeed : float = 10.0;
+public var idleAnimationSpeed : float = 1.0;
+public var forwardAnimationSpeed : float = 6.0;
+public var runningAnimationSpeed : float = 3.0;
+public var backwardAnimationSpeed : float = 1.0;
+public var strafingAnimationSpeed : float = 1.0;
+public var jumpingAnimationSpeed : float = 1.5;
+public var ShootingAnimationSpeed : float = 5.0;
+function Awake(){
+Controller = this.gameObject.GetComponent("CH_Controller");
+}
+function Start(){
+animation.AddClip(animation["shoot"].clip, "shootUpperBody");
+animation.AddClip(animation["shoot2"].clip, "shootUpperBody2"); 
+animation["shootUpperBody"].AddMixingTransform(transform.Find("COG/Spine"));
+animation["shootUpperBody2"].AddMixingTransform(transform.Find("COG/Spine"));
+animation.wrapMode = WrapMode.Loop;
+animation["jump"].wrapMode = WrapMode.ClampForever;
+animation["shoot"].wrapMode = WrapMode.Once;
+animation["shoot2"].wrapMode = WrapMode.Once; 
+animation["shootUpperBody"].wrapMode = WrapMode.Once;
+animation["shootUpperBody2"].wrapMode = WrapMode.Once;
+animation["idle"].layer = -1;
+animation["run"].layer = -1;
+animation["jump"].layer = -1;
+animation["walk_forward"].layer = -1;
+animation["walk_backward"].layer = -1;
+animation["walk_side"].layer = -1;
+animation["idle"].speed = idleAnimationSpeed;
+animation["walk_forward"].speed = forwardAnimationSpeed;
+animation["run"].speed = runningAnimationSpeed;
+animation["walk_backward"].speed = backwardAnimationSpeed;
+animation["walk_side"].speed = strafingAnimationSpeed;
+animation["jump"].speed = jumpingAnimationSpeed;
+animation["shootUpperBody"].speed = ShootingAnimationSpeed;
+animation["shootUpperBody2"].speed = ShootingAnimationSpeed;
+animation.Stop();
+animation.Play("idle");
+}
+function Update (){DetermineDirection();}
+function DetermineDirection(){
+    if(Controller.bIsShooting ){
+    if(!animation.IsPlaying("shootUpperBody"))
+        animation.Play("shootUpperBody");
+    }
+    if(Controller.bIsShootingAlt ){
+    if(!animation.IsPlaying("shootUpperBody2"))
+        animation.Play("shootUpperBody2");
+    }
+if (Controller.inAir){
+        if(!Controller.jumpClimax) {
+    animation.CrossFade("jump",0.5,PlayMode.StopSameLayer);
+        }
+        else {
+        animation.Rewind("jump");		
+        }
+    }
+    else if (Controller.MoveDirection == Vector3.zero &amp;&amp; (!animation.IsPlaying("shootUpperBody") || !animation.IsPlaying("shootUpperBody2"))){    
+        animation.CrossFade("idle",0.5);    
+    }
+    else if (Controller.MoveDirection.z &gt; 0){
+        if (Controller.isRunning){
+        Controller.Speed = runningSpeed; 
+        animation.CrossFade("run",0.5);
+        }
+        else{
+        Controller.Speed = forwardSpeed;
+        if (!animation.IsPlaying("shootUpperBody") || !animation.IsPlaying("shootUpperBody2"))
+        animation.CrossFade("walk_forward",0.5, PlayMode.StopSameLayer);
+        }
+    }
+    else if (Controller.MoveDirection.z &lt; 0){
+        Controller.Speed = backwardSpeed;
+        animation.CrossFade("walk_backward",0.5, PlayMode.StopSameLayer);
+    }
+    else if (Controller.MoveDirection.x &gt; 0 || Controller.MoveDirection.x &lt; 0){
+        Controller.Speed = strafingSpeed;
+        animation.CrossFade("walk_side",0.5, PlayMode.StopSameLayer);
+    }    
+}</pre></div><a id="id377" class="indexterm"></a><p>We are done! Now, our character can run and shoot enemies at the same time. Next, we will talk about pickups creation.</p></div></div></div>

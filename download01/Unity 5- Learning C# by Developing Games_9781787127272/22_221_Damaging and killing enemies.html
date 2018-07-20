@@ -1,0 +1,60 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch22lvl1sec205"></a>Damaging and killing enemies</h2></div></div><hr /></div><p>Now that we have enemies moving towards us, we need some way for them to be damaged and killed! Let's<a id="id1041" class="indexterm"></a> do that <a id="id1042" class="indexterm"></a>now by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>The first thing we need to do is make it easy to get a reference to all of our enemies, so let's add a tag by going to the <span class="strong"><strong>Inspector</strong></span> tab and navigating to <span class="strong"><strong>Tag</strong></span> | <span class="strong"><strong>Add Tag…</strong></span>. Once the <span class="strong"><strong>Tag</strong></span> and <span class="strong"><strong>Layer</strong></span> menus come up, type in <code class="literal">Enemy</code> into <span class="strong"><strong>Element 0</strong></span>. </p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_09_21.jpg" /></div></li><li><p>Then, go back to the <span class="strong"><strong>Ghost_mesh</strong></span> child object, add the <span class="strong"><strong>Enemy</strong></span> tag to it, and rename the parent object to <code class="literal">Ghost</code>:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_09_22.jpg" /></div></li><li><p>Next, let's dive<a id="id1043" class="indexterm"></a> back into <a id="id1044" class="indexterm"></a>MonoDevelop, edit our <code class="literal">PhoneBehaviour</code> script and add the following code in bold to its <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">    // Update is called once per frame
+    void Update () {
+        // Are we holding down the right mouse button
+        if (Input.GetMouseButton(1) &amp;&amp; !cameraActive)
+        {
+            SetCameraActive(true);
+        }
+        else if(cameraActive &amp;&amp; !Input.GetMouseButton(1))
+        {
+            SetCameraActive(false);
+        }
+
+        if (cameraActive &amp;&amp; Input.GetMouseButton(0))
+        {
+            StartCoroutine(CameraFlash());
+
+            GameObject[] enemyList = GameObject.FindGameObjectsWithTag("Enemy");
+
+            foreach (GameObject enemy in enemyList)
+            {
+                if (enemy.activeInHierarchy)
+                {
+                    EnemyBehaviour behaviour = enemy.GetComponent&lt;EnemyBehaviour&gt;();
+                    behaviour.TakeDamage();
+                }
+            }
+
+        }</pre></div><p>Now that we say there is a <code class="literal">TakeDamage</code> function in our <code class="literal">EnemyBehaviour</code> class, we need to add that in. Open the <code class="literal">EnemyBehaviour</code> class, and first, we need to create some variables as follows:</p><div class="informalexample"><pre class="programlisting">public float health = 100.0f;
+private float currentHealth;</pre></div></li><li><p>Next, we <a id="id1045" class="indexterm"></a>need <a id="id1046" class="indexterm"></a>to initialize <code class="literal">currentHealth</code>, so add the following code in bold to the <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">void Start () 
+{
+  GoToNextState();
+<span class="strong"><strong>  currentHealth = health</strong></span>
+<span class="strong"><strong>;</strong></span>
+}</pre></div></li><li><p>Now, let's add in the <code class="literal">TakeDamage</code> function, as follows:</p><div class="informalexample"><pre class="programlisting">public void TakeDamage()
+  {
+    // The closer I am, the more damage I do
+    float damageToDo = 100.0f - (GetDistance () * 5);
+
+    if (damageToDo &lt; 0)
+      damageToDo = 0;
+    if (damageToDo &gt; health)
+      damageToDo = health;
+
+    currentHealth -= damageToDo;
+
+    if(currentHealth &lt;= 0)
+    {
+      state = State.Die;
+    }
+    else
+    {
+      // If we're not dead, now that we took a picture the // enemy 
+          // knows where we are
+      followRange = Mathf.Max(GetDistance(), followRange);
+      state = State.Follow;
+    }
+
+    print ("Ow! - Current Health: " + currentHealth.ToString());
+
+  }</pre></div></li><li><p>Now, save your <a id="id1047" class="indexterm"></a>scene and <a id="id1048" class="indexterm"></a>all the script files, and play the game! The following screenshot depicts the game screen:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_09_23.jpg" /></div></li></ol></div><p>Now, the enemy will follow you when you take its picture and the closer you are to it, the more it will<a id="id1049" class="indexterm"></a> get damaged, which <a id="id1050" class="indexterm"></a>you can see by looking at the console!</p></div>

@@ -1,0 +1,118 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec42"></a>Understanding Vertex and Fragment Shaders</h2></div></div><hr /></div><p>The best way to <a id="id321" class="indexterm"></a>understand how Vertex and Fragment Shaders work is by creating one yourself. This recipe will show you how to write one of these shaders, which will simply apply a texture to a model and multiply it by a given color, as shown in the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_06_01.jpg" /></div><p>The shader presented here is very simple, and it will be used as a starting base for all the other Vertex and Fragment Shaders.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec111"></a>Getting ready</h3></div></div></div><p>For this recipe, we will need a new shader. Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new shader.</p></li><li><p>Create a new material and assign the shader to it.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec112"></a>How to do it…</h3></div></div></div><p>In all the previous <a id="id322" class="indexterm"></a>chapters, we have always been able to refit Surface Shaders. This is not the case anymore as Surface and Fragment Shaders are structurally different. We will need the following changes:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Delete all the properties of the shader, replacing them with the following:</p><div class="informalexample"><pre class="programlisting">_Color ("Color", Color) = (1,0,0,1) // Red
+_MainTex ("Base texture", 2D) = "white" {}</pre></div></li><li><p>Delete all the code in the <code class="literal">SubShader</code> block and replace it with this one:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>Pass</strong></span> {
+    CGPROGRAM
+
+    #pragma vertex vert             
+    #pragma fragment frag
+
+    half4 _Color;
+sampler2D _MainTex;
+
+    <span class="strong"><strong>struct</strong></span> vertInput {
+        float4 pos : POSITION;
+float2 texcoord : TEXCOORD0;
+    };
+
+    <span class="strong"><strong>struct</strong></span> vertOutput {
+        float4 pos : SV_POSITION;
+float2 texcoord : TEXCOORD0;
+
+    };
+
+    vertOutput vert(vertInput input) {
+        vertOutput o;
+        o.pos = mul(UNITY_MATRIX_MVP, input.pos);
+        o.texcoord = input.texcoord;
+        return o;
+    }
+
+    half4 frag(vertOutput output) : COLOR{
+        half4 mainColour = tex2D(_MainTex, output.texcoord);
+        return mainColour * _Color;
+}
+    
+<span class="strong"><strong>ENDCG</strong></span>
+}</pre></div></li></ol></div><p>This will also be the base for all future Vertex and Fragment Shaders.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec113"></a>How it works…</h3></div></div></div><p>As the name <a id="id323" class="indexterm"></a>suggests, Vertex and Fragment Shaders work in two steps. The model is first passed through a <span class="strong"><strong>vertex function</strong></span>; the result is then <a id="id324" class="indexterm"></a>inputted to a <span class="strong"><strong>fragment function</strong></span>. Both these functions are assigned using <code class="literal">pragma</code> directives:</p><div class="informalexample"><pre class="programlisting">#pragma vertex vert             
+#pragma fragment frag</pre></div><p>In this case, they are simply called <code class="literal">vert</code> and <code class="literal">frag</code>.</p><p>Conceptually speaking, fragments are closely related to pixels; the term <span class="strong"><strong>fragment</strong></span> is often used to refer to the collection <a id="id325" class="indexterm"></a>of data necessary to <a id="id326" class="indexterm"></a>draw a pixel. This is also why Vertex <a id="id327" class="indexterm"></a>and Fragment Shaders are often called <span class="strong"><strong>Pixel Shaders</strong></span>.</p><p>The vertex function takes the input data in a structure that is defined as <code class="literal">vertInput</code> in the shader:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>struct</strong></span> vertInput {
+    float4 pos : POSITION;
+float2 texcoord : TEXCOORD0;
+};</pre></div><p>Its name is totally arbitrary, but its content is not. Each field of <code class="literal">struct</code> must be decorated with a <a id="id328" class="indexterm"></a>
+<span class="strong"><strong>binding semantic</strong></span>. This is a feature of Cg that allows us to mark variables so that they will be initialized with certain data, such as normal <a id="id329" class="indexterm"></a>vectors and vertex position. The binding semantic <code class="literal">POSITION</code> indicates that when <code class="literal">vertInput</code> is inputted to the vertex function, <code class="literal">pos</code> will contain the position of the current vertex. This is similar to the <code class="literal">vertex</code> field of the <code class="literal">appdata_full</code> structure in a Surface Shader. The main difference is that <code class="literal">pos</code> is represented in model coordinates (relative to the 3D object), which we need to convert to view coordinates manually (relative to the position on the screen).</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note26"></a>Note</h3><p>The vertex function in a Surface Shader is used to alter the geometry of the model only. In a Vertex and Fragment Shader, instead, the vertex function is necessary to project the coordinates of the model to the screen.</p></div><p>The mathematics behind this conversion is beyond the scope of this chapter. However, this transformation <a id="id330" class="indexterm"></a>can be achieved by multiplying <code class="literal">pos</code> by a special matrix provided by Unity: <code class="literal">UNITY_MATRIX_MVP</code>. It is often referred to as the <span class="strong"><strong>model-view-projection matrix</strong></span>, and it is essential to find the <a id="id331" class="indexterm"></a>position of a vertex on the screen:</p><div class="informalexample"><pre class="programlisting">vertOutput o;
+o.pos = mul(UNITY_MATRIX_MVP, input.pos);</pre></div><p>The other piece <a id="id332" class="indexterm"></a>of information initialized is <code class="literal">textcoord</code>, which uses the <code class="literal">TEXCOORD0</code> binding semantics to get the UV data of the first texture. No further processing is required and this value can be passed directly to the fragment function:</p><div class="informalexample"><pre class="programlisting">o.texcoord = input.texcoord;</pre></div><p>While Unity will initialise <code class="literal">vertInput</code> for us, we are responsible for the initialization of <code class="literal">vertOutput</code>. Despite this, its fields still need to be decorated with binding semantics:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>struct</strong></span> vertOutput {
+    float4 pos : SV_POSITION;
+float2 texcoord : TEXCOORD0;
+};</pre></div><p>Once the vertex function has initialised <code class="literal">vertOutput</code>, the structure is passed to the fragment function. This samples the main texture of the model and multiplies it by the color provided.</p><p>As you can see, the Vertex and Fragment Shader has no knowledge of the physical properties <a id="id333" class="indexterm"></a>of the material; compared to a Surface Shader, it <a id="id334" class="indexterm"></a>works closer to the architecture <a id="id335" class="indexterm"></a>of the <span class="strong"><strong>graphics processing unit</strong></span> (<span class="strong"><strong>GPU</strong></span>).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec114"></a>There's more…</h3></div></div></div><p>One of the <a id="id336" class="indexterm"></a>most confusing aspects of Vertex and Fragment Shaders is binding semantics. There are many others that you can use and their meaning depends on the context.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec15"></a>Input semantics</h4></div></div></div><p>The binding <a id="id337" class="indexterm"></a>semantics in the following table can be used in <code class="literal">vertInput</code>, which is the structure that Unity provides to the vertex function. The fields decorated with these semantics will be initialized automatically:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Binding semantics</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">POSITION, SV_POSITION</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The position of a vertex in world coordinates (object space)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">NORMAL</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The normal of a vertex, relative to the world (not to the camera)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">COLOR, COLOR0, DIFFUSE, SV_TARGET</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The color information stored in the vertex</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">COLOR1, SPECULAR</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The secondary color information stored in the vertex (usually the specular)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">TEXCOORD0, TEXCOORD1, …, TEXCOORDi</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The i-th UV data stored in the vertex</p>
+</td></tr></tbody></table></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec16"></a>Output semantics</h4></div></div></div><p>When binding, semantics <a id="id338" class="indexterm"></a>are used in <code class="literal">vertOutput</code>; they do not automatically guarantee that fields will be initialized. Quite the opposite; it's our responsibility to do so. The compiler will make its best to ensure that the fields are initialized with the right data:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Binding semantics</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">POSITION, SV_POSITION, HPOS</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The position of a vertex in camera coordinates (clip space, from zero to one for each dimension)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">COLOR, COLOR0, COL0, COL, SV_TARGET</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The front primary color</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">COLOR1, COL1</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The front secondary color</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">TEXCOORD0, TEXCOORD1, …, TEXCOORDi, TEXi</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The i-th UV data stored in the vertex</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">WPOS</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>The position, in pixels, in the window (origin in the lower left corner)</p>
+</td></tr></tbody></table></div><p>If, for any reason, you <a id="id339" class="indexterm"></a>need a field that will contain a different type of data, you can decorate it with one of the many <code class="literal">TEXCOORD</code> data <a id="id340" class="indexterm"></a>available. The compiler will not allow fields to be left undecorated.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec115"></a>See also</h3></div></div></div><p>You can refer to the <a id="id341" class="indexterm"></a>
+<span class="emphasis"><em>NVIDIA Reference Manual</em></span> to check the other binding semantics that are available in Cg:</p><p>
+<a class="ulink" href="http://developer.download.nvidia.com/cg/Cg_3.1/Cg-3.1_April2012_ReferenceManual.pdf" target="_blank">http://developer.download.nvidia.com/cg/Cg_3.1/Cg-3.1_April2012_ReferenceManual.pdf</a>
+</p></div></div>

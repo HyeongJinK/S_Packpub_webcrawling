@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec46"></a>Player score</h2></div></div><hr /></div><p>In many games, the player has a <span>score</span> to express their achievement and progress; <span class="emphasis"><em>Dead Keys</em></span> will be no different, and we'll use a traditional scoring system. Specifically, the player will earn points for each zombie killed; we'll create the potential for assigning different scores (points) to different zombies, depending on difficulty and strength. To implement this, we'll work with UI elements and script, as we did earlier:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/e326a3f3-d5cb-440d-a486-50f4a7b8aa6e.png" /></div><p>Creating a score display</p><p>The score feature will essentially be a text object displaying a numerical score, representing the kill count for zombies. Most games complement a score with some animation and effects. Our score will feature two behaviors: firstly, it'll expand and contract in scale as the score changes, and secondly, the score will catch up and <span class="strong"><strong>Linearly Interpolate</strong></span> (<span class="strong"><strong>Lerp</strong></span>). This means that the numbers in the score text will animate upward as the score changes to represent the latest value, as opposed to changing instantly. Creating the throb animation works much like the damage panel. We'll create a three-key-frame animation, with the start and end frames identical on a smaller scale, and the middle frame on a larger scale:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/9d1af15e-0169-4504-8169-e34c070936ef.png" /></div><p>Creating a score display</p><p>As with the <strong class="userinput"><code>Damage Throb</code></strong> object, the score has an associated animator graph, featuring a trigger parameter to initiate the throb animation when the score changes:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/50cafc25-1f50-430c-9e80-c6b34b33fa0e.png" /></div><p>Configuring the score animator</p><p>In addition to the score animator, we'll need to create a dedicated score UI class (<code class="literal">UIScore.cs</code>) to update the score and initiate any score animations. The following script is lightweight, but contains important code worth considering, and is followed by comments:</p><pre class="programlisting">//------------------------------------ 
+using UnityEngine; 
+using System.Collections; 
+using UnityEngine.UI; 
+using UnityEngine.EventSystems; 
+using UnityEngine.Events; 
+//------------------------------------ 
+public class UIScore : MonoBehaviour 
+{ 
+    public float DisplayScore = 0; 
+    private Text ThisText = null; 
+    public float CatchUpSpeed = 1f; 
+ 
+    public UnityEvent OnScoreChange; 
+ 
+    // Use this for initialization 
+    void Awake ()  
+    { 
+        ThisText = GetComponent&lt;Text&gt; (); 
+    } 
+     
+    // Update is called once per frame 
+    void Update () 
+    { 
+        DisplayScore = Mathf.Lerp (DisplayScore, GameManager.ThisInstance.Score, CatchUpSpeed * Time.deltaTime); 
+        ThisText.text = "Score " + Mathf.CeilToInt (DisplayScore).ToString ("D6"); 
+    } 
+} 
+//------------------------------------  </pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec51"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <code class="literal">CatchUpSpeed</code> variable defines the speed at which the <span>score</span> text animates from its current value toward its destination value as the score changes.</li><li style="list-style-type: disc">The <code class="literal">DisplayScore</code> variable represents the score actually shown for the GUI text element.</li><li style="list-style-type: disc">The <code class="literal">Mathf.Lerp</code> function is used to Lerp smoothly between two values: <code class="literal">a</code> and <code class="literal">b</code>. This function accepts a time value for controlling how quickly <code class="literal">a</code> changes to <code class="literal">b</code>.</li></ul></div><p>Excellent! We now have a score object added to the scene too. Of course, right now, we can't score any points as there are still no enemy zombies to kill; nevertheless, the potential for scoring points exists. In the next chapter, we'll focus on creating zombie enemies that can both attack and be destroyed.</p></div></div>

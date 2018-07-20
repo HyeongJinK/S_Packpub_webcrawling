@@ -1,0 +1,144 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch25lvl1sec226"></a>Saving and loading Profiler data</h2></div></div><hr /></div><p>The Unity Profiler <a id="id1229" class="indexterm"></a>currently has a few fairly significant pitfalls<a id="id1230" class="indexterm"></a> when it comes to saving and loading Profiler data:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Only 300 frames are visible in the Profiler window at once</p></li><li style="list-style-type: disc"><p>There is no way to save Profiler data through the user interface</p></li><li style="list-style-type: disc"><p>Profiler binary data can be saved into a file the Script code, but there is no built-in way to view this data</p></li></ul></div><p>These issues make it very tricky to perform large-scale or long-term testing with the Unity Profiler. They have been raised in Unity's Issue Tracker tool for several years, and there doesn't appear to be any salvation in sight. So, we must rely on our own ingenuity to solve this problem.</p><p>Fortunately, the Profiler class exposes a few methods that we can use to control how the Profiler logs information:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>The <code class="literal">Profiler.enabled</code> method<a id="id1231" class="indexterm"></a> can be used to enable/disable the Profiler, which is the equivalent of clicking on the <span class="strong"><strong>Record</strong></span> button in the <span class="strong"><strong>Control</strong></span> View of the Profiler.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note134"></a>Note</h3><p>Note that changing <code class="literal">Profiler.enabled</code> does not change the visible state of the Record button in the Profiler's Controls bar. This will cause some confusing conflicts if we're controlling the Profiler through both code and the user interface at the same time.</p></div></li><li><p>The <code class="literal">Profiler.logFile</code> method sets<a id="id1232" class="indexterm"></a> the current path of the log file that the Profiler prints data out to. Be aware that this file only contains a printout of the application's frame rate over time, and none of the useful data we normally find in the Profiler's Timeline View. To save that kind of data as a binary file, we must use the options that follow.</p></li><li><p>The <code class="literal">Profiler.enableBinaryLog</code> method <a id="id1233" class="indexterm"></a>will enable/disable logging of an additional file filled with binary data, which includes all of the important values we want to save from the Timeline and Breakdown Views. The file location and name will be the same as the value of <code class="literal">Profiler.logFile</code>, but with <code class="literal">.data</code> appended to the end.</p></li></ol></div><p>With these methods, we <a id="id1234" class="indexterm"></a>can generate a simple data-saving tool that will generate large amounts of Profiler data separated into multiple files. With these files, we will be able to peruse them at a later date.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch25lvl2sec144"></a>Saving Profiler data</h3></div></div></div><p>In order to create a tool that<a id="id1235" class="indexterm"></a> can save our Profiler data, we can make use of a <a id="id1236" class="indexterm"></a>
+<span class="strong"><strong>Coroutine</strong></span>. A typical method will be executed from beginning to end in one sitting. However, Coroutines are useful constructs that allow us write methods that can pause execution until a later time, or an event takes place. This is known as yielding, and is accomplished with the <code class="literal">yield</code> statement. The type of yield determines when execution will resume, which could be one of the following types (the object that must be passed into the <code class="literal">yield</code> statement is also given):</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>After a specific amount of time (<code class="literal">WaitForSeconds</code>)</p></li><li style="list-style-type: disc"><p>After the next Update (<code class="literal">WaitForEndOfFrame</code>)</p></li><li style="list-style-type: disc"><p>After the next Fixed Update (<code class="literal">WaitForFixedUpdate</code>)</p></li><li style="list-style-type: disc"><p>Just prior to the next Late Update (<code class="literal">null</code>)</p></li><li style="list-style-type: disc"><p>After a <code class="literal">WWW</code> object completes its current task, such as downloading a file (<code class="literal">WWW</code>)</p></li><li style="list-style-type: disc"><p>After another Coroutine has finished (a reference to another Coroutine)</p></li></ul></div><p>The Unity Documentation on Coroutines and Execution Order provides more information on how these <a id="id1237" class="indexterm"></a>useful tools function<a id="id1238" class="indexterm"></a> within the Unity Engine:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="ulink" href="http://docs.unity3d.com/Manual/Coroutines.html" target="_blank">http://docs.unity3d.com/Manual/Coroutines.html</a></p></li><li style="list-style-type: disc"><p><a class="ulink" href="http://docs.unity3d.com/Manual/ExecutionOrder.html" target="_blank">http://docs.unity3d.com/Manual/ExecutionOrder.html</a></p></li></ul></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip21"></a>Tip</h3><p>Coroutines should not be confused with threads, which execute independently of the main Unity thread. Coroutines always run on the main thread with the rest of our code, and simply pause and resume at certain moments, depending on the object passed into the <code class="literal">yield</code> statement.</p></div><p>Getting back to<a id="id1239" class="indexterm"></a> the task at hand, the following is the class definition for our <code class="literal">ProfilerDataSaverComponent</code>, which makes use of a Coroutine to repeat an action every 300 frames:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Text;
+using System.Collections;
+
+public class ProfilerDataSaverComponent : MonoBehaviour {
+
+  int _count = 0;
+
+  void Start() {
+    Profiler.logFile = "";
+  }
+
+  void Update () {
+    if (Input.GetKey (KeyCode.LeftControl) &amp;&amp; Input.GetKeyDown (KeyCode.H)) {
+      StopAllCoroutines();
+      _count = 0;
+      StartCoroutine(SaveProfilerData());
+    }
+  }
+
+  IEnumerator SaveProfilerData() {
+    // keep calling this method until Play Mode stops
+    while (true) {
+
+      // generate the file path
+      string filepath = Application.persistentDataPath + "/profilerLog" + _count;
+
+      // set the log file and enable the profiler
+      Profiler.logFile = filepath;
+      Profiler.enableBinaryLog = true;
+      Profiler.enabled = true;
+
+      // count 300 frames
+      for(int i = 0; i &lt; 300; ++i) {
+
+        yield return new WaitForEndOfFrame();
+
+        // workaround to keep the Profiler working
+        if (!Profiler.enabled)
+          Profiler.enabled = true;
+      }
+
+      // start again using the next file name
+      _count++;
+    }
+  }
+}</pre></div><p>Try attaching this Component to any GameObject in the Scene, and press <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>H</em></span> (OSX users will want<a id="id1240" class="indexterm"></a> to replace the <code class="literal">KeyCode.LeftControl</code> code with something such as <code class="literal">KeyCode.LeftCommand</code>). The Profiler will start gathering information (whether or not the Profiler Window is open!) and, using a simple Coroutine, will pump the data out into a series of files under wherever <code class="literal">Application.persistantDataPath</code> is pointing to.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip22"></a>Tip</h3><p>Note that the location of<a id="id1241" class="indexterm"></a> <code class="literal">Application.persistantDataPath</code> varies depending on the Operating System. Check the Unity Documentation for more details at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Application-persistentDataPath.html" target="_blank">http://docs.unity3d.com/ScriptReference/Application-persistentDataPath.html</a>.</p></div><p>It would be unwise to send the files to <code class="literal">Application.dataPath</code>, as it would put them within the Project Workspace. The Profiler does not release the most recent log file handle if we stop the Profiler or even when Play Mode is stopped. Consequently, as files are generated and placed into the Project workspace, there would be a conflict in file accessibility between the Unity Editor trying to read and generate complementary metadata files, and the Profiler keeping a file handle to the most recent log file. This would result in some nasty file access errors, which tend to crash the Unity Editor and lose any Scene changes we've made.</p><p>When this Component is recording data, there will be a small overhead in hard disk usage and the overhead cost of <code class="literal">IEnumerator</code> context switching every 300 frames, which will tend to appear at the start of every file and consume a few milliseconds of CPU (depending on hardware).</p><p>Each file pair should contain 300 frames worth of Profiler data, which skirts around the 300 frame limit in the Profiler window. All we need now is a way of presenting the data in the Profiler window.</p><p>Here is a screenshot of data files that have been generated by <code class="literal">ProfilerDataSaverComponent</code>:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/4939_01_09.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note135"></a>Note</h3><p>Note that the<a id="id1242" class="indexterm"></a> first file may contain less than 300 frames if some frames were <span class="emphasis"><em>lost</em></span> during Profiler warm up.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch25lvl2sec145"></a>Loading Profiler data</h3></div></div></div><p>The <code class="literal">Profiler.AddFramesFromFile()</code> method will load a given profiler log file pair (the text and binary files) and<a id="id1243" class="indexterm"></a> append it into the Profiler timeline, pushing existing data further back in time. Since each file will contain 300 frames, this is perfect for our needs, and we just need to create a simple <code class="literal">EditorWindow</code> class that can provide a list of buttons to load the files into the Profiler.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip23"></a>Tip</h3><p>Note that <code class="literal">AddFramesFromFile()</code> only requires the name of the original log file. It will automatically find the complimentary binary <span class="emphasis"><em>.data</em></span> file on its own.</p></div><p>The following is the class definition for our <code class="literal">ProfilerDataLoaderWindow</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+using System.IO;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+
+public class ProfilerDataLoaderWindow : EditorWindow {
+
+  static List&lt;string&gt; s_cachedFilePaths;
+  static int s_chosenIndex = -1;
+
+  [MenuItem ("Window/ProfilerDataLoader")]
+  static void Init() {
+    ProfilerDataLoaderWindow window = (ProfilerDataLoaderWindow)EditorWindow.GetWindow (typeof(ProfilerDataLoaderWindow));
+    window.Show ();
+
+    ReadProfilerDataFiles ();
+  }
+
+  static void ReadProfilerDataFiles() {
+    // make sure the profiler releases the file handle
+    // to any of the files we're about to load in
+    Profiler.logFile = "";
+
+    string[] filePaths = Directory.GetFiles (Application.persistentDataPath, "profilerLog*");
+
+    s_cachedFilePaths = new List&lt;string&gt; ();
+
+    // we want to ignore all of the binary
+    // files that end in .data. The Profiler
+    // will figure that part out
+    Regex test = new Regex (".data$");
+
+    for (int i = 0; i &lt; filePaths.Length; i++) {
+      string thisPath = filePaths [i];
+
+      Match match = test.Match (thisPath);
+
+      if (!match.Success) {
+        // not a binary file, add it to the list
+        Debug.Log ("Found file: " + thisPath);
+        s_cachedFilePaths.Add (thisPath);
+      }
+    }
+
+    s_chosenIndex = -1;
+  }
+
+  void OnGUI () {
+    if (GUILayout.Button ("Find Files")) {
+      ReadProfilerDataFiles();
+    }
+
+    if (s_cachedFilePaths == null)
+      return;
+
+    EditorGUILayout.Space ();
+
+    EditorGUILayout.LabelField ("Files");
+
+    EditorGUILayout.BeginHorizontal ();
+
+    // create some styles to organize the buttons, and show
+    // the most recently-selected button with red text
+    GUIStyle defaultStyle = new GUIStyle(GUI.skin.button);
+    defaultStyle.fixedWidth = 40f;
+
+    GUIStyle highlightedStyle = new GUIStyle (defaultStyle);
+    highlightedStyle.normal.textColor = Color.red;
+
+    for (int i = 0; i &lt; s_cachedFilePaths.Count; ++i) {
+
+      // list 5 items per row
+      if (i % 5 == 0) {
+        EditorGUILayout.EndHorizontal ();
+        EditorGUILayout.BeginHorizontal ();
+      }
+
+      GUIStyle thisStyle = null;
+
+      if (s_chosenIndex == i) {
+        thisStyle = highlightedStyle;
+      } else {
+        thisStyle = defaultStyle;
+      }
+
+      if (GUILayout.Button("" + i, thisStyle)) {
+        Profiler.AddFramesFromFile(s_cachedFilePaths[i]);
+
+        s_chosenIndex = i;
+      }
+    }
+
+    EditorGUILayout.EndHorizontal ();
+  }
+}</pre></div><p>The first step in creating any custom <code class="literal">EditorWindow</code> is creating a menu entry point with a <code class="literal">[MenuItem]</code> attribute and then creating an instance of a <code class="literal">Window</code> object to control. Both of these occur within the <code class="literal">Init()</code> method.</p><p>We're also calling the <code class="literal">ReadProfilerDataFiles()</code> method during initialization. This method reads all files <a id="id1244" class="indexterm"></a>found within the <code class="literal">Application.persistantDataPath</code> folder (the same location our <code class="literal">ProfilerDataSaverComponent</code> saves data files to) and adds them to a cache of filenames to use later.</p><p>Finally, there is the <code class="literal">OnGUI()</code> method. This<a id="id1245" class="indexterm"></a> method does the bulk of the work. It provides a button to reload the files if needed, verifies that the cached filenames have been read, and provides a series of buttons to load each file into the Profiler. It also highlights the most recently clicked button with red text using a custom <code class="literal">GUIStyle</code>, making it easy to see which file's contents are visible in the Profiler at the current moment.</p><p>The <code class="literal">ProfilerDataLoaderWindow</code> can be accessed by navigating to <span class="strong"><strong>Window</strong></span> | <span class="strong"><strong>ProfilerDataLoader</strong></span> in the Editor interface, as show in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/4939_01_10.jpg" /></div><p>Here is a screenshot of the display with multiple files available to be loaded. Clicking on any of the numbered buttons will push the Profiler data contents of that file into the Profiler.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/4939_01_11.jpg" /></div><p>The <code class="literal">ProfilerDataSaverComponent</code> and <code class="literal">ProfilerDataLoaderWindow</code> do not pretend to be exhaustive or feature-rich. They simply serve as a springboard to get us started if we wish to take the subject<a id="id1246" class="indexterm"></a> further. For most teams and projects, 300 frames worth of short-term data is enough for developers to acquire what they need to begin making code changes to fix the problem.</p></div></div>

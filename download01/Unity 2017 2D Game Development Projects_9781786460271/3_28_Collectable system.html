@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec34"></a>Collectable system</h2></div></div><hr /></div><p>In this section, we start our collectible system. This includes the ability of the Player to collect the cakes, keep track of how many cakes the player has collected and in how much time, and trigger the end of the game once all the cakes have been collected.</p><p>We will finish the collectible system in <a class="link" href="#" linkend="ch04">Chapter 4</a><span class="emphasis"><em>,</em></span> <span class="emphasis"><em>It's about U and I</em></span>, when we will integrate the UI. Now, for the moment, we will start at step one, by creating it by allowing the player to collect <span class="emphasis"><em>Angel's Cakes</em></span>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec41"></a>Setting up the Angel Cakes</h3></div></div></div><p>Let's create a new Sprite in our scene and name it <span class="emphasis"><em>Angel's Cake</em></span><span class="strong"><strong>.</strong></span> Then, in the Sprite Renderer assign the Graphics <strong class="userinput"><code>ACSpriteCake</code></strong>.</p><p>Then, we need to add a collider component. Yes, a collider! Why? Because even if the cake won't collide because we don't need actual physics response, we still use the Physics engine to check when the player collects a cake by colliding with it. This is called a <span class="strong"><strong>Trigger</strong></span>, and we need to specify that we are willing to use this collider as a Trigger. Triggers won't stop other rigid bodies to enter their space, they just pass through and trigger events instead.</p><p>Add to <span class="emphasis"><em>Angel Cakes</em></span> a <code class="literal">BoxCollider2D</code>, likewise, we did with the character, but this time we check the checkbox <strong class="userinput"><code>Is Trigger,</code></strong> as shown here:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/e86a2f50-b263-41a6-9c0e-348817959b68.png" /></div><p>In this case, we don't need a <code class="literal">Rigidbody</code>, since we won't move this object in the physics world. However, since we would like to play a sound when the player collects the cake, we need to add an <code class="literal">AudioSource</code> component. As shown here:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/6337535d-2119-4db5-bd54-32273af9c8e8.png" /></div><p>And with this, we are good to go to create the script. To change from how we create a script for the player character, we can go to the <strong class="userinput"><code>Inspector</code></strong> panel and click <strong class="userinput"><code>Add Component</code></strong> | <strong class="userinput"><code>New Script</code></strong> and type the name of it, as shown here:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/e4b3066e-14e6-43db-b056-a9ce2b88bdb9.png" /></div><p>Then, double-click the script to open it.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note26"></a>Note</h3><p>By doing in this other way, it's faster, but the script is created in the <code class="literal">Assets</code> folder, and you need to move it in the Script one manually.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec42"></a>Enforcing components, again!</h3></div></div></div><p>As we did for the PlayerController, we need to enforce some components, again. This time, the required component to make this script work is the <code class="literal">BoxCollider2D</code> and the <code class="literal">AudioSource</code>. Here is how:</p><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(AudioSource))]
+public class CollectableCake : MonoBehaviour {
+
+  //[…]
+
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec43"></a>Triggering cake</h3></div></div></div><p> We can remove both the <code class="literal">Start()</code> and the <code class="literal">Update()</code> functions, since we won't need them, and add a new variable:</p><pre class="programlisting">    public AudioClip collectableSound;</pre><p>This variable is public, so it will be exposed in the <strong class="userinput"><code>Inspector</code></strong>, and as you can imagine it stores the <code class="literal">AudioClip</code> we want to play when the player collects the cake.</p><p>Then, we need to add a new function:</p><pre class="programlisting">void OnTriggerEnter2D(Collider2D other) {
+}</pre><p>This is a special function, which is called every time an object enters within the trigger collider of our cake, and this other object is stored in the other variable.</p><p>The first thing we need to check is whether the other object is actually the player, we can do this by using the tag we set before. As a result, we can easily check whether the player has collected the cake:</p><pre class="programlisting">    void OnTriggerEnter2D(Collider2D other) {
+        //Check if the player collides with the angel's cake
+        if (other.tag == "Player") {
+
+        }
+    }</pre><p>Inside the If-statement we need to increase the number of cakes that the player collects, but we will postpone this task to the <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>It's about U and I</em></span>, when we will integrate the UI. In the meantime, we can leave a reminder:</p><pre class="programlisting"> void OnTriggerEnter2D(Collider2D other) {
+ //Check if the player collides with the angel's cake
+ if (other.tag == "Player") {
+ //If so, increase the number of cakes the player has collected (see in the next chapter)
+ //TODO: to implement 
+ }
+ }</pre><p>The next step is to play the audio. To do so, we need to retrieve the <code class="literal">AudioSource</code> component, which we can do with the same function we used for the PlayerController (<code class="literal">GetComponent()</code>), and use it to play the sound we stored in the <code class="literal">collectableSound</code> variable:</p><pre class="programlisting">void OnTriggerEnter2D(Collider2D other) {
+        //Check if the player collides with the angel's cake
+        if (other.tag == "Player") {
+            //If so, increase the number of cakes the player has collected (see in the next chapter)
+            //TODO: to implement 
+
+            //Play the collectable sound
+          GetComponent&lt;AudioSource&gt;().PlayOneShot(collectableSound);
+        }
+    }</pre><p>Then, we need to hide the cake from the player, and we can do this by disabling the Renderer component. In fact, we cannot destroy the cake yet, since it needs to finish to play the sound. So, after having disabled the renderer, we destroy the cake after a delay that is long as the <strong class="userinput"><code>AudioClip</code></strong> in the <code class="literal">collectableSound</code> variable. Finally, we remove the script, so the player cannot collect the same cake twice (even if it is hidden):</p><pre class="programlisting">    void OnTriggerEnter2D(Collider2D other) {
+        //Check if the player collides with the angel's cake
+        if (other.tag == "Player") {
+            //If so, increase the number of cakes the player has collected (see in the next chapter)
+            //TODO: to implement 
+
+            //Play the collectable sound
+            GetComponent&lt;AudioSource&gt;().PlayOneShot(collectableSound);
+
+            //Hide the cake by disabling the renderer
+            GetComponent&lt;Renderer&gt;().enabled = false;
+
+            //Then, destroy the cake after a delay (so the sound can finish to play)
+            GameObject.Destroy(gameObject, collectableSound.length);
+
+            //Destory this script, in case the player hits again the cake before that is destroyed
+            Destroy(this);
+        }
+    }</pre><p>Save the script, and come back to Unity, since it's time to test it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec44"></a>Testing the cake collectable system so far</h3></div></div></div><p>First of all, you need to drag and drop the sound FX you decided on when the player collects the cake, and place it within the script we have just created for the cake. You should end up with something similar to this:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/60188f06-9d7b-40e9-83ac-75024a455754.png" /></div><p>If we duplicate (<span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span> or command + <span class="emphasis"><em>D</em></span>) many cakes, then we can hit play, and test that our angel can collect these cakes, and we know since they will disappear, and the audio will be played. However, there is no counter to keep track of how many cakes the player collects, and this will be done in the next chapter.</p></div></div>

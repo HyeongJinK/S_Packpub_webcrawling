@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec64"></a>Gun turrets and ammo</h2></div></div><hr /></div><p>We've now <a id="id399" class="indexterm"></a>created an ammo object (a projectile) and we've started to engineer a gun turret object, but it doesn't yet spawn ammo. Let's create this functionality now. We have a spawn point positioned in front of the turret parented to it as a child object. We'll attach a new script file called <code class="literal">AmmoSpawner.cs</code> to this object. This script is responsible for generating ammo at regular intervals. Refer to the following code:</p><div class="informalexample"><pre class="programlisting">//--------------------------------
+using UnityEngine;
+using System.Collections;
+//--------------------------------
+public class AmmoSpawner : MonoBehaviour 
+{
+    //--------------------------------
+    //Reference to ammo prefab
+    public GameObject AmmoPrefab = null;
+
+    //Reference to transform
+    private Transform ThisTransform = null;
+
+    //Vector for time range
+    public Vector2 TimeDelayRange = Vector2.zero;
+
+    //Lifetime for ammo spawned
+    public float AmmoLifeTime = 2f;
+
+    //Ammo Speed
+    public float AmmoSpeed = 4f;
+
+    //Ammo Damage
+    public float AmmoDamage = 100f;
+    //--------------------------------
+    void Awake()
+    {
+        ThisTransform = GetComponent&lt;Transform&gt;();
+    }
+    //--------------------------------
+    void Start()
+    {
+        FireAmmo();
+    }
+    //--------------------------------
+    public void FireAmmo()
+    {
+        GameObject Obj = Instantiate(AmmoPrefab, ThisTransform.position, ThisTransform.rotation) as GameObject;
+        Ammo AmmoComp = Obj.GetComponent&lt;Ammo&gt;();
+        Mover MoveComp = Obj.GetComponent&lt;Mover&gt;();
+        AmmoComp.LifeTime = AmmoLifeTime;
+        AmmoComp.Damage = AmmoDamage;
+        MoveComp.Speed = AmmoSpeed;
+
+        //Wait until next random interval
+        Invoke("FireAmmo", Random.Range(TimeDelayRange.x, TimeDelayRange.y));
+    }
+    //--------------------------------
+}
+//--------------------------------</pre></div><p>The preceding code relies on the <code class="literal">Invoke</code> function called at random intervals using <code class="literal">Random.Range</code> in <a id="id400" class="indexterm"></a>order to instantiate a new ammo prefab into the scene. This code could be improved using Object Pooling (or Caching), as discussed in the previous chapter with ammo, but in this case, the code performs acceptably. See <span class="emphasis"><em>Figure 6.33</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/figure_06_33.jpg" /><div class="caption"><p>Figure 6.33: A time delay of (0,0) generates ammo continually in a beam. Increase the value to insert reasonable gaps between ammo spawns</p></div></div><p>Excellent! We've now created a gun turret that, like the ammo itself, can be turned into a prefab. Make sure that the <span class="strong"><strong>Time Delay</strong></span> range (the time between ammo spawns) is set to a value higher than zero; otherwise, ammo will be continually generated and become practically impossible <a id="id401" class="indexterm"></a>for the player to avoid. Go ahead and position more turrets, if needed, to balance the difficulty of the scene.</p></div>

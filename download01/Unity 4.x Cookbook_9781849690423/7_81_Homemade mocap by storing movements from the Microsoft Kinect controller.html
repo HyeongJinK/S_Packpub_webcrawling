@@ -1,0 +1,65 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec81"></a>Homemade mocap by storing movements from the Microsoft Kinect controller</h2></div></div><hr /></div><p>The positions and rotations <a id="id557" class="indexterm"></a>of each skeleton component are available to access at any frame, therefore, if we create a data structure <a id="id558" class="indexterm"></a>to store them, then a recording (and playback) of motions controlled via the Kinect can be implemented. This is demonstrated in the following recipe.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec284"></a>Getting ready</h3></div></div></div><p>This recipe assumes you already have a project that uses Zigfu to control a character. You could either start with one of the scenes from the ZDK, or you could also build on the project from the previous recipe, where you created your own block character (that's what we did).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec285"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open your existing <span class="strong"><strong>Zigfu</strong></span> project.</p></li><li><p>Create a sphere named <code class="literal">GhostHandL</code>, ensuring it is similar in size to the hand of the character in your scene (so this would be (0.2,0.2,0.2) if you are building on the previous recipe).</p></li><li><p>Add a red material to <code class="literal">GhostHandL</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note30"></a>Note</h3><p>It doesn't matter what position <code class="literal">GhostHandL</code> starts at since it is going to follow the path of the left hand of your model once you start play back.</p></div></li><li><p>Create a new <code class="literal">ObjectAtFrame</code> C# script with the following code:</p><div class="informalexample"><pre class="programlisting">// file: ObjectAtFrame.cs
+using UnityEngine;
+using System.Collections;
+
+public class ObjectAtFrame {
+  public Vector3 position;
+  public Quaternion rotation;
+  
+  public ObjectAtFrame(Vector3 newPosition, Quaternion newRotation) {
+    position = newPosition;
+    rotation = newRotation;
+  }
+}</pre></div></li><li><p>Add the<a id="id559" class="indexterm"></a> following script class to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: RecordMovements.cs
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class RecordMovements : MonoBehaviour {
+  public Transform leftHand;
+  public Transform redSphere;
+  private bool isRecording = false;
+  private List&lt;ObjectAtFrame&gt; movementList = new List&lt;ObjectAtFrame&gt;();
+  private int currentFrame = 0;
+  
+  private void OnGUI() {
+    
+    if( !isRecording ) {
+      bool startRecordingButtonClicked = GUILayout.Button ("START recording");
+      if( startRecordingButtonClicked ) {
+         isRecording = true;
+         movementList.Clear();
+      }
+    } else {
+      GUILayout.Label ( "RECORDING --------------------" );
+      GUILayout.Label("number of frames record = " + movementList.Count);
+      bool stopRecordingButtonClicked = GUILayout.Button ("STOP recording");
+      if( stopRecordingButtonClicked ){
+        isRecording = false;
+      }
+    }
+  }
+
+  private void Update () {
+    if( isRecording )
+      StoreFrame();
+    else
+      if( movementList.Count &gt; 0)
+        PlayBackFrame();
+  }
+  
+  private void StoreFrame() {
+    ObjectAtFrame leftHandAtFrame = new ObjectAtFrame(leftHand.position, leftHand.rotation);
+    movementList.Add (leftHandAtFrame);
+  }
+  
+  private void PlayBackFrame(){
+    currentFrame++;
+    if( currentFrame &gt; (movementList.Count -1))
+      currentFrame = 0;
+    
+    ObjectAtFrame objectNow = movementList[currentFrame] as ObjectAtFrame;
+    redSphere.position = objectNow.position;
+    redSphere.rotation = objectNow.rotation;
+  }
+}</pre></div></li><li><p>With the <span class="strong"><strong>Main Camera</strong></span> selected in the <span class="strong"><strong>Hierarchy</strong></span> view, associate the following<a id="id560" class="indexterm"></a> objects in the <span class="strong"><strong>Hierarchy</strong></span> view to their corresponding public variables in the <span class="strong"><strong>Inspector</strong></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Drag <span class="strong"><strong>redSphere</strong></span> into the <span class="strong"><strong>Red Sphere</strong></span> variable</p></li><li style="list-style-type: disc"><p>Drag the left hand of your character into the <span class="strong"><strong>Left Hand</strong></span> variable</p></li></ul></div><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_07_05.jpg" /></div></li><li><p>Run the project. Once the Kinect is controlling your character, click the <span class="strong"><strong>START recording</strong></span> button, move your left hand in a big circle, and then click the <span class="strong"><strong>STOP recording</strong></span> button.</p></li><li><p>You should <a id="id561" class="indexterm"></a>then see the red sphere following your recorded left hand movement of a big circle (it will cycle through this recorded movement repeatedly).</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec286"></a>How it works...</h3></div></div></div><p>Important data structures for this recipe:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">ObjectAtFrame</code> class<a id="id562" class="indexterm"></a> provides a data structure to store the position and rotation of one part of the character's body for a given frame.</p></li><li style="list-style-type: disc"><p>The <code class="literal">RecordMovements</code> class<a id="id563" class="indexterm"></a> attached to the Main Camera, uses a generic <code class="literal">List</code> data structure named <code class="literal">movementList</code>, to create a dynamic ordered collection of <code class="literal">ObjectAtFrame</code> objects.</p></li></ul></div><p>When the <span class="strong"><strong>START recording</strong></span> button is clicked, the <code class="literal">isRecording</code> Boolean flag is set to <code class="literal">true</code>, and <code class="literal">movementList</code> is emptied with the <code class="literal">Clear()</code> method. The <code class="literal">Update()</code> method<a id="id564" class="indexterm"></a> is executed each frame, and if <code class="literal">isRecording</code> is <code class="literal">true</code>, the <code class="literal">StoreFrame()</code> method is called.</p><p>The <code class="literal">StoreFrame()</code> method<a id="id565" class="indexterm"></a> retrieves the position (<code class="literal">Vector3</code>) and rotation (<code class="literal">Quaternion</code>) of the <span class="strong"><strong>Transform</strong></span> component of the left hand of the character (this was associated before running the project, by dragging that left hand object of the character to the public <span class="strong"><strong>Left Hand</strong></span> variable (<code class="literal">leftHand</code>)). A new <code class="literal">ObjectAtFrame</code> object <code class="literal">leftHandAtFrame</code> is created with the position and rotation values, and added to the end of <code class="literal">movementList</code>.</p><p>When the <span class="strong"><strong>STOP recording</strong></span> button is clicked, the <code class="literal">isRecording</code> Boolean flag is set to <code class="literal">false</code>. The <code class="literal">Update()</code> method is executed for each frame, and if <code class="literal">isRecording</code> is <code class="literal">false</code>, and we have recorded <code class="literal">1</code> or more frames (that is, the <code class="literal">Count()</code> method of <code class="literal">movementList</code> is greater than zero), the <code class="literal">PlayBackFrame()</code> method is called.</p><p>The <code class="literal">PlayBackFrame()</code> method<a id="id566" class="indexterm"></a> increments the <code class="literal">currentFame</code> integer, and resets it back to zero if its value is greater than the index of the last element in <code class="literal">movementList</code>. The position and rotation of the element for <code class="literal">currentFame</code> in <code class="literal">movementList</code> is retrieved, and applied to the <span class="strong"><strong>Transform</strong></span> component of our <code class="literal">redSphere</code> object. Thus, the red sphere is made to follow the movement and rotation we recorded for that frame.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec287"></a>There's more...</h3></div></div></div><p>Here are some details you don't want to miss.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec65"></a>Recording movements of multiple body parts</h4></div></div></div><p>This recipe has<a id="id567" class="indexterm"></a> illustrated the "proof of concept" of how to record motion movements of a single skeleton object in Unity with the Kinect device. However, it is more likely that we would want to record the position and rotation of <span class="emphasis"><em>every</em></span> object in the skeleton. This would require a slightly more sophisticated data structure. If performance was not an issue, perhaps a <code class="literal">Dictionary</code> data structure could be used, with identifiers for each part of the skeleton. If efficiency were important, then perhaps parallel arrays, two for each skeleton object, could be implemented (one for position <code class="literal">Vector3</code> objects, and one for rotation <code class="literal">Quaternion</code> objects). Using a fixed number of array elements (that is, a maximum number of frames) would be the trade-off of speed against flexibility for this approach.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec288"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Control characters in Unity with the Microsoft Kinect using the Zigfu samples</em></span> recipe.</p></li><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Animating your own characters with the Microsoft Kinect controller</em></span> recipe.</p></li></ul></div></div></div>

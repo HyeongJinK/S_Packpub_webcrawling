@@ -1,0 +1,157 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec60"></a>Setting up our battle state manager</h2></div></div><hr /></div><p>The most unique and important part of a turn-based battle system is the turns. Controlling the turns is incredibly important and we will need something to handle the logic behind the actual turns for us. We'll accomplish this by creating a battle state machine.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec107"></a>The battle state manager</h3></div></div></div><p>Starting back in our <code class="literal">BattleScene</code>, we need to create a state machine using all of Mecanim's handy features. Although we will still only be using a fraction of the functionality with the RPG sample, I advise you to investigate and read more about its capabilities.</p><p>Navigate to the <code class="literal">Assets\Animation\Controllers</code> folder and create a new <span class="strong"><strong>Animator Controller</strong></span> called <code class="literal">BattleStateMachine</code>, then we can begin putting together the battle state machine. The following screenshot shows you the states, transitions, and properties that we will need:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_001.jpg" /></div><p>
+</p><p>As shown in the preceding screenshot, we have created eight states to control the flow of a battle with two Boolean parameters to control its transition.</p><p>The transitions are defined as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>From <span class="strong"><strong>Begin_Battle</strong></span> to <span class="strong"><strong>Intro:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>BattleReady</strong></span> set to <code class="literal">true</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">false</code> (deselected)</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Duration</strong></span> set to 0</p></li></ul></div></li><li style="list-style-type: disc"><p>From <span class="strong"><strong>Intro</strong></span> to <span class="strong"><strong>Player_Move:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">true</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Exit Time</strong></span> set to <code class="literal">0.9</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Duration</strong></span> set to <code class="literal">2</code>
+</p></li></ul></div></li><li style="list-style-type: disc"><p>From <span class="strong"><strong>Player_Move</strong></span> to <span class="strong"><strong>Player_Attack:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>PlayerReady</strong></span> set to <code class="literal">true</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">false</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Duration</strong></span> set to 0</p></li></ul></div></li><li style="list-style-type: disc"><p>From <span class="strong"><strong>Player_Attack</strong></span> to <span class="strong"><strong>Change_Control:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>PlayerReady</strong></span> set to <code class="literal">false</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">false</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Duration</strong></span> set to <code class="literal">2</code>
+</p></li></ul></div></li><li style="list-style-type: disc"><p>From <span class="strong"><strong>Change_Control</strong></span> to <span class="strong"><strong>Enemy_Attack:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">true</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Exit Time</strong></span> set to <code class="literal">0.9</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Duration</strong></span> set to <code class="literal">2</code>
+</p></li></ul></div></li><li style="list-style-type: disc"><p>From <span class="strong"><strong>Enemy_Attack</strong></span> to <span class="strong"><strong>Player_Move:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>BattleReady</strong></span> set to <code class="literal">true</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">false</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Duration</strong></span> set to <code class="literal">2</code>
+</p></li></ul></div></li><li style="list-style-type: disc"><p>From <span class="strong"><strong>Enemy_Attack</strong></span> to <span class="strong"><strong>Battle_Result:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>BattleReady</strong></span> set to <code class="literal">false</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">false</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Time</strong></span> set to <code class="literal">2</code>
+</p></li></ul></div></li><li style="list-style-type: disc"><p>From <span class="strong"><strong>Battle_Result</strong></span> to <span class="strong"><strong>Battle_End:</strong></span>
+</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Has Exit Time</strong></span> set to <code class="literal">true</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Exit Time</strong></span> set to <code class="literal">0.9</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Transition Time</strong></span> set to <code class="literal">5</code>
+</p></li></ul></div></li></ul></div><p>Summing up, what we have built is a steady flow of battle, which can be summarized as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The battle begins and we show a little introductory clip to tell the player about the battle</p></li><li style="list-style-type: disc"><p>Once the player has control, we wait for them to finish their move</p></li><li style="list-style-type: disc"><p>We then perform the player's attack and switch the control over to the enemy AI</p></li><li style="list-style-type: disc"><p>If there are any enemies left, they get to attack the player (if they are not too scared and have not run away)</p></li><li style="list-style-type: disc"><p>If the battle continues, we switch back to the player; otherwise, we show the battle result</p></li><li style="list-style-type: disc"><p>We show the result for five seconds (or until the player hits a key), then finish the battle and return the player to the world together with whatever loot and experience gained</p></li></ul></div><p>This is just a simple flow, which can be extended as much as you want, and as we continue, you will see all the points where you could expand it.</p><p>With our animator state machine created, we now just need to attach it to our battle manager so it will be available when the battle runs; the following are the steps to do this:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open up <code class="literal">BattleScene</code>.</p></li><li><p>Select the <code class="literal">BattleManager</code> game object in the project Hierarchy and add an <span class="strong"><strong>Animator</strong></span> component to it.</p></li><li><p>Now drag the <code class="literal">BattleStateMachine</code> animator controller we just created into the <span class="strong"><strong>Controller</strong></span> property of the <span class="strong"><strong>Animator</strong></span> component.</p></li></ol></div><p>The preceding steps attached our new battle state machine to our battle engine. Now, we just need to be able to reference the <span class="strong"><strong>BattleStateMachine</strong></span> Mecanim state machine from the <code class="literal">BattleManager</code> script. To do so, open up the <code class="literal">BattleManager</code> script in the <code class="literal">Assets\Scripts</code> folder and add the following variable to the top of the class:</p><pre class="programlisting">private Animator battleStateManager; &#13;
+</pre><p>Then, to capture the configured <code class="literal">Animator</code> component in our <code class="literal">BattleManager</code> script, we add the following to an <code class="literal">Awake</code> function placed before the <code class="literal">Start</code> function:</p><pre class="programlisting">void Awake(){ &#13;
+        battleStateManager=GetComponent&lt;Animator&gt;(); &#13;
+        if(battleStateManager==null){ &#13;
+            Debug.LogError("No battleStateMachine Animator found."); &#13;
+        } &#13;
+     &#13;
+}  &#13;
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note107"></a>Note</h3><p>We have to assign it this way because all the functionality to integrate the <span class="strong"><strong>Animator Controller</strong></span> is built into the <code class="literal">Animator</code> component. We cannot simply attach the controller directly to the <code class="literal">BattleManager</code> script and use it.</p></div><p>Now that it's all wired up, let's start using it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec108"></a>Getting to the state manager in the code</h3></div></div></div><p>Now that we have our state manager running in Mecanim, we just need to be able to access it from the code. However, at first glance, there is a barrier to achieving this. The reason being that the Mecanim system uses hashes (integer ID keys for objects) not strings to identify states within its engine (still not clear why, but for performance reasons probably). To access the states in Mecanim, Unity provides a hashing algorithm to help you, which is fine for one-off checks but a bit of an overhead when you need per-frame access.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note108"></a>Note</h3><p>You can check to see if a state's name is a specific string using the following code:</p><p>
+<code class="literal">GetCurrentAnimatorStateInfo(0).IsName("Thing you're checking")</code>But there is not way to store the names of the current state to a variable.</p></div><p>A simple solution to this is to generate and cache all the state hashes when we start and then use the cache to talk to the Mecanim engine.</p><p>First, let's remove the placeholder code from <a class="link" href="#" linkend="ch08">Chapter 8</a>, <span class="emphasis"><em>Encountering Enemies and Running Away</em></span>, for the old <code class="literal">enum</code> state machine. So, remove the following code from the top of the <code class="literal">BattleManager</code> script:</p><pre class="programlisting">enum BattlePhase &#13;
+{ &#13;
+  PlayerAttack, &#13;
+  EnemyAttack &#13;
+} &#13;
+private BattlePhase phase; &#13;
+</pre><p>Also, remove the following line from the <code class="literal">Start</code> method:</p><pre class="programlisting">phase = BattlePhase.PlayerAttack; &#13;
+</pre><p>There is still a reference in the <code class="literal">Update</code> method for our buttons, but we will update that shortly; feel free to comment it out now if you wish, but don't delete it.</p><p>Now, to begin working with our new state machine, we need a replica of the available states we have defined in our Mecanim state machine. For this, we just need an enumeration using the same names (you can create this either as a new C# script or simply place it in the <code class="literal">BattleManager</code> class), as follows:</p><pre class="programlisting">public enum BattleState &#13;
+{ &#13;
+    Begin_Battle, &#13;
+    Intro, &#13;
+    Player_Move, &#13;
+    Player_Attack, &#13;
+    Change_Control, &#13;
+    Enemy_Attack, &#13;
+    Battle_Result, &#13;
+    Battle_End &#13;
+}  &#13;
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note109"></a>Note</h3><p>It may seem strange to have a duplicate of your states in the state machine and in the code; however, at the time of writing, it is necessary. Mecanim does not expose the names of the states outside of the engine other than through using hashes. You can either use this approach and make it dynamic, or extract the state hashes and store them in a dictionary for use.</p><p>Mecanim makes the managing of state machines very simple under the hood and is extremely powerful, much better than trawling through code every time you want to update the state machine.</p></div><p>Next, we need a location to cache the hashes the state machine needs and a property to keep the current state so that we don't constantly query the engine for a hash. So, add a new <code class="literal">using</code> statement to the beginning of the <code class="literal">BattleManager</code> class as follows:</p><pre class="programlisting">using System.Collections; &#13;
+using System.Collections.Generic; &#13;
+using UnityEngine; &#13;
+</pre><p>Then, add the following variables to the top of the <code class="literal">BattleManager</code> class:</p><pre class="programlisting">private Dictionary&lt;int, BattleState&gt; battleStateHash = new Dictionary&lt;int, &#13;
+  BattleState&gt;(); &#13;
+private BattleState currentBattleState; &#13;
+</pre><p>Finally, we just need to integrate the animator state machine we have created. So, create a new <code class="literal">GetAnimationStates</code> method in the <code class="literal">BattleManager</code> class as follows:</p><pre class="programlisting">void GetAnimationStates() &#13;
+{ &#13;
+  foreach (BattleState state in (BattleState[]) &#13;
+    System.Enum.GetValues(typeof(BattleState))) &#13;
+  { &#13;
+    battleStateHash.Add(Animator.StringToHash(state.ToString()), state); &#13;
+  } &#13;
+} &#13;
+</pre><p>This simply generates a hash for the corresponding animation state in Mecanim and stores the resultant hashes in a dictionary that we can use without having to calculate them at runtime when we need to talk to the state machine.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note110"></a>Note</h3><p>Sadly, there is no way at runtime to gather the information from Mecanim as this information is only available in the editor.</p><p>You could gather the hashes from the animator and store them in a file to avoid this, but it won't save you much.</p></div><p>To complete this, we just need to call the new method in the <code class="literal">Start</code> function of the <code class="literal">BattleManager</code> script by adding the following:</p><pre class="programlisting">GetAnimationStates(); &#13;
+</pre><p>Now that we have our states, we can use them in our running game to control both the logic that is applied and the GUI elements that are drawn to the screen.</p><p>Now add the <code class="literal">Update</code> function to the <code class="literal">BattleManager</code> class as follows:</p><pre class="programlisting">void Update() &#13;
+{ &#13;
+  currentBattleState = battleStateHash[battleStateManager.     GetCurrentAnimatorStateInfo(0).shortNameHash]; &#13;
+ &#13;
+  switch (currentBattleState) &#13;
+  { &#13;
+    case BattleState.Intro: &#13;
+      break; &#13;
+    case BattleState.Player_Move: &#13;
+      break; &#13;
+    case BattleState.Player_Attack: &#13;
+      break; &#13;
+    case BattleState.Change_Control: &#13;
+      break; &#13;
+    case BattleState.Enemy_Attack: &#13;
+      break; &#13;
+    case BattleState.Battle_Result: &#13;
+      break; &#13;
+    case BattleState.Battle_End: &#13;
+      break; &#13;
+    default: &#13;
+      break; &#13;
+  } &#13;
+} &#13;
+</pre><p>The preceding code gets the current state from the animator state machine once per frame and then sets up a choice (<code class="literal">switch</code> statement) for what can happen based on the current state. (Remember, it is the state machine that decides which state follows which in the Mecanim engine, not nasty nested <code class="literal">if</code> statements everywhere in code.)</p><p>Now we are going to update the functionality that turns our GUI button on and off. Update the line of code in the <code class="literal">Update</code> method we wrote as follows:</p><pre class="programlisting">if (phase == BattlePhase.PlayerAttack){  &#13;
+</pre><p>Change it so that it now reads as follows:</p><pre class="programlisting">if (currentBattleState == BattleState.Player_Move){  &#13;
+</pre><p>This will make it so that the buttons are now only visible when it is time for the player to perform his/her move. With these in place, we are ready to start adding in some battle logic.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec109"></a>Starting the battle</h3></div></div></div><p>As it stands, the state machine is waiting at the <code class="literal">Begin_Battle</code> state for us to kick things off. Obviously, we want to do this when we are ready and all the pieces on the board are in place.</p><p>When the current <span class="strong"><strong>Battle</strong></span> scene we added in <a class="link" href="#" linkend="ch08">Chapter 8</a>, <span class="emphasis"><em>Encountering Enemies and Running Away</em></span>, starts, we load up the player and randomly spawn in a number of enemies into the fray using a coroutine function called <code class="literal">SpawnEnemies</code>. So, only when all the Dragons are ready and waiting to be chopped down do we want to kick things off.</p><p>To tell the state machine to start the battle, we simple add the following line just after the end of the <code class="literal">for</code> loop in the <code class="literal">SpawnEnemies IEnumerator</code> coroutine function:</p><pre class="programlisting">battleStateManager.SetBool("BattleReady", true); &#13;
+</pre><p>Now when everything is in place, the battle will finally begin.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec110"></a>Introductory animation</h3></div></div></div><p>When the battle starts, we are going to display a little battle introductory image that states who the player is going to be fighting against. We'll have it slide into the scene and then slide out. The following screenshot shows the end result:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_002.jpg" /></div><p>
+</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip111"></a>Tip</h3><p>You can do all sorts of interesting stuff with this introductory animation, such as animating the individual images, but I'll leave that up to you to play with. Can't have all the fun now, can I?</p></div><p>Start by creating a new Canvas and renaming it <code class="literal">IntroCanvas</code> so that we can distinguish it from the canvas that will hold our buttons. At this point, since we are adding a second canvas into the scene, we should probably rename ours something that is easier for you to identify.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip112"></a>Tip</h3><p>It's a matter of preference, but I like to use different canvases for different UI elements. For example, one for the HUD, one for pause menus, one for animations, and so on.</p><p>You can put them all on a single Canvas and use Panels and <code class="literal">CanvasGroup</code> components to distinguish between them; it's really up to you.</p></div><p>As a child of the new <code class="literal">IntroCanvas</code>, create a <span class="strong"><strong>Panel</strong></span> with the properties shown in the following screenshot. Notice the <span class="strong"><strong>Color </strong></span>property <span class="strong"><strong>of the Image component </strong></span>is set to black with the alpha set to about half:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_003.jpg" /></div><p>
+</p><p>Now add as a child of the Panel two UI Images and a UI Text. Name the first image <code class="literal">PlayerImage</code> and set its properties as shown in the following screenshot. Be sure to check the <span class="strong"><strong>Preserve Aspect</strong></span> property:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_004.jpg" /></div><p>
+</p><p>Name the second image <code class="literal">EnemyImage</code> and set the properties as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_005.jpg" /></div><p>
+</p><p>For the text, set the properties as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_006.jpg" /></div><p>
+</p><p>Your Panel should now appear as mine did in the image at the beginning of this section.</p><p>Now let's give this Panel its animation. With the Panel selected, select the <span class="strong"><strong>Animation</strong></span> tab. Now hit the <span class="strong"><strong>Create </strong></span>button. Save the animation as <code class="literal">IntroSlideAnimation</code> in the <code class="literal">Assets/Animation/Clips</code> folder.</p><p>At the <span class="strong"><strong>0:00</strong></span> frame, set the Panel's <span class="emphasis"><em>X</em></span> position to <code class="literal">600</code>, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_007.jpg" /><div class="caption"><p>Panel moved outside of camera's view at animation frame 0:00</p></div></div><p>
+</p><p>Now, at the <span class="strong"><strong>0:45</strong></span> frame, set the Panel's <span class="emphasis"><em>X</em></span> position to 0. Place the playhead at the <span class="strong"><strong>1:20</strong></span> frame and set the Panel's <span class="emphasis"><em>X</em></span> position to 0, there as well, by selecting <span class="strong"><strong>Add Key</strong></span>, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_008.jpg" /></div><p>
+</p><p>Create the last frame at <span class="strong"><strong>2:00</strong></span> by setting the Panel's <span class="emphasis"><em>X</em></span> position to <code class="literal">-600</code>.</p><p>When the Panel slides in, it does this annoying bounce thing instead of staying put. We need to fix this by adjusting the animation curve. Select the <span class="strong"><strong>Curves</strong></span> tab:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_009.jpg" /></div><p>
+</p><p>When you select the <span class="strong"><strong>Curves</strong></span> tab, you should see something like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_010.jpg" /></div><p>
+</p><p>The reason for the bounce is the <span class="emphasis"><em>wiggle</em></span> that occurs between the two center key frames. To fix this, right-click on the two center points on the curve represented by red dots and select<span class="strong"><strong> Flat</strong></span>, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_011.jpg" /></div><p>
+</p><p>After you do so, the curve should be constant (flat) in the center, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_012.jpg" /></div><p>
+</p><p>The last thing we need to do to connect this to our <code class="literal">BattleStateMananger</code> is adjust the properties of the Panel's Animator.</p><p>With the Panel selected, select the <span class="strong"><strong>Animator</strong></span> tab. You should see something like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_013.jpg" /></div><p>
+</p><p>Right now, the animation immediately plays when the scene is entered. However, since we want this to tie in with our<code class="literal"> BattleStateManager</code> script and only begin playing in the <code class="literal">Intro</code> state, we do not want this to be the default animation.</p><p>Create an empty state within the Animator and set it as the default state. Name this state <code class="literal">OutOfFrame</code>. Now make a Trigger Parameter called <code class="literal">Intro</code>. Set the transition between the two states so that it has the following properties:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_09_014.jpg" /></div><p>
+</p><p>The last things we want to do before we move on is make it so this animation does not loop, rename this new Animator, and place our Animator in the correct subfolder. In the project view, select <code class="literal">IntroSlideAnimation</code> from the <code class="literal">Assets/Animation/Clips</code> folder and deselect <span class="strong"><strong>Loop Time</strong></span>. Rename the Panel Animator to <code class="literal">VsAnimator</code> and move it to the <code class="literal">Assets/Animation/Controllers</code> folder.</p><p>Currently, the Panel is appearing right in the middle of the screen at all times, so go ahead and set the Panel's <span class="emphasis"><em>X</em></span> Position to <code class="literal">600</code>, to get it out of the way.</p><p>Now we can access this animation in our <code class="literal">BattleStateManager</code> script.</p><p>Currently, the state machine pauses at the <code class="literal">Intro</code> state for a few seconds; let's have our Panel animation pop in.</p><p>Add the following variable declarations to our <code class="literal">BattleStateManager</code> script:</p><pre class="programlisting">public GameObject introPanel; &#13;
+Animator introPanelAnim; &#13;
+</pre><p>And add the following to the <code class="literal">Awake</code> function:</p><pre class="programlisting">introPanelAnim=introPanel.GetComponent&lt;Animator&gt;();  &#13;
+</pre><p>Now add the following to the <code class="literal">case</code> line of the <code class="literal">Intro</code> state in the <code class="literal">Update</code> function:</p><pre class="programlisting">case BattleState.Intro: &#13;
+    introPanelAnim.SetTrigger("Intro"); &#13;
+    break;  &#13;
+</pre><p>For this to work, we have to drag and drop the Panel into the <span class="strong"><strong>Intro Panel</strong></span> slot in the <code class="literal">BattleManager</code> Inspector.</p><p>As the battle is now in progress and control is being passed to the player, we need some interaction from the user. Currently, the player can run away, but that's not terribly interesting. We want our player to be able to fight! So, let's design a graphic user interface that will allow her to attack those adorable, but super mean, dragons.</p></div></div>

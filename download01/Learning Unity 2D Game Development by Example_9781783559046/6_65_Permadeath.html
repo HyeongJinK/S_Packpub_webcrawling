@@ -1,0 +1,17 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec66"></a>Permadeath</h2></div></div><hr /></div><p>When an <a id="id462" class="indexterm"></a>enemy collides with the hero, the hero will die, and the game will end. The point of the game is to try and survive for the longest time; therefore, the score is based on time.</p><p>We will use the <code class="literal">OnGUI</code> function<a id="id463" class="indexterm"></a> to display the time counting up at the top-left corner of the screen. We will also check to see whether the hero collides with an enemy, and if so, then we destroy the hero and end the game.</p><p>Add the following script to the hero script:</p><div class="informalexample"><pre class="programlisting">#pragma strict
+
+function OnGUI()
+{
+
+  GUI.Box (Rect (10,10,100,90), ""+Time.time);
+}
+
+function OnCollisionEnter2D(other:Collision2D){
+  if((other.gameObject.name=="enemy(Clone)")||(other.gameObject.name=="right")||(other.gameObject.name=="left")||(other.gameObject.name=="bottom")||(other.gameObject.name=="top"))
+  {
+  Time.timeScale = 0;
+  Destroy(gameObject);
+
+  }
+
+}</pre></div></div>

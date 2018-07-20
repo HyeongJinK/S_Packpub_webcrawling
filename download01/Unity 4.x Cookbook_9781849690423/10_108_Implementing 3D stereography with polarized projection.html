@@ -1,0 +1,81 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec105"></a>Implementing 3D stereography with polarized projection</h2></div></div><hr /></div><p>3D stereo is everywhere: from <a id="id771" class="indexterm"></a>movie theaters to TV sets and portable gaming. While Unity doesn't natively support <span class="strong"><strong>Quad Buffer</strong></span> technology<a id="id772" class="indexterm"></a> in order to make active stereo implementation easy, <a id="id773" class="indexterm"></a>you might achieve interesting results using passive stereoscopy through a polarized system. While this recipe might be of limited application, it might be very useful for those working with public presentations.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec366"></a>Getting ready</h3></div></div></div><p>For this recipe, we have prepared a package named <code class="literal">StereoScene</code> containing a playable scene including a First Person Controller, a terrain, and some basic geometry. The package is in the <code class="literal">0423_10_03</code> folder.</p><p>Although you don't need any extra hardware to try this recipe, you  will of course need an adequate projection setup to test it properly. That would include a multi-display hardware such as Matrox DualHead2Go, a silver screen, two projectors with polarizing filters, and polarized 3D glasses.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_10_03.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec367"></a>How to do it...</h3></div></div></div><p>To create <a id="id774" class="indexterm"></a>side-by-side <a id="id775" class="indexterm"></a>3D stereo viewports, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the <code class="literal">StereoScene</code> package into your project and open the level named <code class="literal">StereoCam</code>.</p></li><li><p>Add the following C# Script <code class="literal">StereoCam</code> to the <span class="strong"><strong>Main Camera</strong></span> that is a child of the <span class="strong"><strong>First Person Controller</strong></span> game object:</p><div class="informalexample"><pre class="programlisting">// file: StereoCam.cs
+using UnityEngine;
+using System.Collections;
+
+public class StereoCam : MonoBehaviour{
+    public float parallaxDistance = 10.0f;
+    public float eyeDistance = 0.05f;
+    private bool showGUI = false;
+    private GameObject lCamera;
+    private GameObject rCamera;
+    private GameObject parallax;
+    void Start(){
+        lCamera = new GameObject( "lCamera" );
+        lCamera.AddComponent&lt;Camera&gt;();
+        lCamera.AddComponent&lt;GUILayer&gt;();
+        lCamera.AddComponent("FlareLayer");
+        lCamera.camera.CopyFrom(Camera.main);
+        rCamera = (GameObject) Instantiate(lCamera, transform.position, transform.rotation);
+        rCamera.name = "rCamera";
+        lCamera.transform.parent = Camera.main.transform;
+        rCamera.transform.parent = Camera.main.transform;
+        parallax = new GameObject( "parallax" );
+        parallax.transform.parent = Camera.main.transform;
+        parallax.transform.localPosition = Vector3.zero;
+        Vector3 parallaxPosition = parallax.transform.localPosition;
+        parallaxPosition.z = parallaxDistance;
+        parallax.transform.localPosition = parallaxPosition;
+        camera.enabled = false;
+        lCamera.camera.rect = new Rect(0, 0, 0.5f, 1);
+        rCamera.camera.rect = new Rect(0.5f, 0, 0.5f, 1);
+        lCamera.transform.localPosition = Vector3.zero;
+        rCamera.transform.localPosition = Vector3.zero;
+        Vector3 cameraPosition = lCamera.transform.localPosition;
+        cameraPosition.x = -eyeDistance;
+   lCamera.transform.localPosition = cameraPosition;
+        cameraPosition.x = eyeDistance;
+        rCamera.transform.localPosition = cameraPosition;
+    }
+    void Update(){
+        lCamera.transform.LookAt(parallax.transform);
+        rCamera.transform.LookAt(parallax.transform);
+        if (Input.GetKeyUp(KeyCode.Escape)){
+            if (showGUI){
+                showGUI = false;
+            } else{
+                showGUI = true;
+            }
+        }
+
+        if (showGUI){
+
+            if (Input.GetKey(KeyCode.Alpha1))
+                eyeDistance -= 0.001f;
+            if (Input.GetKey(KeyCode.Alpha2))
+                eyeDistance += 0.001f;
+            if (Input.GetKey(KeyCode.Alpha3))
+                parallaxDistance -= 0.01f;
+            if (Input.GetKey(KeyCode.Alpha4))
+                parallaxDistance += 0.01f;
+            Vector3 cameraPosition = lCamera.transform.localPosition;
+            cameraPosition.x = -eyeDistance;
+            lCamera.transform.localPosition = cameraPosition;
+            cameraPosition.x = eyeDistance;
+            rCamera.transform.localPosition = cameraPosition;
+            Vector3 parallaxPosition = parallax.transform.localPosition;
+            parallaxPosition.z = parallaxDistance;
+            parallax.transform.localPosition = parallaxPosition;
+        }
+    }
+    void OnGUI(){
+       for (int n = 0; n &lt; 2; n++){
+            if (showGUI){
+                GUI.Label(new Rect((Screen.width * 0.5f * n) + 10, 30, 500, 20), "Eye distance: " + eyeDistance.ToString("F") + ". Press 1 to decrease and 2 to increase.");
+                GUI.Label(new Rect((Screen.width * 0.5f * n) + 10, 70, 500, 20), "parallax distance: " + parallaxDistance.ToString("F") + ". Press 3 to decrease and 4 to increase.");
+            }else{
+                GUI.Label(new Rect((Screen.width * 0.5f * n) + 10, 10, 500, 20), "Press ESC to adjust stereo parameters");
+            }
+        }
+    }
+}</pre></div></li><li><p>Play your scene. It should now be playing in two viewports: one for left eye and the other for the right.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_10_04.jpg" /></div></li><li><p>Build the executable file and run it in full-screen mode on your dual projector system, making <a id="id776" class="indexterm"></a>sure<a id="id777" class="indexterm"></a> it behaves as a very wide single display, not two different displays side-by-side. Left and right viewports should superimposed, and not side-by-side.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec368"></a>How it works...</h3></div></div></div><p>Once attached to<a id="id778" class="indexterm"></a> the <span class="strong"><strong>Main Camera</strong></span>, our script creates three objects: two cameras (left and right) and an empty object named <code class="literal">parallax</code>. These objects are made children of the <span class="strong"><strong>Main Camera</strong></span>, so they move and rotate accordingly. The stereographic effect is given by the distance between the left and right cameras, and also by how their focal points converge at the parallax. Also, we have used a <code class="literal">for</code> loop to make sure GUI elements are displayed on both viewports.</p><p>Since you might want to adjust the distance and parallax of your cameras, depending on your preferences and final result on your projection environment, we've made those variables adjustable (press the <span class="emphasis"><em>Esc</em></span> key to read the instructions).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec369"></a>There's more...</h3></div></div></div><p>The following are some important suggestions:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec80"></a>Using Render to Texture (Unity Pro only)</h4></div></div></div><p>As an alternative to having two viewports<a id="id779" class="indexterm"></a>, you could get a similar result using <a id="id780" class="indexterm"></a>
+<span class="strong"><strong>Render to Texture</strong></span>, as proposed by Paul Bourke at <a class="ulink" href="http://paulbourke.net/stereographics/Unitystereo/" target="_blank">http://paulbourke.net/stereographics/Unitystereo/</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec81"></a>Using anaglyph resources</h4></div></div></div><p>In case you <a id="id781" class="indexterm"></a>prefer to develop an anaglyph stereoscopic effect, there are<a id="id782" class="indexterm"></a> some products you should take a look at, such as the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>3D Anaglyph System<a id="id783" class="indexterm"></a>, by Azer2K available at <a class="ulink" href="http://u3d.as/content/azert2k/3d-anaglyph-system/1AE" target="_blank">http://u3d.as/content/azert2k/3d-anaglyph-system/1AE</a></p></li><li style="list-style-type: disc"><p>Stereoskopix' FOV2GO<a id="id784" class="indexterm"></a> at Unity's Asset Store, available at <a class="ulink" href="http://u3d.as/content/stereoskopix/fov2go/2HA" target="_blank">http://u3d.as/content/stereoskopix/fov2go/2HA</a></p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec82"></a>Using NVidia 3D Vision</h4></div></div></div><p>Alternatively,<a id="id785" class="indexterm"></a> you could develop your game targeting <a id="id786" class="indexterm"></a>NVidia's solution 3D Vision. You can find, at the Unity Asset Store, a dedicated resource developed by Dembeta SL named Active Stereoscopic 3D for Unity at <a class="ulink" href="http://u3d.as/content/dembeta-sl/active-stereoscopic-3d-for-unity/2Vt" target="_blank">http://u3d.as/content/dembeta-sl/active-stereoscopic-3d-for-unity/2Vt</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec83"></a>Acquiring active stereo third-party software</h4></div></div></div><p>In case you <a id="id787" class="indexterm"></a>need a <a id="id788" class="indexterm"></a>more robust solution for active stereo and VR, you could check out the following third-party software:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Mechdyne sells a solution named <span class="strong"><strong>getReal3D</strong></span><a id="id789" class="indexterm"></a> for Unity, available at <a class="ulink" href="http://www.mechdyne.com" target="_blank">http://www.mechdyne.com</a></p></li><li style="list-style-type: disc"><p>I'm in VR has developed <span class="strong"><strong>MiddleVR For Unity</strong></span><a id="id790" class="indexterm"></a>, available at <a class="ulink" href="http://www.imin-vr.com/middlevr-for-unity/" target="_blank">http://www.imin-vr.com/middlevr-for-unity/</a></p></li></ul></div></div></div></div>

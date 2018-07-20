@@ -1,0 +1,113 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec68"></a>Implementing a Fur Shader</h2></div></div><hr /></div><p>The look of a material depends on its <span>physical</span><a id="id325453622" class="indexterm"></a> structure. The shaders attempt to simulate them, but, in doing so, they oversimplify the way light behaves. Materials with a complex macroscopic structure are particularly hard to render. This is the case for many fabrics and animal furs. This recipe will show you how it is possible to simulate fur and other materials (such as grass) that are more than just a flat surface. In order to do this, the same material is drawn multiple times over and over, increasing in size every time. This creates the illusion of fur.</p><p>The shader presented here is based on the work of Jonathan Czeck and Aras Pranckevičius:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/4c23319d-add0-4062-97ef-36e74547c202.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec172"></a>Getting ready</h3></div></div></div><p>In order for this recipe to work, you will need a texture that shows how you wish to have your fur displayed: </p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/324c97f4-da86-4681-a57d-715960b0e75f.png" /></div><p>I have provided two examples in <code class="literal">Chapter 11 </code>| <code class="literal">Textures</code> folder with the book's example code (<code class="literal">Faux Fur</code> and <code class="literal">panda</code>).</p><p>Like all the other shaders before, you <span>will</span><a id="id325454871" class="indexterm"></a> need to create a new <strong class="userinput"><code>Standard Surface Shader</code></strong> (<code class="literal">Fur</code>) and a material (<code class="literal">FurMat</code>) to host it, and attach it to a sphere for demonstration purposes:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/3a63d526-5db2-41f1-9869-4e223caf2226.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec173"></a>How to do it...</h3></div></div></div><p>In this recipe, we can start modifying a <strong class="userinput"><code>Standard Surface Shader</code></strong>:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Double-click on the <code class="literal">Fur</code> Shader to open it up in your IDE of choice. Once opened, add the following bolded <code class="literal">Properties</code>:</li></ol></div><pre class="programlisting">Properties 
+{
+  _Color ("Color", Color) = (1,1,1,1)
+  _MainTex ("Albedo (RGB)", 2D) = "white" {}
+  _Glossiness ("Smoothness", Range(0,1)) = 0.5
+  _Metallic ("Metallic", Range(0,1)) = 0.0
+
+<span class="strong"><strong>  _FurLength ("Fur Length", Range (.0002, 1)) = .25</strong></span>
+<span class="strong"><strong>  _Cutoff ("Alpha Cutoff", Range(0,1)) = 0.5 // how "thick"</strong></span>
+<span class="strong"><strong>  _CutoffEnd ("Alpha Cutoff end", Range(0,1)) = 0.5 // how thick they are at the end</strong></span>
+<span class="strong"><strong>  _EdgeFade ("Edge Fade", Range(0,1)) = 0.4</strong></span>
+
+<span class="strong"><strong>  _Gravity ("Gravity Direction", Vector) = (0,0,1,0)</strong></span>
+<span class="strong"><strong>  _GravityStrength ("Gravity Strength", Range(0,1)) = 0.25</strong></span>
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>This shader requires you to repeat the same pass several times. We will use the technique introduced in the <span class="emphasis"><em>Making your shader world modular with CgIncludes </em></span>recipe to group all the code necessary from a single pass in an external file. Let's start creating a new <code class="literal">CgInclude</code> file called <code class="literal">FurPass.cginc</code> with the following code:</li></ol></div><pre class="programlisting">#pragma target 3.0
+
+fixed4 _Color;
+sampler2D _MainTex;
+half _Glossiness;
+half _Metallic;
+
+uniform float _FurLength;
+uniform float _Cutoff;
+uniform float _CutoffEnd;
+uniform float _EdgeFade;
+
+uniform fixed3 _Gravity;
+uniform fixed _GravityStrength;
+
+void vert (inout appdata_full v)
+{
+  fixed3 direction = lerp(v.normal, _Gravity * _GravityStrength + v.normal * (1-_GravityStrength), FUR_MULTIPLIER);
+  v.vertex.xyz += direction * _FurLength * FUR_MULTIPLIER * v.color.a;
+  //v.vertex.xyz += v.normal * _FurLength * FUR_MULTIPLIER * v.color.a;
+}
+
+struct Input {
+  float2 uv_MainTex;
+  float3 viewDir;
+};
+
+void surf (Input IN, inout SurfaceOutputStandard o) {
+  fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
+  o.Albedo = c.rgb;
+  o.Metallic = _Metallic;
+  o.Smoothness = _Glossiness;
+
+  //o.Alpha = step(_Cutoff, c.a);
+  o.Alpha = step(lerp(_Cutoff,_CutoffEnd,FUR_MULTIPLIER), c.a);
+
+  float alpha = 1 - (FUR_MULTIPLIER * FUR_MULTIPLIER);
+  alpha += dot(IN.viewDir, o.Normal) - _EdgeFade;
+
+  o.Alpha *= alpha;
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Got back to your original shader and add this extra pass after the <code class="literal">ENDCG</code> section:</li></ol></div><pre class="programlisting">void surf (Input IN, inout SurfaceOutputStandard o) {
+  // Albedo comes from a texture tinted by color
+  fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
+  o.Albedo = c.rgb;
+  // Metallic and smoothness come from slider variables
+  o.Metallic = _Metallic;
+  o.Smoothness = _Glossiness;
+  o.Alpha = c.a;
+}
+ENDCG
+
+<span class="strong"><strong>CGPROGRAM</strong></span>
+<span class="strong"><strong>#pragma surface surf Standard fullforwardshadows alpha:blend vertex:vert</strong></span>
+<span class="strong"><strong>#define FUR_MULTIPLIER 0.05</strong></span>
+<span class="strong"><strong>#include "FurPass.cginc"</strong></span>
+<span class="strong"><strong>ENDCG</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Go back into Unity and <span>assign</span><a id="id325464997" class="indexterm"></a> the <code class="literal">FauxFur</code> texture in the <strong class="userinput"><code>Albedo (RGB)</code></strong> property. You should notice little dots along the shader:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/b6e31020-5007-486d-a479-e89ce0cb805d.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Add more passes, progressively increasing <code class="literal">FUR_MULTIPLIER</code>. You can get decent results with 20 passes, from <code class="literal">0.05</code> to <code class="literal">0.95</code>:</li></ol></div><pre class="programlisting">    CGPROGRAM
+    #pragma surface surf Standard fullforwardshadows alpha:blend vertex:vert
+    #define FUR_MULTIPLIER 0.05
+    #include "FurPass.cginc"
+    ENDCG
+
+    CGPROGRAM
+    #pragma surface surf Standard fullforwardshadows alpha:blend vertex:vert
+    #define FUR_MULTIPLIER 0.1
+    #include "FurPass.cginc"
+    ENDCG
+
+    CGPROGRAM
+    #pragma surface surf Standard fullforwardshadows alpha:blend vertex:vert
+    #define FUR_MULTIPLIER 0.15
+    #include "FurPass.cginc"
+    ENDCG
+
+    // ... 0.2 - 0.85 here
+
+        CGPROGRAM
+    #pragma surface surf Standard fullforwardshadows alpha:blend vertex:vert
+    #define FUR_MULTIPLIER 0.90
+    #include "FurPass.cginc"
+    ENDCG
+
+    CGPROGRAM
+    #pragma surface surf Standard fullforwardshadows alpha:blend vertex:vert
+    #define FUR_MULTIPLIER 0.95
+    #include "FurPass.cginc"
+    ENDCG
+  }
+
+  Fallback "Diffuse"
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Once the shader has been compiled and attached to a material, you can change its appearance from the <strong class="userinput"><code>Inspector</code></strong>.</li></ol></div><p>The <code class="literal">Fur Length</code> property determines the space between the fur shells, which will alter the length of the fur. Longer fur might require more passes to look realistic.</p><p><code class="literal">Alpha Cutoff</code> and <code class="literal">Alpha Cutoff End</code> are used to control the density of the fur and how it gets progressively thinner.</p><p><code class="literal">Edge Fade</code> determines the final transparency of the fur and how fuzzy it looks. Softer materials should have a high <code class="literal">Edge Fade</code>.</p><p>Finally, <code class="literal">Gravity Direction</code> and <code class="literal">Gravity Strength</code> curve the fur shells to simulate the effect of gravity:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/0fc0c04b-4a02-402e-951a-c30c5b1f1101.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec174"></a>How it works...</h3></div></div></div><p>The technique presented in this recipe is known as Lengyel's concentric fur-shell technique or simply the shell technique. It works by creating progressively bigger copies of the <span>geometry</span><a id="id325453532" class="indexterm"></a> that needs to be rendered. With the right transparency, it gives the illusion of a continuous thread of hair:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/25a9573c-964a-410f-8081-9fad7e51d174.png" /></div><p>The shell technique is extremely versatile and relatively easy to implement. Realistic fur requires not only extruding the geometry of the model but also altering its vertices. This is possible with tessellation shaders, which are much more advanced and not covered in this book.</p><p>Each pass in this <code class="literal">Fur</code> Shader is contained in <code class="literal">FurPass.cginc</code>. The vertex function creates a slightly bigger version of the model, which is based on the principle of normal extrusion. Additionally, the effect of gravity is taken into account, so that it gets more intense the further we are from the center:</p><pre class="programlisting">void vert (inout appdata_full v) 
+{ 
+    fixed3 direction = lerp(v.normal, _Gravity * _GravityStrength + v.normal * (1-_GravityStrength), FUR_MULTIPLIER); 
+    v.vertex.xyz += direction * _FurLength * FUR_MULTIPLIER * v.color.a; 
+} </pre><p>In this example, the alpha channel is used to <span>determine</span><a id="id325453568" class="indexterm"></a> the final length of the <code class="literal">Fur</code>. This allows for more precise control.</p><p>Finally, the surface function reads the control mask from the alpha channel. It uses the cutoff value to determine which pixels to show and which ones to hide. This value changes from the first to the final fur shell to match <code class="literal">Alpha Cutoff</code> and <code class="literal">Alpha Cutoff End</code>:</p><pre class="programlisting">o.Alpha = step(lerp(_Cutoff,_CutoffEnd,FUR_MULTIPLIER), c.a); 
+ 
+float alpha = 1 - (FUR_MULTIPLIER * FUR_MULTIPLIER); 
+alpha += dot(IN.viewDir, o.Normal) - _EdgeFade; 
+ 
+o.Alpha *= alpha; </pre><p>The final alpha value of the fur also depends on its angle from the camera, giving it a softer look.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec175"></a>There's more...</h3></div></div></div><p>The <code class="literal">Fur</code> s<span>hader</span> has been used to <span>simulate</span><a id="id325209454" class="indexterm"></a> fur. However, it can be used for a variety of other materials. It works very well for materials that are naturally made of multiple layers, such as forest canopies, fuzzy clouds, human hair, and even grass. </p><p>Some additional examples of the same shader being used by just tweaking the parameters can be seen in the book's example code:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/2f6e31c2-0fc1-4a94-b4f9-12323be6f4a8.png" /></div><p>There are many other improvements that can dramatically increase its realism. You can add a very simple wind animation by changing the direction of the gravity based on the <span>current</span><a id="id325209476" class="indexterm"></a> time. If calibrated correctly, this can give the impression that the fur is moving because of the wind.</p><p>Additionally, you can make your fur move when the character is moving. All these little tweaks contribute to the believability of your fur, giving the illusion that it is not just a static material drawn on the surface. Unfortunately, this shader comes at a price: 20 passes are very heavy to compute. The number of passes determines roughly how believable the material is. You should play with fur length and passes in order to get the effect that works best for you. Given the performance impact of this shader, it is advisable to have several materials with different numbers of passes; you can use them at different distances and save a lot of computation.</p></div></div>

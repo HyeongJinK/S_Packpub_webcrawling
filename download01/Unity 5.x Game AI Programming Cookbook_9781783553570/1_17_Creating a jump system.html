@@ -1,0 +1,168 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec24"></a>Creating a jump system</h2></div></div><hr /></div><p>Imagine that we're <a id="id58" class="indexterm"></a>developing a cool action game where the player is capable of escaping using cliffs and rooftops. In that case, the enemies need to be able to chase the player and be smart enough to discern whether to take the jump and gauge how to do it.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec70"></a>Getting ready</h3></div></div></div><p>We need to create a basic matching-velocity algorithm and the notion of jump pads and landing pads in order to emulate a velocity math so that we can reach them.</p><p>Also, the agents must have the tag <code class="literal">Agent</code>, the main object must have a <code class="literal">Collider</code> component marked as trigger. Depending on your game, the agent or the pads will need the <code class="literal">Rigidbody</code> component attached.</p><p>The following is the code for the <code class="literal">VelocityMatch</code> behavior:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class VelocityMatch : AgentBehaviour {
+    
+    public float timeToTarget = 0.1f;
+
+    public override Steering GetSteering()
+    {
+        Steering steering = new Steering();
+        steering.linear = target.GetComponent&lt;Agent&gt;().velocity - agent.velocity;
+        steering.linear /= timeToTarget;
+        if (steering.linear.magnitude &gt; agent.maxAccel)
+            steering.linear = steering.linear.normalized * agent.maxAccel;
+
+        steering.angular = 0.0f;
+        return steering;
+    }
+}</pre></div><p>Also, it's important to create a data type called <code class="literal">JumpPoint</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class JumpPoint
+{
+    public Vector3 jumpLocation;
+    public Vector3 landingLocation;
+    //The change in position from jump to landing
+    public Vector3 deltaPosition;
+
+    public JumpPoint ()
+        : this (Vector3.zero, Vector3.zero)
+    {
+    }
+
+    public JumpPoint(Vector3 a, Vector3 b)
+    {
+        this.jumpLocation = a;
+        this.landingLocation = b;
+        this.deltaPosition = this.landingLocation - this.jumpLocation;
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec71"></a>How to do it...</h3></div></div></div><p>We will learn how to implement the <code class="literal">Jump</code> behavior:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Jump</code> class deriving from <code class="literal">VelocityMatch</code>, with its member variables:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+
+public class Jump : VelocityMatch
+{
+    public JumpPoint jumpPoint;
+    //Keeps track of whether the jump is achievable
+    bool canAchieve = false;
+    //Holds the maximum vertical jump velocity
+    public float maxYVelocity;
+    public Vector3 gravity = new Vector3(0, -9.8f, 0);
+    private Projectile projectile;
+    private List&lt;AgentBehaviour&gt; behaviours;
+    
+    // next steps
+}</pre></div></li><li><p>Implement the <code class="literal">Isolate</code> method. It disables all the agent behaviors, except for the <code class="literal">Jump</code> component:</p><div class="informalexample"><pre class="programlisting">public void Isolate(bool state)
+{
+    foreach (AgentBehaviour b in behaviours)
+        b.enabled = !state;
+    this.enabled = state;
+}</pre></div></li><li><p>Define the function for calling the jumping effect, using the projectile behavior we learned before:</p><div class="informalexample"><pre class="programlisting">public void DoJump()
+{
+    projectile.enabled = true;
+    Vector3 direction;
+    direction = Projectile.GetFireDirection(jumpPoint.jumpLocation, jumpPoint.landingLocation, agent.maxSpeed);
+    projectile.Set(jumpPoint.jumpLocation, direction, agent.maxSpeed, false);
+}</pre></div></li><li><p>Implement the member function for setting up the behaviors' target for matching its velocity:</p><div class="informalexample"><pre class="programlisting">protected void CalculateTarget()
+{
+    target = new GameObject();
+    target.AddComponent&lt;Agent&gt;();
+
+    //Calculate the first jump time
+    float sqrtTerm = Mathf.Sqrt(2f * gravity.y * jumpPoint.deltaPosition.y + maxYVelocity * agent.maxSpeed);
+    float time = (maxYVelocity - sqrtTerm) / gravity.y;
+
+    //Check if we can use it, otherwise try the other time
+    if (!CheckJumpTime(time))
+    {
+        time = (maxYVelocity + sqrtTerm) / gravity.y;
+    }
+}</pre></div></li><li><p>Implement the function for computing the time:</p><div class="informalexample"><pre class="programlisting">//Private helper method for the CalculateTarget function
+private bool CheckJumpTime(float time)
+{
+    //Calculate the planar speed
+    float vx = jumpPoint.deltaPosition.x / time;
+    float vz = jumpPoint.deltaPosition.z / time;
+    float speedSq = vx * vx + vz * vz;
+
+    //Check it to see if we have a valid solution
+    if (speedSq &lt; agent.maxSpeed * agent.maxSpeed)
+    {
+        target.GetComponent&lt;Agent&gt;().velocity = new Vector3(vx, 0f, vz);
+        canAchieve = true;
+        return true;
+    }
+    return false;
+}</pre></div></li><li><p>Override the <code class="literal">Awake</code> member function. The most important thing here is caching the references to other attached behaviors, so <code class="literal">Isolate</code> function makes sense:</p><div class="informalexample"><pre class="programlisting">public override void Awake()
+{
+    base.Awake();
+    this.enabled = false;
+    projectile = gameObject.AddComponent&lt;Projectile&gt;();
+    behaviours = new List&lt;AgentBehaviour&gt;();
+    AgentBehaviour[] abs;
+    abs = gameObject.GetComponents&lt;AgentBehaviour&gt;();
+    foreach (AgentBehaviour b in abs)
+    {
+        if (b == this)
+            continue;
+        behaviours.Add(b);
+    }
+}</pre></div></li><li><p>Override the <code class="literal">GetSteering</code> member function:</p><div class="informalexample"><pre class="programlisting">public override Steering GetSteering()
+{
+    Steering steering = new Steering();
+    
+    // Check if we have a trajectory, and create one if not.
+    if (jumpPoint != null &amp;&amp; target == null)
+    {
+        CalculateTarget();
+    }
+    //Check if the trajectory is zero. If not, we have no acceleration.
+    if (!canAchieve)
+    {
+        return steering;
+    }
+
+    //Check if we've hit the jump point
+    if (Mathf.Approximately((transform.position - target.transform.position).magnitude, 0f) &amp;&amp;
+        Mathf.Approximately((agent.velocity - target.GetComponent&lt;Agent&gt;().velocity).magnitude, 0f))
+    {
+        DoJump();
+        return steering;
+    }
+    return base.GetSteering();
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec72"></a>How it works...</h3></div></div></div><p>The algorithm takes into account the agent's velocity and calculates whether it can reach the landing pad or not. The behavior's target is the one responsible for executing the jump, and if it judges that the agent can, it tries to match  the targets' vertical velocity while seeking the landing pad's position.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec73"></a>There is more</h3></div></div></div><p>We will need a jump pad and a landing pad in order to have a complete jumping system. Both the jump and landing pads need the <code class="literal">Collider</code> component marked as trigger. Also, as stated before, they will probably need to have a <code class="literal">Rigidbody</code> component, too, as seen in the image below.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3570_01_08.jpg" /></div><p>The pads we will need a <code class="literal">MonoBehaviour</code> script attached as explained below.</p><p>The following code is to be attached to the jump pad:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class JumpLocation : MonoBehaviour
+{
+    public LandingLocation landingLocation;
+
+    public void OnTriggerEnter(Collider other)
+    {
+        if (!other.gameObject.CompareTag("Agent"))
+            return;
+        Agent agent = other.GetComponent&lt;Agent&gt;();
+        Jump jump = other.GetComponent&lt;Jump&gt;();
+        if (agent == null || jump == null)
+            return;
+        Vector3 originPos = transform.position;
+        Vector3 targetPos = landingLocation.transform.position;
+        jump.Isolate(true);
+        jump.jumpPoint = new JumpPoint(originPos, targetPos);
+        jump.DoJump();
+    }
+}</pre></div><p>The following code is to be attached to the landing pad:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class LandingLocation : MonoBehaviour
+{
+    public void OnTriggerEnter(Collider other)
+    {
+        if (!other.gameObject.CompareTag("Agent"))
+            return;
+        Agent agent = other.GetComponent&lt;Agent&gt;();
+        Jump jump = other.GetComponent&lt;Jump&gt;();
+        if (agent == null || jump == null)
+            return;
+        jump.Isolate(false);
+        jump.jumpPoint = null;
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec74"></a>See Also</h3></div></div></div><p>The <span class="emphasis"><em>Shooting</em></span>
+<span class="emphasis"><em> a projectile</em></span> recipe</p></div></div>

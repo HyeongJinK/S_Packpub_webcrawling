@@ -1,0 +1,24 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec28"></a>Using the Sense class</h2></div></div><hr /></div><p>The <code class="literal">Sense</code> class is <a id="id96" class="indexterm"></a>the interface of our sensory system that the other custom senses can implement. It defines two virtual methods, <code class="literal">Initialize</code> and <code class="literal">UpdateSense</code>, which will be implemented in custom senses, and are executed from the <code class="literal">Start</code> and <code class="literal">Update</code> methods, respectively.</p><p>The code in the <code class="literal">Sense.cs</code> file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Sense : MonoBehaviour {
+  public bool bDebug = true;
+  public Aspect.aspect aspectName = Aspect.aspect.Enemy;
+  public float detectionRate = 1.0f;
+
+  protected float elapsedTime = 0.0f;
+
+  protected virtual void Initialize() { }
+  protected virtual void UpdateSense() { }
+
+  // Use this for initialization
+  void Start () {
+    elapsedTime = 0.0f;
+    Initialize();
+  }
+  
+  // Update is called once per frame
+  void Update () {
+    UpdateSense();
+  }
+}</pre></div><p>The basic properties include <a id="id97" class="indexterm"></a>its detection rate to execute the sensing operation as well as the name of the aspect it should look for. This script will not be attached to any of our objects.</p></div>

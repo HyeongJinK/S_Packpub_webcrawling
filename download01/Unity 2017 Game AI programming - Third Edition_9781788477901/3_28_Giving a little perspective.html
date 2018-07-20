@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec34"></a>Giving a little perspective</h2></div></div><hr /></div><p>The <span>perspective</span><a id="id288183632" class="indexterm"></a> sense will detect whether a specific aspect is within its field of view and visible distance. If it sees anything, it will take the specified action, which in this case is to print a message to the console.</p><p>The code in the <code class="literal">Perspective.cs</code> file looks like this:</p><pre class="programlisting">using UnityEngine;
+
+public class Perspective : Sense
+{
+    public int fieldOfView = 45;
+    public int viewDistance = 100;
+
+    private Transform playerTransform;
+    private Vector3 rayDirection;
+
+    protected override void Initialize() 
+    {
+        playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
+    }
+
+    protected override void UpdateSense() 
+    {
+        elapsedTime += Time.deltaTime;
+
+        if (elapsedTime &gt;= detectionRate) 
+        {
+            DetectAspect();
+        }
+  }
+
+    //Detect perspective field of view for the AI Character
+    void DetectAspect()
+    {
+        RaycastHit hit;
+        rayDirection = playerTransform.position - transform.position;
+
+        if ((Vector3.Angle(rayDirection, transform.forward)) &lt; fieldOfView)
+        {
+            // Detect if player is within the field of view
+            if (Physics.Raycast(transform.position, rayDirection, out hit, viewDistance))
+            {
+                Aspect aspect = hit.collider.GetComponent&lt;Aspect&gt;();
+                if (aspect != null)
+                {
+                    //Check the aspect
+                    if (aspect.aspectType != aspectName)
+                    {
+                        print("Enemy Detected");
+                    }
+                }
+            }
+        }
+    }</pre><p>We need to implement the <code class="literal">Initialize</code> and <code class="literal">UpdateSense</code> methods that will be called from the <code class="literal">Start</code> and <code class="literal">Update</code> methods of the parent <code class="literal">Sense</code> class, respectively. In the <code class="literal">DetectAspect</code> method, we first check the angle between the player and the AI's current direction. If it's in the field of view range, we shoot a ray in the direction that the player tank is located. The ray length is the value of the visible distance property.</p><p>The <code class="literal">Raycast</code> method will return when it first hits another object. This way, even if the player is in the visible range, the AI character will not be able to see if it's hidden behind the wall. We then check for an <code class="literal">Aspect</code> component, and it will return true only if the object that was hit has an <code class="literal">Aspect</code> component and its <code class="literal">aspectType</code> is different from its own.</p><p>The <code class="literal">OnDrawGizmos</code> method draws lines based on the <span>perspective</span><a id="id288562519" class="indexterm"></a> field of view angle and viewing distance so that we can see the AI character's line of sight in the editor window during play testing. Attach this script to our AI character and be sure that the aspect type is set to <code class="literal">ENEMY</code>.</p><p>This method can be illustrated as follows:</p><pre class="programlisting">  void OnDrawGizmos()
+    {
+        if (playerTransform == null) 
+        {
+            return;
+        }
+
+        Debug.DrawLine(transform.position, playerTransform.position, Color.red);
+
+        Vector3 frontRayPoint = transform.position + (transform.forward * viewDistance);
+
+        //Approximate perspective visualization
+        Vector3 leftRayPoint = frontRayPoint;
+        leftRayPoint.x += fieldOfView * 0.5f;
+
+        Vector3 rightRayPoint = frontRayPoint;
+        rightRayPoint.x -= fieldOfView * 0.5f;
+
+        Debug.DrawLine(transform.position, frontRayPoint, Color.green);
+        Debug.DrawLine(transform.position, leftRayPoint, Color.green);
+        Debug.DrawLine(transform.position, rightRayPoint, Color.green);
+    }
+}</pre></div>

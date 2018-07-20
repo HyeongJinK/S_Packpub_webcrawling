@@ -1,0 +1,60 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec76"></a>Learning to use Naïve Bayes classifiers</h2></div></div><hr /></div><p>Learning to <a id="id340" class="indexterm"></a>use examples could be hard even for humans. For example, given a list of examples for two sets of values, it's not always easy to see the connection between them. One way of solving this problem would be to classify one set of values and then give it a try, and that's where classifier algorithms come in handy.</p><p>Naïve Bayes classifiers are prediction algorithms for assigning labels to problem instances; they apply probability and Bayes' theorem with a strong-independence assumption between the variables to analyze. One of the key advantages of Bayes' classifiers is scalability.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec262"></a>Getting ready…</h3></div></div></div><p>Since it is hard to build a general classifier, we will build ours assuming that the inputs are positive- and negative-labeled examples. So, the first thing that we need to address is defining the labels that our classifier will handle using an <code class="literal">enum</code> data structure called <code class="literal">NBCLabel</code>:</p><div class="informalexample"><pre class="programlisting">public enum NBCLabel
+{
+    POSITIVE,
+    NEGATIVE
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec263"></a>How to do it…</h3></div></div></div><p>The classifier we'll <a id="id341" class="indexterm"></a>build only takes five great steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the class and its member variables:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class NaiveBayesClassifier : MonoBehaviour
+{
+    public int numAttributes;
+    public int numExamplesPositive;
+    public int numExamplesNegative;
+
+    public List&lt;bool&gt; attrCountPositive;
+    public List&lt;bool&gt; attrCountNegative;
+}</pre></div></li><li><p>Define the <code class="literal">Awake</code> method for initialization:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+    attrCountPositive = new List&lt;bool&gt;();
+    attrCountNegative = new List&lt;bool&gt;();
+}</pre></div></li><li><p>Implement the function for updating the classifier:</p><div class="informalexample"><pre class="programlisting">public void UpdateClassifier(bool[] attributes, NBCLabel label)
+{
+    if (label == NBCLabel.POSITIVE)
+    {
+        numExamplesPositive++;
+        attrCountPositive.AddRange(attributes);
+    }
+    else
+    {
+        numExamplesNegative++;
+        attrCountNegative.AddRange(attributes);
+    }
+}</pre></div></li><li><p>Define the <a id="id342" class="indexterm"></a>function for computing the Naïve probability:</p><div class="informalexample"><pre class="programlisting">public float NaiveProbabilities(
+        ref bool[] attributes,
+        bool[] counts,
+        float m,
+        float n)
+{
+    float prior = m / (m + n);
+    float p = 1f;
+    int i = 0;
+    for (i = 0; i &lt; numAttributes; i++)
+    {
+        p /= m;
+        if (attributes[i] == true)
+            p *= counts[i].GetHashCode();
+        else
+            p *= m - counts[i].GetHashCode();
+    }
+    return prior * p;
+}</pre></div></li><li><p>Finally, implement the function for prediction:</p><div class="informalexample"><pre class="programlisting">public bool Predict(bool[] attributes)
+{
+    float nep = numExamplesPositive;
+    float nen = numExamplesNegative;
+    float x = NaiveProbabilities(ref attributes, attrCountPositive.ToArray(), nep, nen);
+    float y = NaiveProbabilities(ref attributes, attrCountNegative.ToArray(), nen, nep);
+    if (x &gt;= y)
+        return true;
+    return false;
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec264"></a>How it works…</h3></div></div></div><p>The <code class="literal">UpdateClassifier</code> function takes the example input values and stores them. This is the first function to be called. The <code class="literal">NaiveProbabilities</code> function is the one responsible for computing the probabilities for the prediction function to work. Finally, the <code class="literal">Predict</code> function is the second <a id="id343" class="indexterm"></a>one to be called by us in order to get the results of classification.</p></div></div>

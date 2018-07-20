@@ -1,0 +1,25 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec281"></a>Time for action – it's hip to be square</h2></div></div><hr /></div><p>The way that players interact with a Tic Tac Toe is to place an X or an O piece in the empty spaces on the grid. If we create an invisible, clickable GameObject to sit in those spaces and respond to clicks, <a id="id890" class="indexterm"></a>we'll have nailed down most of the game's interactivity. Follow these steps to create that <a id="id891" class="indexterm"></a>clickable square:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a cube. Position it at <code class="literal">-2.8</code>,<code class="literal">1</code>,<code class="literal">-19.7</code> with a scale of <code class="literal">4.2</code>,<code class="literal">1</code>,<code class="literal">4.2</code>. This puts the square in the top-left cell of the grid, sized appropriately.</p><div class="mediaobject"><img src="/graphics/9781849695268/graphics/5268OT_12_05.jpg" /></div></li><li><p>Rename it <code class="literal">Square</code>.</p></li><li><p>Create a new Javascript and rename it <code class="literal">Square</code>.</p></li><li><p>Drag the <code class="literal">Square</code> script<a id="id892" class="indexterm"></a> onto the <code class="literal">Square</code> GameObject.</p></li><li><p>Add this to the <code class="literal">GameLogic</code> script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>function ClickSquare(x:int, y:int)</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  print("Square " + x + "," + y + " was clicked");</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Double-click to open<a id="id893" class="indexterm"></a> the <code class="literal">Square</code> script and punch in this code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>#pragma strict</strong></span>
+<span class="strong"><strong>var x:int;</strong></span>
+<span class="strong"><strong>var y:int;</strong></span>
+
+<span class="strong"><strong>var gameLogic:GameObject;</strong></span>
+
+<span class="strong"><strong>function Start () </strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  gameLogic = GameObject.Find("GameLogic");</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+<span class="strong"><strong>function OnMouseDown()</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  gameLogic.GetComponent(GameLogic).ClickSquare(x, y);</strong></span>
+<span class="strong"><strong>} </strong></span>
+</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec110"></a>
+<span class="emphasis"><em>What just happened – find and click</em></span>
+</h3></div></div></div><p>Let's have a gander at that code.</p><div class="informalexample"><pre class="programlisting">gameLogic = GameObject.Find("GameLogic");</pre></div><p>In the <code class="literal">Start</code> function of the <code class="literal">Square</code> script, we use the <code class="literal">GameObject.Find()</code> method to get a reference to the <code class="literal">GameLogic</code> "mothership" GameObject. Unity searches through the Hierarchy, looking for an element with a matching name. Since this is an "expensive" (read: slow) operation, we only do it once at the beginning of the game, instead of, say, repeatedly in the <code class="literal">Update</code> function, or every time the player clicks on the square.</p><p>function onMouseDown<code class="literal">()</code> The <code class="literal">OnMouseDown</code> function is called when the primary mouse button (most often the left mouse button, unless the player has an unusual system configuration) is pressed and the mouse cursor intersects this GameObject's Collider.</p><p>Test the game. When you click on the square, the message is sent to the <code class="literal">GameLogic</code> script, and we see a printout of the <code class="literal">Square's x and y coordinates:</code>
+</p><div class="mediaobject"><img src="/graphics/9781849695268/graphics/5268OT_12_06.jpg" /></div><p>Try changing the <code class="literal">x</code> and <code class="literal">y</code> values of <code class="literal">Square</code> in the <span class="strong"><strong>Inspector</strong></span> panel, then run the game and click on the <code class="literal">Square</code> to see the results. Change the <code class="literal">x</code> and <code class="literal">y</code> values to <code class="literal">9</code>,<code class="literal">9</code> when you're finished testing.</p><p>Why <code class="literal">9</code>,<code class="literal">9</code>? The reason will become clear after<a id="id894" class="indexterm"></a> a few more steps.</p></div></div>

@@ -1,0 +1,33 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec221"></a>Time for action – adding the Play Again button</h2></div></div><hr /></div><p>The very last thing we need to do is to add a button to the end of the game so that the player can play again. Let's revisit our<a id="id676" class="indexterm"></a> good friend GUI from the last few chapters.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the <code class="literal">OnGUI</code> function to the <span class="strong"><strong>HeartBounce</strong></span> script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>function OnGUI(){</strong></span>
+<span class="strong"><strong>  if(hasLost){</strong></span>
+<span class="strong"><strong>   var buttonW:int = 100; // button width</strong></span>
+<span class="strong"><strong>   var buttonH:int = 50; // button height</strong></span>
+<span class="strong"><strong>   </strong></span>
+<span class="strong"><strong>   var halfScreenW:float = Screen.width/2; // half of the Screen width</strong></span>
+<span class="strong"><strong>   var halfButtonW:float = buttonW/2; // Half of the button width</strong></span>
+
+<span class="strong"><strong>   if(GUI.Button(Rect(halfScreenW-halfButtonW, Screen.height*.8, buttonW, buttonH), "Play Again"))</strong></span>
+<span class="strong"><strong>   {</strong></span>
+<span class="strong"><strong>      numHits = 0;</strong></span>
+<span class="strong"><strong>      hasLost = false;</strong></span>
+<span class="strong"><strong>      velocityWasStored = false;</strong></span>
+<span class="strong"><strong>      transform.position = Vector3(0.5,2,-0.05);</strong></span>
+<span class="strong"><strong>      rigidbody.velocity = Vector3(0,0,0);</strong></span>
+<span class="strong"><strong>   }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec93"></a>
+<span class="emphasis"><em>What just happened?</em></span>
+</h3></div></div></div><p>For GUI pros like us, this script is a piece of cake.</p><p>The whole function is wrapped in a "has the player lost the game?" conditional statement.</p><p>We start by storing some values for half of the Screen's width and height, and the width or height of the button.</p><div class="informalexample"><pre class="programlisting">var buttonW:int = 100; // button width
+var buttonH:int = 50; // button height
+   
+var halfScreenW:float = Screen.width/2; // half of the Screen width
+var halfButtonW:float = buttonW/2; // Half of the button width</pre></div><p>Next, we draw the button to the screen, <a id="id677" class="indexterm"></a>and reset some game variables if the button is clicked:</p><div class="informalexample"><pre class="programlisting">if(GUI.Button(Rect(halfScreenW-halfButtonW, Screen.height*.8,
+    buttonW, buttonH),"Play Again")){
+     numHits = 0;
+     hasLost = false;
+     velocityWasStored = false;
+     transform.position = Vector3(0,2,0);
+     rigidbody.velocity = Vector3(0,0,0);
+}</pre></div><p>It's important that we reset the heart's starting position and the velocity of its <span class="strong"><strong>Rigidbody</strong></span> component. Try commenting either or both of these lines out and see what happens!</p><p>Save the script and try it out. Ticker Taker now uses 3D models and an on-screen score counter to elevate a standard, dull keep-up game to a madcap emergency ward adventure.</p><div class="mediaobject"><img src="/graphics/9781849695268/graphics/5268OT_08_24.jpg" /></div></div></div>

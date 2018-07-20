@@ -1,0 +1,9 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec304"></a>Sore loser</h2></div></div><hr /></div><p>You've no doubt noticed that when one player wins, the game obliviously prompts the next player to make a move.</p><p>We need to create a boolean flag that we can flip when a player wins, and show the players a different message when the game is over.</p><p>Add this following boolean to the <code class="literal">GameLogic</code> script:</p><div class="informalexample"><pre class="programlisting">var aGrid:GameObject[,];
+<span class="strong"><strong>var gameIsOver:boolean;</strong></span>
+</pre></div><p>Expand the <code class="literal">CheckForWin()</code> conditional statement:</p><div class="informalexample"><pre class="programlisting">if(CheckForWin(square))
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  gameIsOver = true;</strong></span>
+<span class="strong"><strong>  ShowWinnerPrompt();</strong></span>
+<span class="strong"><strong>  return;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>We can use the <code class="literal">return</code> statement<a id="id944" class="indexterm"></a> like that, too. A naked <code class="literal">return</code> statement just bails us out of running the rest of the code in a function, without even returning a value. If the game is truly over, there's no need to bother with the rest of the function. Let's just get the heck out of here.</p></div>

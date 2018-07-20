@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec42"></a>Basic heads-up-display with a custom GUI</h2></div></div><hr /></div><p>When we explained the use of <code class="literal">GUIText</code> and <code class="literal">GUITexture</code> components in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>Promenade Architecturale</em></span>, they were static. This is fine for a fixed logo, but not when you need <a id="id415" class="indexterm"></a>dynamic information. You can script these <a id="id416" class="indexterm"></a>components, but they are not the most efficient ones to use. This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">public Texture2D someTexture;
+...
+guiText.text = "Hello";
+guiTexture.texture = someTexture;</pre></div><p>An alternative is the use <a id="id417" class="indexterm"></a>of the Unity <span class="strong"><strong>Graphical User Interface</strong></span> (<span class="strong"><strong>GUI</strong></span>) classes. To display a GUI inside a script in Unity, use the <code class="literal">OnGUI()</code> event<a id="id418" class="indexterm"></a>. This runs independently of the regular <code class="literal">Update()</code> cycle. Inside this event, you can display buttons, text labels, sliders, panels, scroll areas, textures, and toggle switches. </p><p>We illustrate this with a simple GUI script that displays the name of the trigger we enter, as shown in the following screenshot, which also displays some feedback in the console.</p><div class="mediaobject"><img src="/graphics/9781783559060/graphics/7500_07_05.jpg" /></div><p>The following steps will show how to set up a simple scene with a few walls and floors:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add a <a id="id419" class="indexterm"></a>few Cubes and name them appropriately. Adjust their scale to cover the room volumes.</p></li><li><p>Set<a id="id420" class="indexterm"></a> each <code class="literal">Box Collider</code> as a trigger and disable their Mesh Renderers, as in the following screenshot.</p><div class="mediaobject"><img src="/graphics/9781783559060/graphics/7500_07_06.jpg" /></div></li><li><p>Create a C# script <code class="literal">displayInfo</code> to attach to each trigger, as shown in the previous screenshot.</p></li><li><p>Adjust the script to contain a private variable <code class="literal">display</code> to toggle the GUI.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class displayInfo : MonoBehaviour {
+<span class="strong"><strong>  private bool display = false;</strong></span>
+</pre></div></li><li><p>The triggers toggle the <code class="literal">display</code> variable when entering and leaving. This is done as shown in the following code:</p><div class="informalexample"><pre class="programlisting">  void OnTriggerEnter(Collider other) {
+    if (other.gameObject.CompareTag("Player")) {
+      display = true;
+    }
+  }
+  void OnTriggerExit(Collider other) {
+    if (other.gameObject.CompareTag("Player")) {
+      display = false;
+    }
+  }</pre></div></li><li><p>Finally, inside the <code class="literal">OnGUI()</code> method<a id="id421" class="indexterm"></a>, we call the <code class="literal">GUI.Box()</code> method when needed. It displays the <code class="literal">name</code> of the GameObject inside a <code class="literal">GUI.Box</code> positioned 5 by 5 pixels from the top left corner and 100 by 20 pixels <a id="id422" class="indexterm"></a>wide. This is done as shown in the<a id="id423" class="indexterm"></a> following code:</p><div class="informalexample"><pre class="programlisting">  void OnGUI(){
+    if (display == true) {
+      <span class="strong"><strong>GUI.Box(new Rect(5,5,100,20), name);</strong></span>
+    }
+  }
+} // closing bracket</pre></div></li></ol></div><p>There is a slight graphical problem. When you exit one volume that is adjacent to the next, both names overlap for a split second. Adding a slight delay or a fading effect masks this. The following<a id="id424" class="indexterm"></a> alternative implementation of the <code class="literal">OnTriggerEnter()</code> method includes a <span class="emphasis"><em>Coroutine</em></span> that instructs a delay of 1 second. Beware that in this case you need to change the <code class="literal">void</code> return type to <code class="literal">IEnumerator</code>. You cannot simply insert a pause inside the script, as the execution of the game would stop. Coroutine is a technique to execute scripts in parallel routines. For more info on the use of Coroutines visit: <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Coroutine.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Coroutine.html</a>
+</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>IEnumerator</strong></span> OnTriggerEnter(Collider other) {
+  if (other.gameObject.CompareTag("Player")) {
+     print("Enter " + other.gameObject.name);
+    <span class="strong"><strong>yield return new WaitForSeconds(1);</strong></span>
+    display = true;
+  }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec43"></a>Toggling lights and other objects</h3></div></div></div><p>We introduced lights in <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Let There be Light!</em></span>. In a dynamic project, you could add light switches or <a id="id425" class="indexterm"></a>change lighting scenarios. The next example displays check boxes on screen to toggle the visibility of preselected light and meshes. Create a C# script called <code class="literal">toggleObjects</code>, as shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class toggleObjects : MonoBehaviour {</pre></div><p>The script has a public variable named <code class="literal">objectList</code>, which is an <code class="literal">array</code> of <code class="literal">GameObjects</code>, as indicated by the square brackets. It can host any GameObject. To fill the array, drag the necessary objects from the Hierarchy tab onto the variable, which adds slots to the list. This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">  public GameObject[] objectList;
+  void OnGUI() {
+    int index = 0;</pre></div><p>A <code class="literal">foreach()</code> loop steps <a id="id426" class="indexterm"></a>through the list one object at a time. In each loop step, we refer to that object using the <code class="literal">obj</code> variable (or any other name we decide to use for it). This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">  foreach ( GameObject obj in objectList){</pre></div><p>Calculate the vertical on-screen position of the GUI element in the <code class="literal">posY</code> variable, in each step. When <code class="literal">index</code> increases, we move a bit further down. This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">    int posY = 5 + 20 * index;</pre></div><p>If that object has a <code class="literal">renderer</code> component, add a Check box (<code class="literal">GUI.Toggle</code>) on screen and set it to reflect the current visibility, by asking the <code class="literal">enabled</code> state of the <code class="literal">renderer</code>. This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">    if (obj.renderer != null){
+      obj.renderer.enabled =
+        GUI.Toggle(new Rect(5,posY,140,20),
+          obj.renderer.enabled, obj.name);</pre></div><p>However, if it has a <code class="literal">light</code> component instead, use the <code class="literal">enabled</code> state of <code class="literal">light</code>. This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">    } else if (obj.light != null) {
+      obj.light.enabled =
+      GUI.Toggle(new Rect(5,posY,140,20),
+        obj.light.enabled, obj.name);
+    }</pre></div><p>Increase <code class="literal">index</code> at the end of the loop step, to move the next GUI element further down. This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">    index++;
+  }
+}</pre></div><p>This can be further refined, if needed, for example, to distinguish between more object types or when the object has both a Mesh Renderer and a Light component.</p><p>Another improvement is <span class="emphasis"><em>recursive</em></span> toggling, to take child entities into account. This is shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">void toggleRecursive(Transform element, bool toggle){
+  if (element.renderer != null)
+    element.renderer.enabled = toggle;
+  foreach (Transform t in element.transform){
+    if (t.renderer != null)
+      t.renderer.enabled = toggle;
+    toggleRecursive(t, toggle);
+  }
+}</pre></div><p>When calling this recursive function, use the <code class="literal">transform</code> property of the GameObject, because this is where the parent-child hierarchy is kept. We also check if the result of the <code class="literal">Toggle</code> is different <a id="id427" class="indexterm"></a>from the current state of the <code class="literal">renderer</code> for that object, as shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">if (obj.renderer != null){
+  bool toggle = GUI.Toggle(new Rect(5,posY,140,20),
+    obj.renderer.enabled, obj.name);
+  if (obj.renderer.enabled != toggle)
+    toggleRecursive(obj.transform, toggle);
+}</pre></div><p>The result is seen in the following screenshot, with the script attached to the <span class="strong"><strong>Main Camera</strong></span> (but it could be any other object). Several scene objects are added to the <span class="strong"><strong>Object List</strong></span>. When running the game, the check boxes appear in the display and when clicked you see the Mesh Renderer or Light component being toggled in the Inspector.</p><div class="mediaobject"><img src="/graphics/9781783559060/graphics/7500_07_07.jpg" /></div><p>A good use case for such a script is when your design is comprised of several alternative parts. You can export all parts into your scene and use this script to display toggles for the individual sections of the building. The recursive method helps to toggle all elements in the underlying<a id="id428" class="indexterm"></a> hierarchy.</p></div></div>

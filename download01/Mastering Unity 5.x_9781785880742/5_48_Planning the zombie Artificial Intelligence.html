@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec48"></a>Planning the zombie Artificial Intelligence</h2></div></div><hr /></div><p>The zombie character needs intelligence, that is, the ability to take appropriate actions and responses in front of the player. Specifically, the zombie should balance actions between idling, chasing, and attacking at appropriate times. To achieve this, we'll need <span class="strong"><strong>Artificial Intelligence </strong></span>(<span class="strong"><strong>AI</strong></span>). This essentially involves coding functionality to help the computer make good decisions under specific conditions where multiple outcomes are possible. AI (for video games) is not, however, about coding an inward consciousness or phenomenology; and it's not about replicating the workings of the human mind. Rather, it's about deciding how NPCs behave, creating the illusion or appearance of intelligence, to enhance the experience and realism for the player. For the zombie, we'll code AI by using <span class="strong"><strong>Finite State Machines</strong></span> (<span class="strong"><strong>FSMs</strong></span>).</p><p>The FSM is essentially a decision-making structure. The simplest example of an FSM is a traffic light. This exists in only one of three possible states at any one time: red, amber, or green. The active color indicates what nearby traffic may legitimately do (for example, red means stop, and green means go). The FSM, conceptually, begins from the assumption that anything, from a traffic light to a zombie, has a finite number of behaviors or modes, and that only one of these may apply to the agent at any one time. The decision-making structure and logic, which determines the active state, is the FSM. When we think about a zombie character in the level, we may identify three possible states. These are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Idle: </strong></span>In this state, the agent is standing still, playing an Idle animation on loop. In this mode, the agent neither wanders nor attacks, but they have the potential to move into action; the potential to "come alive". Idle is a constant state of standby. It is also the initial or default state for all NPCs in <span class="emphasis"><em>Dead Keys</em></span>. The default state could be different for your game</p></li></ul></div><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_007.jpg" /></div><p>
+</p><p>Idle state</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Chase</strong></span>: If, and when, an agent sees the player character, and when the player is also beyond the attack range, the agent enters Chase mode. In this mode, the agent continually moves towards the player using the navmesh, intending to get closer for an attack:</p></li></ul></div><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_008.jpg" /></div><p>
+</p><p>Walk state</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Attack</strong></span>: After chasing the player, an agent may enter the attack range. That is, a measured distance or radius from the player character inside which an enemy agent can successfully attack and inflict damage. On entering the attack range, the enemy will repeatedly launch attacks. If the enemy leaves the attack range (for example, if the player runs away), the enemy will revert back to chase mode:</p></li></ul></div><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_009.jpg" /></div><p>
+</p><p>Attack state</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Death</strong></span>: If the agent health falls to zero or below, it will die. In this state, the agent does nothing but play a death animation, fall to the floor and become inactive. The Death state is, in many respects, a dead-end state: once entered it has no route to any other state:</p></li></ul></div><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_010.jpg" /></div><p>
+</p><p>Death state</p><p>Based on these three states, we can start coding an enemy class (<code class="literal">AIEnemy.cs</code>) and FSM, as follows:</p><pre class="programlisting">//------------------------------------ &#13;
+using UnityEngine; &#13;
+using System.Collections; &#13;
+using UnityEngine.EventSystems; &#13;
+using UnityEngine.Events; &#13;
+using UnityEngine.UI; &#13;
+//------------------------------------ &#13;
+public class AIEnemy : MonoBehaviour &#13;
+{ &#13;
+    //------------------------------------ &#13;
+    public enum AISTATE {IDLE = 0, CHASE = 1, ATTACK = 2, DEAD=3}; &#13;
+ &#13;
+    [SerializeField] &#13;
+    private AISTATE mActiveState = AISTATE.IDLE; &#13;
+} &#13;
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec54"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">AIEnemy</code> class encapsulates all enemy behaviors, controlled by an FSM</p></li><li style="list-style-type: disc"><p>To start coding an FSM, all possible states are encoded into an enumeration: Idle, Chase, Attack, and Dead</p></li><li style="list-style-type: disc"><p>The <code class="literal">mActiveState</code> variable represents the currently active state right now, within the FSM</p></li></ul></div></div></div>

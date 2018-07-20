@@ -1,0 +1,69 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec52"></a>Developing state structure</h2></div></div><hr /></div><p>The zombie character has four main <span>states,</span> and therefore the zombie FSM must decide which state should be activated at any time and which logic should govern the relationship between states. To start implementing the FSM, we'll write the following code to create a state change function that sets the FSM to a specified state from any of the four available states. Comments follow the code:</p><pre class="programlisting">//------------------------------------ 
+using UnityEngine; 
+using System.Collections; 
+using UnityEngine.EventSystems; 
+using UnityEngine.Events; 
+using UnityEngine.UI; 
+//------------------------------------ 
+public class AIEnemy : MonoBehaviour 
+{ 
+    //------------------------------------ 
+    public enum AISTATE {IDLE = 0, CHASE = 1, ATTACK = 2, DEAD = 3}; 
+    [SerializeField] 
+    private AISTATE mActiveState = AISTATE.IDLE; 
+    public AISTATE ActiveState 
+    { 
+        get{ return mActiveState; } 
+        set 
+        {  
+            //Stops any running coroutines, if there are any 
+            StopAllCoroutines (); 
+            mActiveState = value; 
+            //Run coroutine associated with active state 
+            switch(mActiveState) 
+            { 
+            case AISTATE.IDLE: 
+                StartCoroutine (StateIdle()); 
+                break; 
+            case AISTATE.CHASE: 
+                StartCoroutine (StateChase()); 
+                break; 
+            case AISTATE.ATTACK: 
+                StartCoroutine (StateAttack()); 
+                break; 
+            case AISTATE.DEAD: 
+                StartCoroutine (StateDead()); 
+                break; 
+            } 
+            //Invoke state change event 
+            OnStateChanged.Invoke (); 
+        } 
+    } 
+    //Events called on FSM changes 
+    public UnityEvent OnStateChanged; 
+    //------------------------------------ 
+    public IEnumerator StateIdle() 
+    { 
+        //ADD BODY HERE 
+        yield break; 
+    } 
+    //------------------------------------ 
+    public IEnumerator StateChase() 
+    { 
+        //ADD BODY HERE 
+        yield break; 
+    } 
+    //------------------------------------ 
+    public IEnumerator StateAttack() 
+    { 
+        //ADD BODY HERE 
+        yield break; 
+    } 
+    //------------------------------------ 
+    public IEnumerator StateDead() 
+    { 
+        //ADD BODY HERE 
+        yield break; 
+    } 
+    //------------------------------------ 
+}  </pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec54"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The C# <code class="literal">ActiveState</code> property sets and gets the <code class="literal">mActiveState</code> private variable. This expresses the current state of the FSM.</li><li style="list-style-type: disc">Each of the four states (Idle, Chase, Attack, and Dead) correspond to a unique and associated <code class="literal">Coroutine</code> in the class. Right now, the <code class="literal">coroutine</code> is a placeholder, but when implemented, each <code class="literal">Coroutine</code> runs on its own cycle or <span>update</span> loop for as long as a state is active.</li><li style="list-style-type: disc">The <code class="literal">OnStateChanged</code> event is invoked whenever a state is changed.</li><li style="list-style-type: disc">The <code class="literal">set</code> function for the <code class="literal">ActiveState</code> property updates the current state, stops any existing state by stopping all <code class="literal">Coroutines</code>, and invokes the <code class="literal">OnStateChanged</code> event, allowing object Inspector level control for state change events, if needed.</li></ul></div></div></div>

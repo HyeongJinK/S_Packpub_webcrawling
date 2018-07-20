@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec29"></a>Filtering results by user preference</h2></div></div><hr /></div><p>Many game lobbies <a id="id94" class="indexterm"></a>allow players to filter the results by various criteria. For example, you might hide all private rooms, or only show rooms on a certain map.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec20"></a>Filtering arrays</h3></div></div></div><p>We can filter <a id="id95" class="indexterm"></a>out our room list array based on the user's preference, this <a id="id96" class="indexterm"></a>way the user can more easily search for a suitable game to join:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Linq;
+using System.Collections.Generic;
+
+public class Example_FilterRooms
+{
+  public static RoomInfo[] FilterRooms( RoomInfo[] src, bool includeFull, Hashtable properties )
+  {
+    // use a Where expression to filter out rooms that do not match the given criteria
+    // then convert that to an array
+    return src.Where( room =&gt;
+      (
+        filterRoom( room, includeFull, properties )
+      ) ).ToArray();
+  }
+
+  private static bool filterRoom( RoomInfo src, bool includeFull, Hashtable properties )
+  {
+    // if includeFull is false, filter out the room if it's full
+    bool include_full = ( src.playerCount &gt;= src.maxPlayers || includeFull );
+
+    // compare each custom property in the room for a match
+    bool include_props = true;
+
+    if( properties != null )
+    {
+      foreach( object key in properties )
+      {
+        // does not contain the key, therefore doesn't match our criteria
+        if( !src.customProperties.ContainsKey( key ) )
+        {
+          include_props = false;
+          break;
+        }
+
+        // value of key does not match, therefore doesn't match our criteria
+        if( src.customProperties[ key ] != properties[ key ] )
+        {
+          include_props = false;
+          break;
+        }
+      }
+    }
+
+    return include_full &amp;&amp; include_props;
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note13"></a>Note</h3><p>If you haven't seen the <code class="literal">=&gt;</code> symbol before, it's a special expression which allows us to perform an operation on each element in an array. This is part of the <span class="strong"><strong>LINQ</strong></span> (<span class="strong"><strong>Language Integrated Query</strong></span>)<a id="id97" class="indexterm"></a> feature of .NET. This is used in addition to methods such as <code class="literal">Where</code>, which evaluates a given Boolean expression per element and returns all elements which evaluate to true. In this case, we call a function per element which checks the room against the user's preferences, so only rooms which match the user's preferences are returned.</p><p>For more information about LINQ, see:</p><p>
+<a class="ulink" href="http://msdn.microsoft.com/en-us/library/vstudio/bb397897.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/vstudio/bb397897.aspx</a>
+</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec21"></a>Filtering and caching a room list</h3></div></div></div><p>Now we <a id="id98" class="indexterm"></a>can call the preceding class's static <code class="literal">FilterRooms</code> function to get a filtered list of rooms.</p><p>Note that<a id="id99" class="indexterm"></a> we probably do <a id="id100" class="indexterm"></a>not want to call this every frame (or in the case of OnGUI, several times a frame), so instead of directly displaying the results of GetRoomList, we will wait until a room list is received, filter it, and cache the results. We can handle updates to the room list in the <code class="literal">OnReceivedRoomListUpdate</code> callback. Let's modify our connection/lobby script.</p><p>Whereas before we used:</p><div class="informalexample"><pre class="programlisting">foreach( RoomInfo room in PhotonNetwork.GetRoomList() )
+{
+  //...
+}</pre></div><p>We can now replace this with:</p><div class="informalexample"><pre class="programlisting">foreach( RoomInfo room in Example_FilterRooms.FilterRooms( PhotonNetwork.GetRoomList(), includeFullRooms, filterRoomProperties ) )
+{
+  //...
+}</pre></div><p>Where <code class="literal">includeFullRooms</code> indicates <a id="id101" class="indexterm"></a>whether we want to include rooms in the search which are full to capacity, and <code class="literal">filterRoomProperties</code> is a hashtable of properties we want the room to match (for instance, what map we would like to play on).</p><p>Right now filtering doesn't serve any purpose (properties are null, and includeFull is true, so all rooms are included). However, these could be made public, and set by other scripts, or perhaps read from static fields.</p></div></div>

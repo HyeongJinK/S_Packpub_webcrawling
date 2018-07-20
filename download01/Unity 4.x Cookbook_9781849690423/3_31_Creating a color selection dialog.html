@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec35"></a>Creating a color selection dialog</h2></div></div><hr /></div><p>In-game customization <a id="id189" class="indexterm"></a>and user-made content have been taking over games for a while. A very common feature is the ability of changing one's avatar color. In this recipe, we will create a dialog box that allows the player to change the object's color sliders that modify the red, green, and blue values of the material.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec108"></a>Getting ready</h3></div></div></div><p>If you want to use our sample scene to follow this recipe, please import the package named <code class="literal">colorSelector</code><a id="id190" class="indexterm"></a>, available in the folder named <code class="literal">0423_03_06</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec109"></a>How to do it...</h3></div></div></div><p>To create a color selection dialog, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Once the package has been imported, open the <code class="literal">colorSelection</code> scene.</p></li><li><p>Expand the <span class="strong"><strong>spaceshipColor</strong></span> game object in the <span class="strong"><strong>Hierarchy</strong></span> view and select its child named <span class="strong"><strong>ship</strong></span>. This is the object that will have its material changed by our script:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_03_26.jpg" /></div></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, create a new C# script. Rename it <code class="literal">ColorSelector</code> and open it in your editor.</p></li><li><p>Add the following code at the top of the script:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ColorSelector : MonoBehaviour
+{
+    public float redValue = 1.0f;
+    public float greenValue = 1.0f;
+    public float blueValue = 1.0f;
+    bool selectorOn = false;
+    private float redReset = 1.0f;
+    private float greenReset = 1.0f;
+    private float blueReset = 1.0f;
+    
+    void OnMouseUp()
+    {
+        selectorOn = true;
+    }
+    
+    void OnGUI()
+    {
+        if (selectorOn)
+        {
+            GUI.Label(new Rect(10, 30, 90, 20), "Red: " + Mathf.RoundToInt(redValue * 255));
+            redValue = GUI.HorizontalSlider(new Rect(80, 30, 256, 20), redValue, 0.0f, 1.0f);
+            GUI.Label(new Rect(10, 50, 90, 20), "Green: " + Mathf.RoundToInt(greenValue * 255));
+            greenValue = GUI.HorizontalSlider(new Rect(80, 50, 256, 20), greenValue, 0.0f, 1.0f);
+            GUI.Label(new Rect(10, 70, 90, 20), "Blue: " + Mathf.RoundToInt(blueValue * 255));
+            blueValue = GUI.HorizontalSlider(new Rect(80, 70, 256, 20), blueValue, 0.0f, 1.0f);
+            if (GUI.Button(new Rect(10, 110, 50, 20), "Ok"))
+            {
+                selectorOn = false;
+                redReset = redValue;
+                greenReset = greenValue;
+                blueReset = blueValue;                
+            }
+            if (GUI.Button(new Rect(70, 110, 80, 20), "Reset"))
+            {
+                redValue = redReset;
+                greenValue = greenReset;
+                blueValue = blueReset;
+            }            
+            renderer.material.SetColor("_Color", new Color(redValue, greenValue, blueValue, 1));
+         }
+        else
+        {
+            GUI.Label(new Rect(10, 10, 500, 20), "Click the spaceship to change color");          
+        }
+    }
+}</pre></div></li><li><p>Apply the <code class="literal">ColorSelector</code> script to the <code class="literal">ship</code> game object (and not its parent object, <code class="literal">spaceshipColor</code>).</p></li><li><p>Add a collider<a id="id191" class="indexterm"></a> to the <code class="literal">ship</code> game object. Again, it is important that the collider is applied to <code class="literal">ship</code>, not its parent object. Adding a collider can be done by selecting the object and accessing <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Mesh Collider</strong></span>.</p></li><li><p>Play your scene and test your color selector:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_03_27.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec110"></a>How it works...</h3></div></div></div><p>Besides <a id="id192" class="indexterm"></a>assigning the sliders' values to the material color, we are keeping track of the last used color, storing its values into three variables. This is necessary in case the player wants to go back to the previous color after messing up with the sliders.</p><p>Also, we multiply those values by 255 in the text label so the player can read the RGB values in a more traditional way.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec111"></a>There's more...</h3></div></div></div><p>With just a few twists, you could use this recipe to change other properties of your object's material (such as its transparency or emissive color, for instance).</p></div></div>

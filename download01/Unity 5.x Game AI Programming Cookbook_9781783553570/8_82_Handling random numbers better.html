@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec82"></a>Handling random numbers better</h2></div></div><hr /></div><p>Sometimes, we need <a id="id367" class="indexterm"></a>to create random behaviors that don't differ too much from a pivot point; this is the case of an aiming behavior. A normalized random behavior will shoot equally along the <span class="emphasis"><em>x</em></span> and the <span class="emphasis"><em>y</em></span> axes over a given distance from the aiming point. However, we would like most of the bullets to aim closer to the target because that's the expected behavior.</p><p>Most of the random functions out there return normalized values along the range given to them, and those are the expected results. Nonetheless, this is not completely useful for certain features in game development, as we just said. We will implement a random function to be used in our games with normal distribution instead of a normal distribution.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec278"></a>Getting ready</h3></div></div></div><p>It is important to understand the differences between uniform and normal distribution. In the following figure, we can see a graphical representation of the behavior we're looking for by applying normal <a id="id368" class="indexterm"></a>distribution with the example mentioned in the introductory text.</p><p>In the figure on the left-hand side, the uniform distribution spreads through the whole circle, and it is intended to be used in general random distributions. However, while developing other techniques, such as gun aiming, the desired random distribution will look more like the image on the right-hand side.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3570_08_01.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec279"></a>How to do it…</h3></div></div></div><p>We will build a simple class as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">RandomGaussian</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class RandomGaussian
+{
+    // next steps
+}</pre></div></li><li><p>Define the <code class="literal">RangeAdditive</code> member function that initializes the necessary member variables:</p><div class="informalexample"><pre class="programlisting">public static float RangeAdditive(params Vector2[] values)
+{
+    float sum = 0f;
+    int i;
+    float min, max;
+    // next steps
+}</pre></div></li><li><p>Check whether the <a id="id369" class="indexterm"></a>number of parameters equals zero. If so, create three new values:</p><div class="informalexample"><pre class="programlisting">if (values.Length == 0)
+{
+    values = new Vector2[3];
+    for (i = 0; i &lt; values.Length; i++)
+        values[i] = new Vector2(0f, 1f);
+}</pre></div></li><li><p>Sum all the values:</p><div class="informalexample"><pre class="programlisting">for (i = 0; i &lt; values.Length; i++)
+{
+    min = values[i].x;
+    max = values[i].y;
+    sum += Random.Range(min, max);
+}</pre></div></li><li><p>Return the resulting random number:</p><div class="informalexample"><pre class="programlisting">return sum;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec280"></a>There's more…</h3></div></div></div><p>We should always strive for efficiency. That's why there's another way of delivering a similar result. In this case, we could implement a new member function based on the solution offered by Rabin and others (refer to the proceeding <span class="emphasis"><em>See also</em></span> section):</p><div class="informalexample"><pre class="programlisting">public static ulong seed = 61829450;
+public static float Range()
+{
+    double sum = 0;
+    for (int i = 0; i &lt; 3; i++)
+    {
+        ulong holdseed = seed;
+        seed ^= seed &lt;&lt; 13;
+        seed ^= seed &gt;&gt; 17;
+        seed ^= seed &lt;&lt; 5;
+        long r = (long)(holdseed * seed);
+        sum += r * (1.0 / 0x7FFFFFFFFFFFFFFF);
+    }
+    return (float)sum;
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec281"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>For further information on the theory behind the Gaussian random generator and other advanced <a id="id370" class="indexterm"></a>generators, please refer to the book <span class="emphasis"><em>Game AI Pro</em></span> by Steve Rabin, article number 3</p></li></ul></div></div></div>

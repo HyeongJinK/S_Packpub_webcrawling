@@ -1,0 +1,80 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec59"></a>Using brightness, saturation, and contrast with screen effects</h2></div></div><hr /></div><p>Now that we have our screen effects <span>system</span><a id="id325209370" class="indexterm"></a> up and running, we can <span>explore</span><a id="id325209389" class="indexterm"></a> how to <span>create</span><a id="id325209398" class="indexterm"></a> more involved pixel operations to perform some of the <span>more</span><a id="id325209406" class="indexterm"></a> common <span>screen</span><a id="id325209415" class="indexterm"></a> effects found in <span>games</span><a id="id325209424" class="indexterm"></a> today.</p><p>Using a screen effect to adjust the overall final colors of your game is crucial in giving artists global control over the final look of the game. <span>Techniques such as color adjustment sliders allow users to adjust the intensity of the reds, blues, and greens of the final rendered game. This concept is also used with techniques such as putting a certain tone of color over the whole screen, as seen in something like a sepia film effect</span>.</p><p>For this particular recipe, we are going to cover some of the more core color adjustment operations we can perform on an image. These are brightness, saturation, and contrast. Learning how to code these color adjustments gives us a nice base from which we can learn the art of screen effects.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec148"></a>Getting ready</h3></div></div></div><p>We will need to create a couple of new assets. We can utilize the same scene as our test scene, but we will need a new script and shader:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create a new scene by going to <strong class="userinput"><code>File</code></strong> | <strong class="userinput"><code>New Scene</code></strong>.</li><li>Add a couple of new objects to the scene, set up some different colored diffuse materials, and randomly assign them to the new objects in the scene. This will give us a good range of colors to test with our new screen effect:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/988ed823-506b-4ab6-884a-11fdd17d010c.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec149"></a>How to do it...</h3></div></div></div><p>Now that we have completed our scene setup and created our new script and shader, we can begin to fill in the code necessary to achieve the brightness, saturation, and contrast screen effects. We will be focusing on just the pixel operation and variable setup for our script and shader, since getting a screen effect system up and running is described in the <span class="emphasis"><em>Setting up the screen effects script system</em></span> recipe in this chapter:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create a new shader by duplicating the <code class="literal">ScreenGreyscale</code> code by selecting it from the <strong class="userinput"><code>Project</code></strong> tab under the <code class="literal">Chapter 9 </code>| <code class="literal">Shaders</code> folder and pressing <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span>. Once duplicated, rename the script to <code class="literal">ScreenBSC</code>. Then double-click on this shader to open it in your script editor.</li><li>Editing the shader first makes more sense so that we know what kind of variables we will need for our C# script. Let's begin by entering the appropriate properties for our brightness, saturation, and contrast effect. Remember that we need to keep the <code class="literal">_MainTex</code> property in our shader as this is the property that the <code class="literal">RenderTexture</code> targets when creating screen effects:</li></ol></div><pre class="programlisting">Properties 
+{
+  _MainTex ("Base (RGB)", 2D) = "white" {}
+  _Brightness("Brightness", Range(0.0, 1)) = 1.0
+  _Saturation("Saturation", Range(0.0, 1)) = 1.0
+  _Contrast("Contrast", Range(0.0, 1)) = 1.0
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>As usual, in order for us to access the data coming in from our properties in our <code class="literal">CGPROGRAM</code>, we need to create the corresponding variables in the <code class="literal">CGPROGRAM</code>, replacing the previous ones:</li></ol></div><pre class="programlisting">Pass
+{
+  CGPROGRAM
+  #pragma vertex vert_img
+  #pragma fragment frag
+  #pragma fragmentoption ARB_precision_hint_fastest
+  #include "UnityCG.cginc"
+
+<span class="strong"><strong>  uniform sampler2D _MainTex;</strong></span>
+<span class="strong"><strong>  fixed _Brightness;</strong></span>
+<span class="strong"><strong>  fixed _Saturation;</strong></span>
+<span class="strong"><strong>  fixed _Contrast;</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Now, we need to create the operations that will perform the brightness, saturation, and contrast effects. Enter the following new function in our shader, just above the <code class="literal">frag()</code> function:</li></ol></div><pre class="programlisting">float3 ContrastSaturationBrightness(float3 color, float brt, float sat, float con)
+{
+  // Increase or decrease these values to 
+  //adjust r, g and b color channels separately
+  float AvgLumR = 0.5;
+  float AvgLumG = 0.5;
+  float AvgLumB = 0.5;
+
+//Luminance coefficients for getting lumoinance from the image
+  float3 LuminanceCoeff = float3(0.2125, 0.7154, 0.0721);
+
+  //Operation for brightness
+  float3 AvgLumin = float3(AvgLumR, AvgLumG, AvgLumB);
+  float3 brtColor = color * brt;
+  float intensityf = dot(brtColor, LuminanceCoeff);
+  float3 intensity = float3(intensityf, intensityf, intensityf);
+
+  //Operation for Saturation
+  float3 satColor = lerp(intensity, brtColor, sat);
+
+  //Operation for Contrast
+  float3 conColor = lerp(AvgLumin, satColor, con);
+  return conColor;
+}</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip72"></a>Note</h3><p>Don't worry if it doesn't make sense just yet; all the code will be explained in the <span><span class="emphasis"><em>How it works</em></span> section of this recipe.</span></p></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Finally, we just need to update our <code class="literal">frag()</code> function to actually use the <code class="literal">ContrastSaturationBrightness()</code> function. This will process all the pixels of our <code class="literal">RenderTexture</code> and pass it back to our script:</li></ol></div><pre class="programlisting">fixed4 frag(v2f_img i) : COLOR
+{
+  //Get the colors from the RenderTexture and the uv's
+  //from the v2f_img struct
+  fixed4 renderTex = tex2D(_MainTex, i.uv);
+
+  //Apply the Brughtness, saturation, contrast operations
+  renderTex.rgb = ContrastSaturationBrightness(renderTex.rgb, 
+                        _Brightness, 
+                        _Saturation, 
+                        _Contrast);
+
+  return renderTex;
+}</pre><p>With the code entered in the shader, return to the Unity editor to let the new shader compile. If there are no errors, we can return to our code editor to work on our script. Let's begin by creating a couple of new lines of code that will send the proper data to our shader:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Now that the shader is finished, let's work on the script needed to make the effect show up. From the <strong class="userinput"><code>Project</code></strong> tab, go to the <code class="literal">Chapter 9 </code>| <code class="literal">Scripts</code> folder. Once there, select the <code class="literal">TestRenderImage</code> script and duplicate it by pressing <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span>. Rename the newly created script to <code class="literal">RenderBSC</code>. Once renamed, double-click on it to enter your IDE of choice.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>To modify our script, we need to rename the class to match our filename, <code class="literal">RenderBSC</code>:</li></ol></div><pre class="programlisting">[ExecuteInEditMode]
+public class <span class="strong"><strong>RenderBSC</strong></span> : MonoBehaviour {</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Afterward, we need to add the proper variables that will drive the values of our screen effect. In this case, we will need a <span>slider</span><a id="id325453868" class="indexterm"></a> for brightness, a <span>slider</span><a id="id325453877" class="indexterm"></a> for saturation, and a <span>slider</span><a id="id325453885" class="indexterm"></a> for contrast:</li></ol></div><pre class="programlisting">#region Variables
+public Shader curShader;
+public float brightness = 1.0f;
+public float saturation = 1.0f;
+public float contrast = 1.0f;
+private Material screenMat;
+#endregion</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>With our <span>variables</span><a id="id325453907" class="indexterm"></a> set up, we <span>now</span><a id="id325453915" class="indexterm"></a> need to tell the script to send the values of the variables we created to the shader. We do <span>this</span><a id="id325453924" class="indexterm"></a> in the <code class="literal">OnRenderImage()</code> function:</li></ol></div><pre class="programlisting">void OnRenderImage(RenderTexture sourceTexture, RenderTexture destTexture)
+{
+    if (curShader != null)
+    {
+        ScreenMat.SetFloat("_Brightness", brightness);
+        ScreenMat.SetFloat("_Saturation", saturation);
+        ScreenMat.SetFloat("_Contrast", contrast);
+
+        Graphics.Blit(sourceTexture, destTexture, ScreenMat);
+    }
+    else
+    {
+        Graphics.Blit(sourceTexture, destTexture);
+    }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Finally, all we need to do is clamp the values of the variables within a range that is reasonable. These clamp values are entirely preferential, so you can use whichever values you see fit:</li></ol></div><pre class="programlisting">void Update()
+{
+    brightness = Mathf.Clamp(brightness, 0.0f, 2.0f);
+    saturation = Mathf.Clamp(saturation, 0.0f, 2.0f);
+    contrast = Mathf.Clamp(contrast, 0.0f, 3.0f);
+}</pre><p>With the script completed and shader finished, we simply assign our script to our <strong class="userinput"><code>Main Camera</code></strong> and our shader to the script, and you should see the <span>effects</span><a id="id325454770" class="indexterm"></a> of brightness, saturation, and <span>contrast</span><a id="id325454778" class="indexterm"></a> by manipulating <span>the</span><a id="id325454787" class="indexterm"></a> property values:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/2f8a1d09-da91-415b-b70a-27aaa1db4000.png" /></div><p>The <span>following</span><a id="id325454830" class="indexterm"></a> screenshot <span>shows</span><a id="id325454839" class="indexterm"></a> a result you <span>can</span><a id="id325454848" class="indexterm"></a> achieve with this screen effect:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/7c2ba538-366c-4f39-a290-71a2e5bbc4c4.png" /></div><p>The following screenshot shows another example of what can be done by adjusting the colors of the render image:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/37598f23-a2eb-4b25-969b-29653465ce60.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec150"></a>How it works...</h3></div></div></div><p>Since we now know how the basic screen effects system works, let's just cover the per-pixel operations we created in the <code class="literal">ContrastSaturationBrightness()</code> function.</p><p>The function starts by taking a few arguments. The first <span>and</span><a id="id325457687" class="indexterm"></a> most <span>important</span><a id="id325457696" class="indexterm"></a> is the current <code class="literal">RenderTexture</code>. The other arguments simply adjust the <span>overall</span><a id="id325457707" class="indexterm"></a> effect of the screen <span>effect</span><a id="id325460891" class="indexterm"></a> and <span>are</span><a id="id325460900" class="indexterm"></a> represented by sliders in the <span>screen effect's</span> <strong class="userinput"><code>Inspector</code></strong> tab. Once the function receives the <code class="literal">RenderTexture</code> and the adjustment values, it declares a few <span>constant</span><a id="id325460920" class="indexterm"></a> values that we use to modify and compare against the original <code class="literal">RenderTexture</code>.</p><p>The <code class="literal">luminanceCoeff</code> variable stores the values that will give us the overall brightness of the current image. These coefficients are based on the CIE color matching functions and are pretty standard throughout the industry. We can find the overall brightness of the image by getting the dot product of the current image dotted with these luminance coefficients. Once we have the brightness, we simply use a couple of <code class="literal">lerp</code> functions to blend the <span>grayscale</span><a id="id325463138" class="indexterm"></a> version of the brightness operation and the original image, multiplied by the brightness value being <span>passed</span><a id="id325463146" class="indexterm"></a> into the function.</p><p>Screen effects such as this are <span>crucial</span><a id="id325463157" class="indexterm"></a> to <span>achieving</span><a id="id325463165" class="indexterm"></a> high-quality <span>graphics</span><a id="id325463174" class="indexterm"></a> for your <span>games</span><a id="id325464993" class="indexterm"></a> as they let you tweak the final look of your game without you having to edit each material in your current game scene.</p></div></div>

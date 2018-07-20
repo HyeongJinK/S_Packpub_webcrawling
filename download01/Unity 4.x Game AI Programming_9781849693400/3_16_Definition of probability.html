@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec20"></a>Definition of probability</h2></div></div><hr /></div><p>There are many ways to define probability <a id="id125" class="indexterm"></a>based on the situations and the domain context. The most commonly used notion of probability is to refer the possibility of an event to successfully occur. The probability of an event <code class="literal">A</code> to occur is usually written as <code class="literal">P(A)</code>. To calculate <code class="literal">P(A)</code> we need to know the number of ways or times it can occur <code class="literal">(n)</code>, and the total number of times all the other possible events can occur <code class="literal">(N)</code>.</p><p>So the probability of an event <code class="literal">A</code> can be calculated as</p><p><code class="literal">P(A) = n / N</code></p><p><code class="literal">P(A)</code> is the probability of the event <code class="literal">A</code> to occur, and it's equal to the number of ways that <code class="literal">A</code> can occur <code class="literal">(n)</code> out of the number of all outcomes <code class="literal">(N)</code>. If <code class="literal">P(A)</code> is the probability of the event <code class="literal">A</code> to successfully occur, then the probability of the event <code class="literal">A</code> will not occur, or the probability of failure for event <code class="literal">A</code> is equal to:</p><p><code class="literal">Pf (A) = 1 – P.(A)</code></p><p>The range of probability is a decimal number from zero to one. Probability of zero means there's no chance for the desired event to occur, and one means that it's 100 percent certain for the event to occur. And <code class="literal">P(A) + Pf (A)</code> must equal to one. Since the probability values range from zero to one, we can get the percentage value by multiplying by 100.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec29"></a>Independent and related events</h3></div></div></div><p>Another important concept in probability is whether the chance of a particular event to occur depends on any other event in some ways or not. For example, throwing a six-sided dice twice are two independent events. Each time you throw a dice, the probability of each side to turn up is one-sixth. On the other hand, drawing two cards from the same deck are two related events. If you drew a Jack in the first event, there's one less chance that you can get another Jack in the second event.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec30"></a>Conditional probability</h3></div></div></div><p>When throwing two six-sided dices at the same time, what is the probability of getting a one on both the dices? Here there are <a id="id126" class="indexterm"></a>two conditional events; to get one on the first dice, and also to get one on the second dice. They rely on each other to calculate the probability of getting one on both the dices. <a id="id127" class="indexterm"></a>The probability to get one on the first dice is one-sixth, and also for the second dice is one-sixth. So the answer would be one-sixth times one-sixth which is 1/36, or a 2.8 percent chance.</p><p>Now let's consider another example, what's the probability that the sum of the numbers show up on two dices is equal to two? Since there's only one way to get this sum, which is one and one, the probability is still the same as getting the same number on both dices. In that case it would be still 1/36.</p><p>But how about getting the sum of the numbers that show up on the two dices to seven? As you can see, there are a total of six possible chances to get a total of seven, from the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Dice 1</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Dice 2</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>1</p>
+</td><td style="" align="left" valign="top">
+<p>6</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>2</p>
+</td><td style="" align="left" valign="top">
+<p>5</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>3</p>
+</td><td style="" align="left" valign="top">
+<p>4</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>4</p>
+</td><td style="" align="left" valign="top">
+<p>3</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>5</p>
+</td><td style="" align="left" valign="top">
+<p>2</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>6</p>
+</td><td style="" align="left" valign="top">
+<p>1</p>
+</td></tr></tbody></table></div><p>So the probability of getting a sum of seven from two dices is 6/36 or one-sixth, which is 16.7 percent. These are some examples of conditional probability, where two events rely on each other to achieve a desirable outcome.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec08"></a>A loaded dice</h4></div></div></div><p>Now let's assume we haven't been <a id="id128" class="indexterm"></a>that honest, and our dice is loaded so that the side of the number six has a double chance of landing facing upward. For a six-sided dice, the probability of each side facing upward is approximately one-sixth (<code class="literal">0.17</code>). Since we doubled the chance of getting six, we need to double the probability of getting six, let's say up to <code class="literal">0.34</code>. And the probability of the remaining five sides will be reduced to <code class="literal">0.132</code>.</p><p>The simplest way to implement this loaded dice algorithm is to generate a random value between <code class="literal">1</code> and <code class="literal">100</code>. Check if the random value is in a range of one to 35. If so <code class="literal">return 6</code>, otherwise get a random dice value between one and five, since these values have the same probability of <code class="literal">0.13</code>.</p><p>So here's our <code class="literal">throwLoadedDice()</code> <a id="id129" class="indexterm"></a>method:</p><div class="informalexample"><pre class="programlisting">  int throwDiceLoaded() {
+    Debug.Log("Throwing dice...");
+      int randomProbability = Random.Range(1,101);
+      int diceResult = 0;
+      if (randomProbability &lt; 36) {
+        diceResult = 6;
+      }
+      else {
+        diceResult = Random.Range(1,5);
+      }
+    Debug.Log("Result: " + diceResult);
+      return diceResult;
+  }</pre></div><p>If we test our new loaded dice algorithm by throwing the dice multiple times, you'll notice that the value <code class="literal">6</code> yields <a id="id130" class="indexterm"></a>more than usual. Here is our new <code class="literal">OnGUI()</code> function:</p><div class="informalexample"><pre class="programlisting">  void OnGUI() {
+    GUI.Label(new Rect (10, 10, 50, 20), "Input: ");
+    inputValue = GUI.TextField(new Rect(60, 10, 50, 20),
+      inputValue, 25);
+      if (GUI.Button(new Rect(60,40,50,30),"Play")) {
+        int totalSix = 0;
+          for (int i=0;i&lt;10;i++) {
+            int diceResult = throwDiceLoaded();
+            if (diceResult == 6) totalSix++;
+            if (diceResult == int.Parse(inputValue)) {
+              guiText.text = "DICE RESULT: " + 
+                diceResult.ToString()+"\r\nYOU WIN!";
+            }
+      else {
+        guiText.text = "DICE RESULT: " + 
+          diceResult.ToString()+"\r\nYOU LOSE!";
+            }
+          }
+        Debug.Log("Total of six: " + totalSix.ToString());
+      }
+    }</pre></div><p>We throw the dice ten times in our <a id="id131" class="indexterm"></a>
+<code class="literal">OnGUI()</code> method, and here I got <code class="literal">6</code> at least two to three times (which is approximately 33 percent of ten times). But, if you normally throw the dice without any loaded <a id="id132" class="indexterm"></a>probability it's more possible that you won't get any <code class="literal">6</code> at all. Keep in mind that the value <code class="literal">6</code> is only favored for 35 percent, and thus there's still a chance that you will never get a <code class="literal">6</code> out of ten dice throws, though it's quite unlikely.</p></div></div></div>

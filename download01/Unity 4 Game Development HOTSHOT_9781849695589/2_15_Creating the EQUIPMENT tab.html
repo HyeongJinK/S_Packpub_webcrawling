@@ -1,0 +1,403 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec25"></a>Creating the EQUIPMENT tab</h2></div></div><hr /></div><p>This is the <a id="id353" class="indexterm"></a>last step <a id="id354" class="indexterm"></a>of our menu. We will create a tab with which the player can change the weapons, armors, accessories, and skills, which will also update variables in the <span class="strong"><strong>STATUS</strong></span> tab, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_27.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec51"></a>Engage thrusters</h3></div></div></div><p>We will <a id="id355" class="indexterm"></a>start this<a id="id356" class="indexterm"></a> section by going to the <code class="literal">SkillsContainer</code> script and adding new variables. This is done by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open the <code class="literal">SkillsContainer</code> script and add the following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private var _skillBoxTexture : Texture;
+<span class="strong"><strong>private final var SKILL_BOX_POS : Rect = new Rect (253, 286, 330, 140);</strong></span>
+<span class="strong"><strong>private final var SKILL_BOX_RECT : Rect = new Rect (0, 0, 125, 117);  </strong></span>
+<span class="strong"><strong>var textures : Texture[];</strong></span>
+<span class="strong"><strong>private var _textureCount : int;</strong></span>
+<span class="strong"><strong>private var _selectedSkill : int;</strong></span>
+<span class="strong"><strong>private var _scrollPosition : Vector2;</strong></span>
+function get guiContent () : GUIContent {
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+Texture _skillBoxTexture;
+<span class="strong"><strong>readonly Rect SKILL_BOX_POS = new Rect (253, 286, 330, 140);</strong></span>
+<span class="strong"><strong>readonly Rect SKILL_BOX_RECT = new Rect (0, 0, 125, 117);  </strong></span>
+<span class="strong"><strong>public Texture[] textures;  </strong></span>
+<span class="strong"><strong>int _textureCount;</strong></span>
+<span class="strong"><strong>int _selectedSkill;</strong></span>
+<span class="strong"><strong>Vector2 _scrollPosition;</strong></span>
+public GUIContent guiContent {
+…</pre></div></li><li><p>Next, we go to the <code class="literal">Init()</code> function and add the following highlighted code to set up all variables:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Init ( skillBoxTexture : Texture ) : void {
+  _guiContent = new GUIContent("");
+  _skillBoxTexture = skillBoxTexture;
+<span class="strong"><strong>  _selectedSkill = 0;    </strong></span>
+<span class="strong"><strong>  _scrollPosition = Vector2.zero;</strong></span>
+<span class="strong"><strong>  _textureCount = textures.Length;  </strong></span>
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public void Init ( Texture skillBoxTexture ) {
+  _guiContent = new GUIContent("");
+  _skillBoxTexture = skillBoxTexture;
+<span class="strong"><strong>  _selectedSkill = 0;  </strong></span>
+<span class="strong"><strong>  _scrollPosition = Vector2.zero;</strong></span>
+<span class="strong"><strong>  _textureCount = textures.Length;</strong></span>
+}</pre></div></li><li><p>Then, we<a id="id357" class="indexterm"></a> will<a id="id358" class="indexterm"></a> set up the scroll view for our skill textures, which is very similar to the one we set in the <code class="literal">ItemsContainer</code> class, but in this function, we will have a horizontal scroll view instead. So, add the new function after the <code class="literal">Init()</code> function and name it <code class="literal">SetupSkillScrollBar()</code>; add the highlighted code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript:</strong></span>
+
+function Init ( skillBoxTexture : Texture ) : void {
+  …
+}
+<span class="strong"><strong>function SetupSkillScrollBar () : void {</strong></span>
+<span class="strong"><strong>  var itemCount = _textureCount+1;</strong></span>
+<span class="strong"><strong>  var itemsContent : GUIContent[] = new GUIContent[itemCount];</strong></span>
+<span class="strong"><strong>  for (var i: int = 0; i &lt; itemCount; i++) {</strong></span>
+<span class="strong"><strong>     itemsContent[i] = (i == 0) ? new GUIContent(_skillBoxTexture) : new GUIContent(textures[i-1]);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>var newView : Rect = SKILL_BOX_RECT;</strong></span>
+<span class="strong"><strong>  newView.width *= itemCount;</strong></span>
+<span class="strong"><strong>_scrollPosition = GUI.BeginScrollView (SKILL_BOX_POS, _scrollPosition, newView);</strong></span>
+<span class="strong"><strong>  newView,y = 4;</strong></span>
+<span class="strong"><strong>  _selectedSkill = GUI.SelectionGrid (newView, _selectedSkill, itemsContent, itemCount, GUI.skin.GetStyle("Selected Item"));</strong></span>
+<span class="strong"><strong>  GUI.EndScrollView ();</strong></span>
+  _guiContent = (_selectedSkill &gt; 0) ? itemsContent[_selectedSkill] : new GUIContent("");
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public void Init ( Texture skillBoxTexture ) {
+  …
+}
+<span class="strong"><strong>public void SetupSkillScrollBar () {</strong></span>
+<span class="strong"><strong>  int itemCount = _textureCount+1;</strong></span>
+<span class="strong"><strong>  GUIContent[] itemsContent = new GUIContent[itemCount];</strong></span>
+<span class="strong"><strong>for (int i = 0; i &lt; itemCount; i++) {</strong></span>
+<span class="strong"><strong>   itemsContent[i] = (i == 0) ? new GUIContent(_skillBoxTexture) : new GUIContent(textures[i-1]);</strong></span>
+<span class="strong"><strong>}</strong></span>
+<span class="strong"><strong>Rect newView = SKILL_BOX_RECT;</strong></span>
+<span class="strong"><strong>newView.width *= itemCount;</strong></span>
+<span class="strong"><strong>  _scrollPosition = GUI.BeginScrollView (SKILL_BOX_POS, _scrollPosition, newView);</strong></span>
+<span class="strong"><strong>  newView.y = 4;</strong></span>
+<span class="strong"><strong>  _selectedSkill = GUI.SelectionGrid (newView, _selectedSkill, itemsContent, itemCount, GUI.skin.GetStyle("Selected Item"));</strong></span>
+<span class="strong"><strong>  GUI.EndScrollView ();</strong></span>
+<span class="strong"><strong>   _guiContent = (_selectedSkill &gt; 0) ? itemsContent[_selectedSkill] : new GUIContent("");</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Next, we will go back to our <code class="literal">Menu</code> script and add the new variables for the <span class="strong"><strong>EQUIPMENT</strong></span> window, so add the highlighted code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private var _scrollPosition : Vector2 = Vector2.zero;
+<span class="strong"><strong>private final var EQUIP_BOX_RECT : Rect = new Rect (237, 67, 360, 207);</strong></span>
+<span class="strong"><strong>private final var EQUIP_WEAPON_RECT : Rect = new Rect (237, 280, 360, 157);</strong></span>
+<span class="strong"><strong>private final var EQUIP_STAT_RECT : Rect = new Rect (252, 81, 331, 142);</strong></span>
+<span class="strong"><strong>private final var EQUIP_SKILL_RECT : Rect = new Rect (460, 121, 127, 125);</strong></span>
+<span class="strong"><strong>private final var EQUIP_RECTS : Rect[] = [new Rect (252, 101, 180, 40), new Rect (252, 161, 180, 40), new Rect (252, 221, 180, 40), new Rect (464, 125, 119, 117) ];</strong></span>
+<span class="strong"><strong>private final var EQUIP_WINDOW_RECT : Rect = new Rect (500, 0, 70, 100);</strong></span>
+<span class="strong"><strong>private var _equipBooleans : boolean[] = new boolean[4];</strong></span>
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+Vector2 _scrollPosition = Vector2.zero;
+<span class="strong"><strong>readonly Rect EQUIP_BOX_RECT = new Rect (237, 67, 360, 207);</strong></span>
+<span class="strong"><strong>readonly Rect EQUIP_WEAPON_RECT = new Rect (237, 280, 360, 157);</strong></span>
+<span class="strong"><strong>readonly Rect EQUIP_STAT_RECT = new Rect (252, 81, 331, 142);</strong></span>
+<span class="strong"><strong>readonly Rect EQUIP_SKILL_RECT = new Rect (460, 121, 127, 125);  </strong></span>
+<span class="strong"><strong>readonly Rect [] EQUIP_RECTS = {  new Rect (252, 101, 180, 40), new Rect (252, 221, 180, 40), new Rect (464, 125, 119, 117)};</strong></span>
+<span class="strong"><strong>bool[] _equipBooleans = new bool[4];</strong></span>
+…</pre></div></li><li><p>Then, we create <code class="literal">EquipWindow()</code>, which will contain the script that is used to<a id="id359" class="indexterm"></a> create<a id="id360" class="indexterm"></a> the <span class="strong"><strong>EQUIPMENT</strong></span> window's UI. In<a id="id361" class="indexterm"></a> this function, we also check whether each equipment label is clickable or not. Here, we use the <code class="literal">switch-case</code> statement again to check which state we are in when the player clicks on each equipment label in the box at the top of the screen. It will basically show the correct equipments or skills in the box at the bottom of the screen, which also allows the player to select a new equipment or <a id="id362" class="indexterm"></a>skill. So, let's type <a id="id363" class="indexterm"></a>the following code after the <code class="literal">ItemWindow()</code> function:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private function ItemWindow() : void {
+  …
+}
+<span class="strong"><strong>private function EquipWindow() : void {</strong></span>
+<span class="strong"><strong>  GUI.Box (EQUIP_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.Box (EQUIP_WEAPON_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.DrawTexture(EQUIP_STAT_RECT, statBox2Texture);</strong></span>
+<span class="strong"><strong>  GUI.DrawTexture(EQUIP_SKILL_RECT, skillBoxTexture);</strong></span>
+<span class="strong"><strong>  var equipContent : GUIContent[] = [weapons.guiContent, armors.guiContent, accessories.guiContent, skills.guiContent];</strong></span>
+<span class="strong"><strong>  for (var i : int = 0; i &lt; _equipBooleans.Length; i++) {</strong></span>
+<span class="strong"><strong>    if (_equipBooleans[i] == true) {</strong></span>
+<span class="strong"><strong>          GUI.Label(EQUIP_RECTS[i], equipContent[i], "Disabled Click");</strong></span>
+<span class="strong"><strong>          switch (i) {</strong></span>
+<span class="strong"><strong>        case 0:  weapons.SetupScrollBar();  break;</strong></span>
+<span class="strong"><strong>        case 1:  armors.SetupScrollBar();    break;</strong></span>
+<span class="strong"><strong>        case 2:  accessories.SetupScrollBar();  break;</strong></span>
+<span class="strong"><strong>        case 3:  skills.SetupSkillScrollBar();  break;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    } else {</strong></span>
+<span class="strong"><strong>        if (GUI.Button(EQUIP_RECTS[i], equipContent[i], "Selected Item")) {</strong></span>
+<span class="strong"><strong>        _equipBooleans[i] = true;</strong></span>
+<span class="strong"><strong>        for (var j : int = 0; j &lt; _equipBooleans.Length; j++) {</strong></span>
+<span class="strong"><strong>             if (i != j) {_equipBooleans[j] = false; }</strong></span>
+<span class="strong"><strong>         }</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+void ItemWindow() {
+  …
+}
+<span class="strong"><strong>void EquipWindow() {</strong></span>
+<span class="strong"><strong>  GUI.Box (EQUIP_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.Box (EQUIP_WEAPON_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.DrawTexture(EQUIP_STAT_RECT, statBox2Texture);</strong></span>
+<span class="strong"><strong>  GUI.DrawTexture(EQUIP_SKILL_RECT, skillBoxTexture);  </strong></span>
+<span class="strong"><strong>  GUIContent[] equipContent = {weapons.guiContent, armors.guiContent, accessories.guiContent, skills.guiContent};</strong></span>
+<span class="strong"><strong>  for (int i = 0; i &lt; _equipBooleans.Length; i++) {</strong></span>
+<span class="strong"><strong>    if (_equipBooleans[i] == true) {</strong></span>
+<span class="strong"><strong>          GUI.Label(EQUIP_RECTS[i], equipContent[i], "Disabled Click");</strong></span>
+<span class="strong"><strong>          switch (i) {</strong></span>
+<span class="strong"><strong>        case 0:  weapons.SetupScrollBar();  break;</strong></span>
+<span class="strong"><strong>        case 1:  armors.SetupScrollBar();    break;</strong></span>
+<span class="strong"><strong>        case 2:  accessories.SetupScrollBar();  break;</strong></span>
+<span class="strong"><strong>        case 3:  skills.SetupSkillScrollBar();  break;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    } else {</strong></span>
+<span class="strong"><strong>        if (GUI.Button(EQUIP_RECTS[i], equipContent[i], "Selected  Item")) {</strong></span>
+<span class="strong"><strong>        _equipBooleans[i] = true;</strong></span>
+<span class="strong"><strong>        for (int j = 0; j &lt; _equipBooleans.Length; j++) {</strong></span>
+<span class="strong"><strong>          if (i != j) { _equipBooleans[j] = false; }</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Then, we go back to the <code class="literal">DoMyWindow()</code> function and add the following<a id="id364" class="indexterm"></a> highlighted<a id="id365" class="indexterm"></a> code in the <code class="literal">switch-case</code> statement to inform the <span class="strong"><strong>EQUIPMENT</strong></span> window when the user clicks on the <span class="strong"><strong>EQUIPMENT</strong></span> tab:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+private function DoMyWindow (windowID : int) : void {
+  …
+  switch (_currentTool) {
+    …
+  case TAB.INVENTORY : //Items
+     …
+     break;
+<span class="strong"><strong>     case TAB.EQUIPMENT : //Equip</strong></span>
+<span class="strong"><strong>     EquipWindow();</strong></span>
+<span class="strong"><strong>     break;</strong></span>
+  }
+  …
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void DoMyWindow (int windowID ) {
+  …
+  switch (_currentTool) {
+    …
+  case TAB.INVENTORY : //Items
+    …
+    break;
+<span class="strong"><strong>	case TAB.EQUIPMENT : //Equip</strong></span>
+<span class="strong"><strong>    EquipWindow();</strong></span>
+<span class="strong"><strong>    break;</strong></span>
+  }
+…
+}</pre></div></li><li><p>Now, we <a id="id366" class="indexterm"></a>need <a id="id367" class="indexterm"></a>to create three prefabs for weapons, armors, and accessories; so, go back to Unity and create the first <code class="literal">GameObject</code> (weapon) by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> to create the empty game object and name it <code class="literal">Dark Fist</code>, and add the <code class="literal">item</code> script to this object by going to its <span class="strong"><strong>Inspector</strong></span> view, and then click on <span class="strong"><strong>Add Component</strong></span> and choose <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>Item</strong></span>.</p></li><li><p>Next, we right-click on this object and choose <span class="strong"><strong>Duplicate</strong></span> twice to create two other objects and name those two objects as <code class="literal">Dark Armor</code> and <code class="literal">Dark Mask</code>.</p></li><li><p>Now, we need to put the information in each item that we just created; go to the <span class="strong"><strong>Inspector</strong></span> view of each item and set them as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>For <span class="strong"><strong>Dark Fist</strong></span>, add the following information:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr style="border-bottom: 0.5pt solid ; "><td style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="top">
+<p>
+<code class="literal">Item</code> <span class="strong"><strong>(script)</strong></span></p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Icon</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>weapon</strong></span> (drag the <span class="strong"><strong>weapon</strong></span> texture here)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Info</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">This is the dark weapon.</code>
+</p>
+</td></tr></tbody></table></div></li><li style="list-style-type: disc"><p>For <span class="strong"><strong>Dark Armor</strong></span>, add the following information:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr style="border-bottom: 0.5pt solid ; "><td style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="top">
+<p>
+<code class="literal">Item</code> <span class="strong"><strong>(script)</strong></span></p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Icon</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>armor</strong></span> (drag the <span class="strong"><strong>armor</strong></span> texture here)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Info</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">This is the dark armor.</code>
+</p>
+</td></tr></tbody></table></div></li><li style="list-style-type: disc"><p>For <span class="strong"><strong>Dark Mask</strong></span>, add the following information:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr style="border-bottom: 0.5pt solid ; "><td style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="top">
+<p>
+<code class="literal">Item</code> <span class="strong"><strong>(script)</strong></span></p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Icon</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>accessory</strong></span> (drag the <span class="strong"><strong>accessory</strong></span> texture here)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Info</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">This is the dark accessory.</code>
+</p>
+</td></tr></tbody></table></div></li></ul></div><p>Then, we drag all three objects to the <code class="literal">MenuInRPGGame/Resources/Prefab</code> folder in the <span class="strong"><strong>Project</strong></span> view to create a prefab of those objects. Then, we will remove all three objects from the <span class="strong"><strong>Hierarchy</strong></span> view by right-clicking on each object and choosing <span class="strong"><strong>Delete</strong></span>.</p></li><li><p>Next, we<a id="id368" class="indexterm"></a> will <a id="id369" class="indexterm"></a>click on the <span class="strong"><strong>MenuObject</strong></span> item in the <span class="strong"><strong>Hierarchy</strong></span> view to bring up its <span class="strong"><strong>Inspector</strong></span> view. Then, we set up the following properties:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>For weapons, set up the following properties:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Items</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Dark Fist</strong></span> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr></tbody></table></div></li><li style="list-style-type: disc"><p>For armors, set up the following properties:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Items</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Dark Armor</strong></span> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr></tbody></table></div></li><li style="list-style-type: disc"><p>For accessories, set up the following properties:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Items</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Dark Mask</strong></span> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr></tbody></table></div></li><li style="list-style-type: disc"><p>For skills, set up the following properties:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Textures</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>skill1</strong></span> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 1</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>skill2</strong></span> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 2</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>skill3</strong></span> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 3</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>skill4</strong></span> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr></tbody></table></div></li></ul></div><p>Now, we will finish the last step of the menu; click on <span class="strong"><strong>Play</strong></span>, open the menu<a id="id370" class="indexterm"></a> window, click on the <span class="strong"><strong>EQUIPMENT</strong></span> tab, and<a id="id371" class="indexterm"></a> roll over it, and click on the <span class="strong"><strong>UNEQUIP</strong></span> label or the skill box. We will be able to change the character's equipments, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_28.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec52"></a>Objective complete – mini debriefing</h3></div></div></div><p>We just finished the last tab of our menu window. In this step, we created the <span class="strong"><strong>EQUIPMENT</strong></span> button that will bring up the selection window from which the player can choose the type of equipment or skill. It will update the current equipment's status on the <span class="strong"><strong>STATUS</strong></span> tab too.</p><p>If we take a look at our <code class="literal">EquipWindow()</code> function, we will see that we call the <code class="literal">SetupScrollBar()</code> function in the <code class="literal">ItemsContainer</code> class similar to what we did in the <code class="literal">ItemWindow()</code> function, but this time it is the equipment. We know it is the equipped object because we call the <code class="literal">Init()</code> function and pass the value <code class="literal">isEquipment</code> to the <code class="literal">Start()</code> function of the <code class="literal">Menu</code> script.</p><p>For a Unity <a id="id372" class="indexterm"></a>JavaScript User, the<a id="id373" class="indexterm"></a> following code can be used:</p><div class="informalexample"><pre class="programlisting">function Init ( isEquipment : boolean ) : void {
+  _isEquipment = isEquipment;
+  …
+}</pre></div><p>For a C# User, the following code can be used:</p><div class="informalexample"><pre class="programlisting">void Init ( bool isEquipment ) : void {
+  _isEquipment = isEquipment;
+  …
+}</pre></div><p>Then, in the <code class="literal">SetupScrollBar()</code> function in the <code class="literal">ItemsContainer</code> class, we just check that value to<a id="id374" class="indexterm"></a> return the information and show it on the scroll view correctly.</p><p>For a Unity JavaScript user, the following highlighted code can be used:</p><div class="informalexample"><pre class="programlisting">if (itemCount &gt; 1) {
+  for (var i : int = 0; i &lt; itemCount; i++) {
+<span class="strong"><strong>    itemsContent[i] = (_isEquipment) ? ((i == 0) ? new GUIContent(UNEQUIP) : items[i-1].guiContent) : items[i].guiContent;</strong></span>
+  }  
+}  else {
+<span class="strong"><strong>    itemsContent[0] = (isNoItem) ? new GUIContent(NONE) : ((_  isEquipment) ? new GUIContent(UNEQUIP) : items[0].guiContent);</strong></span>
+}</pre></div><p>For a C# user, the following highlighted code can be used:</p><div class="informalexample"><pre class="programlisting">if (itemCount &gt; 1) {
+  for (int i = 0; i &lt; itemCount; i++) {
+<span class="strong"><strong>    itemsContent[i] = (_isEquipment) ? ((i == 0) ? new GUIContent(UNEQUIP) : items[i-1].guiContent) : items[i].guiContent;</strong></span>
+  }  
+}  else {
+<span class="strong"><strong>    itemsContent[0] = (isNoItem) ? new GUIContent(NONE) : ((_isEquipment) ? new GUIContent(UNEQUIP) : items[0].guiContent);</strong></span>
+}</pre></div><p>Next, we call the <code class="literal">SetupSkillScrollBar()</code> function in the <code class="literal">SkillsContainer</code> class, which has a very similar concept to the <code class="literal">SetupScrollBar()</code> function in the <code class="literal">ItemsContainer</code> class, but this time it contains the texture instead of item information, as shown in the following script:</p><div class="informalexample"><pre class="programlisting">itemsContent[i] = (i == 0) ? new GUIContent(_skillBoxTexture) :new GUIContent(textures[i-1]);</pre></div><p>In <code class="literal">SetupSkillScrollBar()</code>, we also set up the <code class="literal">GUI.SelectionGrid</code> parameter to show the result in a horizontal view instead of a vertical view by passing the <code class="literal">itemCount</code> item to<a id="id375" class="indexterm"></a> the <code class="literal">GUI.SelectionGrid()</code> function, as we can see in the<a id="id376" class="indexterm"></a> following code:</p><div class="informalexample"><pre class="programlisting">_selectedSkill = GUI.SelectionGrid (newView, _selectedSkill, itemsContent, itemCount, GUI.skin.GetStyle("Selected Item"));</pre></div><p>At last, we <a id="id377" class="indexterm"></a>create the equipment prefabs and add it to our <code class="literal">Menu</code> script to show all items that the users can equip themselves when a weapon, armor, or accessory is selected.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip16"></a>Tip</h3><p>We can create and add more weapons, armors, or accessories similar to the <span class="strong"><strong>INVENTORY</strong></span> page by creating a new prefab and adding it to the <code class="literal">items</code> array in the <span class="strong"><strong>Weapons</strong></span>, <span class="strong"><strong>Armors</strong></span>, or <span class="strong"><strong>Accessories</strong></span> properties in the <code class="literal">Menu</code> script inspector, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_29.jpg" /></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec53"></a>Classified intel</h3></div></div></div><p>We have created a vertical and horizontal scroll view by using <code class="literal">GUI.BeginScrollView()</code> to begin the scroll view and ended it with <code class="literal">GUI.EndScrollView()</code>. Basically, we can use this function, which is very convenient to use, when we <a id="id378" class="indexterm"></a>want to create a scrollable area that contains any <a id="id379" class="indexterm"></a>type of a <code class="literal">GUI</code> object, because this function will automatically create a scrollable area from the two <code class="literal">Rect</code> parameters that we set up.</p><p>For example, in order to create a vertical scroll area at position <span class="strong"><strong>x</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>y</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Width</strong></span>: <code class="literal">100</code> pixels, and <span class="strong"><strong>Height</strong></span>: <code class="literal">40</code> pixels, which contains three buttons with each button having 40 pixels height, we'd use code similar to the following snippets:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+var scrollPostion : Vector2 = Vector2.zero; 
+function OnGUI() { 
+<span class="strong"><strong>   scrollPostion = GUI.BeginScrollView(new Rect(0,0,100,40), scrollPostion, new Rect(0,0,80,120)); </strong></span>
+   GUI.Button(new Rect(0,0,80,40),"Button 1"); 
+   GUI.Button(new Rect(0,40,80,40),"Button 2"); 
+   GUI.Button(new Rect(0,80,80,40),"Button 3"); 
+<span class="strong"><strong>   GUI.EndScrollView(); </strong></span>
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+Vector2 scrollPostion = Vector2.zero; 
+void OnGUI() { 
+<span class="strong"><strong>  scrollPostion = GUI.BeginScrollView(new Rect(0,0,100,40),scrollPostion, new Rect(0,0,80,120)); </strong></span>
+  GUI.Button(new Rect(0,0,80,40),"Button 1"); 
+  GUI.Button(new Rect(0,40,80,40),"Button 2"); 
+  GUI.Button(new Rect(0,80,80,40),"Button 3"); 
+<span class="strong"><strong>  GUI.EndScrollView(); </strong></span>
+}</pre></div><p>From the preceding code, we can see that the <code class="literal">GUI.BeginScrollView()</code> function returns <code class="literal">Vector2</code>, which<a id="id380" class="indexterm"></a> is the vertical and horizontal position of this scroll view. It also takes two <code class="literal">Rect</code> objects; the first <code class="literal">Rect</code> object is the area <a id="id381" class="indexterm"></a>that the player will see, or we can call it a mask area. The second <code class="literal">Rect</code> object is the area of our content, which is based on the content that we included between the <code class="literal">GUI.BeginScrollView()</code> and <code class="literal">GUI.EndScrollView()</code> functions, which are the three lines of <code class="literal">GUI.Button</code>. We can see more details of this function at the following URL:</p><p>
+<a class="ulink" href="http://unity3d.com/support/documentation/ScriptReference/GUI.BeginScrollView.html" target="_blank">http://unity3d.com/support/documentation/ScriptReference/GUI.BeginScrollView.html</a>
+</p><p>The <a id="id382" class="indexterm"></a>following<a id="id383" class="indexterm"></a> figure shows how the <code class="literal">GUI.BeginScrollView()</code> function works in a visual representation:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_30.jpg" /></div></div></div>

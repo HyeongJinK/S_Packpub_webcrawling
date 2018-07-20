@@ -1,0 +1,61 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec97"></a>Implementing mobile input for the game</h2></div></div><hr /></div><p>One last step to conclude our game is to make it mobile friendly. So far, we can move the character only with a keyboard, but what about mobile devices with a touchscreen instead? If you remember the controls from <a class="link" href="#" linkend="ch10">Chapter 10</a>, <span class="emphasis"><em>Let's Get Physical</em></span>, we implemented the Movement Component independently from the input. As a result, the Player Controller script is responsible for gathering the input from the player to send it to the character. Also, we made the <strong class="userinput"><code>Player Controller</code></strong> inactive in the case of mobile devices, which is great. However, now it's time to implement the controller for the touchscreen. This will compile when the game runs neither in the Editor or in a standalone version.</p><p>To implement the system, we will use the UI system in Unity, which is already suitable for gathering input from touchscreens. Let's start by creating a UI image by right-clicking on the <strong class="userinput"><code>Hierarchy</code></strong> panel and then on <strong class="userinput"><code>UI/Image</code></strong>. We can use the graphics provided in our package. In this case, the graphic that we need looks like a triangular button. Using the knowledge we learned from <a class="link" href="#" linkend="ch11">Chapter 11</a>, <span class="emphasis"><em>Don't Forget to Save!</em></span>, let's scale it to the right size and place it well in the UI. Then, duplicate it and place another arrow next to it. Finally, use the up arrow from the other side of the screen, like in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/049903b6-7f87-43d9-940b-cc48a6d4bb4d.png" /></div><p>Wonderful! Now we can make them interactive with a bit of scripting.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec115"></a>MovingController</h3></div></div></div><p>So, let's create a new C# script and name it <code class="literal">UI_MovingController</code>. First of all, we need to add a <span class="emphasis"><em>using-statement</em></span> so we can use the Handlers for the Unity Event System. To do so, add this line before the declaration of the class:</p><pre class="programlisting">using UnityEngine;
+<span class="strong"><strong>using UnityEngine.EventSystems;</strong></span>
+public class UI_MovingController : MonoBehaviour {
+    //[...]
+}</pre><p>Then, in the declaration of the class itself, we need to implement two interfaces to intercept every time that this button is pressed or released. As a result, we can determine when the button is held down. The first interface is <code class="literal">IPointerDownHandler</code>, whereas the second one is <code class="literal">IPointerUpHandler</code>. You can write them after the inheritance from MonoBehaviour, as shown in the following code:</p><pre class="programlisting">public class UI_MovingController : MonoBehaviour, <span class="strong"><strong>IPointerDownHandler, IPointerUpHandler</strong></span> {
+    //[...]
+}</pre><p>Before we implement the interface, we need to add a couple of variables. The first one is to store the reference to the <strong class="userinput"><code>Movement Component</code></strong> of our character. The second variable is the direction, which indicates if this is the button that goes right or left, respectively placing a value of <code class="literal">+1</code> or <code class="literal">-1</code>. These must be private variables, but serializable so that they can be set in the <strong class="userinput"><code>Inspector</code></strong>:</p><pre class="programlisting">[SerializeField]
+private MovementComponent movementComponent;
+
+[SerializeField]
+private float direction = +1f;</pre><p>Also, we need a third variable to store whether the button is held down, which needs to be private:</p><pre class="programlisting">private bool isHolding;</pre><p>Now, in the <code class="literal">Awake()</code> function, we need to check if we are running in a mobile environment. If not, we destroy the whole button from the interface, since we don’t need to show it anymore:</p><pre class="programlisting">void Awake() {
+    //Destroy this script in case we are not running on mobile
+    #if !(UNITY_STANDALONE || UNITY_EDITOR)
+    Destroy(gameObject);
+    #endif
+}</pre><p>In the <code class="literal">Awake() function</code>, we can also check that the reference to the Movement Component is properly set:</p><pre class="programlisting">void Awake() {
+    //Destroy this script in case we are not running on mobile
+    #if !(UNITY_STANDALONE || UNITY_EDITOR)
+    Destroy(gameObject);
+    #endif
+
+<span class="strong"><strong>    //Disable this script in case the Movement Component reference is not set and leave an error message.</strong></span>
+<span class="strong"><strong>    if (movementComponent == null) {</strong></span>
+<span class="strong"><strong>        Debug.LogError("Missing reference on MovementComponent on " + gameObject.name + " to run the Controller. Please add the reference.");</strong></span>
+<span class="strong"><strong>    Destroy(this);</strong></span>
+<span class="strong"><strong>    }</strong></span>
+}</pre><p>Next, we can implement our interfaces. In the first one, with the <code class="literal">OnPointerDown()</code> function, we just need to set <code class="literal">isHolding</code> to <code class="literal">true</code>:</p><pre class="programlisting">public void OnPointerDown(PointerEventData eventData) {
+    isHolding = true;
+}</pre><p>Similarly, for the second interface with the function <code class="literal">OnPointerUp()</code>, we set <code class="literal">isHolding</code> to false:</p><pre class="programlisting">public void OnPointerUp(PointerEventData eventData) {
+    isHolding = false;
+}</pre><p>Finally, in the <code class="literal">LateUpdate()</code> function (<code class="literal">LateUpdate()</code> because the Movement Component uses Rigidbody2D; that's why we don't use the <code class="literal">Update()</code> function instead, we pass the direction to the Movement Component if <code class="literal">isHolding</code> is set to <code class="literal">true</code>:</p><pre class="programlisting">private void LateUpdate() {
+    if (isHolding) {
+        movementComponent.MoveCharacter(direction);
+    }
+}</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip45"></a>Note</h3><p>As you can see, we always pass a value of one. The axis implementation of the keyboard instead passes increasing values up to one (similarly when the key is released). This gives smoother movements. As an exercise, you can try to implement something similar for this button by taking into consideration for how long it has been pressed. </p></div><p>Save the script and add it to both the buttons. Remember to reference the Movement Component, as well as placing the right direction for the button (<strong class="userinput"><code>+1</code></strong> for right and <strong class="userinput"><code>-1</code></strong> for left). This is the setup for the left button:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/2f3450b9-ead6-4a93-9509-3445377aca12.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec116"></a>JumpController</h3></div></div></div><p>Create a new C# script and name it <code class="literal">UI_JumpController</code>. As we did for the <code class="literal">UI_MovementController</code>, we need to insert the using-statement for using the <code class="literal">EventSystems</code>:</p><pre class="programlisting">using UnityEngine;
+<span class="strong"><strong>using UnityEngine.EventSystems;</strong></span>
+
+public class UI_JumpController : MonoBehaviour {
+    //[...]
+}</pre><p>Then, we need to implement just the <code class="literal">IPointerDownHandler</code>, because we don't need to check when the button is held, but rather jump every time the button is pressed:</p><pre class="programlisting">public class UI_JumpController : MonoBehaviour, <span class="strong"><strong>IPointerDownHandler</strong></span> {
+//[...]
+}</pre><p>Again, the Movement Component variable is needed, but it's the only variable we need this time:</p><pre class="programlisting">[SerializeField]
+private MovementComponent movementComponent;</pre><p>In the <code class="literal">Awake()</code> function, we still need to check if it's running in a mobile environment (if not, we can destroy the whole button from the interface):</p><pre class="programlisting">void Awake() {
+    //Destroy this script in case we are not running on mobile
+    #if !(UNITY_STANDALONE || UNITY_EDITOR)
+    Destroy(gameObject);
+    #endif
+}</pre><p>We also need to check if we have the reference to the Movement Component:</p><pre class="programlisting">void Awake() {
+    //Destroy this script in case we are not running on mobile
+    #if !(UNITY_STANDALONE || UNITY_EDITOR)
+    Destroy(gameObject);
+    #endif
+
+<span class="strong"><strong>    //Disable this script in case the Movement Component reference is not set and leave an error message.</strong></span>
+<span class="strong"><strong>    if (movementComponent == null) {</strong></span>
+<span class="strong"><strong>        Debug.LogError("Missing reference on MovementComponent on " + gameObject.name + " to run the Controller. Please add the reference.");</strong></span>
+<span class="strong"><strong>    Destroy(this);</strong></span>
+<span class="strong"><strong>    }</strong></span>
+}</pre><p>Finally, in the implementation of the interface, we can make the call directly to the <code class="literal">Jump()</code> function of the Movement Component:</p><pre class="programlisting">public void OnPointerDown(PointerEventData eventData) {
+    movementComponent.Jump();
+}</pre><p>Save the script and attach it to the <strong class="userinput"><code>Jump</code></strong> button. Then, set the reference to the <strong class="userinput"><code>Movement Component</code></strong>, and we are good to go. This is how it should look in the <strong class="userinput"><code>Inspector</code></strong>:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/cad60cf0-2100-4d6e-972a-2731def1f279.png" /></div></div></div>

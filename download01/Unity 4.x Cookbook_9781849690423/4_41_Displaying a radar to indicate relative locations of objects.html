@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec44"></a>Displaying a radar to indicate relative locations of objects</h2></div></div><hr /></div><p>Radars display<a id="id254" class="indexterm"></a> the locations of other objects relative to the player, usually <a id="id255" class="indexterm"></a>based on a circular display, where the center represents the player, and each graphical "blip' indicates, for each object, how far away and what relative direction it is to the player. Sophisticated radar displays will display different categories of object with different colored "blip" icons.</p><p>In the following screenshot, we can see two yellow circle "blips", indicating the relative position of the objects tagged <code class="literal">cube</code> near the player. The green circle radar background image gives the impression of an aircraft control tower radar.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_08.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec143"></a>Getting ready</h3></div></div></div><p>If you need a set of images for this recipe, you'll find two image files in the <code class="literal">0423_04_04</code> folder. One is a background<a id="id256" class="indexterm"></a> image of green radar circles, and the other is a yellow circle image to represent objects on the radar.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec144"></a>How to do it...</h3></div></div></div><p>To display a radar showing relative object locations, please follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new scene, and add a directional light.</p></li><li><p>Create a new terrain, set <span class="strong"><strong>Size</strong></span> to 2000 x 2000 and <span class="strong"><strong>Position</strong></span> as (<code class="literal">-1000</code>, <code class="literal">0</code>, <code class="literal">-1000</code>).</p></li><li><p>Import the built-in <span class="strong"><strong>Character Controller</strong></span> Unity package.</p></li><li><p>Add a <span class="strong"><strong>3rd Person Controller</strong></span> to your scene at position (0, 1, 0).</p></li><li><p>Create a cube in front of the <span class="strong"><strong>3rd Person Controller</strong></span> at (0, 1, 5) and give this the <code class="literal">cube</code> tag.</p></li><li><p>Create a second cube to the left of the <span class="strong"><strong>3rd Person Controller</strong></span> at (-5, 1, 0) and give this the <code class="literal">cube</code> tag.</p></li><li><p>Attach the following C# script class to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: Radar.cs
+using UnityEngine;
+using System.Collections;
+
+public class Radar : MonoBehaviour
+{
+ const float MAX_DISTANCE = 20f;
+ const int RADAR_SIZE = 128;
+  
+ public Transform playerController;
+ public Texture radarBackground;
+ public Texture targetBlip;
+  
+ private void OnGUI()
+ {
+  // background displaying top left in square of 128 pixels
+  Rect radarBackgroundRect = new Rect(0,0, RADAR_SIZE, RADAR_SIZE);
+  GUI.DrawTexture(radarBackgroundRect,radarBackground);
+    
+  // find all 'cube' tagged objects
+  GameObject[] cubeGOArray = GameObject.
+FindGameObjectsWithTag("cube");
+    
+  // draw blips for all within distance
+  Vector3 playerPos = playerController.transform.position;
+  foreach (GameObject cubeGO in cubeGOArray)  
+  {
+    Vector3 targetPos = cubeGO.transform.position;
+    float distanceToTarget = Vector3.Distance(targetPos,playerPos);
+    if( (distanceToTarget &lt;= MAX_DISTANCE) )
+      DrawBlip(playerPos, targetPos, distanceToTarget);
+  }
+ }
+  
+ private void DrawBlip(Vector3 playerPos, Vector3 targetPos, float distanceToTarget)
+ {
+  // distance from target to player   float dx =  targetPos.x - playerPos.x;
+  float dz =  targetPos.z - playerPos.z;
+    
+  // find angle from player to target
+  float angleToTarget = Mathf.Atan2(dx,dz) * Mathf.Rad2Deg;
+    
+  // direction player facing
+  float anglePlayer = playerController.eulerAngles.y;
+    
+  // subtract player angle, to get relative angle to object
+  // subtract 90
+  // (so 0 degrees (same direction as player) is UP)
+  float angleRadarDegrees = angleToTarget – anglePlayer - 90;
+    
+  // calculate (x,y) position given angle and distance
+  float normalisedDistance = distanceToTarget / MAX_DISTANCE;	
+  float angleRadians = angleRadarDegrees * Mathf.Deg2Rad;
+  float blipX = normalisedDistance * Mathf.Cos(angleRadians);
+  float blipY = normalisedDistance * Mathf.Sin(angleRadians);	
+    
+  // scale blip position according to radar size
+  blipX *= RADAR_SIZE/2;
+  blipY *= RADAR_SIZE/2;
+    
+  // offset blip position relative to radar center
+  blipX += RADAR_SIZE/2;
+  blipY += RADAR_SIZE/2;
+    
+  // draw target texture at calculated location
+  Rect blipRect = new Rect(blipX - 5, blipY - 5, 10, 10);
+  GUI.DrawTexture(blipRect, targetBlip);    
+ }
+}</pre></div></li><li><p>With the <a id="id257" class="indexterm"></a>
+<span class="strong"><strong>Main Camera</strong></span> selected in the <span class="strong"><strong>Hierarchy</strong></span> view, drag the <span class="strong"><strong>3rd Person Controller</strong></span>, the radar background image, and the image for the cube's yellow "blip" into the <span class="strong"><strong>Inspector</strong></span> view for the three public variables.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec145"></a>How it works...</h3></div></div></div><p>The following <a id="id258" class="indexterm"></a>two constants are defined in our script code:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">MAX_DISTANCE</code>: This specifies the maximum distance (in Unity "units") to which the objects are to be detected</p></li><li style="list-style-type: disc"><p><code class="literal">RADAR_SIZE</code>: This specifies the size (in pixels) of the top-left square the radar will occupy</p></li></ul></div><p>The <code class="literal">Radar</code> class needs three public variables:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The first is a reference to the player's 3rd Person Controller</p></li><li style="list-style-type: disc"><p>The <a id="id259" class="indexterm"></a>other two are images for the radar background image (usually a circle of some kind) and another image to indicate object locations on the radar background</p></li></ul></div><p>Since there is a lot happening in the code for this recipe, each method will be described in its own section.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec40"></a>Displaying radar in the OnGUI() method</h4></div></div></div><p>The <code class="literal">OnGUI()</code> method<a id="id260" class="indexterm"></a> first displays the radar's background image. An array of <code class="literal">GameObjects</code> with the desired tag is retrieved, and iterated through. For each target <code class="literal">GameObject</code>, if its distance to the character controller is within <code class="literal">MAX_DISTANCE</code>, then the <code class="literal">DrawBlip()</code> method is called, with arguments of the <code class="literal">Vector3</code> positions of the player's character controller and the target game object.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec41"></a>Displaying radar object icons in the DrawBlip()method</h4></div></div></div><p>The<a id="id261" class="indexterm"></a> <code class="literal">DrawBlip()</code> method <a id="id262" class="indexterm"></a>finds the x and z distances between the target and the player, and uses them to calculate the angle from the target to the player (using Unity's <code class="literal">Atan2()</code> inverse trigonometric function). The direction the player's character is facing is retrieved from its y-axis Euler angle (just as in the previous recipe). The player's direction angle is subtracted from the angle between the target and the player, since radar displays the relative angle from the direction the player is facing, to the target object. As usual, 90 degrees will need to be subtracted from the final angle, since we want zero degrees to be displayed as upwards in our GUI.</p><p>The <code class="literal">noramlisedDistance</code> value is calculated, which will always range between 0 and 1, by dividing the distance in pixels of the target from the player, by <code class="literal">MAX_DISTANCE</code>. The angle is converted into radians, since that is required for the Unity trigonometry methods. We then multiply these <code class="literal">Sin()</code> and <code class="literal">Cos()</code> results by the distance we want the blip to be displayed from the center of the radar circle, that is, <code class="literal">noramlisedDistance</code>. These coordinates are then converted to display in the top-left corner of the screen in a square of <code class="literal">RADAR_SIZE</code> pixels. Knowing the center of the blip image, and its width and height (both 10 pixels) allows the <code class="literal">Rect</code> object to be created for use by the <code class="literal">DrawTexture()</code> method called from the <code class="literal">GUI</code> class.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec146"></a>There's more...</h3></div></div></div><p>Here are some details you don't want to miss:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec42"></a>Different colored "blips" for different objects</h4></div></div></div><p>Adding more<a id="id263" class="indexterm"></a> public <code class="literal">Texture</code> variables allows for different icons to represent different categories of object on the radar. A <code class="literal">Texture</code> parameter can be added to the <code class="literal">DrawBlip()</code> method declaration, and that texture can be used in the <code class="literal">GUI.DrawTexture()</code> statement. This allows <code class="literal">DrawBlip()</code> to be called from different loops, each for objects tagged with a different string.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec147"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Displaying a compass to show player direction</em></span> recipe.</p></li></ul></div></div></div>

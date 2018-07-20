@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec118"></a>Spreading long computations over several frames with coroutines</h2></div></div><hr /></div><p>
+<span class="strong"><strong>Optimization principal 3</strong></span>: Call methods as few times as possible.</p><p>Coroutines allow <a id="id1243" class="indexterm"></a>us to write asynchronous code—we can ask a method to go off and calculate something, but the rest of the game can keep on running without having to wait for that calculation to end. Or, we can call a coroutine method for each frame from <code class="literal">Update()</code> and organize the method to complete part of a complex calculation each time it is called.</p><p>Note that<a id="id1244" class="indexterm"></a> coroutines are not <span class="emphasis"><em>threads</em></span>, but they are very handy in that each can progress each frame further. It also allows us to write code that does not have to wait for certain methods to complete before another can begin.</p><p>When games start requiring complex computations, such as for artificial intelligence reasoning, it may not be possible to maintain acceptable game performance when trying to complete all calculations in a single frame—this is where coroutines can be an excellent solution.</p><p>This recipe illustrates how a complex calculation can be structured into several pieces, each to be completed one frame at a time.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note59"></a>Note</h3><p>Note: An excellent<a id="id1245" class="indexterm"></a> description of coroutines (and other Unity topics) can be found on Ray Pendergraph's wikidot website <a class="ulink" href="http://raypendergraph.wikidot.com/unity-developer-s-notes#toc6" target="_blank">http://raypendergraph.wikidot.com/unity-developer-s-notes#toc6</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec371"></a>How to do it...</h3></div></div></div><p>To spread computations over several frames, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following script class <code class="literal">SegmentedCalculation</code> to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SegmentedCalculation : MonoBehaviour {
+  private const int ARRAY_SIZE = 50;
+  private const int SEGMENT_SIZE = 10;
+  private int[] randomNumbers;
+
+  private void Awake(){
+    randomNumbers = new int[ARRAY_SIZE];
+    for(int i=0; i&lt;ARRAY_SIZE; i++){
+      randomNumbers[i] = Random.Range(0, 1000);
+    }
+
+    StartCoroutine( FindMinMax() );
+  }
+
+  private IEnumerator FindMinMax() {
+    int min = int.MaxValue;
+    int max = int.MinValue
+
+    for(int i=0; i&lt;ARRAY_SIZE; i++){
+      if(i % SEGMENT_SIZE == 0){
+        print("frame: " + Time.frameCount + ", i:" + i + ", min:" + min + ", max:" + max);
+
+        // suspend for 1 frame since we've completed another segment
+        yield return null;
+      }
+
+      if(randomNumbers[i] &gt; max){
+        max = randomNumbers[i];
+      } else if(randomNumbers[i] &lt; min){
+        min = randomNumbers[i];
+      }
+    }
+
+    // disable this scripted component
+    print("** completed - disabling scripted component");
+    enabled = false;
+  }
+}</pre></div></li><li><p>Run the <a id="id1246" class="indexterm"></a>game, and<a id="id1247" class="indexterm"></a> you'll see how the search for highest and lowest values in the array progresses in steps, avoiding undesirable delays between each new frame.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_24.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec372"></a>How it works...</h3></div></div></div><p>The <code class="literal">randomNumbers</code> array of random integers is created in <code class="literal">Awake()</code>. Then, the <code class="literal">FindMinMax()</code> method is<a id="id1248" class="indexterm"></a> started as a coroutine. The size of the array is defined by constant <code class="literal">ARRAY_SIZE</code>, and the number of elements to process each frame by <code class="literal">SEGMENT_SIZE</code>.</p><p>The <code class="literal">FindMinMax()</code> method sets initial values for <span class="emphasis"><em>min</em></span> and <span class="emphasis"><em>max</em></span> and begins to loop through the array. If the current index is divisible by the <code class="literal">SEGMENT_SIZE</code> (remainder 0), then we make<a id="id1249" class="indexterm"></a> the method display the current frame number and variable values and suspend execution for one frame with a <code class="literal">yield null</code> statement. For every loop, the value for the current array index is compared with <code class="literal">min</code> and <code class="literal">max</code>, and those values are updated if a new minimum or maximum has been found. When the loop is completed, the scripted component disables itself.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec373"></a>There's more...</h3></div></div></div><p>Some details you don't want to miss:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec96"></a>Retrieving the complete Unity log text files from your system</h4></div></div></div><p>As well as<a id="id1250" class="indexterm"></a> seeing log texts in the <span class="strong"><strong>Console</strong></span> panel, you can also access the Unity editor log text file as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Mac:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">~/Library/Logs/Unity/Editor.log</code>
+</p></li><li style="list-style-type: disc"><p>And access through the standard Console app</p></li></ul></div></li><li style="list-style-type: disc"><p>Windows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">C:\Users\username\AppData\Local\Unity\Editor\Editor.log</code>
+</p></li></ul></div></li><li style="list-style-type: disc"><p>Mobile devices (see the Unity documentation for accessing device log data)</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_25.jpg" /></div></li></ul></div><p>For more<a id="id1251" class="indexterm"></a> information about Unity logs files, see<a id="id1252" class="indexterm"></a> the online manual at <a class="ulink" href="http://docs.unity3d.com/Manual/LogFiles.html" target="_blank">http://docs.unity3d.com/Manual/LogFiles.html</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec374"></a>See also</h3></div></div></div><p>Refer to the <span class="emphasis"><em>Executing methods regularly but independent of frame rate with coroutines</em></span> recipe in this chapter for more information.</p></div></div>

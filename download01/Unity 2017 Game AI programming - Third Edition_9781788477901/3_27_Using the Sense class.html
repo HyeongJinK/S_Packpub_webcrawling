@@ -1,0 +1,25 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec33"></a>Using the Sense class</h2></div></div><hr /></div><p>The <code class="literal">Sense</code> class is the interface of our sensory <span>system</span><a id="id288183611" class="indexterm"></a> that the other custom senses can implement. It defines two virtual methods, <code class="literal">Initialize</code> and <code class="literal">UpdateSense</code>, which will be implemented in custom senses, and are executed from the <code class="literal">Start</code> and <code class="literal">Update</code> methods, respectively.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note9"></a>Note</h3><p>Virtual methods are methods that can be overridden using the <code class="literal">override</code> modifier in derived classes. Unlike <code class="literal">abstract</code> classes, virtual classes do not require that you override them.</p></div><p>The code in the <code class="literal">Sense.cs</code> file looks like this:</p><pre class="programlisting">using UnityEngine;
+
+public class Sense : MonoBehaviour {
+  public bool enableDebug = true;
+  public Aspect.AspectTypes aspectName = Aspect.AspectTypes.ENEMY;
+  public float detectionRate = 1.0f;
+
+  protected float elapsedTime = 0.0f;
+
+  protected virtual void Initialize() { }
+  protected virtual void UpdateSense() { }
+
+  // Use this for initialization
+  void Start () 
+    {
+    elapsedTime = 0.0f;
+    Initialize();
+  }
+
+  // Update is called once per frame
+  void Update () 
+    {
+    UpdateSense();
+  }
+}</pre><p>The basic properties include its detection rate to execute the sensing operation, as well as the name of the aspect it should look for. This script will not be attached to any of our objects since we'll be deriving from it for our actual senses.</p></div>

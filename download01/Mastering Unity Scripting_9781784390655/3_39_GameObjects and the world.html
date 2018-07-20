@@ -1,0 +1,140 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec43"></a>GameObjects and the world</h2></div></div><hr /></div><p>Another pivotal task in Unity involves searching for objects in the scene from script, especially if objects are instantiated at runtime. Tasks such as "get me the player object" and "get me all enemies in the scene" are important for many operations, from respawning enemies<a id="id248" class="indexterm"></a> and power-ups to repositioning the player and checking collisions between objects. To retrieve references to specific <code class="literal">GameObjects</code>, Unity offers a set of functions associated with the <code class="literal">GameObject</code> class. These functions can be useful but expensive, so be sure to call them during one-off events, such as <code class="literal">Start</code> and <code class="literal">Awake</code>, wherever possible. Let's explore these further, in addition to other techniques and methods to work with found objects.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec17"></a>Finding GameObjects</h3></div></div></div><p>Finding an object in the scene<a id="id249" class="indexterm"></a> can be achieved through either the <code class="literal">GameObject.Find</code> or <code class="literal">GameObject.FindObjectWithTag</code> function. Of these two, the latter should almost always be preferred for performance reasons. However, let's consider <code class="literal">GameObject.Find</code> first. This function searches the scene for the first occurrence of an object with an exactly matching name (case-sensitive) and then returns that object. The name that's searched should match the object name as it appears in the <span class="strong"><strong>Hierarchy</strong></span> panel. Unfortunately, the function performs string comparisons to determine the match, so it's a slow and cumbersome option. Besides, it's only truly effective for objects guaranteed to have unique names, and many times, objects won't have. However, that said, <code class="literal">GameObject.Find</code> is still highly useful when objects are appropriately named:</p><div class="informalexample"><pre class="programlisting">//Find Object with the name of player
+ObjPlayer = GameObject.Find ("Player");</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note19"></a>Note</h3><p>
+<span class="strong"><strong>GameObject Finding</strong></span>
+</p><p>If you notice the <code class="literal">GameObject</code>, you would realize that the <code class="literal">Find</code> function is static. This means that you don't <a id="id250" class="indexterm"></a>need an instantiation of any specific <code class="literal">GameObject</code> to call the function. You can call it directly from any source file via <code class="literal">GameObject.Find</code>. The concept of static and global scope is considered later in this chapter.</p><p>More information <a id="id251" class="indexterm"></a>on the <code class="literal">GameObject.Find</code> function can be found in the online Unity documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/GameObject.Find.html" target="_blank">http://docs.unity3d.com/ScriptReference/GameObject.Find.html</a>.</p></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip18"></a>Tip</h3><p>
+<code class="literal">GameObject.Find</code> can be a slow function. For this reason, use it only inside one-fire events, such as <code class="literal">Awake</code> and <code class="literal">Start</code>.</p></div><p>A more effective search is<a id="id252" class="indexterm"></a> by tag. Every object in the scene has a tag member that is assigned <span class="strong"><strong>Untagged</strong></span> by default. This member is a unique identifier that can mark a single object or multiple objects bringing them together into a collection. Generally, to search for objects by tag, you'll first need to explicitly assign an object with a tag. You can do this in script, using the <code class="literal">GameObject.tag</code> public member. However, you'll use the Unity Editor more commonly. You can assign a tag to a selected object from the Unity Editor by clicking the <span class="strong"><strong>Tag</strong></span> drop-down list in the Object Inspector and picking a tag. In addition, you can create new, custom tags by selecting the <span class="strong"><strong>Add Tag</strong></span> option. Common tags include <span class="strong"><strong>Player</strong></span>, <span class="strong"><strong>Enemy</strong></span>, <span class="strong"><strong>Weapon</strong></span>, <span class="strong"><strong>Bonus</strong></span>, <span class="strong"><strong>Prop</strong></span>, <span class="strong"><strong>Environment</strong></span>, <span class="strong"><strong>Light</strong></span>, <span class="strong"><strong>Sound</strong></span>, and <span class="strong"><strong>GameController</strong></span>, among others. Take a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_03_04.jpg" /><div class="caption"><p>Assigning a tag to an object</p></div></div><p>After one or more objects are assigned a tag in the scene, you can effectively search for objects by tag in code. The <a id="id253" class="indexterm"></a>
+<code class="literal">GameObject.FindGameObjectWithTag</code> function searches the scene for an object <a id="id254" class="indexterm"></a>with a matching tag and returns the first occurrence. The <code class="literal">GameObject.FindObjectsWithTag</code> returns an array of all occurrences. See the following code sample 3-4 for an example. Note that although the <code class="literal">FindGameObjectsWithTag</code> function requires a string argument, Unity internally converts the string into a numerical form to increase the speed of tag comparisons:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+//-----------------------------------------------------
+public class ObjectFinder : MonoBehaviour
+{
+  //Tag name of objects to find
+  public string TagName = "Enemy";
+  //Array of found objects matching tag
+  public GameObject[] FoundObjects;
+
+  //-----------------------------------------------------
+  // Use this for initialization
+  void Start ()
+  {
+    //Find objects of matching tag
+
+    FoundObjects = GameObject.FindGameObjectsWithTag(TagName);
+
+  }
+}
+//-----------------------------------------------------</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip19"></a>Tip</h3><p>Sometimes, you'd like to assign multiple tags to a single object. Unfortunately, Unity doesn't support this behavior yet. However, you can work around the limitation by parenting <a id="id255" class="indexterm"></a>empty game objects to your main object and assigning each of the children the tag you need. When searching for objects by tag, though, just remember to get a reference to the parent object, which is actually the object you need.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec18"></a>Comparing objects</h3></div></div></div><p>The <code class="literal">GameObject</code> searching functions are helpful when searching scene-wide for specific objects, but there are times<a id="id256" class="indexterm"></a> when you'll need to compare two objects that you've found already. Typically, you'll want compare the names or tags of two objects. You can achieve a tag comparison using the <code class="literal">CompareTag</code> function:</p><div class="informalexample"><pre class="programlisting">//Compares tag of this object with another Obj_Y
+bool bMatch = gameObject.CompareTag(Obj_Y.tag);</pre></div><p>In addition, you'll sometimes want to compare two objects for equality to determine whether they're the same object and not simply whether they share the same tag. This is especially important when coding decision-making behaviors. For example, in determining whether an enemy character should fight or flee from the player during combat, it'd be helpful to ascertain whether the enemy has supporting units nearby to help him. To answer this, you can find all enemies in the scene with a tag search, as we saw earlier. However, the results will also include the enemy who made the call originally and who is now deciding what to do, so we'll want to exclude him from the results. Code sample 3-4 demonstrates how <code class="literal">GetInstanceID</code> can help us:</p><div class="informalexample"><pre class="programlisting">01 //Find objects of matching tag
+02 FoundObjects = GameObject.FindGameObjectsWithTag(TagName);
+03
+04 //Search through all objects and exclude ourselves
+05 foreach(GameObject O in FoundObjects)
+06 {
+07   //If two objects are the same
+08   if(O.GetInstanceID() == gameObject.GetInstanceID())
+09     continue; //Skip this iteration
+10
+11   //[...] Do stuff here
+12 }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec19"></a>Getting the nearest object</h3></div></div></div><p>Given an array of <code class="literal">GameObjects</code>, perhaps returned from a search, how can you find the one nearest to you in the scene in terms of linear distance? The following code sample 3-5 demonstrates how you can<a id="id257" class="indexterm"></a> find this object using the <code class="literal">Vector3.Distance</code> function to retrieve the shortest distance (in meters) between any two points in the scene:</p><div class="informalexample"><pre class="programlisting">//Returns the nearest game object
+GameObject GetNearestGameObject(GameObject Source, GameObject[] DestObjects)
+{
+  //Assign first object
+  GameObject Nearest = DestObjects[0];
+
+  //Shortest distance
+  float ShortestDistance = Vector3.Distance(Source.transform.position, DestObjects[0].transform.position);
+
+  //Loop through all objects
+  foreach(GameObject Obj in DestObjects)
+  {
+    //Calculate distance
+    float Distance = Vector3.Distance(Source.transform.position, Obj.transform.position);
+    //If this is shortest, then update
+    if(Distance &lt; ShortestDistance)
+    {
+      //Is shortest, now update
+      Nearest = Obj;
+      ShortestDistance = Distance;
+    }
+  }
+
+  //Return nearest
+  return Nearest;
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec20"></a>Finding any object of a specified type</h3></div></div></div><p>Sometimes, you just want<a id="id258" class="indexterm"></a> a list of all the components of a specified type in the scene, regardless of which game objects they're actually attached to; these components include all enemies, all collectible objects, all transform components, all colliders, and so on. Achieving this from script is simple but expensive, as shown in the following code sample 3-6. Specifically, by calling the <code class="literal">Object.FindObjectsOfType</code> function, you can retrieve a complete list of all instances of a specified object in the scene, unless an object is deactivated. Due to the expense of this method, avoid calling<a id="id259" class="indexterm"></a> it during frame-based events such as <code class="literal">Update</code>. Use the <code class="literal">Start</code> and <code class="literal">Awake</code> events, as well as infrequent functions instead:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+  //Get a list of all colliders in the scene
+  Collider[] Cols = Object.FindObjectsOfType&lt;Collider&gt;();
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec21"></a>Clearing a path between GameObjects</h3></div></div></div><p>Given any two <code class="literal">GameObjects</code> in the scene, such as the <span class="strong"><strong>Player</strong></span> and an <span class="strong"><strong>Enemy</strong></span> character, it's common to test for a clear path between them, that is, to test whether there are any colliders intersecting an<a id="id260" class="indexterm"></a> imaginary line drawn between the two objects. This can be helpful in line-of-sight systems, as we'll see later, but also more generally for object culling, to determine AI functionality and others.</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_03_05.jpg" /><div class="caption"><p>Testing for a clear path between two GameObjects using Physics.LineCast</p></div></div><p>There are many ways to achieve this behavior. One way is to use the <code class="literal">Physics.LineCast</code> function, as shown in the following code sample 3-7:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 //Determines if a clear line or path exists between two objects
+04 public class ObjectPath : MonoBehaviour
+05 {
+06   //Reference to sample enemy object
+07   public GameObject Enemy = null;
+08
+09   //Layer mask to limit line detection
+10   public LayerMask LM;
+11   //----------------------------------------------------
+12   // Update is called once per frame
+13   void Update ()
+14   {
+15     //Check if clear path between objects
+
+16     if(!Physics.Linecast(transform.position, Enemy.transform.position, LM))
+
+17     {
+18       //There is clear path
+19       Debug.Log ("Path clear");
+20     }
+21   }
+22   //----------------------------------------------------
+23   //Show helper debug line in viewport
+24   void OnDrawGizmos()
+25   {
+26     Gizmos.DrawLine(transform.position, Enemy.transform.position);
+27   }
+28   //----------------------------------------------------
+29 }</pre></div><p>The following are the<a id="id261" class="indexterm"></a> comments on the code sample 3-7:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 07</strong></span>: This sample class should be attached to the <code class="literal">Player</code>; otherwise, another source object accepts a public member variable <code class="literal">Enemy</code> to whom a clear path should be tested.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 10</strong></span>: The <code class="literal">LayerMask</code> variable specifies a bitmask, indicating which layers in the scene the collision test applies to. More information on bitmasks can be found in the online Unity documentation at <a class="ulink" href="http://docs.unity3d.com/Manual/Layers.html" target="_blank">http://docs.unity3d.com/Manual/Layers.html</a>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 16</strong></span>: The <code class="literal">Physics.Linecast</code> function is used to determine whether a clear and nonbroken path exists between two objects in the scene. Note that if the two objects themselves have colliders, such as <code class="literal">BoxColliders</code>, then these will be included in the collision detection; they will not be ignored. In other words, an <a id="id262" class="indexterm"></a>object's own collider can affect the results of any <code class="literal">LineCast</code> calls. For this reason, use the <code class="literal">LayerMask</code> variable to include or exclude specific layers.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip20"></a>Tip</h3><p>A <code class="literal">Physics.LineCast</code> project is included in the book's companion files in the <code class="literal">Chapter03/LineCast</code> folder.</p></div></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec22"></a>Accessing object hierarchies</h3></div></div></div><p>The <span class="strong"><strong>Hierarchy</strong></span> panel in Unity offers a graphical illustration of the parent-child relationship that holds among all <code class="literal">GameObjects</code> in a scene. This relationship is important because child objects are<a id="id263" class="indexterm"></a> contained by, and inherit, the transformations of their parents. However, being able to define and edit the hierarchical relationship in the editor is usually not enough. You'll frequently need to parent one object to another in code and also cycle through all children of a specified object to process data or invoke functionality on them. Let's first see how to parent objects. The following code sample 3-8 demonstrates how to attach one object X to another object Y as its child, through the Transform component:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+//----------------------------------------------------
+public class Parenter : MonoBehaviour
+{
+  //Reference to child object in scene
+  private GameObject Child;
+  //Reference to parent object in scene
+  private GameObject Parent;
+  //----------------------------------------------------
+  // Use this for initialization
+  void Start ()
+  {
+    //Get parent and child objects
+    Child = GameObject.Find("Child");
+    Parent = GameObject.Find("Parent");
+
+    //Now parent them
+    Child.transform.parent = Parent.transform;
+  }
+  //----------------------------------------------------
+}
+//----------------------------------------------------</pre></div><p>Now, let's see how to cycle through all the child objects attached to a parent. Again, this is achieved through<a id="id264" class="indexterm"></a> the Transform component, as shown in the following code sample 3-9:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+//------------------------------------------
+public class CycleChildren : MonoBehaviour
+{
+  //------------------------------------------
+  // Use this for initialization
+  void Start ()
+  {
+    //Cycle though children of this object
+    for(int i=0; i&lt;transform.childCount; i++)
+    {
+      //Print name of child to console
+      Debug.Log (transform.GetChild(i).name);
+    }
+  }
+  //------------------------------------------
+}
+//------------------------------------------</pre></div></div></div>

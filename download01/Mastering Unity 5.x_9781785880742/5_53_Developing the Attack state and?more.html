@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec53"></a>Developing the Attack state and more</h2></div></div><hr /></div><p>The Attack state is entered when the zombie arrives within the attack distance to the player. During this state, the zombie repeatedly attacks the player until either the player dies or the player leaves the attack distance:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_023.jpg" /></div><p>
+</p><p>Attack state</p><p>Consider the following code:</p><pre class="programlisting">    //------------------------------------ &#13;
+    public IEnumerator StateAttack() &#13;
+    { &#13;
+        //Run attack animation &#13;
+        ThisAnimator.SetInteger("AnimState", (int) ActiveState); &#13;
+ &#13;
+        //While in idle state &#13;
+        while(ActiveState == AISTATE.ATTACK) &#13;
+        { &#13;
+            //Look at player &#13;
+            Vector3 PlanarPosition = new Vector3(PlayerTransform.position.x, ThisTransform.position.y, PlayerTransform.position.z); &#13;
+            ThisTransform.LookAt(PlanarPosition, ThisTransform.up); &#13;
+ &#13;
+            //Get distance between enemy and player &#13;
+            float Distance = Vector3.Distance(PlayerTransform.position, ThisTransform.position); &#13;
+ &#13;
+            if (Distance &gt; ThisAgent.stoppingDistance*2f) &#13;
+            { &#13;
+                ThisAgent.Stop (); &#13;
+                yield return null; &#13;
+                ActiveState = AISTATE.CHASE; &#13;
+                yield break; &#13;
+            } &#13;
+ &#13;
+            yield return null; &#13;
+        } &#13;
+    } &#13;
+    //------------------------------------  &#13;
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec58"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">StateAttack</code> coroutine begins and remains throughout the Attack state.</p></li><li style="list-style-type: disc"><p>The function <code class="literal">Transform.LookAt</code> is called during the coroutine loop, on each frame, to reorient the enemy to always face the player character.</p></li><li style="list-style-type: disc"><p>If the enemy falls outside the Attack distance, he reverts to the Chase state to catch up with the player. The distance between player and enemy is determined by the <code class="literal">Vector3.Distance</code> function.</p></li><li style="list-style-type: disc"><p>If the zombie reaches the <code class="literal">StoppingDistance</code> from the player, they stop moving and continue to attack.</p></li></ul></div><p>The Attack state, as it stands, is not sufficient to actually inflict damage on the player. The <code class="literal">StateAttack</code> coroutine, for example, contains no code to interact with the player character and therefore causes no damage for each punch or attack. To achieve this, we'll use <span class="strong"><strong>Animation Events</strong></span>. That is, we'll invoke player attack functions from the animation keyframes themselves. To get started, let's add some new class variables and a function, <code class="literal">DealDamage</code>. This function inflicts damage on the player, by an <code class="literal">AttackDamage</code> amount, representing the amount of damage inflicted by the enemy. The class variables to add are as follows:</p><pre class="programlisting">    //Reference to player transform &#13;
+    private Transform PlayerTransform = null;  &#13;
+    //Player health component &#13;
+    private Health PlayerHealth = null;  &#13;
+    //Amount of damage to deal on attack &#13;
+    public int AttackDamage = 10;  &#13;
+</pre><p>The <code class="literal">DealDamage</code> function is a short, public function written as follows:</p><pre class="programlisting">    //------------------------------------ &#13;
+    //Deal damage to the player &#13;
+    public void DealDamage() &#13;
+    { &#13;
+        PlayerHealth.Value -= AttackDamage; &#13;
+        HitSound.Play (); &#13;
+    } &#13;
+    //------------------------------------ &#13;
+ &#13;
+</pre><p>Now we've added the necessary functionality to the <code class="literal">AIEnemy</code> class, let's configure the animation clip asset for Attack state. Specifically, we need to configure the attack animation for synchronizing enemy punches (actions) with punch sounds. Select the <span class="strong"><strong>Attack</strong></span> animation in the Project Panel, and switch to the <span class="strong"><strong>Animator</strong></span> tab in the object Inspector:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_024.jpg" /></div><p>
+</p><p>Accessing animation data for the attack animation</p><p>Next, expand the Events section, to reveal the attack animation timeline, representing the complete attack animation. From here, we should click and drag the red time slider from the <span class="strong"><strong>Animation</strong></span> preview window to preview key frames:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_025.jpg" /></div><p>
+</p><p>Previewing attack key frames</p><p>Expand the<span class="strong"><strong> Events</strong></span> section to add animation events. Use the time-slider from the preview window to find each key frame where a zombie punch lands (strikes) the player. This is where a punch sound should play. To achieve this, an event should be added for each punch frame. To add an animation event, click the <span class="strong"><strong>Add Event</strong></span> button from the Inspector:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_026.jpg" /></div><p>
+</p><p>Creating animation events</p><p>For each event, run the <span class="strong"><strong>DealDamage</strong></span> function. The name is case-sensitive and should match the function name as specified in the <code class="literal">AIEnemy</code> class:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_027.jpg" /></div><p>
+</p><p>Detailing animation events</p><p>Repeat this process for each punch event in the timeline, adding a single and unique event calling the <span class="strong"><strong>DealDamage</strong></span> keyframe:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_028.jpg" /></div><p>
+</p><p>Creating an animation event for each punch key frame</p><p>For the <span class="strong"><strong>DealDamage</strong></span> function to execute successfully, the zombie also needs a fully configured <span class="strong"><strong>Audio Source</strong></span> component associated with the punch or damage sound. Add the <span class="strong"><strong>
+<span class="strong"><strong>Audio Source</strong></span>
+</strong></span> component by navigating to <span class="strong"><strong>Component |</strong></span>
+<span class="strong"><strong>Audio|</strong></span>
+<span class="strong"><strong>AudioSource</strong></span> from the application menu:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_029.jpg" /></div><p>
+</p><p>Adding an Audio Source component</p><p>Then drag and drop the punch sound into the <span class="strong"><strong>AudioClip</strong></span> slot, making sure to deactivate both the <span class="strong"><strong>PlayOnAwake</strong></span> and <span class="strong"><strong>Loop </strong></span>checkboxes. The <span class="strong"><strong>AudioClip</strong></span> should only play when the zombie deals damage:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_030.jpg" /></div><p>
+</p><p>Configuring the zombie Audio Source component</p><p>Now let's create a zombie Prefab. This is a great idea because, as mentioned, a Prefab is a special asset type allowing us to easily package and reuse objects from our scene anywhere else. Zombies should feature many times in a single level, as well as across multiple levels. To create a zombie Prefab, simply drag and drop the zombie from the <span class="strong"><strong>Hierarchy Panel</strong></span> into the Project Panel (into a <code class="literal">prefab</code> folder):</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_031.jpg" /></div><p>
+</p><p>Creating a zombie Prefab</p><p>If you later change a single instance of the zombie in a scene and then want to apply the change to all other instances, you can do this by updating the prefab. To achieve this, select the zombie you have changed, then navigate to  <span class="strong"><strong>GameObject</strong></span>
+<span class="strong"><strong>|</strong></span>
+<span class="strong"><strong>Apply Changes to Prefab</strong></span> in the application menu:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_032.jpg" /></div><p>
+</p><p>Applying changes to the Prefab</p></div></div>

@@ -1,0 +1,64 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec26"></a>Setting up the player tank and aspect</h2></div></div><hr /></div><p>Our <code class="literal">Target</code> <a id="id89" class="indexterm"></a>object is a simple sphere object with the mesh render disabled. We have also created a point light and made it a child of our <code class="literal">Target</code> object. Make sure the light is centered, or it will not be very helpful for us.</p><p>Look at the following code in the <code class="literal">Target.cs</code> file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Target : MonoBehaviour {
+
+  public Transform targetMarker;
+
+  void Update () {
+    int button = 0;
+    //Get the point of the hit position when the mouse is being // clicked.
+    if (Input.GetMouseButtonDown(button)) {
+      Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+      RaycastHit hitInfo;
+      if (Physics.Raycast(ray.origin, ray.direction, out hitInfo)) {
+        Vector3 targetPosition = hitInfo.point;
+        targetMarker.position = targetPosition;
+      }
+    }
+  }
+}</pre></div><p>Attach this script to our <code class="literal">Target</code> object, which is what we assign in the inspector to the <code class="literal">targetMarker</code> variable. The script detects the mouse click event and then, using the raycasting technique, detects the mouse click point on the plane in the 3D space. After that it updates the <code class="literal">Target</code> object to that position in our scene.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec22"></a>Implementing the player tank</h3></div></div></div><p>Our player tank is the <a id="id90" class="indexterm"></a>simple tank model we used in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Finite State Machines and You</em></span>, with a non-kinematic rigid body component attached. The rigid body component is needed in order to generate trigger events whenever we do collision detection with any AI characters. The first thing we need to do is to assign the tag <code class="literal">Player</code> to our tank.</p><p>The tank is controlled by the <code class="literal">PlayerTank</code> script, which we will create in a moment. This script retrieves the target position on the map and updates its destination point and the direction accordingly.</p><p>The code in the <code class="literal">PlayerTank.cs</code> file is shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerTank : MonoBehaviour {
+  public Transform targetTransform;
+  private float movementSpeed, rotSpeed;
+
+  void Start () {
+    movementSpeed = 10.0f;
+    rotSpeed = 2.0f;
+  }
+
+  void Update () {
+    //Stop once you reached near the target position
+    if (Vector3.Distance(transform.position, 
+      targetTransform.position) &lt; 5.0f)
+      return;
+
+    //Calculate direction vector from current position to target
+//position
+    Vector3 tarPos = targetTransform.position;
+    tarPos.y = transform.position.y;
+    Vector3 dirRot = tarPos - transform.position;
+
+    //Build a Quaternion for this new rotation vector 
+    //using LookRotation method
+    Quaternion tarRot = Quaternion.LookRotation(dirRot);
+
+    //Move and rotate with interpolation
+    transform.rotation= Quaternion.Slerp(transform.rotation, 
+        tarRot, rotSpeed * Time.deltaTime);
+
+    transform.Translate(new Vector3(0, 0, 
+        movementSpeed * Time.deltaTime));
+  }
+}</pre></div><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_03_05.jpg" /><div class="caption"><p>Properties of our tank object</p></div></div><p>The preceding screenshot gives us a snapshot of our script in the inspector once applied to our tank.</p><p>This script retrieves the position of the <code class="literal">Target</code> object on the map and updates its destination point and the <a id="id91" class="indexterm"></a>direction accordingly. After we assign this script to our tank, be sure to assign our <code class="literal">Target</code> object to the <code class="literal">targetTransform</code> variable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec23"></a>Implementing the Aspect class</h3></div></div></div><p>Next, let's take a <a id="id92" class="indexterm"></a>look at the <code class="literal">Aspect.cs</code> class. Aspect is a very simple class with just one public property called <code class="literal">aspectName</code>. That's all of the variables we need in this chapter. Whenever our AI character senses something, we'll check against this with <code class="literal">aspectName</code> to see whether it's the aspect that the AI has been looking for.</p><p>The code in the <code class="literal">Aspect.cs</code> file is shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Aspect : MonoBehaviour {
+  public enum aspect {
+    Player,
+    Enemy
+  }
+  public aspect aspectName;
+}</pre></div><p>Attach this aspect script to our player tank and set the <code class="literal">aspectName</code> property as <code class="literal">Enemy</code>, as shown in the following image:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_03_06.jpg" /><div class="caption"><p>Setting which aspect to look out for</p></div></div></div></div>

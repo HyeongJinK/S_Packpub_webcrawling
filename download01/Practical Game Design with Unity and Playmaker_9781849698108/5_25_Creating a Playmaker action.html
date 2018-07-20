@@ -1,0 +1,73 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec28"></a>Creating a Playmaker action</h2></div></div><hr /></div><p>It is time to<a id="id130" class="indexterm"></a> translate our <a id="id131" class="indexterm"></a>script to C#. Create a new C# script the same way you created the JS one. Call it <code class="literal">PushPuckAction</code>. Open the script and find the line starting with the <code class="literal">public class</code> keywords. Make sure that the name of the class is the same as the name of the script, then press <span class="emphasis"><em>command</em></span> + <span class="emphasis"><em>S</em></span> (<span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>S</em></span> in Windows) to save your changes if you made any.</p><p>As you can see, the default template for a C# script looks different from that of JS. This is because more things are shown to you. For instance, in JS it is implied that everything inside a script is, in fact, in a class with the same name, but you do not see the class declaration anywhere. Component classes in Unity have to inherit from MonoBehaviour, and it is shown in C#, while JS hides it from you. Then you have the two lines with the <code class="literal">using</code> keyword. All JS scripts use these namespaces, but JS hides it from you as well. The following script is the same one that we had before, but this time translated to C#. Replace the <a id="id132" class="indexterm"></a>template<a id="id133" class="indexterm"></a> with it.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+[RequireComponent (typeof (CharacterController))]
+
+public class PushPuckAction : MonoBehaviour 
+{
+  // Global variables available from Inspector
+  public float pushMag = 20f;
+
+  public string collisionTag = string.Empty;
+
+  // Function that will detect the collision with 
+  // controller and apply force in point of the collision
+  void OnControllerColliderHit (ControllerColliderHit hit) 
+  {
+    if (hit.gameObject.tag == collisionTag)
+    {
+      // Get the position of the object we collided with
+      Vector3 hitObjectPos = hit.transform.position;
+
+      // Get the position of the collision
+      Vector3 hitPointPos = hit.point;
+
+      // Calculate the direction of the force, 
+      // multiply it by magnitude
+      Vector3 pushForce = Vector3.Normalize(hitObjectPos - hitPointPos) * pushMag;
+
+      // Finally, apply force in position
+      hit.rigidbody.AddForceAtPosition(pushForce, hitPointPos);
+
+      // Print a message in Console saying that 
+      //the collision did happen and force was indeed applied
+      Debug.Log("Detected hit with " + collisionTag + ", applying force of " + pushForce + " in " + hitPointPos + ".");
+    }
+  }
+}</pre></div><p>Press <span class="emphasis"><em>command</em></span> + <span class="emphasis"><em>S</em></span> (<span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>S</em></span> in Windows), and let us look at what has changed apart from the things already mentioned. The syntax of the component requirement is different in C#. On top of that, the <code class="literal">RequireComponent</code> attribute has to be placed before the class declaration.</p><p>The <code class="literal">#pragma strict</code> directive<a id="id134" class="indexterm"></a> is gone. C# is explicit by nature and requires that you specify types of everything, so it is not needed.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip021"></a>Tip</h3><p>In C#, the following are quite useful: <code class="literal">#region [Name]</code>/<code class="literal">#endregion</code>, which is a good way of <a id="id135" class="indexterm"></a>dividing your code into regions that you can <a id="id136" class="indexterm"></a>fold. For example, writing <code class="literal">#region Variables</code> will create a region called <code class="literal">Variables</code>. Then you will be able to press a minus in a rectangle on the left of the MonoDevelop window to fold the code region, the end of which you have to mark with <code class="literal">#endregion</code>.</p></div><p>The <code class="literal">function</code> keyword is not used. Instead, function declarations are preceded by return types. You can specify a return type in JS as well, but this is done with the <code class="literal">:</code> operator after the brackets, for example, <code class="literal">function Update() : void</code>.</p><p>Finally, all variable declarations are preceded with types of variables instead of the <code class="literal">var</code> keyword. There are more differences in syntax that we cannot see in this example because of the relative simplicity of our script, but these are the main ones.</p><p>Now, if you replace your JS script with the C# one on the Mallets, they will act exactly the same way as before. Try doing this, then remove the <span class="strong"><strong>Push Puck Action</strong></span> component from the mallets. It is time to modify the script and transform <code class="literal">PushPuckAction.cs</code> into an actual Playmaker action. Replace the contents of <code class="literal">PushPuckAction.cs</code> with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+namespace HutongGames.PlayMaker.Actions
+{
+  [ActionCategory(ActionCategory.Character)]
+  [Tooltip("Detect collision with CharacterController, then push the other object into the opposite direction.")]
+  public class PushPuckAction : FsmStateAction 
+  {
+    [Tooltip("Push magnitude")]
+    public FsmFloat pushMag;
+
+    [Tooltip("Object with this tag will be pushed")]
+    public FsmString collisionTag;
+
+    public override void Reset ()
+    {
+      pushMag = 20f;
+      collisionTag = string.Empty;
+    }
+
+    public override void DoControllerColliderHit(ControllerColliderHit hit)
+    {
+      if (hit.gameObject.tag == collisionTag.Value)
+      {
+        FsmVector3 hitObjectPos = hit.transform.position;
+
+        FsmVector3 hitPointPos = hit.point;
+
+        FsmVector3 pushForce = (hitObjectPos.Value - hitPointPos.Value).normalized * pushMag.Value;
+
+        hit.rigidbody.AddForceAtPosition(pushForce.Value, hitPointPos.Value);
+
+        Debug.Log("Detected hit with " + collisionTag.Value + ", applying force of " + pushForce.Value + " in " + hitPointPos.Value + ".");
+      }
+    }
+  }
+}</pre></div><p>Press <span class="emphasis"><em>command</em></span> + <span class="emphasis"><em>S</em></span> (<span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>S</em></span> in Windows) to save the script. As you can see, this time more things have changed, although you can still see the same structure. Let us go through the code line-by-line and examine it.</p><p>The <code class="literal">using</code> directives <a id="id137" class="indexterm"></a>are the same, but the difference <a id="id138" class="indexterm"></a>begins right after them. The line <code class="literal">namespace</code> <code class="literal">HutongGames.PlayMaker.Actions</code> is obligatory for all Playmaker actions. Without it Playmaker will not know that the script that you are writing is, in fact, an action.</p><p>The <code class="literal">[ActionCategory(ActionCategory.Character)]</code> line puts your new action into a category. In this case, we are putting it into the <code class="literal">Character</code> category, because the action is about things colliding with the Character Controller. It could also go into the <code class="literal">Physics</code> category. To move it there, the line would have to be <code class="literal">[ActionCategory(ActionCategory.Physics)]</code>.</p><p>After that there is <code class="literal">[Tooltip("...")]</code>, which is quite self-explanatory. It shows a short description when you select the action from the list in the <span class="strong"><strong>Actions</strong></span> panel.</p><p>The <code class="literal">PushPuckAction</code> class now inherits from <code class="literal">FsmStateAction</code> instead of <code class="literal">MonoBehavior</code>. You still have access to all the standard Unity classes, but Playmaker-specific ones are added now.</p><p>Then there is another <code class="literal">Tooltip</code>, this time for a variable rather that a whole action. The text within this tooltip will appear when you hover your mouse pointer over the variable in the <span class="strong"><strong>State</strong></span> tab of the <span class="strong"><strong>playMaker</strong></span> panel or in the <span class="strong"><strong>Actions</strong></span> panel.</p><p>Note that the<a id="id139" class="indexterm"></a> type of the <code class="literal">pushMag</code> variable has<a id="id140" class="indexterm"></a> changed from <code class="literal">float</code> to <code class="literal">FsmFloat</code>, and the same goes for the <code class="literal">string</code> variable <code class="literal">collisionTag</code>—it is <code class="literal">FsmString</code> now. These are Playmaker types of variables. The same operations can be performed on them as before, but to access their value you now have to use the dot operator with the word <code class="literal">Value</code>, so, for example, <code class="literal">pushMag.Value</code> will return a float, the value of the Playmaker variable.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip21"></a>Tip</h3><p>If you do not want to be able to assign a value directly in the <span class="strong"><strong>State</strong></span> tab of the <span class="strong"><strong>playMaker</strong></span> panel and force choosing from existing variables, you can write <code class="literal">[UIHint(UIHint.Variable)]</code> in the line before the variable declaration, the same way we did for the tooltips.</p></div><p>A <code class="literal">Reset</code> function was added. This is what happens when a new action is added to a state or when you right-click on the header of the action and press <span class="strong"><strong>Reset</strong></span>. In it, we reinitialize the variables.</p><p>Then there is the <code class="literal">DoControllerColliderHit</code> function. Its name has changed from the standard Unity <code class="literal">OnControllerColliderHit</code>. Inside the function everything has stayed more or less the same with the only difference that types of <code class="literal">Vector3</code> variables have changed to <code class="literal">FsmVector3</code>, so to access their values <code class="literal">.Value</code> is used. Also, instead of <code class="literal">Vector3.Normalize</code>, we used <code class="literal">.nomalized</code>, which does exactly the same thing.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip22"></a>Tip</h3><p>While it is clear that in order to find examples and standard Unity classes' API one has to go to Unity Script Reference, it may be less clear about Playmaker-specific things. The easiest way to find examples is opening the script files of existing Playmaker actions that are located under the <code class="literal">PlayMaker/Actions</code> path, in your project. For example, if you are not quite sure how to detect mouse input and you want to do it via a Playmaker custom action, you can open <code class="literal">PlayMaker/Actions/MousePick.cs</code> and look at how the creators of Playmaker solved this problem.</p></div><p>Note that both <code class="literal">Reset</code> and <code class="literal">DoControllerColliderHit</code> have <code class="literal">override</code> preceding their types. This means that we are replacing a base function defined in the Playmaker with our own function. As a general rule, you will need to override all of the Playmaker standard functions using this keyword.</p><p>Now that we are done writing a custom Playmaker action, we can try using it. Remove the <span class="strong"><strong>Push Puck</strong></span> and/or <span class="strong"><strong>Push</strong></span> <span class="strong"><strong>Puck</strong></span> <span class="strong"><strong>Action</strong></span> components from <span class="strong"><strong>MalletLeft</strong></span> and <span class="strong"><strong>MalletRight</strong></span>. In their <span class="strong"><strong>Move</strong></span> state, remove the <span class="strong"><strong>Collision Event</strong></span> action. Then locate the newly created <span class="strong"><strong>Push Puck Action</strong></span> in the <span class="strong"><strong>Actions</strong></span> panel and add it to the state. Set the properties as shown in the following screenshot. Finally, delete the <span class="strong"><strong>Push Puck</strong></span> state from the FSM as well as the <span class="strong"><strong>Push</strong></span> <a id="id141" class="indexterm"></a>event and transition. To delete a transition, you just need to right-click on <a id="id142" class="indexterm"></a>the event in the FSM view and press <span class="strong"><strong>Delete Transition</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781849698108/graphics/8108OT_05_02.jpg" /></div></div>

@@ -1,0 +1,60 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec30"></a>Pausing the game</h2></div></div><hr /></div><p>At this point, we have some issues. Once the menu is gone, there is no way to get it back, the game should start unpaused, and the game should actually pause. Let's tackle these issues next:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open up the <code class="literal">PlayerBehaviour</code> script and replace the bottom of the Update function with the following (changes are highlighted, note the removal of the original way of calling <code class="literal">rb.AddForce</code>):</li></ol></div><pre class="programlisting">    /// &lt;summary&gt; 
+    /// Update is called once per frame 
+    /// &lt;/summary&gt; 
+    void Update () 
+   { 
+<span class="strong"><strong>        // If the game is paused, don't do anything
+</strong></span><span class="strong"><strong>        if (PauseScreenBehaviour.paused)
+</strong></span><span class="strong"><strong>            return;</strong></span> 
+ 
+        // Movement in the x axis 
+        float horizontalSpeed = 0; 
+ 
+        // Check if we are running either in the Unity editor  
+        // or in a standalone build. 
+        #if UNITY_STANDALONE || UNITY_WEBPLAYER || UNITY_EDITOR 
+ 
+        // Check if we're moving to the side 
+        horizontalSpeed = Input.GetAxis("Horizontal") *  
+                              dodgeSpeed; 
+ 
+        // If the mouse is held down (or the screen is tapped  
+        // on Mobile) 
+        if (Input.GetMouseButton(0)) 
+        { 
+            horizontalSpeed = CalculateMovement(Input.mousePosition); 
+        } 
+ 
+        // Check if we are running on a mobile device 
+        #elif UNITY_IOS || UNITY_ANDROID 
+ 
+        // Move player based on direction of the accelerometer 
+        horizontalSpeed = Input.acceleration.x * dodgeSpeed; 
+ 
+        // Check if the screen has been touched 
+        if (Input.touchCount &gt; 0) 
+        { 
+            // Store the first touch detected. 
+            Touch touch = Input.touches[0]; 
+            //horizontalSpeed = CalculateMovement(touch.position); 
+            SwipeTeleport(touch); 
+ 
+            TouchObjects(touch); 
+        } 
+ 
+        #endif 
+ 
+<span class="strong"><strong>        var movementForce = new Vector3(horizontalSpeed,  
+        0, rollSpeed); 
+ 
+        // Time.deltaTime is the amount of time since the  
+        // last frame (approx. 1/60 seconds) 
+        movementForce *= (Time.deltaTime * 60); 
+ 
+        // Apply our auto-moving and movement forces 
+        rb.AddForce(movementForce);</strong></span> 
+   }  </pre><p>First of all, if the game is paused, we will not do anything within the function. Also, instead of just adding a force always, we now multiply that value by <code class="literal">Time.deltaTime</code>, which is how much time has elapsed since the previous frame. This makes it so that as computers get better, our code will work the same.</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Now, the game, by default, should be unpaused, so let's go ahead and select the <strong class="userinput"><code>Pause Menu</code></strong> object in the <strong class="userinput"><code>Hierarchy</code></strong> view and then click on the active button in the <strong class="userinput"><code>Inspector</code></strong> view to disable it:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/b0e8aaff-2cd0-4fbb-b5be-181d93e6d71a.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>In addition to this, we will need a way to turn it on. On PC games, this is usually the <span class="emphasis"><em>Esc</em></span> button, but, for mobile, we will instead have <span>a button that players can click to turn on the menu</span>. Go ahead and right-click on the <strong class="userinput"><code>Canvas</code></strong> object in the <strong class="userinput"><code>Hierarchy</code></strong> view and select <strong class="userinput"><code>UI</code></strong> | <strong class="userinput"><code>Button</code></strong>.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Rename the new object as Show Pause Button and use the <strong class="userinput"><code>Anchor Presets</code></strong> option to place the object on the bottom left of the screen (use <span class="emphasis"><em>Alt</em></span> + <span class="emphasis"><em>Shift</em></span> to set <strong class="userinput"><code>Pivot</code></strong> and Position as well). Then, change the <strong class="userinput"><code>Width</code></strong> to <code class="literal">30</code>, as it won't need to be that large.</li><li>Open up the <strong class="userinput"><code>Text</code></strong> and change the <strong class="userinput"><code>Text</code></strong> component's <strong class="userinput"><code>Text</code></strong> property to <code class="literal">| |</code> to make it look like a pause button.</li><li>Go back to the Show Pause Button object and create an <strong class="userinput"><code>On Click ()</code></strong> event using the <strong class="userinput"><code>SetPauseMenu</code></strong> function on the <strong class="userinput"><code>Pause Menu Behaviour</code></strong> object. Then, click on the checkbox to set it to pause.</li><li>Now, we want to remove this pause button when we click. We could do this through code, but just to show that we can also do this via the editor, go ahead and click on the <strong class="userinput"><code>+</code></strong> again to add another action on <strong class="userinput"><code>On Click ()</code></strong>. Next, drag and drop the actual Show <strong class="userinput"><code>Pause</code></strong> Button and then call the <strong class="userinput"><code>GameObject</code></strong> | <strong class="userinput"><code>SetActive</code></strong> function. Then, uncheck it to turn the object off:</li></ol></div><p>&gt;</p><div class="mediaobject"><img src="/graphics/9781787288713/graphics/bf1399dd-95e8-41ec-be5f-d04bc1555ab4.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Go back to the Resume Button and add another event to its button to turn the Show Pause Menu button back on when we leave using <strong class="userinput"><code>SetActive</code></strong> like we used in the previous step.</li></ol></div><p>As mentioned previously, one problem that won't be apparent now unless you restart the level is the fact that <code class="literal">static</code> variables will keep their values each time we reload the game. In our case, we set <code class="literal">paused</code>, which turns our <code class="literal">Time.timeScale</code> to <code class="literal">0</code>. Thankfully, we can fix this fairly easily.</p><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Lastly, open up the <code class="literal">PauseMenuBehaviour</code> and update the <code class="literal">Start</code> function to have the following:</li></ol></div><pre class="programlisting">    void Start() 
+    { 
+        paused = false; 
+<span class="strong"><strong>        SetPauseMenu(false);</strong></span> 
+    } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>Save your script and the scene, and then play the game:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/62bc7690-a5ae-44b7-9c89-bf1acbf364de.png" /></div><p>The Pause menu now works correctly.</p></div>

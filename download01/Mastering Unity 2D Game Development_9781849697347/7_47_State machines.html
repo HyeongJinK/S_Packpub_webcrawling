@@ -1,0 +1,76 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec47"></a>State machines</h2></div></div><hr /></div><p>In life, as well as game development, state machines (or <span class="strong"><strong>Finite State Machines</strong></span> (<span class="strong"><strong>FSM</strong></span>) as they are <a id="id612" class="indexterm"></a>more commonly called) are a core component for day-to-day running. At a basic level, they tell us exactly what we are doing right now, what we were doing previously, and what we can do next.</p><p>They are <a id="id613" class="indexterm"></a>commonly used for:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Menu systems</p></li><li style="list-style-type: disc"><p>Game-level transitions</p></li><li style="list-style-type: disc"><p>AI/Behaviors</p></li></ul></div><p>We can implement these within games in various ways, from the very basic (and generally hard to manage) to a more ordered system and beyond with full state managers.</p><p>A basic state machine is like a flowchart and looks something like the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_07_01.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec82"></a>Defining states</h3></div></div></div><p>In<a id="id614" class="indexterm"></a> all implementations, we start with a collection of states: these <a id="id615" class="indexterm"></a>define both what conditions/states are in the game and what we do when that state changes.</p><p>These states describe both what can happen when that state is active and what other potential states could result in an action from the current state. If we take the example from UnityGems, which describes a simple case using a television(TV), we would end up with the states listed in the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>State</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Actions</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>TV off</p>
+</td><td style="" align="left" valign="top">
+<p>No activity is present and nothing is displayed.</p>
+</td><td style="" align="left" valign="top">
+<p>The power button turns the TV on.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>TV on</p>
+</td><td style="" align="left" valign="top">
+<p>The TV displays images and plays sound.</p>
+</td><td style="" align="left" valign="top">
+<p>The power button turns the TV off.</p>
+<p>The up button selects the previous channel.</p>
+<p>The down button selects the next channel.</p>
+<p>The menu button displays the menu.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Menu displayed</p>
+</td><td style="" align="left" valign="top">
+<p>The TV displays the menu, overlaying the normal display.</p>
+</td><td style="" align="left" valign="top">
+<p>The power button turns the TV off.</p>
+<p>The menu button turns the TV on (menu hidden).</p>
+<p>The up button highlights the previous menu item.</p>
+<p>The down button highlights the next menu item.</p>
+<p>The ok button activates the menu item.</p>
+</td></tr></tbody></table></div><p>So from <a id="id616" class="indexterm"></a>each individual state, there are a number of options; in some<a id="id617" class="indexterm"></a> cases, the same action will lead to the same result (such as the power button), some actions will do different things based on what the current state is (such as the up and down buttons).</p><p>It's important to note that in any game, you will likely use many state systems, from menus to in-game controls and AI.</p><p>So once you have your collection ready, the next step is to define an enumeration in C# as follows, for example, using the previous states:</p><div class="informalexample"><pre class="programlisting">enum TvState
+{
+  Off,
+  On,
+  Menu
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec83"></a>Simple singular choice</h3></div></div></div><p>The <a id="id618" class="indexterm"></a>simplest way to implement a state system is<a id="id619" class="indexterm"></a> using the C# <code class="literal">switch</code> statement; the benefit here is that there can only be a single result:</p><div class="informalexample"><pre class="programlisting">if (Input.GetButtonDown("Up"))
+{
+    switch (currentTvState)
+    {
+        case TvState.Off:
+            //Nothing, tv is off
+            break;
+        case TvState.On:
+            //Channel Up
+            break;
+        case TvState.Menu:
+            //Menu selection up
+            break;
+    }
+}</pre></div><p>So as<a id="id620" class="indexterm"></a> you can see in the previous example, we<a id="id621" class="indexterm"></a> have simply implemented the pattern for the <code class="literal">Up</code> button on the remote, and depending on what the television is doing currently, it will act appropriately.</p><p>This is good for menus, but is limiting in situations where based on the state, we might want to do multiple things.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec84"></a>Planning for multiple cases</h3></div></div></div><p>The alternate simple approach to state machines is to use the <code class="literal">if</code> blocks to test what a state is: the <a id="id622" class="indexterm"></a>only downside is that this can become very cumbersome <a id="id623" class="indexterm"></a>to manage very quickly. Consider a slightly more complex scenario (related to the game) where a group of thugs are battling with you, but they are only confident when they are in a group and will run if their health is good. Such a system wouldn't be possible using the previous <code class="literal">switch</code> style (or at least will be difficult to do so), so by using several <code class="literal">if</code> blocks as shown in the following code, we can achieve something like this:</p><div class="informalexample"><pre class="programlisting">if (EnemyState == State.Idle)
+{
+    //Check for player
+    // If player found EnemyState == State.Attacking
+    //Check for fellow enemies
+}
+ 
+if (EnemyState == State.Attacking &amp;&amp; PlayerState == State.Idle)
+{
+    //Enemy Sneak attack
+}
+ 
+if (EnemyState == State.Attacking)
+{
+    //Play Attacking Music
+}
+ 
+if (EnemyState == State.Attacking &amp;&amp; Health &lt; 5)
+{
+    //Run away
+}
+ 
+if (EnemyState == State.Attacking &amp;&amp; PlayerState == State.RunningAway)
+{
+    //Give Chase
+}</pre></div><p>Now, although <a id="id624" class="indexterm"></a>the previous code can be nested or transformed <a id="id625" class="indexterm"></a>into <code class="literal">switch</code> statements, writing it this way gives us other advantages: for one, we control when and under what conditions certain things will happen, for example:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Battle music will always be played when the battle begins</p></li><li style="list-style-type: disc"><p>Enemies will chase the player unless they have low health</p></li><li style="list-style-type: disc"><p>At any point that the player is idle, the enemies will have a sneaking advantage</p></li></ul></div><p>However, with either system, you are going to end up with a lot of code-making decisions around your game, such as the player, enemies, NPCs, and so on. This will make it hard to manage, and even worse to try debug; perhaps Unity offers us another way?</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec85"></a>State managers</h3></div></div></div><p>Following<a id="id626" class="indexterm"></a> on from the Animation tutorial in <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Getting Animated</em></span>, we have seen that Unity has a very powerful state machine system <a id="id627" class="indexterm"></a>built in it already using Mecanim. We have only used it for animation so far, but like AnimationCurves, we can use this to build a nice graphical system that is easier to maintain.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note86"></a>Note</h3><p>Although the state machine is very powerful for controlling what states are available and how they transition between states, it can't actually implement actions (other than animation). There are triggers built into the state system, but these are not fully supported on all platforms. So if you use them, keep it limited.</p></div><p>To achieve this properly, you need to separate out the responsibilities for what does what within the state system into the following parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="strong"><strong>Inputs</strong></span>: What factors will be fed into the state system to affect change</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>The decision engine</strong></span>: The core logic that drives the state machine</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Outputs</strong></span>: What the game will do based on the current state</p></li></ul></div><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_07_02.jpg" /></div><p>The <a id="id628" class="indexterm"></a>previous diagram shows an example of how you would <a id="id629" class="indexterm"></a>componentize your state machine; this pattern is very extensible because it means you can apply separate scripts for each of the inputs, which also means many areas of the game can have an input to the state system. The outputs/reactions to states or state changes can also be componentized (but don't have to be) so that you can swap and change AI behaviors to the different states based on what you are implementing them on. Enemy 1 may be very brave and just act, and Enemy 2 might be a bit more cautious and require other enemies close by before attacking.</p><p>Implementing this in Mecanim Animation controllers is very simple since at its heart it is a state machine itself, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_07_03.jpg" /></div><p>In the <a id="id630" class="indexterm"></a>previous screenshot, we can see a simple example<a id="id631" class="indexterm"></a> of this: there are no animations connected to any of the states. We are just using them to track and control what drives our state machine. Using the parameters, it's easy to configure the following settings:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>If the player is seen, the enemy attacks</p></li><li style="list-style-type: disc"><p>If the player is seen and is attacking, the enemy should defend</p></li><li style="list-style-type: disc"><p>If the player attacks when the enemy is attacking, the enemy should defend</p></li><li style="list-style-type: disc"><p>If the player stops attacking, then the enemy should attack back</p></li><li style="list-style-type: disc"><p>If at any time the enemy health is less than 2 and the player's health is greater than 2, the enemy should run away</p></li><li style="list-style-type: disc"><p>If at any time the enemy loses sight of the player, then go back to idle</p></li></ul></div><p>So by controlling the input, we know how the enemy will behave, and this is completely configurable within the controller without any complex scripting.</p></div></div>

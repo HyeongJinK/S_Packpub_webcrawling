@@ -1,0 +1,38 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec18"></a>Scrolling textures by modifying UV values</h2></div></div><hr /></div><p>One of <a id="id102" class="indexterm"></a>the most common texture techniques <a id="id103" class="indexterm"></a>used in today's game industry is the process of allowing you to scroll the textures over the surface of an object. This allows you to create effects such as waterfalls, rivers, lava flows, and so on. It's also a technique that is the basis to create animated sprite effects, but we will cover this in a subsequent recipe of this chapter. Let's first see how we will create a simple scrolling effect in a Surface Shader.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec38"></a>Getting ready</h3></div></div></div><p>To begin this recipe, you will need to create a new shader file and material. This will set us up with a nice clean shader that we can use to study the scrolling effect by itself.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec39"></a>How to do it…</h3></div></div></div><p>To begin with, we will launch our new shader file that we just created and enter the code mentioned in the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>The shader will need two new properties that will allow us to control the speed of the texture scrolling. So, let's add a speed property for the <span class="emphasis"><em>X</em></span> direction and a speed property for the <span class="emphasis"><em>Y</em></span> direction, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>Properties</strong></span> {
+  _MainTint ("Diffuse Tint", Color) = (1,1,1,1)
+  _MainTex ("Base (RGB)", 2D) = "white" {}
+  _ScrollXSpeed ("X Scroll Speed", "Range(0,10)) = 2
+  _ScrollYSpeed ("Y Scroll Speed", "Range(0,10)) = 2
+}</pre></div></li><li><p>Modify the Cg properties in the <code class="literal">CGPROGRAM</code> section and create new variables so that we can access the values from our properties:</p><div class="informalexample"><pre class="programlisting">fixed4 _MainTint;
+fixed _ScrollXSpeed;
+fixed _ScrollYSpeed;
+sampler2D _MainTex;</pre></div></li><li><p>Modify the <a id="id104" class="indexterm"></a>surface function to <a id="id105" class="indexterm"></a>change the UVs given to the <code class="literal">tex2D()</code> function. Then, use the built-in <code class="literal">_Time</code> variable to animate the UVs over time when the play button is pressed in the editor:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> surf (Input IN, inout SurfaceOutput o) 
+{
+  // Create a separate variable to store our UVs 
+  // before we pass them to the tex2D() function
+  fixed2 scrolledUV = IN.uv_MainTex;
+      
+  // Create variables that store the individual x and y 
+  // components for the UV's scaled by time
+  fixed xScrollValue = _ScrollXSpeed * _Time;
+  fixed yScrollValue = _ScrollYSpeed * _Time;
+      
+  // Apply the final UV offset
+  scrolledUV += fixed2(xScrollValue, yScrollValue);
+      
+  // Apply textures and tint
+  half4 c = tex2D (_MainTex, scrolledUV);
+  o.Albedo = c.rgb * _MainTint;
+  o.Alpha = c.a;
+}</pre></div></li></ol></div><p>The following image demonstrates the result of utilizing the scrolling UV system to create a simple river motion for your environments. You can notice this effect in the scene called <code class="literal">ScrollingUVs</code> from the code files provided with this book:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_02_16.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec40"></a>How it works…</h3></div></div></div><p>The scrolling system starts with the declaration of a couple of properties, which will allow the user of this shader to increase or decrease the speed of the scrolling effect itself. At their core, they are float values being passed from the material's <span class="strong"><strong>Inspector</strong></span> tab to the surface function of the shader. For more information on shader properties, see <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Creating Your First Shader</em></span>.</p><p>Once we have these float values from the material's <span class="strong"><strong>Inspector</strong></span> tab, we can use them to offset our UV values in the shader.</p><p>To begin this process, we first store the UVs in a separate variable called <code class="literal">scrolledUV</code>. This variable has to be <code class="literal">float2</code>/<code class="literal">fixed2</code> because the UV values are being passed to us from the <code class="literal">Input</code> <a id="id106" class="indexterm"></a>structure:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>struct</strong></span> Input
+{
+  float2 uv_MainTex;
+}</pre></div><p>Once we have access to the mesh's UVs, we can offset them using our scroll speed variables and built-in <code class="literal">_Time</code> variable. This built-in variable returns a variable of the <code class="literal">float4</code> type, meaning that each component of this variable contains different values of time as it pertains to game time.</p><p>A complete <a id="id107" class="indexterm"></a>description of these individual time <a id="id108" class="indexterm"></a>values are described at the following link: <a class="ulink" href="http://docs.unity3d.com/Manual/SL-UnityShaderVariables.html" target="_blank">http://docs.unity3d.com/Manual/SL-UnityShaderVariables.html</a>
+</p><p>This <code class="literal">_Time</code> variable will give us an incremented float value based on Unity's game time clock. So, we can use this value to move our UVs in a UV direction and scale that time with our scroll speed variables:</p><div class="informalexample"><pre class="programlisting">// Create variables that store the individual x and y 
+// components for the uv's scaled by time
+fixed xScrollValue = _ScrollXSpeed * _Time;
+fixed yScrollValue = _ScrollYSpeed * _Time;</pre></div><p>With the correct offset being calculated by time, we can add the new offset value back to the original UV position. This is why we are using the <code class="literal">+=</code> operator in the next line. We want to take the original UV position, add the new offset value, and then pass this to the <code class="literal">tex2D()</code> function as the texture's new UVs. This creates the effect of the texture moving on the surface. We are really manipulating the UVs, so we are faking the effect of the texture moving:</p><div class="informalexample"><pre class="programlisting">scrolledUV += fixed2(xScrollValue, yScrollValue);
+half4 c = tex2D (_MainTex, scrolledUV);</pre></div></div></div>

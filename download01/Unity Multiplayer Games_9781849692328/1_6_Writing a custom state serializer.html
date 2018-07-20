@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec13"></a>Writing a custom state serializer</h2></div></div><hr /></div><p>While<a id="id22" class="indexterm"></a> initially a game might simply serialize Transform or Rigidbody for testing, eventually it is often necessary to write a custom serialization function. This is a surprisingly easy task.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip02"></a>Tip</h3><p>
+<span class="strong"><strong>Downloading the example code</strong></span>
+</p><p>You can download the example code files for all Packt books you have purchased from your account at <a class="ulink" href="http://www.packtpub.com" target="_blank">http://www.packtpub.com</a>. If you purchased this book elsewhere, you can visit <a class="ulink" href="http://www.packtpub.com/support" target="_blank">http://www.packtpub.com/support</a> and register to have the files e-mailed directly to you.</p></div><p>Here is a script that sends an object's position over the network:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ExampleUnityNetworkSerializePosition : MonoBehaviour
+{
+  public void OnSerializeNetworkView( BitStream stream, NetworkMessageInfo info )
+  {
+    // we are currently writing information to the network
+    if( stream.isWriting )
+    {
+      // send the object's position
+      Vector3 position = transform.position;
+      stream.Serialize( ref position );
+    }
+    // we are currently reading information from the network
+    else
+    {
+      // read the first vector3 and store it in 'position'
+      Vector3 position = Vector3.zero;
+      stream.Serialize( ref position );
+    
+      // set the object's position to the value we were sent
+      transform.position = position;
+    }
+  }
+}</pre></div><p>Most of the work is done with BitStream. This is used to check if NetworkView is currently writing the state, or if it is reading the state from the network. Depending on whether it is<a id="id23" class="indexterm"></a> reading or writing, <code class="literal">stream.Serialize</code> behaves differently. If NetworkView is writing, the value will be sent over the network. However, if NetworkView is reading, the value will be read from the network and saved in the referenced variable (thus the <code class="literal">ref</code> keyword, which passes <code class="literal">Vector3</code> by reference rather than value).</p></div>

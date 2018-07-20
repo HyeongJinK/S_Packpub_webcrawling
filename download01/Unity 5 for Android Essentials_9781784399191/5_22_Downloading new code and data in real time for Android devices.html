@@ -1,0 +1,245 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec24"></a>Downloading new code and data in real time for Android devices</h2></div></div><hr /></div><p>In the event of retrieving assets<a id="id284" class="indexterm"></a> from your bundles, you can use three separate functions:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">AssetBundle.Load</code>: This will load <a id="id285" class="indexterm"></a>one object only by the given name; also it will block the main thread.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">AssetBundle.LoadAsync</code>: This <a id="id286" class="indexterm"></a>will load one object only by a given name; it will not block the main thread. Use this method for huge assets.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">AssetBundle.LoadAll</code>: This will<a id="id287" class="indexterm"></a> load every object from your <code class="literal">AssetBundle</code>.</p></li></ul></div><p>Use the <code class="literal">AssetBundle.Unload</code> method in the event of unloading assets. Let's look at a simple usage example of the asynchronous method as shown in the following code without any exception handling and any checks (just as <code class="literal">skeleton</code>):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class GetAssetBundleAsync : MonoBehaviour {
+  public string assetBundleUrl = "http://yourweb.com/yourBundle.unity3d";
+  public int assetBundleVersion = 1;
+
+  IEnumerator Start() {
+    WWW www = WWW.LoadFromCacheOrDownload(
+      assetBundleUrl, assetBundleVersion
+    );
+
+    yield return www;
+
+    AssetBundle ab = www.assetBundle;
+
+    AssetBundleRequest abr = ab.LoadAsync(
+      "YourObjName", typeof(GameObject)
+    );
+  
+    yield return abr;
+
+    GameObject go = abr.asset as GameObject;
+
+    ab.Unload(false);
+    www.Dispose();
+  }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec57"></a>Managing loaded asset bundles</h3></div></div></div><p>Asset bundles cannot be loaded<a id="id288" class="indexterm"></a> if a previous bundle has not been unloaded previously:</p><div class="informalexample"><pre class="programlisting">  AssetBundle ab = www.assetBundle;</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip03"></a>Tip</h3><p>Try to always keep references for your imported assets, to avoid importing same assets multiple times.</p></div><p>Unity will throw an exception and your asset bundle (in our example, <code class="literal">ab</code> variable) variable will be <code class="literal">null</code>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip04"></a>Tip</h3><p>Try to unload your <code class="literal">AssetBundle</code> as early as possible.</p></div><p>You can use the next simple script (as shown in the following code) for your loaded bundles. All this code should be pretty clear to you, so let's look at this C# script:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+static public class YourAssetBundleDispatcher {
+  static Dictionary&lt;string, YourBundleReference&gt; dictionaryBundles;
+
+  static YourAssetBundleDispatcher() {
+         dictionaryBundles = new Dictionary&lt;string, YourBundleReference&gt;();
+  }
+
+     private class YourBundleReference {
+         public AssetBundle ab = null;
+
+         public int assetBundleVersion;
+         public string assetBundleUrl;
+
+         public YourBundleReference(string url, int version) {
+               assetBundleUrl = url;
+               assetBundleVersion = version;
+         }
+     };
+
+  public static AssetBundle 
+        RetrieveAssetBundle(string abUrl, int abVersion) {
+         string bundleKey = abUrl + abVersion.ToString();
+       
+    YourBundleReference ybr;
+       
+    if (dictionaryBundles.TryGetValue(bundleKey, out ybr))
+               return ybr.ab;
+         else
+               return null;
+     }
+
+     public static IEnumerator ImportAssetBundle(string abUrl, int abVersion){
+          string bundleKey = abUrl + abVersion.ToString();
+       
+    if (dictionaryBundles.ContainsKey(bundleKey)) {
+               yield return null;
+         } else {
+                using(WWW www = WWW.LoadFromCacheOrDownload(abUrl, abVersion)){
+                   yield return www;
+
+                   if (www.error != null)
+                         throw new Exception("WWW ERROR:" + www.error);
+        YourBundleReference ybr = new YourBundleReference(
+          abUrl, abVersion
+        );
+                   ybr.ab = www.assetBundle;
+                   dictionaryBundles.Add(bundleKey, ybr);
+                }
+         }
+  }
+
+  public static void Dispose(string abUrl, int abVersion, bool flag) {
+    string bundleKey = abUrl + abVersion.ToString();
+       
+    YourBundleReference ybr;
+
+         if (dictionaryBundles.TryGetValue(bundleKey, out ybr)){
+               ybr.ab.Unload(flag);
+               ybr.ab = null;
+               dictionaryBundles.Remove(bundleKey);
+         }
+     }
+}</pre></div><p>You can use the <a id="id289" class="indexterm"></a>dispatcher class as shown here:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+class DispatcherUsage : MonoBehaviour {
+  public string assetBundleUrl;
+     public int assetBundleVersion;
+
+     AssetBundle ab;
+
+    void Start() {
+    Debug.Log("Importing your Asset Bundle");
+            ab = YourAssetBundleDispatcher.RetrieveAssetBundle(
+      assetBundleUrl, assetBundleVersion
+    );
+             if(null != ab) StartCoroutine(ImportAssetBundle());
+  }
+
+     IEnumerator ImportAssetBundle() {
+         yield return StartCoroutine(
+      YourAssetBundleDispatcher.ImportAssetBundle(
+        assetBundleUrl, assetBundleVersion
+      )
+    );
+
+         ab = YourAssetBundleDispatcher.RetrieveAssetBundle(
+      assetBundleUrl, assetBundleVersion
+    );
+  }
+
+  void OnDisable() {
+         YourAssetBundleDispatcher.Dispose(
+      assetBundleUrl, assetBundleVersion, false
+    );
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note16"></a>Note</h3><p>It is possible to clone your previous instantiated objects to avoid unnecessary importing bundles (by calling Unity's function known as <code class="literal">GameObject.Instantiate</code>).</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec58"></a>Asset bundles and binary data</h3></div></div></div><p>Unity treats binary files <a id="id290" class="indexterm"></a>with a <code class="literal">.bytes</code> extension as a <code class="literal">TextAsset</code>, which <a id="id291" class="indexterm"></a>can be included in your <code class="literal">AssetBundle</code>. Here's an example of the C# script shown here:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class BinaryDataExample : MonoBehaviour {
+  string assetBundleUrl = 
+    "http://yourweb.com/path/to/yourAssetBundle_1.unity3d";
+
+  IEnumerator Start() {
+    WWW www = WWW.LoadFromCacheOrDownload(assetBundleUrl, 1);
+    yield return www;
+
+    AssetBundle ab = www.assetBundle;
+
+    TextAsset textAsset = ab.Load(
+      "YourBinaryFileName", typeof(TextAsset)
+    ) as TextAsset;
+
+    byte[] yourBinaryData = textAsset.bytes;
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec59"></a>Asset bundles and scripts</h3></div></div></div><p>You can build<a id="id292" class="indexterm"></a> your asset bundles with scripts as <code class="literal">TextAsset</code> files, which <a id="id293" class="indexterm"></a>can be executable only in the event of precompiling them into an assembly. This example is shown in the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class AssetBundleScript : MonoBehaviour {
+  string assetBundleUrl = 
+    "http://yourweb.com/your/asset/bundle_test.unity3d";
+
+  IEnumerator Start () {
+    WWW www = WWW.LoadFromCacheOrDownload (assetBundleUrl, 1);
+        yield return www;
+
+        AssetBundle ab = www.assetBundle;
+
+        TextAsset textAsset = ab.Load(
+      "yourBinaryAssetName", typeof(TextAsset)
+    ) as TextAsset;
+
+        var assmbl = System.Reflection.Assembly.Load(textAsset.bytes);
+    
+    GameObject gameObj = new GameObject();
+        gameObj.AddComponent(
+      assmbl.GetType(
+        "Your_ClassName_Inherited_From_MonoBehaviour"
+      )
+    );
+  }
+  }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec60"></a>Asset bundle dependencies</h3></div></div></div><p>Many of your assets will <a id="id294" class="indexterm"></a>depend on other assets, such as materials, textures, shaders, and so on. You can build your bundle with all those assets, but this approach can reduce the size of the <code class="literal">AssetBundle</code> file. Furthermore, this approach will not be effective if all those dependencies are used for your other bundles. Too much memory will be wasted. Instead, you can create a separate asset bundle with all those shared dependencies, which will be used by other bundles. In the event of using these dependencies, firstly, you should call the function known as <code class="literal">BuildPipeline.PushAssetDependencies</code>, and then your shared bundle can be built for other bundles. Therefore, before each new level, you should always call this function to tell Unity to put your bundle in its stack for further usage by other bundles. At the end of your bundle creation, you should always empty this stack of bundles by a command known as <code class="literal">BuildPipeline.PopAssetDependencies</code>. In your application, you should always import all your shared bundles and only after that you can import your other bundles with those dependencies. Let's see how to save separate <code class="literal">AssetBundle</code> with shared shaders (as shown here) in this action:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class YourAssetBundleShaders : MonoBehaviour {
+        public Shader[] assetBundleShaders;
+}</pre></div><p>Create an empty GameObject <a id="id295" class="indexterm"></a>and attach this script to it and save it (after populating array of shaders) as a prefab anywhere you want within your project files. The following step is to create the C# script to generate asset bundles as shown here, where <code class="literal">YourAssetBundle_2</code> requires <code class="literal">YourAssetBundle_1</code> and <code class="literal">YourAssetBundle_3</code> depends on the first and the second bundles. This is just an example, you should change it depending on your needs:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+
+public class AssetBundleGenerator {
+  [MenuItem("PacktPub/AssetBundles/Generate all accessible Asset Bundles")]
+       static void Generate() {
+         BuildAssetBundleOptions options = 
+                 BuildAssetBundleOptions.CollectDependencies | 
+                    BuildAssetBundleOptions.CompleteAssets | 
+                    BuildAssetBundleOptions.DeterministicAssetBundle;
+
+    BuildPipeline.PushAssetDependencies();
+
+             BuildPipeline.BuildAssetBundle(
+      AssetDatabase.LoadMainAssetAtPath(
+        "Assets/YourAssetName_1.prefab"
+      ), 
+      null, 
+      "Your/Path/To/YourAssetBundle_1.unity3d", 
+      options
+    );
+
+    BuildPipeline.PushAssetDependencies();
+    BuildPipeline.BuildAssetBundle(
+      AssetDatabase.LoadMainAssetAtPath(
+        "Assets/YourAssetName_2.prefab"
+      ), 
+      null, 
+      "YourPath/To/YourAssetBundle_2.unity3d", 
+      options
+    );
+
+    BuildPipeline.BuildAssetBundle(
+      AssetDatabase.LoadMainAssetAtPath(
+        "Assets/YourAssetName_3.prefab"
+      ), 
+      null, 
+      "YourPath/To/YourAssetBundle_3.unity3d", 
+      options
+    );           
+
+    BuildPipeline.PopAssetDependencies();
+    BuildPipeline.PopAssetDependencies();
+  }
+
+  [MenuItem("PacktPub/AssetBundles/Rebuild Asset Bundle")]
+       static void Rebuild() {
+    BuildAssetBundleOptions options = 
+      BuildAssetBundleOptions.CollectDependencies | 
+      BuildAssetBundleOptions.CompleteAssets | 
+      BuildAssetBundleOptions.DeterministicAssetBundle;
+
+    BuildPipeline.PushAssetDependencies();
+    BuildPipeline.BuildAssetBundle(
+      AssetDatabase.LoadMainAssetAtPath(
+        "Assets/YourAssetBundleName_1.prefab"
+      ), 
+      null, 
+      "YourPath/To/YourAssetBundle_1.unity3d", 
+      options
+    );
+    
+    BuildPipeline.PopAssetDependencies();
+  }
+  }</pre></div></div></div>

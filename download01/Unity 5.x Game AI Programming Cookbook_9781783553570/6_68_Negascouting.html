@@ -1,0 +1,37 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec70"></a>Negascouting</h2></div></div><hr /></div><p>Including a search <a id="id309" class="indexterm"></a>strategy also makes room for new challenges. Negascouting is the result of narrowing the search by improving the pruning heuristic. It is based on a <a id="id310" class="indexterm"></a>concept called a <span class="strong"><strong>search window</strong></span>, which is the interval between the alpha and beta values. So, reducing the search window increases the chance of a branch being pruned.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec242"></a>Getting ready…</h3></div></div></div><p>It is important to know the difference between a dynamic member function and a static member function, as well as recursion. A dynamic member function is bound to the instance of the class, while the static member function is bound to the class itself. The static method allows us to call it without instantiating an object. This is great for general-purpose algorithms, such as the one we are developing in this recipe.</p><p>In the case of recursion, it's not always clear that (unlike iteration) this is an iterative process that requires a base case (also called the stop condition) and a recursive case (the one to keep iterating).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec243"></a>How to do it…</h3></div></div></div><p>We will add a new function to the <code class="literal">BoardAI</code> class as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">ABNegascout</code> function:</p><div class="informalexample"><pre class="programlisting">public static float ABNegascout (
+        Board board,
+        int player,
+        int maxDepth,
+        int currentDepth,
+        ref Move bestMove,
+        float alpha,
+        float beta)
+{
+    // next steps here
+}</pre></div></li><li><p>Validate the base case:</p><div class="informalexample"><pre class="programlisting">if (board.IsGameOver() || currentDepth == maxDepth)
+    return board.Evaluate(player);</pre></div></li><li><p>Set the initial values:</p><div class="informalexample"><pre class="programlisting">bestMove = null;
+float bestScore = Mathf.NegativeInfinity;
+float adaptiveBeta = beta;</pre></div></li><li><p>Loop through every available move and return the best score:</p><div class="informalexample"><pre class="programlisting">foreach (Move m in board.GetMoves())
+{
+    // next steps here
+}
+return bestScore;</pre></div></li><li><p>Create a new <a id="id311" class="indexterm"></a>game state from the current move:</p><div class="informalexample"><pre class="programlisting">Board b = board.MakeMove(m);</pre></div></li><li><p>Set the values for the recursion:</p><div class="informalexample"><pre class="programlisting">Move currentMove = null;
+float recursedScore;
+int depth = currentDepth + 1;
+float max = Mathf.Max(alpha, bestScore);</pre></div></li><li><p>Call the recursion:</p><div class="informalexample"><pre class="programlisting">recursedScore = ABNegamax(b, player, maxDepth, depth, ref currentMove, -adaptiveBeta, max);</pre></div></li><li><p>Set the current score and validate it:</p><div class="informalexample"><pre class="programlisting">float currentScore = -recursedScore;
+if (currentScore &gt; bestScore)
+{
+    // next steps here
+}</pre></div></li><li><p>Validate for pruning:</p><div class="informalexample"><pre class="programlisting">if (adaptiveBeta == beta || currentDepth &gt;= maxDepth - 2)
+{
+    bestScore = currentScore;
+    bestMove = currentMove;
+}</pre></div></li><li><p>Otherwise, take a look around:</p><div class="informalexample"><pre class="programlisting">else
+{
+    float negativeBest;
+    negativeBest = ABNegascout(b, player, maxDepth, depth, ref bestMove, -beta, -currentScore);
+    bestScore = -negativeBest;
+}</pre></div></li><li><p>Stop the loop if necessary. Otherwise, update the adaptive value:</p><div class="informalexample"><pre class="programlisting">if (bestScore &gt;= beta)
+    return bestScore;
+    
+adaptiveBeta = Mathf.Max(alpha, bestScore) + 1f;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec244"></a>How it works…</h3></div></div></div><p>This algorithm works by <a id="id312" class="indexterm"></a>examining the first move of each node. The following moves are examined using a scout pass with a narrower window based on the first move. If the pass fails, it is repeated using a full-width window. As a result, a large number of branches are pruned and failures are avoided.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec245"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>AB Negamaxing</em></span> recipe</p></li></ul></div></div></div>

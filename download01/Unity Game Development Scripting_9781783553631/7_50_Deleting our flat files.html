@@ -1,0 +1,4 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec51"></a>Deleting our flat files</h2></div></div><hr /></div><p>Next, we <a id="id429" class="indexterm"></a>create a function that allows us to delete flat files. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">void DeleteFile(string file = "")
+{
+  File.Delete(sDirectory + file);
+}</pre></div><p>To delete <a id="id430" class="indexterm"></a>a file, we use the <code class="literal">Delete</code> function within the <code class="literal">File</code> class. Before <a id="id431" class="indexterm"></a>we delete the file, we make sure that it actually exists using the <code class="literal">Exists</code> function within the <code class="literal">File</code> class. The file that we are deleting is the one that is set to our directory and filename variables.</p></div>

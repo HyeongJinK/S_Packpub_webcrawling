@@ -1,0 +1,15 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec218"></a>Time for action – tweaking the bounce</h2></div></div><hr /></div><p>Now that we can detect when the heart<a id="id665" class="indexterm"></a> is hitting the tray, there's no end to the fun we can have! While we're in the code, let's make a quick change to make the gameplay slightly better.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Double-click to open the <span class="strong"><strong>HeartBounce</strong></span> script.</p></li><li><p>Type the following at the top of the script:</p><div class="informalexample"><pre class="programlisting">#pragma strict
+<span class="strong"><strong>var velocityWasStored = false;</strong></span>
+<span class="strong"><strong>var storedVelocity : Vector3;</strong></span>
+function OnCollisionEnter(col : Collision) {
+  if(col.gameObject.CompareTag("tray")) {
+    Debug.Log("yes! hit tray!");
+<span class="strong"><strong>    if (!velocityWasStored) {</strong></span>
+<span class="strong"><strong>      storedVelocity = rigidbody.velocity;</strong></span>
+<span class="strong"><strong>      velocityWasStored = true;</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>    rigidbody.velocity.y = storedVelocity.y;</strong></span>
+  }
+}</pre></div></li></ol></div><p>Save the script and test the game. You may not notice a difference at first, but we've made a clear improvement to our mechanic.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec91"></a>
+<span class="emphasis"><em>What just happened – storing velocity</em></span>
+</h3></div></div></div><p>The trouble with Unity's physics simulation is that it's almost <span class="emphasis"><em>too</em></span> good. Left to its own devices, our heart will bounce less and less until it eventually runs out of steam and comes to rest on the dinner tray. Realistically, this might actually be what a still-beating human heart would do, given the circumstances. I'm too squeamish to find out for sure.</p><p>But this isn't realism—this is video<a id="id666" class="indexterm"></a> games, baby! This is the land of gigantic guns and anthropomorphic mushrooms! We want that heart to bounce forever, with no degradation over time when the heart bounces against the tray and the walls.</p><p>That's what our little script does. The first time the heart bounces, we store its velocity (distance over time) in a variable. Then we inject a little high-velocity serum into the heart every time it hits the tray, overriding the slowly degrading velocity that the heart suffers from hitting our invisible walls. We use the <code class="literal">velocityWasStored</code> flag to determine whether the heart has bounced yet.</p></div></div>

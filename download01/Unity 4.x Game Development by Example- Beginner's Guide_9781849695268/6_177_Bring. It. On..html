@@ -1,0 +1,211 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec180"></a>Bring. It. On.</h2></div></div><hr /></div><p>Are you ready to continue? Then it's time to slather that wonderful brain of yours with awesome sauce. With Unity UI mastery under your belt, you'll now learn how to build a one-off GUI component that you could end up using in every game you'll ever build. How's that for a cliffhanger ending? Turn that page!</p><p>Here is the completed GameScript<a id="id499" class="indexterm"></a> for Robot Repair:</p><div class="informalexample"><pre class="programlisting">#pragma strict
+
+import System.Collections.Generic;
+
+var cols:int = 4; // the number of columns in the card grid
+var rows:int = 4; // the number of rows in the card grid
+var totalCards:int = 16;
+var matchesNeededToWin:int = totalCards * 0.5; // If there are 16cards, the player needs to find 8 matches to clear the board
+var matchesMade:int = 0; // At the outset, the player has not made any matches
+var cardW:int = 100; // Each card's width and height is 100 pixels
+var aCards:List.&lt;Card&gt;; // We'll store all the cards we create in this List
+var aGrid:Card[,]; // This 2d array will keep track of the shuffled,dealt cards
+var aCardsFlipped:List.&lt;Card&gt;; // This generic array list will store the two cards that the player flips over
+var playerCanClick:boolean; // We'll use this flag to prevent the player from clicking buttons when we don't want him to
+var playerHasWon:boolean = false; // Store whether or not the player has won. This should probably start out false :)
+
+function Start () {
+  playerCanClick = true; // We should let the player play, don't you think?
+  
+  // Initialize some empty Collections:
+  aCards = new List.&lt;Card&gt;(); // this Generic List is our deck of cards. It can only ever hold instances of the Card class.
+  aGrid = new Card[rows,cols]; // The rows and cols variables help us define the dimensions of this 2D array
+  aCardsFlipped = new List.&lt;Card&gt;(); // This List will store the two cards the player flips over. 
+  
+  BuildDeck();
+
+  // Loop through the total number of rows in our aGrid List:  
+  for(var i:int = 0; i&lt;rows; i++)
+  {
+    // For each individual grid row, loop through the total number of columns in the grid:
+    for(var j:int = 0; j&lt;cols; j++)
+    { 
+      var someNum:int = Random.Range(0,aCards.Count);
+      aGrid[i,j] = aCards[someNum];
+      aCards.RemoveAt(someNum);
+
+    }
+  }
+  
+  /*
+  // Uncomment this code to experiment with the Random.Range() method
+  for(i=0; i&lt;1000; i++)
+  {
+     Debug.Log(Random.Range(0,10));
+  }
+  */
+}
+
+function OnGUI()
+{
+  GUILayout.BeginArea (Rect (0,0,Screen.width,Screen.height)); 
+  BuildGrid();
+  if(playerHasWon) BuildWinPrompt();
+  GUILayout.EndArea();
+  //print("building grid!");
+}
+
+function BuildWinPrompt()
+{
+  var winPromptW:int = 120;
+  var winPromptH:int = 90;
+  
+  var halfScreenW:float = Screen.width/2;
+  var halfScreenH:float = Screen.height/2;
+  
+  var halfPromptW:int = winPromptW/2;
+  var halfPromptH:int = winPromptH/2;
+  
+  GUI.BeginGroup(Rect(halfScreenW-halfPromptW, halfScreenH-halfPromptH, winPromptW, winPromptH));
+  GUI.Box (Rect (0,0,winPromptW,winPromptH), "A Winner is You!!");
+  
+  var buttonW:int = 80;
+  var buttonH:int = 20;
+  
+  if(GUI.Button(Rect(halfPromptW-(buttonW/2),halfPromptH-(buttonH/2),buttonW,buttonH),"Play Again"))
+  {
+    Application.LoadLevel("Title");
+  }
+  GUI.EndGroup();
+}
+
+
+function BuildGrid()
+{
+
+  GUILayout.BeginVertical();
+  GUILayout.FlexibleSpace();
+  for(var i:int=0; i&lt;rows; i++)
+  {
+    GUILayout.BeginHorizontal();
+    GUILayout.FlexibleSpace();
+    for(var j:int=0; j&lt;cols; j++)
+    {
+      var card:Card = aGrid[i,j];  
+      var img:String; 
+      if(card.isMatched)
+      {
+        img = "blank";
+      } else {
+        if(card.isFaceUp)
+        {
+          img = card.img;
+        } else {
+          img = "wrench";
+        }   
+      }
+      
+      GUI.enabled = !card.isMatched;
+      if(GUILayout.Button(Resources.Load(img), GUILayout. Width(cardW)))
+      {
+        if(playerCanClick)
+        {
+          FlipCardFaceUp(card);
+          Debug.Log(card.img);
+        }
+      }
+      GUI.enabled = true;      
+    }
+    GUILayout.FlexibleSpace();
+    GUILayout.EndHorizontal();   
+  }
+  GUILayout.FlexibleSpace();
+  GUILayout.EndVertical();
+  //print ("building grid!");
+}
+
+function BuildDeck()
+{
+  var totalRobots:int = 4;  // we've got four robots to work with
+  var card:Card; // this stores a reference to a card
+  var id:int = 0;
+
+    for(var i:int=0; i&lt;totalRobots; i++)
+  {
+    var aRobotParts:List.&lt;String&gt; = new List.&lt;String&gt;();
+    
+    aRobotParts.Add("Head");
+    aRobotParts.Add("Arm");
+    aRobotParts.Add("Leg");
+    
+    for(var j:int=0; j&lt;2; j++)
+    {
+      var someNum:int = Random.Range(0, aRobotParts.Count);
+      var theMissingPart:String = aRobotParts[someNum];
+      
+      aRobotParts.RemoveAt(someNum);
+        
+      card = new Card("robot" + (i+1) + "Missing" + theMissingPart,id);
+      aCards.Add(card);
+           
+      card= new Card("robot" + (i+1) + theMissingPart, id);
+      aCards.Add(card);     
+      id++;
+    }       
+  }
+}
+
+function FlipCardFaceUp(card:Card)
+{
+   card.isFaceUp = true;
+   
+   if(aCardsFlipped.IndexOf(card) &lt; 0)
+   {
+    aCardsFlipped.Add(card);
+    
+    if(aCardsFlipped.Count == 2)
+    {
+      playerCanClick = false;
+           
+      yield WaitForSeconds(1);
+      
+      if(aCardsFlipped[0].id == aCardsFlipped[1].id)
+      {
+        // Match!
+        aCardsFlipped[0].isMatched = true;
+        aCardsFlipped[1].isMatched = true;
+        
+        matchesMade ++;
+                
+        if(matchesMade &gt;= matchesNeededToWin)
+        {
+          playerHasWon = true;
+        }
+                      
+      } else {
+        aCardsFlipped[0].isFaceUp = false;
+        aCardsFlipped[1].isFaceUp = false;
+      }
+      
+      aCardsFlipped = new List.&lt;Card&gt;();
+        
+      playerCanClick = true;
+    }
+  }
+}
+
+
+
+class Card extends System.Object
+{
+  var isFaceUp:boolean = false;
+  var isMatched:boolean = false;
+  var img:String;
+  var id:int;
+   
+  function Card(img:String, id:int)
+  {
+    this.img = img;
+    this.id = id;
+  }
+}</pre></div></div>

@@ -1,0 +1,17 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec67"></a>Working with Text Data Assets</h2></div></div><hr /></div><p>Throughout all examples<a id="id507" class="indexterm"></a> so far, we've considered text directly stored in string objects, but you can also work with text files in Unity. Specifically, you can load in text from external sources. Here, I will demonstrate how.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec51"></a>Text Assets – static loading</h3></div></div></div><p>The first method is to<a id="id508" class="indexterm"></a> drag-and-drop a text file into a Unity <a id="id509" class="indexterm"></a>project that imports the text asset. The file is imported as a <span class="strong"><strong>TextAssets</strong></span> type, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_06_03.jpg" /><div class="caption"><p>Importing text files into Unity as TextAssets</p></div></div><p>You can access the file and its text data from any script file by exposing a <code class="literal">TextAsset</code> public member, as shown in the following code sample 6-25:</p><div class="informalexample"><pre class="programlisting">//--------------------------------------------------
+using UnityEngine;
+using System.Collections;
+//--------------------------------------------------
+public class TextFileAccess : MonoBehaviour 
+{
+   //Reference a text file
+   public TextAsset TextData = null;
+
+   // Use this for initialization
+   void Start () 
+   {
+         //Display text in file
+         Debug.Log (TextData.text);
+   }
+}
+//--------------------------------------------------</pre></div><p>This code means <a id="id510" class="indexterm"></a>you just need to drag-and-drop the <code class="literal">TextAsset</code> file <a id="id511" class="indexterm"></a>onto the <span class="strong"><strong>Text Data</strong></span> slot in the Object Inspector, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_06_04.jpg" /><div class="caption"><p>Accessing text file assets from script</p></div></div></div></div>

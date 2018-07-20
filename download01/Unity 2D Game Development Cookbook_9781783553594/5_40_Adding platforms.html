@@ -1,0 +1,75 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec50"></a>Adding platforms</h2></div></div><hr /></div><p>We can now move on to<a id="id301" class="indexterm"></a> building and coding the platforms we need for the character to jump on. In this prototype, we want platforms to be created according to the character's direction, left or right. This is consistent with the idea of building a two-way side-scrolling game. We also want to add a bit of variety so we code platforms of random length and with random vertical and horizontal gaps between them as well.</p><p>As for the elements we used for the background, we need a prefab and a piece of code.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec124"></a>Getting ready</h3></div></div></div><p>Let's begin by making the Prefab. Follow the same steps described in the first recipe of this chapter to make a prefab called <code class="literal">plat_prefab</code> and add a material of your choice to it. You know how to do it.</p><p>For your reference, we have added a screenshot here to show you what a platform in the scene should look like:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_05_61.jpg" /></div><p>Next, we can write the script.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec125"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <code class="literal">Scripts</code> folder <a id="id302" class="indexterm"></a>of your project, create a new C# script and name it <code class="literal">PlatManager</code>; then open it in <span class="strong"><strong>Monodevelop</strong></span>.</p></li><li><p>As usual, we declare the public and private variables at the top of the script. This time we need plenty: transforms for the character and the platforms to be instantiated in the scene and several float values and vectors to define positions and gaps. Add the following lines to <span class="strong"><strong>PlatManager</strong></span>:</p><div class="informalexample"><pre class="programlisting">public Transform platBrick;
+private Transform thisChar;
+private Transform actualPlat, prevPlat, nextPlat;
+private Vector3 platScale;
+private Vector3 nextPos;
+private float charX, charY, charZ;
+private float gap, delta, yGap;
+private float maxY, minY;</pre></div></li><li><p>In the <code class="literal">Start()</code> function we initialize the variable storing the reference to the character, use <code class="literal">float</code> to handle level boundaries and intervals, and create the first platform right below the character spawning point. Add the following lines to the script. The <code class="literal">SetScalesAndGaps()</code> function is defined at the bottom of the script:</p><div class="informalexample"><pre class="programlisting">void Start(){
+
+  thisChar =GameObject.Find("runner").GetComponent&lt;Transform&gt;();
+  maxY = 30f;
+  minY = -10f;
+  delta = 4; //we use this to define intervals
+  nextPos = new Vector3(charX, charY - 1.5f, charZ); 
+  actualPlat = (Transform)Instantiate(platBrick, nextPos,Quaternion.identity );
+  SetScalesAndGaps();
+  actualPlat.localScale = platScale;
+  prevPlat = null;
+  nextPlat = null;
+}</pre></div></li><li><p>The <code class="literal">SetScalesAndGaps()</code> function is meant to generate all random values we need to <a id="id303" class="indexterm"></a>scale the platforms and set horizontal and vertical gaps between them. We decided to put all the instructions in a single function so the script is more compact. The <code class="literal">CheckYGap()</code> is a small function to check that the <code class="literal">yGap</code> random generated value lies between the top and bottom limits we defined for our game level:</p><div class="informalexample"><pre class="programlisting">void SetScalesAndGaps(){
+  platScale = new Vector3(Random.Range(20,28),1,1);
+  gap = Random.Range(8f,16f);
+  if(prevPlat != null){
+    yGap = prevPlat.transform.position.y + (Random.Range (delta,delta));
+    CheckYGap();
+  }
+}</pre></div></li><li><p>What follows is the code for the <code class="literal">CheckYGap()</code> function, which takes advantage of the <code class="literal">minY</code> and <code class="literal">maxY</code> variables we set before:</p><div class="informalexample"><pre class="programlisting">void CheckYGap(){ //we set top and bottom vertical limits
+  if (yGap &gt; maxY){
+    yGap = maxY;
+  }
+  if(yGap &lt; minY){
+    yGap = minY;
+  }
+}</pre></div></li><li><p>There is a last function we created to update the actual character position. It is called <code class="literal">UpdateCharPos()</code> and these are the lines to put into it:</p><div class="informalexample"><pre class="programlisting">void UpdateCharPos(){ //update char pos
+  charX = thisChar.transform.position.x;
+  charY = thisChar.transform.position.y;
+  charZ = thisChar.transformposition.z;
+}</pre></div></li><li><p>Now we can<a id="id304" class="indexterm"></a> address the <code class="literal">FixedUpdate()</code> function of the script. As you may remember, the <code class="literal">FixedUpdate()</code> function should be used instead of <code class="literal">Update()</code> whenever you want to use Rigidbodies and physics in the scene. In our case, we first update the character position, then we check whether it is going left or right. That done, we define the scales and gaps, calculate the next position and finally instantiate a platform using the prefab we made earlier. Add the following code to the <code class="literal">FixedUpdate()</code> function:</p><div class="informalexample"><pre class="programlisting">UpdateCharPos();
+
+if(actualPlat != null &amp;&amp; charX &gt; actualPlat.transform.position.x + delta){ 
+  float strict = actualPlat.transform.position.x; 
+  prevPlat = actualPlat;
+  actualPlat = null;
+  SetScalesAndGaps();
+  nextPos = new Vector3(strict + platScale.x + gap, yGap, charZ); 
+  nextPlat = (Transform)Instantiate(platBrick, nextPos, Quaternion.identity );
+  nextPlat.localScale = platScale; 
+}
+    
+if(actualPlat != null &amp;&amp; charX &lt; actualPlat.transform.position.x - delta){
+  float strict = actualPlat.transform.position.x;
+  prevPlat = actualPlat;
+  actualPlat = null;
+  SetScalesAndGaps();
+  nextPos = new Vector3(strict - platScale.x - gap, yGap, charZ);
+  nextPlat = (Transform)Instantiate(platBrick, nextPos, Quaternion.identity );
+  nextPlat.localScale = platScale;
+}</pre></div></li><li><p>Next we check whether the character has reached the next platform, or if it, instead, inverted its direction using a couple of <code class="literal">if()</code> statements:</p><div class="informalexample"><pre class="programlisting">if(prevPlat != null){
+  float strict = prevPlat.transform.position.x; 
+  if(charX &gt; strict - delta &amp;&amp; charX &lt; strict + delta){ 
+    Destroy(nextPlat.gameObject);
+    nextPlat = null;
+    actualPlat = prevPlat;
+    prevPlat = null;
+  }
+}
+
+if(nextPlat != null){
+  float strict = nextPlat.transform.position.x;
+  if(charX &gt; strict - delta &amp;&amp; charX &lt; strict + delta){ 
+    actualPlat = nextPlat;
+    nextPlat = null;
+    Destroy(prevPlat.gameObject);
+  }
+}</pre></div></li><li><p>The coding for this recipe ends <a id="id305" class="indexterm"></a>here. The next step is to drag the script from the <code class="literal">Project</code> folder onto a game object in the scene. As we did for <span class="strong"><strong>back_manager</strong></span>, add an empty <span class="strong"><strong>GameObject</strong></span> to the scene, name it <code class="literal">platform_manager</code>, and drag the <code class="literal">PlatManager</code> script onto it.</p></li><li><p>Now drag the <span class="strong"><strong>plat_prefab</strong></span> asset in the <span class="strong"><strong>Prefabs</strong></span> folder of the project into the <code class="literal">platBrick</code> variable slot of <span class="strong"><strong>platform_manager</strong></span> in the <span class="strong"><strong>Inspector</strong></span> panel. These are the exact same steps we performed for the previous recipe.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec126"></a>How it works...</h3></div></div></div><p>In this implementation, platforms<a id="id306" class="indexterm"></a> are created depending on the direction of the character, once it gets beyond the center of the platform it is actually on, at any moment.</p><p>The script also considers the possibility that the player changes their mind and inverts the direction the character is running in. In such a case, the last platform created is destroyed and the cycle repeats.</p><p>We encourage you to experiment with alternative methods to control platforms and improve our prototype system. For example, you may want the platforms to disappear after a short time interval so the player is forced to keep running.</p><p>Also, you can use an entirely different method to manage platforms: there's this technique called<a id="id307" class="indexterm"></a> <span class="strong"><strong>object pooling</strong></span> that is actually more efficient, as it doesn't require you to destroy and create platforms every time. The following links are a good starting point to learn this <a id="id308" class="indexterm"></a>methodology:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="ulink" href="http://gamedevelopment.tutsplus.com/tutorials/object-pools-help-you-reduce-lag-in-resource-intensive-games--gamedev-651" target="_blank">http://gamedevelopment.tutsplus.com/tutorials/object-pools-help-you-reduce-lag-in-resource-intensive-games--gamedev-651</a></p></li><li style="list-style-type: disc"><p><a class="ulink" href="http://gameprogrammingpatterns.com/object-pool.html" target="_blank">http://gameprogrammingpatterns.com/object-pool.html</a></p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec127"></a>There's more...</h3></div></div></div><p>Another interesting thing you could do to improve the gameplay of this prototype is to take advantage of so-called physics materials to create platforms that affect the responsiveness of the character controls, for example, slowing it down or making it slide like it's running on ice. We suggest you take a look at the following link: file:///C:/Program%20Files%20(x86)/Unity/Editor/Data/Documentation/Documentation/Components/class-PhysicMaterial.html</p></div></div>

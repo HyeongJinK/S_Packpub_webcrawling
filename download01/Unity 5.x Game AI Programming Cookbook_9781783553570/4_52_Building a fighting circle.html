@@ -1,0 +1,230 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec56"></a>Building a fighting circle</h2></div></div><hr /></div><p>This recipe is based <a id="id230" class="indexterm"></a>on the Kung-Fu Circle algorithm devised for the game, <span class="emphasis"><em>Kingdoms of Amalur: Reckoning</em></span>. Its purpose is to offer an intelligent way for enemies to approach a given player and set attacks on it. It is very similar to the formation recipe, but it uses a stage manager that handles approach and attack permissions based on enemy weights and attack weights. It is also implemented so that the manager has the capability to handle a list of fighting circles; this is especially aimed at multiplayer games.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec192"></a>Getting ready</h3></div></div></div><p>Before implementing the fighting circle algorithm, it is important to create some components that accompany the technique. First, the <code class="literal">Attack</code> class is a pseudo-abstract class for creating general-purpose attacks for each enemy, and it works as a template for our custom attacks in our game. Second, we need the <code class="literal">Enemy</code> class, which is the holder of the enemy's logic and requests. As we will see, the <code class="literal">Enemy</code> class holds a list of the different attack components found in the game object.</p><p>The code for the <code class="literal">Attack</code> class is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Attack : MonoBehaviour
+{
+    public int weight;
+
+    public virtual IEnumerator Execute()
+    {
+        // your attack behaviour here
+        yield break;
+    }
+}</pre></div><p>The steps to <a id="id231" class="indexterm"></a>build the <code class="literal">Enemy</code> component are as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Enemy</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Enemy : MonoBehaviour
+{
+    public StageManager stageManager;
+    public int slotWeight;
+    [HideInInspector]
+    public int circleId = -1;
+    [HideInInspector]
+    public bool isAssigned;
+    [HideInInspector]
+    public bool isAttacking;
+    [HideInInspector]
+    public Attack[] attackList;
+}</pre></div></li><li><p>Implement the <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+    attackList = gameObject.GetComponents&lt;Attack&gt;();
+}</pre></div></li><li><p>Implement the function for assigning a target fighting circle:</p><div class="informalexample"><pre class="programlisting">public void SetCircle(GameObject circleObj = null)
+{
+    int id = -1;
+    if (circleObj == null)
+    {
+        Vector3 position = transform.position;
+        id = stageManager.GetClosestCircle(position);
+    }
+    else
+    {
+        FightingCircle fc;
+        fc = circleObj.GetComponent&lt;FightingCircle&gt;();
+        if (fc != null)
+            id = fc.gameObject.GetInstanceID();
+    }
+    circleId = id;
+}</pre></div></li><li><p>Define the <a id="id232" class="indexterm"></a>function for requesting a slot to the manager:</p><div class="informalexample"><pre class="programlisting">public bool RequestSlot()
+{
+    isAssigned = stageManager.GrantSlot(circleId, this);
+    return isAssigned;
+}</pre></div></li><li><p>Define the function for releasing the slot from the manager:</p><div class="informalexample"><pre class="programlisting">public void ReleaseSlot()
+{
+    stageManager.ReleaseSlot(circleId, this);
+    isAssigned = false;
+    circleId = -1;
+}</pre></div></li><li><p>Implement the function for requesting an attack from the list (the order is the same from the Inspector):</p><div class="informalexample"><pre class="programlisting">public bool RequestAttack(int id)
+{
+    return stageManager.GrantAttack(circleId, attackList[id]);
+}</pre></div></li><li><p>Define the virtual function for the attack behavior:</p><div class="informalexample"><pre class="programlisting">public virtual IEnumerator Attack()
+{
+    // TODO
+    // your attack behaviour here
+    yield break;
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec193"></a>How to do it…</h3></div></div></div><p>Now, we implement the <code class="literal">FightingCircle</code> and <code class="literal">StageManager</code> classes</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">FightingCircle</code> class along with its member variables:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class FightingCircle : MonoBehaviour
+{
+    public int slotCapacity;
+    public int attackCapacity;
+    public float attackRadius;
+    public GameObject player;
+    [HideInInspector]
+    public int slotsAvailable;
+    [HideInInspector]
+    public int attackAvailable;
+    [HideInInspector]
+    public List&lt;GameObject&gt; enemyList;
+    [HideInInspector]
+    public Dictionary&lt;int, Vector3&gt; posDict;
+}</pre></div></li><li><p>Implement <a id="id233" class="indexterm"></a>the <code class="literal">Awake</code> function for initialization:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+    slotsAvailable = slotCapacity;
+    attackAvailable = attackCapacity;
+    enemyList = new List&lt;GameObject&gt;();
+    posDict = new Dictionary&lt;int, Vector3&gt;();
+    if (player == null)
+        player = gameObject;
+}</pre></div></li><li><p>Define the <code class="literal">Update</code> function so that the slots' positions get updated:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+    if (enemyList.Count == 0)
+        return;
+    Vector3 anchor = player.transform.position;
+    int i;
+    for (i = 0; i &lt; enemyList.Count; i++)
+    {
+        Vector3 position = anchor;
+        Vector3 slotPos = GetSlotLocation(i);
+        int enemyId = enemyList[i].GetInstanceID();
+        position += player.transform.TransformDirection(slotPos);
+        posDict[enemyId] = position;
+    }
+}</pre></div></li><li><p>Implement <a id="id234" class="indexterm"></a>the function for adding enemies to the circle:</p><div class="informalexample"><pre class="programlisting">public bool AddEnemy(GameObject enemyObj)
+{
+    Enemy enemy = enemyObj.GetComponent&lt;Enemy&gt;();
+    int enemyId = enemyObj.GetInstanceID();
+    if (slotsAvailable &lt; enemy.slotWeight)
+        return false;
+    enemyList.Add(enemyObj);
+    posDict.Add(enemyId, Vector3.zero);
+    slotsAvailable -= enemy.slotWeight;
+    return true;
+}</pre></div></li><li><p>Implement the function for removing enemies from the circle:</p><div class="informalexample"><pre class="programlisting">public bool RemoveEnemy(GameObject enemyObj)
+{
+    bool isRemoved = enemyList.Remove(enemyObj);
+    if (isRemoved)
+    {
+        int enemyId = enemyObj.GetInstanceID();
+        posDict.Remove(enemyId);
+        Enemy enemy = enemyObj.GetComponent&lt;Enemy&gt;();
+        slotsAvailable += enemy.slotWeight;
+    }
+    return isRemoved;
+}</pre></div></li><li><p>Implement the function for swapping enemy positions in the circle:</p><div class="informalexample"><pre class="programlisting">public void SwapEnemies(GameObject enemyObjA, GameObject enemyObjB)
+{
+    int indexA = enemyList.IndexOf(enemyObjA);
+    int indexB = enemyList.IndexOf(enemyObjB);
+    if (indexA != -1 &amp;&amp; indexB != -1)
+    {
+        enemyList[indexB] = enemyObjA;
+        enemyList[indexA] = enemyObjB;
+    }
+}</pre></div></li><li><p>Define the function for getting an enemy's spatial position according to the circle:</p><div class="informalexample"><pre class="programlisting">public Vector3? GetPositions(GameObject enemyObj)
+{
+    int enemyId = enemyObj.GetInstanceID();
+    if (!posDict.ContainsKey(enemyId))
+        return null;
+    return posDict[enemyId];
+}</pre></div></li><li><p>Implement <a id="id235" class="indexterm"></a>the function for computing the spatial location of a slot:</p><div class="informalexample"><pre class="programlisting">private Vector3 GetSlotLocation(int slot)
+{
+    Vector3 location = new Vector3();
+    float degrees = 360f / enemyList.Count;
+    degrees *= (float)slot;
+    location.x = Mathf.Cos(Mathf.Deg2Rad * degrees);
+    location.x *= attackRadius;
+    location.z = Mathf.Cos(Mathf.Deg2Rad * degrees);
+    location.z *= attackRadius;
+    return location;
+}</pre></div></li><li><p>Implement the function for virtually adding attacks to the circle:</p><div class="informalexample"><pre class="programlisting">public bool AddAttack(int weight)
+{
+    if (attackAvailable - weight &lt; 0)
+        return false;
+    attackAvailable -= weight;
+    return true;
+}</pre></div></li><li><p>Define the function for virtually releasing the attacks from the circle:</p><div class="informalexample"><pre class="programlisting">public void ResetAttack()
+{
+    attackAvailable = attackCapacity;
+}</pre></div></li><li><p>Now, create the <code class="literal">StageManager</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class StageManager : MonoBehaviour
+{
+    public List&lt;FightingCircle&gt; circleList;
+    private Dictionary&lt;int, FightingCircle&gt; circleDic;
+    private Dictionary&lt;int, List&lt;Attack&gt;&gt; attackRqsts;
+}</pre></div></li><li><p>Implement <a id="id236" class="indexterm"></a>the <code class="literal">Awake</code> function for initialization:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+    circleList = new List&lt;FightingCircle&gt;();
+    circleDic = new Dictionary&lt;int, FightingCircle&gt;();
+    attackRqsts = new Dictionary&lt;int, List&lt;Attack&gt;&gt;();
+    foreach(FightingCircle fc in circleList)
+    {
+        AddCircle(fc);
+    }
+}</pre></div></li><li><p>Create the function for adding circles to the manager:</p><div class="informalexample"><pre class="programlisting">public void AddCircle(FightingCircle circle)
+{
+    if (!circleList.Contains(circle))
+        return;
+    circleList.Add(circle);
+    int objId = circle.gameObject.GetInstanceID();
+    circleDic.Add(objId, circle);
+    attackRqsts.Add(objId, new List&lt;Attack&gt;());
+}</pre></div></li><li><p>Also, create the function for removing circles from the manager:</p><div class="informalexample"><pre class="programlisting">public void RemoveCircle(FightingCircle circle)
+{
+    bool isRemoved = circleList.Remove(circle);
+    if (!isRemoved)
+        return;
+    int objId = circle.gameObject.GetInstanceID();
+    circleDic.Remove(objId);
+    attackRqsts[objId].Clear();
+    attackRqsts.Remove(objId);
+}</pre></div></li><li><p>Define the function for getting the closest circle, if given a position:</p><div class="informalexample"><pre class="programlisting">public int GetClosestCircle(Vector3 position)
+{
+    FightingCircle circle = null;
+    float minDist = Mathf.Infinity;
+    foreach(FightingCircle c in circleList)
+    {
+        Vector3 circlePos = c.transform.position;
+        float dist = Vector3.Distance(position, circlePos);
+        if (dist &lt; minDist)
+        {
+            minDist = dist;
+            circle = c;
+        }
+    }
+    return circle.gameObject.GetInstanceID();
+}</pre></div></li><li><p>Define the <a id="id237" class="indexterm"></a>function for granting an enemy a slot in a given circle:</p><div class="informalexample"><pre class="programlisting">public bool GrantSlot(int circleId, Enemy enemy)
+{
+    return circleDic[circleId].AddEnemy(enemy.gameObject);
+}</pre></div></li><li><p>Implement the function for releasing an enemy from a given circle ID:</p><div class="informalexample"><pre class="programlisting">public void ReleaseSlot(int circleId, Enemy enemy)
+{
+    circleDic[circleId].RemoveEnemy(enemy.gameObject);
+}</pre></div></li><li><p>Define the function for granting attack permissions and adding them to the manager:</p><div class="informalexample"><pre class="programlisting">public bool GrantAttack(int circleId, Attack attack)
+{
+    bool answer = circleDic[circleId].AddAttack(attack.weight);
+    attackRqsts[circleId].Add(attack);
+    return answer;
+}</pre></div></li><li><p>Step:</p><div class="informalexample"><pre class="programlisting">public IEnumerator ExecuteAtacks()
+{
+    foreach (int circle in attackRqsts.Keys)
+    {
+        List&lt;Attack&gt; attacks = attackRqsts[circle];
+        foreach (Attack a in attacks)
+            yield return a.Execute();
+    }
+    foreach (FightingCircle fc in circleList)
+        fc.ResetAttack();
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec194"></a>How it works…</h3></div></div></div><p>The Attack and Enemy classes control the behaviors when needed, so the Enemy class can be called from <a id="id238" class="indexterm"></a>another component in the game object. The <code class="literal">FightingCircle</code> class is very similar to <code class="literal">FormationPattern</code>, in that it computes the target positions for a given enemy. It just does it in a slightly different way. Finally, the <code class="literal">StageManager</code> grants all the necessary permissions for assigning and releasing enemy and attack slots for each circle.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec195"></a>There is more…</h3></div></div></div><p>It is worth noting that the fighting circle can be added as a component of a game object that works as the target player itself, or a different empty object that holds a reference to the player's game object.</p><p>Also, you could move the functions for granting and executing attacks to the fighting circle. We wanted to keep them in the manager so that attack executions are centralized, and the circles just handle target positions, just like formations.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec196"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Refer to the <span class="emphasis"><em>Handling formations</em></span> recipe</p></li><li style="list-style-type: disc"><p>For further information on the Kung-Fu Circle algorithm, please refer to the book, <span class="emphasis"><em>Game AI Pro</em></span>, by Steve Rabin</p></li></ul></div></div></div>

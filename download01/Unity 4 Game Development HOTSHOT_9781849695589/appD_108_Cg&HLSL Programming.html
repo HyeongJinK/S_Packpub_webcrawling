@@ -1,0 +1,136 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec104"></a>Cg/HLSL Programming</h2></div></div><hr /></div><p>This section presents a brief idea of how to access the shader properties in the Cg/HLSL programming<a id="id1433" class="indexterm"></a> and what are the data type and common methods used in Cg/HLSL programming.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec159"></a>Accessing shader properties in Cg/HLSL</h3></div></div></div><p>A shader<a id="id1434" class="indexterm"></a> can be declared in its properties in a <code class="literal">Properties</code> block. If you want to access some of those properties in Cg/HLSL<a id="id1435" class="indexterm"></a> shader programming, you need to declare a Cg/HLSL variable with the same name and a matching type.</p><p>Consider the following example:</p><div class="informalexample"><pre class="programlisting">Properties {
+<span class="strong"><strong>    _MainTex ("Texture", 2D) = "white" {}</strong></span>
+}
+
+SubShader {
+    ……
+    CGPROGRAM
+<span class="strong"><strong>    sampler2D _MainTex;</strong></span>
+    …</pre></div><p>The properties<a id="id1436" class="indexterm"></a> that map to the Cg/HLSL variables are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Color and vector properties map to <code class="literal">float4</code> variables.</p></li><li style="list-style-type: disc"><p>Range and float properties map to <code class="literal">float</code> variables.</p></li><li style="list-style-type: disc"><p>Texture properties map to <code class="literal">sampler2D</code> variables for regular (2D) textures. The <code class="literal">CUBE</code> and <code class="literal">RECT</code> textures map to <code class="literal">samplerCUBE</code> and <code class="literal">samplerRECT</code> variables, respectively.</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec160"></a>Data types</h3></div></div></div><p>Cg/HLSL has <a id="id1437" class="indexterm"></a>six basic data types. Some of them are the same as in C, while others are especially added for GPU programming. These types are listed in the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Data type</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1438" class="indexterm"></a> is a 32-bit floating point number (a high-precision floating point is generally 32 bits, just like the <code class="literal">float</code> type in regular programming languages)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">half</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1439" class="indexterm"></a> is a 16-bit floating point number (a medium-precision floating point is generally 16 bits, with a range of -60,000 to +60,000 and 3.3 decimal digits of precision)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">int</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1440" class="indexterm"></a> is a 32-bit integer</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">fixed</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1441" class="indexterm"></a> is a 12-bit fixed point number (a low-precision fixed point is generally 11 bits, with a range of -2.0 to +2.0 and 1/256th precision)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">bool</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1442" class="indexterm"></a> is a boolean variable (<code class="literal">FALSE</code> = <code class="literal">0</code> and <code class="literal">TRUE</code> = <code class="literal">1</code>)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">sampler*</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This represents <a id="id1443" class="indexterm"></a>a texture object (<code class="literal">sampler1D</code>, <code class="literal">sampler2D</code>, <code class="literal">sampler3D</code>, <code class="literal">samplerCUBE</code>, or <code class="literal">samplerRECT</code>)</p>
+</td></tr></tbody></table></div><p>Cg/HLSL also features vector and matrix data types that are based on the basic data types, such as <code class="literal">float3</code> and <code class="literal">float4x4</code>. Such data types are quite common when dealing with 3D graphics programming. Cg/HLSL also has the <code class="literal">struct</code> and <code class="literal">array</code> data types, which work in a way that is similar to their C equivalents.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec161"></a>Common methods to create shaders</h3></div></div></div><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Method</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">dot(a, b)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1444" class="indexterm"></a> gives the dot product of two vectors.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">cross(A, B)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1445" class="indexterm"></a> gives the cross product of vectors <code class="literal">A</code> and <code class="literal">B</code>. <code class="literal">A</code> and <code class="literal">B</code> must be three-component vectors.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">max(a, b)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1446" class="indexterm"></a> gives the maximum of <code class="literal">a</code> and <code class="literal">b</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">min(a, b)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1447" class="indexterm"></a>gives the minimum of <code class="literal">a</code> and <code class="literal">b</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">floor(x)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1448" class="indexterm"></a>gets the largest integer not greater than <code class="literal">x</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">round(x)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1449" class="indexterm"></a>gets the closest integer to <code class="literal">x</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">ceil(x)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1450" class="indexterm"></a>gets the smallest integer not less than <code class="literal">x</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">pow(x, y)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1451" class="indexterm"></a> computes x raised to the power <code class="literal">y</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">normalize(v)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1452" class="indexterm"></a>returns a vector of length <code class="literal">1</code> that points in the same direction as vector <code class="literal">v</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">saturate(x)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1453" class="indexterm"></a> clamps <code class="literal">x</code> to the <code class="literal">[0, 1]</code> range.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">tex2D(sampler, x)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1454" class="indexterm"></a> is a 2D texture lookup (the sampled data at the location indicated by the texture coordinate set in the sampler object).</p>
+</td></tr></tbody></table></div><p>The <a id="id1455" class="indexterm"></a>methods mentioned in the preceding table are the common methods that you can use to create your shader with Cg/HLSL. There are a lot of methods that you can also use in Cg/HLSL.</p><p>For more details, you can visit the following site:</p><p>
+<a class="ulink" href="http://http.developer.nvidia.com/CgTutorial/cg_tutorial_appendix_e.html" target="_blank">http://http.developer.nvidia.com/CgTutorial/cg_tutorial_appendix_e.html</a>
+</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip52"></a>Tip</h3><p>Note<a id="id1456" class="indexterm"></a> that <code class="literal">UnpackNormal(x)</code> is the method that is provided by Unity to unpack the normal or bump texture, which you can find in the <code class="literal">UnityCG.cginc</code> file inside Unity (<code class="literal">unity install path}/Data/CGIncludes/UnityCG.cginc</code> in Windows and <code class="literal">/Applications/Unity/Unity.app/Contents/CGIncludes/UnityCG.cginc</code> in Mac).</p></div><p>
+</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec162"></a>References</h3></div></div></div><p>For more<a id="id1457" class="indexterm"></a> details and references, please check out the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Manual/Shaders.html" target="_blank">http://docs.unity3d.com/Documentation/Manual/Shaders.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Components/SL-SurfaceShaders.html" target="_blank">http://docs.unity3d.com/Documentation/Components/SL-SurfaceShaders.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Components/SL-PropertiesInPrograms.html" target="_blank">http://docs.unity3d.com/Documentation/Components/SL-PropertiesInPrograms.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="https://docs.unity3d.com/Documentation/Components/SL-Properties.html" target="_blank">https://docs.unity3d.com/Documentation/Components/SL-Properties.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Components/SL-ShaderPerformance.html" target="_blank">http://docs.unity3d.com/Documentation/Components/SL-ShaderPerformance.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://en.wikipedia.org/wiki/Cg_%28programming_language%29" target="_blank">http://en.wikipedia.org/wiki/Cg_%28programming_language%29</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://http.developer.nvidia.com/CgTutorial/cg_tutorial_frontmatter.html" target="_blank">http://http.developer.nvidia.com/CgTutorial/cg_tutorial_frontmatter.html</a>
+</p></li></ul></div></div></div>

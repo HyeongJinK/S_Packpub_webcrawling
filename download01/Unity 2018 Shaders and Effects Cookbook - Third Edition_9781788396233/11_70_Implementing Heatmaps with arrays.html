@@ -1,0 +1,96 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec69"></a>Implementing Heatmaps with arrays</h2></div></div><hr /></div><p>One characteristic that makes <span>shaders</span><a id="id325209370" class="indexterm"></a> hard to <span>master</span><a id="id325209385" class="indexterm"></a> is the lack of proper documentation. Most developers learn shaders by messing around with the code, without having a deep knowledge of what's going on. The problem is amplified by the fact that Cg/HLSL makes a lot of assumptions, some of which are not properly advertised. Unity3D allows C# scripts to communicate with shaders using methods such as <code class="literal">SetFloat</code>, <code class="literal">SetInt</code>, <code class="literal">SetVector</code>, and so on. Unfortunately, Unity3D doesn't have a <code class="literal">SetArray</code> method, which leads many developers to believe that <code class="literal">Cg/HLSL</code> doesn't support arrays either. This is not true. This post will show you how it's possible to pass arrays to shaders. Just remember that GPUs are highly optimized for parallel computations, and using for loops in a shader will dramatically decrease its performance.</p><p>For this recipe, we will implement a heatmap, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/e5df105f-877b-4b4f-a37a-5f2ebf09041b.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec176"></a>Getting ready</h3></div></div></div><p>The effect in this recipe creates a heatmap from a set of points. This heatmap can be overlaid on top of another picture, like in the preceding screenshot. The <span>following</span><a id="id325209426" class="indexterm"></a> steps <span>are</span><a id="id325209470" class="indexterm"></a> necessary:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create a quad with the texture that you want to use for the <code class="literal">Heatmap</code> (<code class="literal">GameObject</code> | <code class="literal">3D Object</code> | <code class="literal">Quad</code>). In this example, a map of London has been used. In order to put the texture on the quad, create a new material (<code class="literal">Map</code>) using the <strong class="userinput"><code>Unlit/Texture</code></strong> shader, and assign the image to the <strong class="userinput"><code>Base (RGB)</code></strong> property. Once created, drag and drop that object onto the quad. The position of quad object must be set to (0, 0, 0).</li><li>Create another quad and place it on top of the previous one. Our <code class="literal">Heatmap</code> will appear on this quad.</li><li>Attach a new shader (<code class="literal">Heatmap</code>) and material (<code class="literal">HeatmapMat</code>) to the second quad:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/a5a75f1c-8e7a-4ac6-a64c-13f4ba1b271e.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>For ease of visualization, I also selected the <strong class="userinput"><code>MainCamera</code></strong> and changed the <strong class="userinput"><code>Projection</code></strong> to <code class="literal">Orthographic</code> and the <strong class="userinput"><code>Size property</code></strong> to <code class="literal">0.5</code>.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec177"></a>How to do it...</h3></div></div></div><p>This shader is quite different from the ones <span>created</span><a id="id325445053" class="indexterm"></a> before, yet it is <span>relatively</span><a id="id325445062" class="indexterm"></a> short. For this reason, the entire code is provided in the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Copy this code to the newly created shader:</li></ol></div><pre class="programlisting">shader " Heatmap" { 
+    Properties { 
+        _HeatTex ("Texture", 2D) = "white" {} 
+    } 
+    Subshader { 
+        Tags {"Queue"="Transparent"} 
+        Blend SrcAlpha OneMinusSrcAlpha // Alpha blend 
+ 
+        Pass { 
+            CGPROGRAM 
+            #pragma vertex vert              
+            #pragma fragment frag 
+ 
+            struct vertInput { 
+                float4 pos : POSITION; 
+            };   
+ 
+            struct vertOutput { 
+                float4 pos : POSITION; 
+                fixed3 worldPos : TEXCOORD1; 
+            }; 
+ 
+            vertOutput vert(vertInput input) { 
+                vertOutput o; 
+                o.pos = mul(UNITY_MATRIX_MVP, input.pos); 
+                o.worldPos = mul(_Object2World, input.pos).xyz; 
+                return o; 
+            } 
+ 
+            uniform int _Points_Length = 0; 
+            uniform float3 _Points [20];        // (x, y, z) = position
+            uniform float2 _Properties [20];    // x = radius, y = intensity 
+             
+            sampler2D _HeatTex; 
+ 
+            half4 frag(vertOutput output) : COLOR { 
+                // Loops over all the points 
+                half h = 0; 
+                for (int i = 0; i &lt; _Points_Length; i ++) 
+                { 
+                    // Calculates the contribution of each point 
+                    half di = distance(output.worldPos, _Points[i].xyz); 
+ 
+                    half ri = _Properties[i].x; 
+                    half hi = 1 - saturate(di / ri); 
+ 
+                    h += hi * _Properties[i].y; 
+                } 
+ 
+                // Converts (0-1) according to the heat texture 
+                h = saturate(h); 
+                half4 color = tex2D(_HeatTex, fixed2(h, 0.5)); 
+                return color; 
+            } 
+            ENDCG 
+        } 
+    }  
+    Fallback "Diffuse" 
+} </pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Once you have attached this script to your material, you should provide a ramp texture for the heatmap. It's important to configure it so that its <strong class="userinput"><code>Wrap Mode</code></strong> is set to <strong class="userinput"><code>Clamp:</code></strong></li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/f06e9e0e-e00b-44f0-97fb-724991c494cb.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note77"></a>Note</h3><p>If your heatmap is going to be used as an overlay, then make sure that the ramp texture has an alpha channel and the texture is imported with the <strong class="userinput"><code>Alpha is Transparency</code></strong> option.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Create a new script called <code class="literal">HeatmapDrawer</code> using the following code:</li></ol></div><pre class="programlisting">using UnityEngine;
+
+public class HeatmapDrawer : MonoBehaviour
+{
+
+    public Vector4[] positions;
+    public float[] radiuses;
+    public float[] intensities;
+    public Material material;
+
+    void Start()
+    {
+        material.SetInt("_Points_Length", positions.Length);
+
+        material.SetVectorArray("_Points", positions);
+
+        Vector4[] properties = new Vector4[positions.Length];
+
+        for (int i = 0; i &lt; positions.Length; i++)
+
+        {
+            properties[i] = new Vector2(radiuses[i], intensities[i]);
+        }
+
+        material.SetVectorArray("_Properties", properties);
+
+    }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Attach the script to an object in your scene, preferably to the quad. Then, drag the material created for this effect to the <code class="literal">Material</code> slot of the script. By doing this, the script will be able to access the <code class="literal">Material</code> and initialize it.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Lastly, expand the positions, radiuses, and intensities fields of your script and fill them with the values of your heatmap. Positions indicate the points (in world coordinates) of your heatmaps, radii indicate their size, and intensities indicate how <span>strongly</span><a id="id325451205" class="indexterm"></a> they <span>affect</span><a id="id325451213" class="indexterm"></a> the surrounding area:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/8e80079d-3acd-4410-8472-7d244322d092.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>If all went well, once you play the game you should notice something similar to the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/72438702-da75-407b-8fd0-536ea07e9702.png" /></div><p>If you do not see this, make sure that the heatmap is placed in front of the map quad and that both objects are in front of the camera.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip78"></a>Note</h3><p>If you get a warning saying the number of points has changed, go into your shader, modify the script by adding a space, and then save it again.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec178"></a>How it works...</h3></div></div></div><p>This shader relies on things that have not been introduced before in this book; the first one is arrays. Cg allows arrays that can be created with the following syntax:</p><pre class="programlisting">uniform float3 _Points [20];     </pre><p>Cg doesn't support arrays with an unknown size: you must preallocate all the space that you need beforehand. The preceding line of code creates an array of <code class="literal">20</code> elements.</p><p>Unity allows us to set arrays through using a number of methods, including <code class="literal">SetVectorArray</code>, <code class="literal">SetColorArray</code>, <code class="literal">SetFloatArray</code>, and <code class="literal">GetMatrixArray</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note79"></a>Note</h3><p>The <code class="literal">SetVectorArray</code> function only works with the <code class="literal">Vector4</code> class at present. That will not cause us any issues, though, as you can automatically assign a <code class="literal"><span><span><span>Vector3</span></span></span></code> to a <code class="literal"><span><span><span>Vector4</span></span></span></code>, and Unity will automatically include a zero in for the last element. Also, it is possible to instead use our <code class="literal">Start</code> code in an <code class="literal">Update</code> loop to be able to see the values change as we're modifying them, but it would be computationally expensive.</p></div><p>In the fragment function of the shader, there is a <span>similar</span><a id="id325454753" class="indexterm"></a> for loop, which, for each <span>pixel</span><a id="id325454761" class="indexterm"></a> of the material, queries all the points to find their contribution to the heatmap:</p><pre class="programlisting">half h = 0; 
+for (int i = 0; i &lt; _Points_Length; i ++) 
+{ 
+    // Calculates the contribution of each point 
+    half di = distance(output.worldPos, _Points[i].xyz); 
+ 
+    half ri = _Properties[i].x; 
+    half hi = 1 - saturate(di / ri); 
+ 
+    h += hi * _Properties[i].y; 
+} </pre><p>The <code class="literal">h</code> variable stores the heat from all the points, given their radii and intensities. It is then used to look up which color to use from the ramp texture.</p><p>The shaders and arrays are a winning combination, especially as very few games are using them at their full potential. However, they introduce a significant bottleneck, as, for each pixel, the shader has to loop through all the points.</p></div></div>

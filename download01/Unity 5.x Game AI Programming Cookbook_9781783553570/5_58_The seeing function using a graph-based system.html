@@ -1,0 +1,38 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec61"></a>The seeing function using a graph-based system</h2></div></div><hr /></div><p>We will <a id="id260" class="indexterm"></a>start the recipes oriented to use graph-based <a id="id261" class="indexterm"></a>logic in order to simulate sense. Again, we start by developing the sense of vision.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec208"></a>Getting ready</h3></div></div></div><p>It is important to have grasped the chapter regarding path finding in order to understand the inner workings of the graph-based recipes.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec209"></a>How to do it…</h3></div></div></div><p>We will just implement a new file:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the class for handling vision:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class VisorGraph : MonoBehaviour
+{
+    public int visionReach;
+    public GameObject visorObj;
+    public Graph visionGraph;
+}</pre></div></li><li><p>Validate <a id="id262" class="indexterm"></a>the visor object in case the <a id="id263" class="indexterm"></a>com:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+    if (visorObj == null)
+        visorObj = gameObject;
+}</pre></div></li><li><p>Define and start building the function for detecting the visibility of a given set of nodes:</p><div class="informalexample"><pre class="programlisting">public bool IsVisible(int[] visibilityNodes)
+{
+    int vision = visionReach;
+    int src = visionGraph.GetNearestVertex(visorObj);
+    HashSet&lt;int&gt; visibleNodes = new HashSet&lt;int&gt;();
+    Queue&lt;int&gt; queue = new Queue&lt;int&gt;();
+    queue.Enqueue(src);
+}</pre></div></li><li><p>Implement a Breadth-First Search algorithm:</p><div class="informalexample"><pre class="programlisting">while (queue.Count != 0)
+{
+    if (vision == 0)
+        break;
+    int v = queue.Dequeue();
+    List&lt;int&gt; neighbours = visionGraph.GetNeighbors(v);
+    foreach (int n in neighbours)
+    {
+        if (visibleNodes.Contains(n))
+            continue;
+        queue.Enqueue(v);
+        visibleNodes.Add(v);
+    }
+}</pre></div></li><li><p>Compare the set of visible nodes with the set of nodes reached by the vision system:</p><div class="informalexample"><pre class="programlisting">foreach (int vn in visibleNodes)
+{
+    if (visibleNodes.Contains(vn))
+        return true;
+}</pre></div></li><li><p>Return false if there is no match between the two sets of nodes:</p><div class="informalexample"><pre class="programlisting">return false;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec210"></a>How it works…</h3></div></div></div><p>The recipe <a id="id264" class="indexterm"></a>uses the Breadth-First Search algorithm in order to discover nodes within its vision reach, and then compares this set of nodes to <a id="id265" class="indexterm"></a>the set where agents reside.</p><p>The input array is computed outside, and it's out of the scope of this recipe because it relies on pinpointing, for example, the position of each agent or object that needs to be checked visibly.</p></div></div>

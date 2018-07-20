@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec42"></a>Adding button to restore purchases</h2></div></div><hr /></div><p>On platforms that support it (Google Play and Universal Windows Applications, most notably), if you purchase something, uninstall, and then reinstall a game using Unity IAP, it automatically restores any products the user owns during the first initialization following reinstallation. For those on iOS, users must have the ability to restore their purchases via a button due to Apple requiring them to reauthenticate their password before it happens. Not doing so will prevent our game from being accepted on the iOS App Store, so it's a good idea to include this functionality if we wish to deploy there, as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Go to the <strong class="userinput"><code>Hierarchy</code></strong> window and select the <strong class="userinput"><code>Remove Ads</code></strong> button. Once selected, duplicate it by pressing <span class="emphasis"><em>Ctrl </em></span>+ <span class="emphasis"><em>D</em></span>.</li><li>Change the duplicate's name by selecting it and changing its name to <code class="literal">Restore</code> from <strong class="userinput"><code>Inspector</code></strong>.</li><li>From the <strong class="userinput"><code>Hierarchy</code></strong> tab, open up the <strong class="userinput"><code>Text</code></strong> object and change the text to say <strong class="userinput"><code>Restore</code></strong> as well:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/0df35353-3e4e-4c11-8348-cd0d839148e6.png" /></div><p></p><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Now, select the <strong class="userinput"><code>Restore</code></strong> object, and then in the <strong class="userinput"><code>IAP Button</code></strong> component, go to <strong class="userinput"><code>Button Type</code></strong> and select <strong class="userinput"><code>Restore</code></strong>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/71fc2a7b-1aed-4b59-a866-39cbbb9e5e75.png" /></div><p>You should note that the properties change to only have this type.</p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Save your scene and jump into Unity:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/af6651eb-546a-42c6-a6cf-04cc4995c4e1.png" /></div><p>When you start the game and try to click on the <strong class="userinput"><code>Restore</code></strong> button, you'll get a warning stating that this isn't a supported platform. So, with that in mind, we can adjust our game so that the button will only show up if we are currently running on a supported platform.</p><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Go to the <code class="literal">Scripts</code> folder and create a C# script called <code class="literal">RestoreAdsChecker</code>. Once it's opened, use the following script for it:</li></ol></div><pre class="programlisting">using UnityEngine;
+using UnityEngine.Purchasing;
+
+/// &lt;summary&gt; 
+/// Will show or remove a button depending on if we can restore /// ads or not 
+/// &lt;/summary&gt; 
+public class RestoreAdsChecker : MonoBehaviour
+{
+
+    // Use this for initialization 
+    void Start()
+    {
+        bool canRestore = false;
+
+        switch (Application.platform)
+        {
+            // Windows Store 
+            case RuntimePlatform.WSAPlayerX86:
+            case RuntimePlatform.WSAPlayerX64:
+            case RuntimePlatform.WSAPlayerARM:
+
+            // iOS, OSX, tvOS 
+            case RuntimePlatform.IPhonePlayer:
+            case RuntimePlatform.OSXPlayer:
+            case RuntimePlatform.tvOS:
+
+                canRestore = true;
+                break;
+
+            // Android 
+            case RuntimePlatform.Android:
+                switch (StandardPurchasingModule.Instance().appStore)
+                {
+                    case AppStore.SamsungApps:
+                    case AppStore.CloudMoolah:
+                        canRestore = true;
+                        break;
+
+                }
+                break;
+        }
+
+        gameObject.SetActive(canRestore);
+    }
+
+}</pre><p>This script goes through all of the stores listed in Unity's <code class="literal">IAPButton</code> class, and if they are something that can be restored, we set <code class="literal">canRestore</code> to <code class="literal">true</code>, otherwise it will stay as <code class="literal">false</code>. Finally, we will remove the object if we cannot restore it, without having to create specific things for different builds.</p><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Save the script and dive back into Unity.</li><li>Attach our newly created <code class="literal">RestoreAdsChecker</code> component to our <strong class="userinput"><code>Restore</code></strong> button.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Save your project and start up the game:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/23159ddc-327b-4572-9846-579f6a922475.png" /></div><p>On our PC build of the game, the Restore button doesn't show up, but if we export for iOS it will be on our device!</p></div>

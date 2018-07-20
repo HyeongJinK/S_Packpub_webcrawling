@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec85"></a>StopAllCoroutines</h2></div></div><hr /></div><p>
+<code class="literal">StopAllCoroutines</code> stops<a id="id1332" class="indexterm"></a> all coroutines running on this behavior.</p><p>An example<a id="id1333" class="indexterm"></a> of <code class="literal">StopAllCoroutines</code> is as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+function Start() {
+  // Start Coroutine DoSomething
+  StartCoroutine("DoSomething", 5.0); 
+  //  Wait for 1 seconds
+  yield WaitForSeconds(1.0);
+  // Stop All Coroutine
+  StopAllCoroutines();
+}
+
+function DoSomething (someParameter : float) {
+  while (true) {
+    // DoSomething Loop
+          Debug.Log ("DoSomething Loop = " + Time.time);
+    // Yield execution of this coroutine and return to the main loop until next frame
+          yield;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+IEnumerator Start() {
+  // Start Coroutine DoSomething
+  StartCoroutine("DoSomething", 5.0f); 
+  //  Wait for 1 seconds
+  yield return new WaitForSeconds(1.0f);
+  // Stop All Coroutine
+  StopAllCoroutines();
+}
+
+IEnumerator DoSomething (float  someParameter) {
+  while (true) {
+    // DoSomething Loop
+          Debug.Log ("DoSomething Loop = " + Time.time);
+    // Yield execution of this coroutine and return to the main loop until next frame
+          yield return null;
+  }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec154"></a>References</h3></div></div></div><p>For <a id="id1334" class="indexterm"></a>more details and references, please check out the following links from Unity scripting documents:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/YieldInstruction.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/YieldInstruction.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/WaitForSeconds.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/WaitForSeconds.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/WaitForFixedUpdate.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/WaitForFixedUpdate.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Coroutine.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Coroutine.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.StartCoroutine.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.StartCoroutine.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.StopCoroutine.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.StopCoroutine.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.StopAllCoroutines.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.StopAllCoroutines.html</a>
+</p></li></ul></div></div></div>

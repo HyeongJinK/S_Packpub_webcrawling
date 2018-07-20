@@ -1,0 +1,4 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec308"></a>Time for action – the final bug</h2></div></div><hr /></div><p>The last bug in the <a id="id952" class="indexterm"></a>game is that in the pause between someone winning and the game reloading, players can still click on spaces to place their pieces. Let's add a quick condition check to the top of the<a id="id953" class="indexterm"></a> <code class="literal">ClickSpace</code> function. If the game is won, prevent the rest of the code from executing:</p><div class="informalexample"><pre class="programlisting">function ClickSquare(square:GameObject)
+{
+<span class="strong"><strong>   if(gameIsOver) return;</strong></span>
+</pre></div><p>Push the red return button! Eject! Eject!</p></div>

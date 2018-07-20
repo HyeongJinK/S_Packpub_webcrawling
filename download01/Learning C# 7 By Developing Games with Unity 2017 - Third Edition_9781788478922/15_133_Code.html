@@ -1,0 +1,98 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch15lvl1sec126"></a>Code</h2></div></div><hr /></div><p>This section will cover the code that is present in this chapter:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch15lvl2sec79"></a>PlayerController.cs</h3></div></div></div><p>Here's the code:</p><pre class="programlisting"><span>using UnityEngine;
+ using System.Collections;
+
+ public class PlayerController : MonoBehaviour {
+
+     public static PlayerController instance;
+
+     public float jumpForce = 6f;
+     public float runningSpeed = 1.5f;
+     public Animator animator;
+
+     private Vector3 startingPosition;
+     private Rigidbody2D rigidBody;
+
+     public AudioClip killSound;
+
+     void Awake() {
+         instance = this;
+         rigidBody = GetComponent&lt;Rigidbody2D&gt;();
+         startingPosition = this.transform.position;
+     }
+
+     public void StartGame() {
+         animator.SetBool("isAlive", true);
+         this.transform.position = startingPosition;
+     }
+
+     void Update () {
+
+         if (GameManager.instance.currentGameState == GameState.inGame) 
+         {
+             if (Input.GetMouseButtonDown(0)) {
+                 Jump();
+             }
+             animator.SetBool("isGrounded", isGrounded());
+         }
+     }
+
+     void FixedUpdate() {
+
+         if (GameManager.instance.currentGameState == GameState.inGame) 
+         {
+             if (rigidBody.velocity.x &lt; runningSpeed) {
+                 rigidBody.velocity = new Vector2(runningSpeed, rigidBody.velocity.y);
+             }
+         }
+     }
+
+     void Jump() {
+         if (isGrounded()) {
+             rigidBody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+         }
+     }
+
+     public LayerMask groundLayer;
+
+     bool isGrounded() {
+
+         if (Physics2D.Raycast(this.transform.position, Vector2.down, 0.2f, groundLayer.value)) {
+             return true;
+         }
+         else {
+             return false;
+         }
+     }
+
+     void OnCollisionEnter(Collision other) {
+
+         if (other.gameObject.tag == "Enemy") {
+             Kill ();
+         }
+     }
+
+
+     public void Kill() {
+         GameManager.instance.GameOver();
+         animator.SetBool("isAlive", false);
+
+         AudioSource audio = GetComponent&lt;AudioSource&gt;();
+         audio.PlayOneShot(killSound);
+
+         //check if highscore save if it is
+         if (PlayerPrefs.GetFloat("highscore", 0) &lt; this.GetDistance()) {
+             //save new highscore
+             PlayerPrefs.SetFloat("highscore", this.GetDistance());
+         }
+     }
+
+
+     public float GetDistance() {
+         float traveledDistance = Vector2.Distance(new Vector2(startingPosition.x, 0),
+                                                   new Vector2(this.transform.position.x, 0));
+         return traveledDistance;                                                                                   
+     }
+
+
+ }
+</span></pre></div></div>

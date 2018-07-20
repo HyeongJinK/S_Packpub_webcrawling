@@ -1,0 +1,76 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec57"></a>Activating enemies and camera paths</h2></div></div><hr /></div><p>We've now achieved a lot for the <span class="emphasis"><em>Dead keys</em></span> game. We've created health, enemy AI, and the ability for enemies to change between different states. However, if we add enemies to the level right now, they'll begin in a sleeping or deactivated state and, as yet, nothing changes that state. To move forwards, we'll need to link the camera position in the level with enemies so that, as the camera moves near to an enemy, the enemy wakes up and becomes an active participant in the game. This allows us to pace our game with the camera. To achieve this, we'll use strategically positioned <span class="strong"><strong>Trigger Volumes</strong></span>, with a <code class="literal">GameTrigger</code> script. The script is as follows:</p><pre class="programlisting">//------------------------------------ &#13;
+using UnityEngine; &#13;
+using System.Collections; &#13;
+using UnityEngine.EventSystems; &#13;
+using UnityEngine.Events; &#13;
+//------------------------------------ &#13;
+public class GameTrigger : MonoBehaviour  &#13;
+{ &#13;
+    public UnityEvent OnTriggerEntered; &#13;
+    //------------------------------------ &#13;
+    // Update is called once per frame &#13;
+    void OnTriggerEnter (Collider Other)  &#13;
+    { &#13;
+        //If not player then exit &#13;
+        if(!Other.CompareTag("Player")) return; &#13;
+ &#13;
+        OnTriggerEntered.Invoke (); &#13;
+    } &#13;
+    //------------------------------------ &#13;
+} &#13;
+//------------------------------------  &#13;
+</pre><p>As the game camera enters each trigger, one or more zombie NPCs will be activated, approaching the game to attack. To create a trigger, simply navigate to <span class="strong"><strong>GameObject</strong></span>
+<span class="emphasis"><em> | </em></span>
+<span class="strong"><strong>Empty</strong></span> from the application menu, and then add a <span class="strong"><strong>Box Collider</strong></span> with <span class="strong"><strong>Component </strong></span>
+<span class="emphasis"><em>| </em></span>
+<span class="strong"><strong>Physics</strong></span>
+<span class="emphasis"><em> | </em></span>
+<span class="strong"><strong>Box Collider</strong></span> from the application menu. Ensure the <span class="strong"><strong>Collider</strong></span> is marked with <span class="strong"><strong>Is Trigger</strong></span>, from the object Inspector:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_043.jpg" /></div><p>
+</p><p>Creating a trigger object</p><p>Now add the <span class="strong"><strong>Game </strong></span>Trigger script to the object, and configure the <span class="strong"><strong>TriggerEnter</strong></span> event, from the Inspector, to activate nearby sleeping zombies to bring them into the game. This is achieved by calling the <code class="literal">WakeUp</code> function for all zombies that should awaken when the player enters the trigger area:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_044.jpg" /></div><p>
+</p><p>Calling the AIEnemy.Wakeup function</p><p>Now add more triggers to the level by duplicating the original, repeating this process for important way-points. This paces the level, activating zombies as the camera progresses from point to point:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_045.jpg" /></div><p>
+</p><p>Positioning trigger volumes to activate enemies</p><p>Don't forget to duplicate zombies around the level, placing them to add difficulty. Position zombies around corners and at important intersections where the camera stops. Zombies should not appear while the camera is moving. For the gameplay mechanic to work and feel right, zombies should appear as the camera stops:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_046.jpg" /></div><p>
+</p><p>Duplicating and positioning enemies</p><p>If you test the level right now, you'll notice that the text above the zombie head will display for sleeping zombies and even for zombies a long distance away. This may conflict with game difficulty and feel, damaging the gameplay because players can potentially dispatch enemies long before they get close, by quickly typing their associated word. To solve this, we should configure the head text to display only when the zombie is closer to the player. To achieve this, add a <span class="strong"><strong>Sphere Collider </strong></span>to the zombie, marked as a <span class="strong"><strong>Trigger </strong></span>(Just navigate to <span class="strong"><strong>Component</strong></span>
+<span class="emphasis"><em> | </em></span>
+<span class="strong"><strong>Physics</strong></span>
+<span class="emphasis"><em> | </em></span>
+<span class="strong"><strong>Sphere Collider</strong></span>). This will approximate the distance or range of the zombie for showing the head text:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_047.jpg" /></div><p>
+</p><p>Adding a radius Sphere Collider to the zombie</p><p>Next, create a new script file (<code class="literal">DistanceVisible</code>), which hides and shows the head text based on distance to the player, as the following shows:</p><pre class="programlisting">using UnityEngine; &#13;
+using System.Collections; &#13;
+ &#13;
+public class DistanceVisible : MonoBehaviour  &#13;
+{ &#13;
+    //Reference to local sphere, marking distance &#13;
+    private SphereCollider ThisSphere = null; &#13;
+ &#13;
+    //Object to show hide &#13;
+    public GameObject ShowHideObject = null; &#13;
+ &#13;
+    void OnTriggerEnter(Collider Col) &#13;
+    { &#13;
+        if (!Col.CompareTag ("Player")) &#13;
+            return; &#13;
+ &#13;
+        if (ShowHideObject != null) &#13;
+            ShowHideObject.SetActive (true); &#13;
+    } &#13;
+ &#13;
+    void OnTriggerExit(Collider Col) &#13;
+    { &#13;
+        if (!Col.CompareTag ("Player")) &#13;
+            return; &#13;
+ &#13;
+        if (ShowHideObject != null) &#13;
+            ShowHideObject.SetActive (false); &#13;
+    } &#13;
+} &#13;
+ &#13;
+</pre><p>Attach the script to the zombie and then, from the object Inspector, specify the object which should hide and show. For the zombie, this should be the head text UI object:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_048.jpg" /></div><p>
+</p><p>Specifying a target object for hiding and showing</p><p>Excellent work! Now you're ready to test the level. Simply click the <span class="strong"><strong>Play</strong></span> button, and away you go! Enemies should approach as you enter the trigger, and should take damage as you type the appropriate letters on the keyboard:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_049.jpg" /></div><p>
+</p><p>Playtesting with zombies added!</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note39"></a>Note</h3><p>One of the great benefits of implementing zombies as a self-contained Prefab is that you can easily add and remove zombies from a level without affecting any other functionality of behavior.</p></div></div>

@@ -1,0 +1,95 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec28"></a>Representing the world with points of visibility</h2></div></div><hr /></div><p>This is <a id="id90" class="indexterm"></a>another widely-used technique for <a id="id91" class="indexterm"></a>world representation based on points located throughout the valid area of navigation, whether manually placed or automated via scripting. We'll be using manually-placed points connected automatically via scripting.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec85"></a>Getting ready</h3></div></div></div><p>Just like the previous representation, it's important to have several things in order before continuing:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Having the <code class="literal">Edge</code> class prepended to the <code class="literal">Graph</code> class in the same file</p></li><li style="list-style-type: disc"><p>Defining the <code class="literal">GetEdges</code> function in the <code class="literal">Graph</code> class</p></li><li style="list-style-type: disc"><p>Having the <code class="literal">Vertex</code> class</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note03"></a>Note</h3><p>The vertex objects in the scene must have a collider component attached to them, as well as the <code class="literal">Vertex</code> tag assigned. It's recommended for them to be unitary <code class="literal">Sphere</code> primitives.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec86"></a>How to do it...</h3></div></div></div><p>We'll be creating the graph representation class as well as a custom <code class="literal">Vertex</code> class:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">VertexVisibility</code> class deriving from <code class="literal">Vertex</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+
+public class VertexVisibility : Vertex
+{
+    void Awake()
+    {
+        neighbours = new List&lt;Edge&gt;();
+    }
+}</pre></div></li><li><p>Define the <code class="literal">FindNeighbours</code> function for automating the process of connecting <a id="id92" class="indexterm"></a>vertices among them:</p><div class="informalexample"><pre class="programlisting">public void FindNeighbours(List&lt;Vertex&gt; vertices)
+{
+    Collider c = gameObject.GetComponent&lt;Collider&gt;();
+    c.enabled = false;
+    Vector3 direction = Vector3.zero;
+    Vector3 origin = transform.position;
+    Vector3 target = Vector3.zero;
+    RaycastHit[] hits;
+    Ray ray;
+    float distance = 0f;
+    // next step
+}</pre></div></li><li><p>Go over <a id="id93" class="indexterm"></a>each object and cast a ray to validate whether it's completely visible and then add it to the list of neighbors:</p><div class="informalexample"><pre class="programlisting">for (int i = 0; i &lt; vertices.Count; i++)
+{
+    if (vertices[i] == this)
+        continue;
+    target = vertices[i].transform.position;
+    direction = target - origin;
+    distance = direction.magnitude;
+    ray = new Ray(origin, direction);
+    hits = Physics.RaycastAll(ray, distance);
+    if (hits.Length == 1)
+    {
+        if (hits[0].collider.gameObject.tag.Equals("Vertex"))
+        {
+            Edge e = new Edge();
+            e.cost = distance;
+            GameObject go = hits[0].collider.gameObject;
+            Vertex v = go.GetComponent&lt;Vertex&gt;();
+            if (v != vertices[i])
+                continue;
+            e.vertex = v;
+            neighbours.Add(e);
+        }
+    }
+}
+c.enabled = true;</pre></div></li><li><p>Create <a id="id94" class="indexterm"></a>the <code class="literal">GraphVisibility</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+
+public class GraphVisibility : Graph
+{
+    // next steps
+}</pre></div></li><li><p>Build the <a id="id95" class="indexterm"></a>
+<code class="literal">Load</code> function for making the connections between vertices:</p><div class="informalexample"><pre class="programlisting">public override void Load()
+{
+    Vertex[] verts = GameObject.FindObjectsOfType&lt;Vertex&gt;();
+    vertices = new List&lt;Vertex&gt;(verts);
+    for (int i = 0; i &lt; vertices.Count; i++)
+    {
+        VertexVisibility vv = vertices[i] as VertexVisibility;
+        vv.id = i;
+        vv.FindNeighbours(vertices);
+    }
+}</pre></div></li><li><p>Define the <code class="literal">GetNearesteVertex</code> function:</p><div class="informalexample"><pre class="programlisting">public override Vertex GetNearestVertex(Vector3 position)
+{
+    Vertex vertex = null;
+    float dist = Mathf.Infinity;
+    float distNear = dist;
+    Vector3 posVertex = Vector3.zero;
+    for (int i = 0; i &lt; vertices.Count; i++)
+    {
+        posVertex = vertices[i].transform.position;
+        dist = Vector3.Distance(position, posVertex);
+        if (dist &lt; distNear)
+        {
+            distNear = dist;
+            vertex = vertices[i];
+        }
+    }
+    return vertex;
+}</pre></div></li><li><p>Define <a id="id96" class="indexterm"></a>the <code class="literal">GetNeighbours</code> function:</p><div class="informalexample"><pre class="programlisting">public override Vertex[] GetNeighbours(Vertex v)
+{
+    List&lt;Edge&gt; edges = v.neighbours;
+    Vertex[] ns = new Vertex[edges.Count];
+    int i;
+    for (i = 0; i &lt; edges.Count; i++)
+    {
+        ns[i] = edges[i].vertex;
+    }
+    return ns;
+}</pre></div></li><li><p>Finally, override the <code class="literal">GetEdges</code> function:</p><div class="informalexample"><pre class="programlisting">public override Edge[] GetEdges(Vertex v)
+{
+    return vertices[v.id].neighbours.ToArray();
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec87"></a>How it works...</h3></div></div></div><p>The parent class <a id="id97" class="indexterm"></a>
+<code class="literal">GraphVisibility</code> indexes every vertex on the scene and makes use of the <code class="literal">FindNeighbours</code> function on each one. This is in order to build the graph and make the connections without total user supervision, beyond placing the visibility points where the user sees fit. Also, the distance between two points is used to assign the cost to that corresponding edge.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec88"></a>There's more...</h3></div></div></div><p>It's important to make a point visible to one another for the graph to be connected. This approach is also suitable for building intelligent graphs considering stairs and cliffs, it just requires moving the <code class="literal">Load</code> function to an editor-friendly class in order to call it in edit mode, and then modify or delete the corresponding edges to make it work as intended.</p><p>Take a look at the previous recipe's <span class="emphasis"><em>Getting ready</em></span> section so you can better understand the starting point in case you feel you're missing something.</p><p>For further information about custom editors, editor scripting, and how to execute code in edit mode, please refer to <a id="id98" class="indexterm"></a>the Unity documentation, available online at:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="ulink" href="http://docs.unity3d.com/ScriptReference/Editor.html" target="_blank">http://docs.unity3d.com/ScriptReference/Editor.html</a></p></li><li style="list-style-type: disc"><p><a class="ulink" href="http://docs.unity3d.com/ScriptReference/ExecuteInEditMode.html" target="_blank">http://docs.unity3d.com/ScriptReference/ExecuteInEditMode.html</a></p></li><li style="list-style-type: disc"><p><a class="ulink" href="http://docs.unity3d.com/Manual/PlatformDependentCompilation.html" target="_blank">http://docs.unity3d.com/Manual/PlatformDependentCompilation.html</a></p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec89"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="emphasis"><em>Representing </em></span><a id="id99" class="indexterm"></a>
+<span class="emphasis"><em>the world with Dirichlet </em></span><a id="id100" class="indexterm"></a>
+<span class="emphasis"><em>domains</em></span> recipe</p></li></ul></div></div></div>

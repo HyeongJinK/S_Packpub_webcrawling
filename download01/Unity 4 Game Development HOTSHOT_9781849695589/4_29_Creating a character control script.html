@@ -1,0 +1,364 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec37"></a>Creating a character control script</h2></div></div><hr /></div><p>In this step, we will<a id="id635" class="indexterm"></a> create a script that controls our character's<a id="id636" class="indexterm"></a> movements such as forward and backward movements, turning left or right, and other actions such as jumping and falling by using the <span class="strong"><strong>CharacterController</strong></span> component and the <code class="literal">OnAnimatorMove()</code> function.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip21"></a>Tip</h3><p>We can also use the <span class="strong"><strong>Rigidbody</strong></span> and <span class="strong"><strong>CapsuleCollider</strong></span> components instead of <span class="strong"><strong>CharacterController</strong></span>. However, in this book, we want to show the example of using <span class="strong"><strong>CharacterController</strong></span> because there are many convenient functions to use to control the character such as <code class="literal">Move()</code>, <code class="literal">collisionFlags</code> (checking where the character is collided), and <code class="literal">slopeLimit</code> (the character can move up on the slope by a limited degree). If we use <span class="strong"><strong>Rigidbody</strong></span> and <span class="strong"><strong>CapsuleCollider</strong></span>, we have to create those functions ourselves.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec76"></a>Engage thrusters</h3></div></div></div><p>Now, we will create the script to <a id="id637" class="indexterm"></a>control our character. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We will create the <span class="strong"><strong>CharacterControl</strong></span> script that will control our entire menu; go to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for Unity JavaScript users) or go to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> (for C# user), name it <code class="literal">ChracterControl</code>, double-click on it to launch <span class="strong"><strong>MonoDevelop</strong></span>, and we will get our hands dirty with the code.</p></li><li><p>Open the <a id="id638" class="indexterm"></a>
+<span class="strong"><strong>ChracterControl</strong></span> script file and type the following variables:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+@script RequireComponent(Animator)  
+@script RequireComponent(CharacterController)
+public enum MOTION_STATE {GROUND,JUMP,FALL,JUMP_HOLD}
+private final var GRAVITY : float = 20.0f;
+private final var MIN_AIR_TIME : float = 0.15f; // 0.15 sec.  
+var rotationSpeed : float = 1.0f;
+var walkSpeed : float = 2.0f;
+var runSpeed : float = 5.0f;
+var jumpSpeed : float = 8.0f;
+private var _animator : Animator;
+private var _hDirection : float;
+private var _vDirection : float;
+private var _moveDirection : Vector3;
+private var _movement : Vector3;
+private var _isMoveBack : boolean;
+private var _isRun : boolean;
+private var _isJumping : boolean;
+
+private var _motionState : MOTION_STATE;
+private var _baseCurrentState : AnimatorStateInfo;
+private var _characterController : CharacterController;
+private var _moveSpeed : float;
+private var _verticalSpeed : float;
+private var _inAirTime : float;
+private var _inAirStartTime : float;
+public function get IsMoveBackward () : boolean {
+  return _isMoveBack;
+}  
+public function get  IsGrounded () : boolean {
+  return _characterController.isGrounded;
+}  
+public function get  IsFall () : boolean {
+  return (_inAirTime &gt; MIN_AIR_TIME);
+}
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+[RequireComponent(typeof(Animator))]  
+[RequireComponent(typeof(CharacterController))] 
+public class CharacterControl : MonoBehaviour {
+  public enum MOTION_STATE {GROUND,JUMP,FALL,JUMP_HOLD}
+  const float GRAVITY = 20.0f;
+  const float MIN_AIR_TIME = 0.15f; // 0.15 sec.
+  public float rotationSpeed = 1.0f;
+  public float walkSpeed = 2.0f;
+  public float runSpeed = 5.0f;
+  public float jumpSpeed = 8.0f;
+  Animator _animator;
+  float _hDirection;
+  float _vDirection;
+  Vector3 _moveDirection;
+  Vector3 _movement;
+  bool _isMoveBack;
+  bool _isRun;
+  bool _isJumping;
+  MOTION_STATE _motionState;
+  AnimatorStateInfo _baseCurrentState;
+  CharacterController _characterController;
+  float _moveSpeed;
+  float _verticalSpeed;
+  float _inAirTime;
+  float _inAirStartTime;
+  public bool IsMoveBackward {
+    get { return _isMoveBack; }
+  }
+  public bool IsGrounded {
+    get { return _characterController.isGrounded; }
+  }
+  public bool IsFall {
+    get { return (_inAirTime &gt; MIN_AIR_TIME); }
+  }
+  …
+}</pre></div><p>Here, we have <a id="id639" class="indexterm"></a>all the necessary <a id="id640" class="indexterm"></a>parameters to use in our script. In the first line, we want to make sure that we have the <span class="strong"><strong>CharacterController</strong></span> and <span class="strong"><strong>Animator</strong></span> components attached when we use this script. Then, we have the <code class="literal">enum</code> variable, which we will use to set the state of the animation clip. (The enums are integer values that start from 0,1,2….) Next, we have the animation speed to control how fast the character rotation and movement should be.</p><p>We have the <code class="literal">GRAVITY</code> property because we will use it to calculate the <code class="literal">Move()</code> function in the <code class="literal">CharacterController</code> class. In the last three functions, we basically have the <code class="literal">get</code> function to return if our character is moving backward, on the ground, or is falling. For the <code class="literal">IsFall()</code> function, we basically check whether our character stays in the air longer than <code class="literal">MIN_AIR_TIME</code>.</p></li><li><p>Next, we will start creating the first function, <code class="literal">Awake()</code>, using the following code to get the <code class="literal">_animator</code> and <code class="literal">_characterController</code> components:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Awake () {
+  _animator = GetComponent.&lt;Animator&gt;();
+  _characterController = GetComponent.&lt;CharacterController&gt;();
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void Awake () {
+  _animator = GetComponent&lt;Animator&gt;();
+  _characterController = GetComponent&lt;CharacterController&gt;();
+}</pre></div></li><li><p>Then, we create the <code class="literal">Start()</code> function and set up all the variables as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Start () {
+  _moveDirection = Vector3.zero;
+  _motionState = MOTION_STATE.GROUND;
+  _isRun = false;
+  _isMoveBack = false;
+  _moveSpeed = 0.0f;
+  _verticalSpeed = 0.0f;
+  _inAirTime = 0.0f;
+  _inAirStartTime = Time.time;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void Start () {
+  _moveDirection = Vector3.zero;
+  _motionState = MOTION_STATE.GROUND;
+  _isRun = false;
+  _isMoveBack = false;
+  _moveSpeed = 0.0f;
+  _verticalSpeed = 0.0f;
+  _inAirTime = 0.0f;
+  _inAirStartTime = Time.time;
+}</pre></div></li><li><p>Next, we will <a id="id641" class="indexterm"></a>create the <code class="literal">Update()</code> function. In <a id="id642" class="indexterm"></a>this function, we will calculate all movements for our character. First, we will use <code class="literal">input</code> and <code class="literal">_targetDirection</code> by using the <code class="literal">main camera</code> transform to calculate <code class="literal">_moveDirection</code> as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Update () {
+  _hDirection = Input.GetAxis("Horizontal");
+  _vDirection = Input.GetAxis("Vertical");
+  var cameraTransform : Transform = Camera.main.transform;
+  var _forward : Vector3 = cameraTransform.TransformDirection(Vector3.forward);
+  _forward.y = 0f;
+  var _right : Vector3 = new Vector3(_forward.z, 0f, -_forward.x);
+  if (_vDirection &lt; 0) { _isMoveBack = true; }
+  else { _isMoveBack = false; }
+  var _targetDirection : Vector3 = (_hDirection * _right) + (_vDirection * _forward);
+  if (_targetDirection != Vector3.zero) {
+    _moveDirection = Vector3.Slerp(_moveDirection, _targetDirection, rotationSpeed * Time.deltaTime);
+    _moveDirection = _moveDirection.normalized;
+  } else {
+    _moveDirection = Vector3.zero;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+void Update () {
+  _hDirection = Input.GetAxis("Horizontal");
+  _vDirection = Input.GetAxis("Vertical");  
+  Transform cameraTransform = Camera.main.transform;
+  Vector3 _forward = cameraTransform.TransformDirection(Vector3.forward);
+  _forward.y = 0f;
+  Vector3 _right = new Vector3(_forward.z, 0f, -_forward.x);
+  if (_vDirection &lt; 0) { _isMoveBack = true; }
+  else { _isMoveBack = false; }
+  Vector3 _targetDirection = (_hDirection * _right) + (_vDirection * _forward);
+  if (_targetDirection != Vector3.zero) {
+    _moveDirection = Vector3.Slerp(_moveDirection, _targetDirection, rotationSpeed * Time.deltaTime);
+    _moveDirection = _moveDirection.normalized;
+  } else {
+    _moveDirection = Vector3.zero;
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note55"></a>Note</h3><p>
+<code class="literal">Vector3.Slerp()</code> is the <a id="id643" class="indexterm"></a>function that we can use to interpolate between two vectors spherically by the amount of time, and the return vector's magnitude will be the difference between the magnitudes of the first vector and the second vector. This function is usually used when we want to get the smooth rotation from one vector to another vector in a fixed amount of time. You <a id="id644" class="indexterm"></a>can see more details at <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Vector3.Slerp.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Vector3.Slerp.html</a>.</p></div></li><li><p>We are <a id="id645" class="indexterm"></a>still in the <code class="literal">Update()</code> function. Next, we will calculate <code class="literal">_verticalSpeed</code> and <code class="literal">_inAirTime</code> by <a id="id646" class="indexterm"></a>checking whether our character is grounded. Let's continue from the previous step and put the highlighted code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Update () {
+  …
+  } else {
+    _moveDirection = Vector3.zero;
+  }
+<span class="strong"><strong>  if (IsGrounded) {</strong></span>
+<span class="strong"><strong>    _isJumping = false;</strong></span>
+<span class="strong"><strong>    _verticalSpeed = 0.0f;  </strong></span>
+<span class="strong"><strong>    _inAirTime = 0.0f;</strong></span>
+<span class="strong"><strong>    _inAirStartTime = Time.time;</strong></span>
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    _verticalSpeed -= GRAVITY * Time.deltaTime;</strong></span>
+<span class="strong"><strong>    _inAirTime = Time.time - _inAirStartTime;</strong></span>
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+void Update () {
+  …
+  } else {
+    _moveDirection = Vector3.zero;
+  }
+<span class="strong"><strong>  if (IsGrounded) {</strong></span>
+<span class="strong"><strong>    _isJumping = false;</strong></span>
+<span class="strong"><strong>    _verticalSpeed = 0.0f;  </strong></span>
+<span class="strong"><strong>    _inAirTime = 0.0f;</strong></span>
+<span class="strong"><strong>    _inAirStartTime = Time.time;</strong></span>
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    _verticalSpeed -= GRAVITY * Time.deltaTime;</strong></span>
+<span class="strong"><strong>    _inAirTime = Time.time - _inAirStartTime;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div></li><li><p>Next, if our<a id="id647" class="indexterm"></a> character is able to jump, we will <a id="id648" class="indexterm"></a>check for the jump action and set <code class="literal">_verticalSpeed</code> to <code class="literal">jumpSpeed</code>. We also check that if the user holds <span class="emphasis"><em>Shift</em></span>, <code class="literal">_isRun</code> is set to <code class="literal">true</code>. Then, we set <code class="literal">_moveSpeed</code> depending on the character's action (run or walk). Let's put the highlighted code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Update () {
+  …
+  } else {
+    _verticalSpeed -= GRAVITY * Time.deltaTime;
+    _inAirTime = Time.time - _inAirStartTime;
+  }
+<span class="strong"><strong>  if (!_isJumping &amp;&amp; (_motionState == MOTION_STATE.GROUND)) {</strong></span>
+<span class="strong"><strong>    _isRun = (Input.GetKey (KeyCode.LeftShift) || Input.GetKey (KeyCode.RightShift));</strong></span>
+<span class="strong"><strong>    _moveSpeed = (_isRun) ? runSpeed : walkSpeed;</strong></span>
+<span class="strong"><strong>    if (Input.GetButtonDown ("Jump")) {</strong></span>
+<span class="strong"><strong>      _verticalSpeed = jumpSpeed;</strong></span>
+<span class="strong"><strong>         _isJumping = true;</strong></span>
+<span class="strong"><strong>      _inAirTime = 0.0f;</strong></span>
+<span class="strong"><strong>      _inAirStartTime = Time.time;</strong></span>
+    }
+  }
+}
+
+
+<span class="strong"><strong>C# user:</strong></span>
+void Update () {
+  …
+  } else {
+    _verticalSpeed -= GRAVITY * Time.deltaTime;
+    _inAirTime = Time.time - _inAirStartTime;
+  }
+<span class="strong"><strong>if (!_isJumping &amp;&amp; (_motionState == MOTION_STATE.GROUND)) {</strong></span>
+<span class="strong"><strong>    _isRun = (Input.GetKey (KeyCode.LeftShift) || Input.GetKey (KeyCode.RightShift));</strong></span>
+<span class="strong"><strong>    _moveSpeed = (_isRun) ? runSpeed : walkSpeed;</strong></span>
+<span class="strong"><strong>    if (Input.GetButtonDown ("Jump")) {</strong></span>
+<span class="strong"><strong>      _verticalSpeed = jumpSpeed;</strong></span>
+<span class="strong"><strong>        _isJumping = true;</strong></span>
+<span class="strong"><strong>      _inAirTime = 0.0f;</strong></span>
+<span class="strong"><strong>      _inAirStartTime = Time.time;</strong></span>
+<span class="strong"><strong>    }</strong></span>
+  }
+}</pre></div></li><li><p>The last<a id="id649" class="indexterm"></a> section of code that we will add<a id="id650" class="indexterm"></a> to the <code class="literal">Update()</code> function is to control our character's movement and rotation, which is a very important part to create our character when we press the button to control it. Let's add the following highlighted code in continuation with the last step: </p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Update () {
+  …
+      _inAirStartTime = Time.time;
+    }
+  }
+<span class="strong"><strong>  _movement = (_moveDirection * _moveSpeed) + new Vector3 (0, _verticalSpeed, 0);</strong></span>
+<span class="strong"><strong>  _movement *= Time.deltaTime;</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  if (_movement != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    _characterController.Move(_movement);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    transform.rotation = Quaternion.LookRotation(_moveDirection);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void Update () {
+      …
+      _inAirStartTime = Time.time;
+    }
+  }
+<span class="strong"><strong>  _movement = (_moveDirection * _moveSpeed) + new Vector3 (0, _verticalSpeed, 0);</strong></span>
+<span class="strong"><strong>  _movement *= Time.deltaTime;</strong></span>
+<span class="strong"><strong>    </strong></span>
+<span class="strong"><strong>  if (_movement != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    _characterController.Move(_movement);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>    </strong></span>
+<span class="strong"><strong>  if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    transform.rotation = Quaternion.LookRotation(_moveDirection);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div></li><li><p>Now, in the <a id="id651" class="indexterm"></a>last function of this <span class="strong"><strong>CharacterControl</strong></span> script, we will add the <code class="literal">OnAnimationMove()</code> function to control <a id="id652" class="indexterm"></a>the state of our animation. So, let's add the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function OnAnimatorMove (){    
+  if (_animator) {
+    if (_isJumping) {
+      if (IsGrounded) {
+        _motionState = MOTION_STATE.FALL;
+      } else {
+        if (_motionState == MOTION_STATE.GROUND) {
+          _motionState = MOTION_STATE.JUMP;
+        } else if (_motionState == MOTION_STATE.JUMP) {
+          _motionState = MOTION_STATE.JUMP_HOLD;
+        }
+      }
+    } else {
+      if (IsFall) {
+        _motionState = MOTION_STATE.FALL;
+      } else {
+        _motionState = MOTION_STATE.GROUND;
+      }
+    }
+    var velocity: Vector3 = new Vector3(_hDirection,0.0f,_vDirection);
+    velocity.y = 0.0f;  
+    _animator.SetFloat ("Speed", velocity.sqrMagnitude);
+    _animator.SetBool ("IsRun", _isRun);
+    _animator.SetInteger ("MotionState", parseInt(_motionState));    
+  }
+}
+
+<span class="strong"><strong>// C# user:</strong></span>
+void OnAnimatorMove (){    
+  if (_animator) {
+    if (_isJumping) {
+      if (IsGrounded) {
+        _motionState = MOTION_STATE.FALL;
+      } else {
+        if (_motionState == MOTION_STATE.GROUND) {
+            _motionState = MOTION_STATE.JUMP;
+        } else if (_motionState == MOTION_STATE.JUMP) {
+          _motionState = MOTION_STATE.JUMP_HOLD;
+        }
+      }
+    } else {
+      if (IsFall) {
+        _motionState = MOTION_STATE.FALL;
+      } else {
+        _motionState = MOTION_STATE.GROUND;
+      }
+    }
+    Vector3 velocity = new Vector3(_hDirection,0.0f,_vDirection);
+    velocity.y = 0.0f;  
+    _animator.SetFloat ("Speed", velocity.sqrMagnitude);
+    _animator.SetBool ("IsRun", _isRun);
+    _animator.SetInteger ("MotionState", (int)_motionState);  
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note56"></a>Note</h3><p>The <code class="literal">OnAnimatorMove()</code> function<a id="id653" class="indexterm"></a> is the callback function that will be called each frame after the state machines and the animations have <a id="id654" class="indexterm"></a>been evaluated. We can say that <a id="id655" class="indexterm"></a>this is very similar<a id="id656" class="indexterm"></a> to the <code class="literal">FixedUpdate()</code> function. However, the<code class="literal"> OnAnimatorMove()</code> function will make sure that all the parameters will be got and set correctly before we do something.</p><p>For more <a id="id657" class="indexterm"></a>details, visit <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnAnimatorMove.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnAnimatorMove.html</a>.</p></div></li><li><p>Lastly, we<a id="id658" class="indexterm"></a> will go back to Unity editor; drag-and-drop the <span class="strong"><strong>CharacterControl</strong></span> script that we just created <a id="id659" class="indexterm"></a>on <span class="strong"><strong>Heroine_animate</strong></span> in the <span class="strong"><strong>Hierarchy</strong></span> view. Then, we click on the <span class="strong"><strong>Heroine_animate</strong></span> object in the <span class="strong"><strong>Hierarchy</strong></span> view and go to its <span class="strong"><strong>Inspector</strong></span> view and set it up as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Character Controller</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Skin Width</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">0.01</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Center</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0.85</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Radius</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">0.2</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">1.7</code>
+</p>
+</td></tr></tbody></table></div><p>Click on play and now our character can move, jump, and run.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec77"></a>Objective complete – mini debriefing</h3></div></div></div><p>In this section, we created a script called the <span class="strong"><strong>CharacterControl</strong></span> script that we can use to control the character's movement by using the <code class="literal">Move()</code> function in the <span class="strong"><strong>CharacterController</strong></span> component. This function needs the <code class="literal">Vector3</code> direction passed in and returns <span class="strong"><strong>CollisionFlags</strong></span>, which are very convenient to track the position of the character that has been collided.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note57"></a>Note</h3><p>We can get <span class="strong"><strong>CollisionFlags</strong></span> by accessing the <span class="strong"><strong>CharacterController</strong></span> component, which in our case, can be done using <code class="literal">_characterController.collisionFlags</code>. For example, we can use this flag to check if the character only hits the ceiling by using the following expression:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>If (_characterController.collisionFlags == CollisionFlags.Above) {…}</strong></span>
+</pre></div><p>For more detail, visit <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/CollisionFlags.None.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/CollisionFlags.None.html</a>.</p></div><p>We also applied <code class="literal">GRAVITY</code> while the character falls down from the jump or from the platform where there <a id="id660" class="indexterm"></a>is no collider. Also, we used the <code class="literal">OnAnimatorMove()</code> function to<a id="id661" class="indexterm"></a> control the animation state.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec78"></a>Classified intel</h3></div></div></div><p>If we click on play, we will be able to control our character. However, we might see that there is a sliding movement or it is still playing the <span class="strong"><strong>idle</strong></span> animation when our character begins to walk or run. This is because the transition blending is too high. So, when we click to walk or run, the animation doesn't change instantly as it should do. This problem can be solved by setting the <span class="strong"><strong>Transition</strong></span> blending curve in the inspector to <code class="literal">0</code> or less transition. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_04_37.jpg" /></div></div></div>

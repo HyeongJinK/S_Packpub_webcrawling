@@ -1,0 +1,20 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec09"></a>Texture sizes</h2></div></div><hr /></div><p>Using textures for heightmap information does have limitations. The largest "safe" size for a texture is considered 4096 x 4096 although <a id="id8" class="indexterm"></a>some of the older 3D cards would have problems with anything higher than 2048 x 2048. Also, host 3D engines often require texture dimensions to be a power of 2. A table of recommended dimensions for images follow:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>SafeTexture dimensions</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>64 x 64</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>128 x 128</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>256 x 256</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>512 x 512</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>1024 x 1024</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>2048 x 2048</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>4096 x 4096</p>
+</td></tr></tbody></table></div><p>512 x 512 provides efficient trade-off between resolution and performance and is the default value for GROME operations.</p><p>If you're familiar with this already then great, you might see questions posted on forums about texture corruption or materials not looking correct. Sometimes these problems are the result of not conforming to this arrangement. Also, you'll see these numbers crop up a few times in GROME's drop-down property boxes. To avoid any potential problems it is wise to ensure any textures you use in your projects conform to these specifications. One exception is <span class="strong"><strong>Unreal Development Kit</strong></span> (<span class="strong"><strong>UDK</strong></span>) <a id="id9" class="indexterm"></a>in which you'll see numbers such as 257 x 257 used, we'll discuss this in <a class="link" href="#" linkend="ch07">Chapter 7</a>, <span class="emphasis"><em>Exporting to Unity, UDK, and Ogre 3D</em></span>.</p><p>If you have a huge amount of terrain data that you need to import for a project you can use the texture formats mentioned earlier but I recommend using RAW formats if possible. If your project is based on real-world topography then importing DTED or GeoTIFF data will extract geographical information such as latitude, longitude, and number of arc seconds represented by the terrain.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip02"></a>Tip</h3><p>
+<span class="strong"><strong>Digital Terrain Elevation Data (DTED)</strong></span>
+<a id="id10" class="indexterm"></a>
+</p><p>A file format used by geographers and mappers to map the height of a terrain. Often used to import real-world topography into flight simulations. <span class="strong"><strong>Shuttle Radar Topography Mission</strong></span> (<span class="strong"><strong>SRTM</strong></span>) <a id="id11" class="indexterm"></a>data is easily obtained and converted.</p></div></div>

@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec53"></a>A human trampoline</h2></div></div><hr /></div><p>Now, you'll <a id="id418" class="indexterm"></a>get to jump on the trampoline yourself.</p><p>
+<span class="strong"><strong>Feature</strong></span>: <span class="emphasis"><em>When a first-person character hits a trampoline, it bounces up, diminished by gravity.</em></span>
+</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec81"></a>Like a brick</h3></div></div></div><p>One <a id="id419" class="indexterm"></a>approach towards implementing this feature could be to treat the <code class="literal">MeMyselfEye</code> first-person character like <code class="literal">Brick</code> and give it a Rigidbody and a Capsule Collider so that it can respond using physics. We'll try this first just to see whether it works. For this to work, we need to disable its Character Controller component and start at the brick's position above the trampoline so that we can just drop, as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Navigate to <span class="strong"><strong>File</strong></span> | <span class="strong"><strong>Save Scene As</strong></span> and name it <code class="literal">HumanTrampoline</code>.</p></li><li><p>Delete <code class="literal">Brick</code> in <span class="strong"><strong>Hierarchy</strong></span>; we won't need it.</p></li><li><p>With <code class="literal">MeMyselfEye</code> selected in <span class="strong"><strong>Hierarchy</strong></span>, set <span class="strong"><strong>Position</strong></span> to (<code class="literal">0</code>, <code class="literal">5</code>, <code class="literal">0</code>).</p></li><li><p>Navigate to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Rigidbody</strong></span>.</p></li><li><p>Navigate to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Capsule Collider</strong></span> and set its <span class="strong"><strong>Height</strong></span> to <code class="literal">2</code>.</p></li><li><p>In the <span class="strong"><strong>Rigidbody</strong></span> panel, under <span class="strong"><strong>Constraints</strong></span>, check off the <span class="strong"><strong>Freeze Rotation X</strong></span>, <span class="strong"><strong>Y</strong></span>, <span class="strong"><strong>Z</strong></span> checkboxes so that we don't get sick.</p></li></ol></div><p>Play the scene. <span class="emphasis"><em>Wheeee!</em></span> We're jumping up and down. You may need to adjust the <span class="strong"><strong>Bounce Force</strong></span> value.</p><p>The <code class="literal">Trampoline</code> script is calling the Rigidbody's <code class="literal">AddForce()</code> function with a <code class="literal">bounceForce</code>. However, the character has no locomotion of its own. We can continue down this path, but we won't.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec82"></a>Like a character</h3></div></div></div><p>In the<a id="id420" class="indexterm"></a> last chapter, we gave the first-person <code class="literal">MeMyselfEye</code> a Character Controller component because it gives us many nice features that are needed for a first-person character (including a collider and player-friendly physics). We want to use it again.</p><p>Start with a fresh copy of <code class="literal">MeMyselfEye</code> as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In <span class="strong"><strong>Hierarchy</strong></span>, delete the existing <code class="literal">MeMyselfEye</code> object.</p></li><li><p>From the <code class="literal">Project Assets/Prefabs</code> folder, drag the <code class="literal">MeMyselfEye</code> prefab into the scene.</p></li><li><p>Set its <span class="strong"><strong>Position</strong></span> to (<code class="literal">0</code>, <code class="literal">1</code>, <code class="literal">-4</code>).</p></li><li><p>Navigate to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Character Controller</strong></span>.</p></li><li><p>Add the <code class="literal">HeadLookWalkBounce</code> script by navigating to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>New Script</strong></span>.</p></li></ol></div><p>The script will be similar but slightly different from the <code class="literal">HeadLookWalk</code> script that we developed in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>First-person Character</em></span>. This time, we have to implement most of the physics ourselves. This means that instead of using <code class="literal">CharacterController.SimpleMove()</code>, we're going to use the more flexible <code class="literal">CharacterController.Move()</code> instead. <code class="literal">SimpleMove</code> ignores the <span class="emphasis"><em>y</em></span>-axis in the move direction, but we need to apply this for the bounce.</p><p>Open the <code class="literal">HeadLookWalkBounce.cs</code> script and edit as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class HeadLookWalkBounce : MonoBehaviour {
+  public float velocity = 0.7f;
+  public bool walking = false;
+
+  public float gravity = 9.8f;
+  public float bounceForce = 0.0f;
+
+  private CharacterController controller;
+  private Clicker clicker = new Clicker();
+
+  private float verticalVelocity = 0.0f;
+  private Vector3 moveDirection = Vector3.zero;
+  
+  void Start() {
+    controller = GetComponent&lt;CharacterController&gt; ();
+  }
+  
+  void Update () {
+    if (clicker.clicked()) {
+      walking = !walking;
+    }
+    if (walking) {
+      moveDirection = Camera.main.transform.forward * velocity;
+    } else {
+      moveDirection = Vector3.zero;
+    }
+    if (controller.isGrounded) {
+      verticalVelocity = 0.0f;
+    }
+    if (bounceForce != 0.0f) {
+      verticalVelocity = bounceForce * 0.02f;
+      bounceForce = 0.0f;
+    }
+    moveDirection.y = verticalVelocity;
+    verticalVelocity -= gravity * Time.deltaTime;
+    controller.Move (moveDirection * Time.deltaTime);
+  }
+}</pre></div><p>The script<a id="id421" class="indexterm"></a> manages not just the horizontal velocity, but also <code class="literal">verticalVelocity</code>, which is calculated from <code class="literal">bounceForce</code> and gravity. If you're standing on any solid object (<code class="literal">isGrounded</code>), <code class="literal">verticalVelocity</code> is zeroed. If you're airborne, you're no longer grounded and gravity will be applied.</p><p>Modify the <code class="literal">Trampoline.cs</code> script to send the <code class="literal">bounceForce</code> to the character's <code class="literal">HeadLookWalk</code> script component, as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Trampoline : MonoBehaviour {
+  public float bounceForce = 300f;
+
+  void OnTriggerEnter( Collider other ) {
+    Rigidbody rb = other.GetComponent&lt;Rigidbody&gt; ();
+    if (rb != null) {
+      rb.AddForce (Vector3.up * bounceForce);
+<span class="strong"><strong>    } else {</strong></span>
+<span class="strong"><strong>      HeadLookWalkBounce locomotor = other.GetComponent&lt;HeadLookWalkBounce&gt; ();</strong></span>
+<span class="strong"><strong>      if (locomotor != null) {</strong></span>
+<span class="strong"><strong>        locomotor.bounceForce = bounceForce;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+  }
+}</pre></div><p>The trampoline<a id="id422" class="indexterm"></a> can now handle collision from characters or non-character objects. Bricks and characters respond differently to <code class="literal">bounceForce</code>. So, the magic <code class="literal">forceFactor</code> equalizes them (try adjusting this value and/or <code class="literal">bounceForce</code> in the trampoline).</p><p>Play it in VR. Walk forward onto the trampoline when a collision is detected. You'll go flying vertically and then descend back down.</p><p>This isn't a true trampoline mechanic, since you get pushed into the air just by touching it rather than having to jump on it first. However, it works for our purposes.</p><p>Just for fun, create a pillar next to the trampoline and try to land on it by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Navigate to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>3D Object</strong></span> | <span class="strong"><strong>Cylinder</strong></span> and rename it to <code class="literal">Pillar</code>.</p></li><li><p>Set its <span class="strong"><strong>Position</strong></span> to (<code class="literal">-2</code>, <code class="literal">5</code>, <code class="literal">2.2</code>) and <span class="strong"><strong>Scale</strong></span> to (<code class="literal">1</code>, <code class="literal">5</code>, <code class="literal">1</code>).</p></li><li><p>Drag the material named <code class="literal">Red</code> onto it.</p></li></ol></div><p>Save the scene and play it in VR. <span class="emphasis"><em>Whee!</em></span> Note how tall we get to jump. When in the air, look towards the pillar to land on it. If you keep walking off it, you drop back down to the ground. Here's what it will look like:</p><div class="mediaobject"><img src="/graphics/9781783988556/graphics/B04781_07_04.jpg" /></div><p>Summing up we<a id="id423" class="indexterm"></a> did the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>At first, we had <code class="literal">BouncyBall</code> with a Physic Material, which Unity automatically applied upon collision, without scripting</p></li><li style="list-style-type: disc"><p>Then, we had a brick that received an upward force directly from the <code class="literal">Trampoline</code> script using <code class="literal">Rigidbody.AddForce()</code>
+</p></li><li style="list-style-type: disc"><p>Finally, in the preceding section, the first-person character script had its public <code class="literal">bounceForce</code> variable set by trampoline, which was manually applied as a vertical velocity along with gravity using <code class="literal">CharacterController.Move()</code>
+</p></li></ul></div><p>The <code class="literal">BouncyBall</code> object with a Physic Material was moved automatically by the Unity physics engine, without scripting. The brick was moved by the trampoline, directly adding a force to the brick's Rigidbody. The first-person character was moved by calculating its own move direction based on gravity and a <code class="literal">bounceForce</code> variable set by trampoline.</p></div></div>

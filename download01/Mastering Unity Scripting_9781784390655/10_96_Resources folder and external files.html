@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec96"></a>Resources folder and external files</h2></div></div><hr /></div><p>Your games <a id="id748" class="indexterm"></a>will frequently rely on external data loaded from files such<a id="id749" class="indexterm"></a> as XML files, perhaps, for subtitles, localization, or level serialization. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_10_22.jpg" /><div class="caption"><p>Printing a message loaded from an external text file asset that will compile with the project</p></div></div><p>In these cases, you want a specific range of abilities. The first one is the ability to dynamically load data from the file into memory in a way that Unity can parse and understand. The second is the ability to change and edit the file contents, even after importing it into Unity, and then have the effects of the changes update in the game without requiring code changes. The third is the ability to compile and distribute your standalone game with the file included<a id="id750" class="indexterm"></a> as part of the main Unity build, rather than as a separate and editable file alongside the main executable. To elaborate further on the third point, you don’t usually want to distribute your game as a standalone build alongside<a id="id751" class="indexterm"></a> separate and external files, such as XML files, which can be opened and edited by the gamer. Instead, as the developer, you want to edit and change the files from the Unity Editor, and you want the files themselves to be compiled and built into your final Unity standalone project, like other assets. You can achieve this using resource folders.</p><p>To use resource folders, create a folder named <code class="literal">resources</code> in the Unity project. A project can feature none, one, or more <code class="literal">resources</code> folders. Inside the folder, add all assets, such as text files that can be loaded by Unity at runtime:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_10_23.jpg" /><div class="caption"><p>Adding external files to the resources folder</p></div></div><p>Once a file is added to the <code class="literal">resources</code> folder, you can load it into memory with the <code class="literal">Resources.Load</code> function. See the<a id="id752" class="indexterm"></a> following code sample 10-1, which loads a sample text asset into a UI text component:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+//---------------------------------------------
+public class LoadTextData : MonoBehaviour
+{
+  //Reference to UI Text Component
+  private Text MyText = null;
+
+  //Reference to text asset in resources folder
+  private TextAsset TextData = null;
+  //---------------------------------------------
+  // Use this for initialization
+  void Awake () {
+    //Get Text Component
+    MyText = GetComponent&lt;Text&gt;();
+
+    //Load text data from resources folder
+    TextData = Resources.Load("TextData") as TextAsset;
+  }
+  //---------------------------------------------
+  // Update is called once per frame
+  void Update () {
+    //Update text label component
+    MyText.text = TextData.text;
+  }
+  //---------------------------------------------
+}
+//---------------------------------------------</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip68"></a>Tip</h3><p>More information <a id="id753" class="indexterm"></a>on resource<a id="id754" class="indexterm"></a> folders and the <code class="literal">Resources</code> class is available in the online Unity <a id="id755" class="indexterm"></a>documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Resources.html" target="_blank">http://docs.unity3d.com/ScriptReference/Resources.html</a>.</p></div></div>

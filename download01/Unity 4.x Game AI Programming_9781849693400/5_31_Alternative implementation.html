@@ -1,0 +1,151 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec33"></a>Alternative implementation</h2></div></div><hr /></div><p>Here's a simpler <a id="id245" class="indexterm"></a>implementation of the flocking algorithm. In this example, we'll create a cube object and place a rigid body on our boids. With Unity's rigid body physics, we can simplify the translation and steering behavior of our boid. To prevent our boids from overlapping each other, we'll add a sphere collider physics component.</p><p>We'll have two components in this implementation as well: individual boid behavior and controller behavior. The controller will be the object that the rest of the boids try and follow.</p><p>The code in the <code class="literal">Flock.cs</code> file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Flock : MonoBehaviour {
+  internal FlockController controller;
+
+  void Update () {
+    if (controller) {
+      Vector3 relativePos = steer() * Time.deltaTime;
+
+      if (relativePos != Vector3.zero) 
+          rigidbody.velocity = relativePos;
+
+      // enforce minimum and maximum speeds for the boids
+      float speed = rigidbody.velocity.magnitude;
+      if (speed &gt; controller.maxVelocity) {
+        rigidbody.velocity = rigidbody.velocity.normalized * 
+          controller.maxVelocity;
+      }
+      else if (speed &lt; controller.minVelocity) {
+        rigidbody.velocity = rigidbody.velocity.normalized * 
+            controller.minVelocity;
+      }
+    }
+  }</pre></div><p><code class="literal">FlockController</code> will be created in a moment. In our <a id="id246" class="indexterm"></a>
+<code class="literal">Update()</code> method, we calculate the velocity for our boid using the following <a id="id247" class="indexterm"></a>
+<code class="literal">steer()</code> method and apply it to its rigid body velocity. Next, we check the current speed of our rigid body component to verify whether it's in the range of our controller's <a id="id248" class="indexterm"></a>maximum and minimum velocity limits. If not, we cap the velocity at the preset range:</p><div class="informalexample"><pre class="programlisting">  private Vector3 steer () {
+    Vector3 center = controller.flockCenter - 
+        transform.localPosition;  // cohesion
+
+    Vector3 velocity = controller.flockVelocity - 
+        rigidbody.velocity;  // alignment
+
+    Vector3 follow = controller.target.localPosition - 
+        transform.localPosition;  // follow leader
+
+    Vector3 separation = Vector3.zero;
+
+    foreach (Flock flock in controller.flockList) {
+      if (flock != this) {
+        Vector3 relativePos = transform.localPosition - 
+            flock.transform.localPosition;
+
+        separation += relativePos / (relativePos.sqrMagnitude);
+      }
+    }
+
+    // randomize
+    Vector3 randomize = new Vector3( (Random.value * 2) - 1, 
+        (Random.value * 2) - 1, (Random.value * 2) - 1);
+
+    randomize.Normalize();
+
+    return (controller.centerWeight * center + 
+        controller.velocityWeight * velocity + 
+        controller.separationWeight * separation + 
+        controller.followWeight * follow + 
+        controller.randomizeWeight * randomize);
+  }
+}</pre></div><p>The <code class="literal">steer()</code> method <a id="id249" class="indexterm"></a>implements separation, cohesion, alignment, and follows the leader rules of the flocking algorithm. <a id="id250" class="indexterm"></a>Then, we sum up all the factors together with a random weight value. With this <span class="strong"><strong>Flock</strong></span> script together with rigid body and sphere collider components, we create a <span class="strong"><strong>Flock</strong></span> prefab as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_05_04.jpg" /><div class="caption"><p>Flock</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec40"></a>FlockController</h3></div></div></div><p><span class="strong"><strong>FlockController</strong></span> is a simple behavior <a id="id251" class="indexterm"></a>to generate the boids at runtime and update the center of the flock as well as the average velocity of the flock.</p><p>The code in the <code class="literal">FlockController.cs</code> <a id="id252" class="indexterm"></a>file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class FlockController : MonoBehaviour {
+  public float minVelocity = 1;  //Min Velocity
+  public float maxVelocity = 8;  //Max Flock speed
+  public int flockSize = 20;  //Number of flocks in the group
+
+  //How far the boids should stick to the center (the more 
+  //weight stick closer to the center)
+  public float centerWeight = 1;
+
+  public float velocityWeight = 1;  //Alignment behavior
+
+  //How far each boid should be separated within the flock
+  public float separationWeight = 1;
+
+  //How close each boid should follow to the leader (the more 
+  //weight make the closer follow)
+  public float followWeight = 1;
+
+  //Additional Random Noise
+  public float randomizeWeight = 1; 
+
+  public Flock prefab;
+  public Transform target;
+
+  //Center position of the flock in the group
+  internal Vector3 flockCenter;  
+  internal Vector3 flockVelocity;  //Average Velocity
+
+  public ArrayList flockList = new ArrayList();
+
+  void Start () {
+    for (int i = 0; i &lt; flockSize; i++) {
+      Flock flock = Instantiate(prefab, transform.position, 
+          transform.rotation) as Flock;
+      flock.transform.parent = transform;
+      flock.controller = this;
+      flockList.Add(flock);
+    }
+  }</pre></div><p>We declare all the properties to implement the flocking algorithm and then start with the generation of the boid objects based on the flock size input. We set up the controller class and parent transform object like we did last time. Then, we add the created boid object in our <code class="literal">ArrayList</code> function. The <code class="literal">target</code> <a id="id253" class="indexterm"></a>variable <a id="id254" class="indexterm"></a>accepts an entity to be used as a moving leader. We'll create a sphere entity as a moving target leader for our flock:</p><div class="informalexample"><pre class="programlisting">  void Update () {
+    //Calculate the Center and Velocity of the whole flock group
+    Vector3 center = Vector3.zero;
+    Vector3 velocity = Vector3.zero;
+
+    foreach (Flock flock in flockList) {
+      center += flock.transform.localPosition;
+      velocity += flock.rigidbody.velocity;
+    }
+
+    flockCenter = center / flockSize;
+    flockVelocity = velocity / flockSize;
+  }
+}</pre></div><p>In our <code class="literal">Update()</code> method, we keep <a id="id255" class="indexterm"></a>updating the average center and velocity of the flock. Those are the values referenced from our boid object, and they are used to adjust the cohesion and alignment properties with the controller.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_05_06.jpg" /><div class="caption"><p>Flock controller</p></div></div><p>Following is our <span class="strong"><strong>Target</strong></span> entity with the <code class="literal">TargetMovement</code> script, which we will create in a moment. The movement script is the <a id="id256" class="indexterm"></a>same as we have seen in our previous Unity3D sample controller's movement script:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_05_07.jpg" /><div class="caption"><p>Target entity with TargetMovement script</p></div></div><p>Here is how our <code class="literal">TargetMovement</code> <a id="id257" class="indexterm"></a>script works. We pick a random point nearby for the target to move to. When we get close to that point, pick a new point. The boids will then follow the target.</p><p>The code in the <code class="literal">TargetMovement.cs</code> file <a id="id258" class="indexterm"></a>can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class TargetMovement : MonoBehaviour {
+  //Move target around circle with tangential speed
+  public Vector3 bound;
+  public float speed = 100.0f;
+
+  private Vector3 initialPosition;
+  private Vector3 nextMovementPoint;
+
+  void Start () {
+    initialPosition = transform.position;
+    CalculateNextMovementPoint();
+  }
+  void CalculateNextMovementPoint () {
+    float posX = Random.Range(initialPosition.x = bound.x, 
+        initialPosition.x+bound.x);
+    float posY = Random.Range(initialPosition.y = bound.y, 
+        initialPosition.y+bound.y);
+    float posZ = Random.Range(initialPosition.z = bound.z, 
+        initialPosition.z+bound.z);
+
+    nextMovementPoint = initialPosition+ 
+        new Vector3(posX, posY, posZ);
+  }
+  void Update () {
+    transform.Translate(Vector3.forward * speed * Time.deltaTime);
+    transform.rotation = Quaternion.Slerp(transform.rotation, 
+        Quaternion.LookRotation(nextMovementPoint - 
+        transform.position), 1.0f * Time.deltaTime);
+
+    if (Vector3.Distance(nextMovementPoint, transform.position) 
+        &lt;= 10.0f) CalculateNextMovementPoint();
+  }
+}</pre></div><p>After we put everything together, we <a id="id259" class="indexterm"></a>should have nice flocking boids flying around in our scene chasing that target:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_05_02.jpg" /><div class="caption"><p>Flocking with Craig Reynold's algorithm</p></div></div></div></div>

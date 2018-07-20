@@ -1,0 +1,39 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec81"></a>Scripting the player character's respawning </h2></div></div><hr /></div><p>In the previous section, we modified the <code class="literal">CucumberManManager</code> script to track how many lives remain and to destroy the UI <span>image</span><a id="id288345148" class="indexterm"></a> elements as appropriate. In this section, we will modify that script to accomplish the following when a life is lost:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Play the die animation</li><li style="list-style-type: disc">Respawn the player on a respawn pad</li></ul></div><p>Let's start by modifying the <code class="literal">CucumberManManager</code> script:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Add the following class variables:</li></ol></div><pre class="programlisting">publicTransformSpawnPad1;
+publicTransformSpawnPad2;
+publicTransformSpawnPad3;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>In the <strong class="userinput"><code>Hierarchy</code></strong> panel, select the <code class="literal">CucumberMan</code> GameObject and, in the <strong class="userinput"><code>Inspector</code></strong> panel, scroll until you locate the <strong class="userinput"><code>Cucumber Man Manager (Script)</code></strong> component.</li><li>Drag <code class="literal">SpawnPad1</code>, <code class="literal">SpawnPad2</code>, and <code class="literal">SpawnPad3</code> from the <strong class="userinput"><code>Hierarchy</code></strong> view to the designated spots in the <strong class="userinput"><code>Inspector</code></strong> panel. See the following for details:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788830102/graphics/211154e8-773c-46c1-a719-9fbe5500a06f.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Modify the bottom section of the <code class="literal">Update()</code> method, as shown here:</li></ol></div><pre class="programlisting">if(livesRemaining==2){
+Destroy(GameObject.Find("Life3"));
+anim=GetComponent&amp;lt;Animator&gt;();
+anim.Play("CM_Die");
+
+StartCoroutine("ReSpawnCucumberMan");
+}
+
+if(livesRemaining==1){
+Destroy(GameObject.Find("Life2"));
+anim=GetComponent&amp;lt;Animator&gt;();
+anim.Play("CM_Die");
+
+StartCoroutine("ReSpawnCucumberMan");
+}
+
+if(livesRemaining==0){
+Destroy(GameObject.Find("Life1"));
+anim=GetComponent&amp;lt;Animator&gt;();
+anim.Play("CM_Die");
+}</pre><p>Reviewing the preceding code reveals that there are three conditions being checked based on the value of the <code class="literal">livesRemaining</code> variable. In each case, the appropriate UI image component is removed from the HUD, and we play the <code class="literal">CM_Die</code> animation. For the first two cases (<code class="literal">livesRemaining</code> equals two or one), we have a <code class="literal">StartCoroutine("RespawnCucumberMan");</code> method call. We will write that method next:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Write the <code class="literal">ReSpawnCucumberMan()</code> method. Enter the following code after the <code class="literal">OnTriggerEnter()</code> methods in the <code class="literal">CucumberManManager</code> class:</li></ol></div><pre class="programlisting">IEnumeratorReSpawnCucumberMan(){
+
+intrandomNumber=Random.Range(1,4);
+
+if(randomNumber==1){
+yieldreturnnewWaitForSecondsRealtime(4);
+this.transform.position=SpawnPad1.transform.position;
+}elseif(randomNumber==2){
+yieldreturnnewWaitForSecondsRealtime(4);
+this.transform.position=SpawnPad2.transform.position;
+}else{
+yieldreturnnewWaitForSecondsRealtime(4);
+this.transform.position=SpawnPad3.transform.position;
+}
+
+anim.Play("CM_Idle");
+}</pre><p>Our <code class="literal">ReSpawnCucumberMan()</code> method starts by obtaining a random number of <code class="literal">1</code>, <code class="literal">2</code>, or <code class="literal">3</code>. We then check to see which random number was generated, and branch appropriately. We have a four-second delay in order for the die animation to complete. We then respawn the Cucumber Man to the spawn pad corresponding with the randomly generated number. Lastly, we play the idle animation.</p></div>

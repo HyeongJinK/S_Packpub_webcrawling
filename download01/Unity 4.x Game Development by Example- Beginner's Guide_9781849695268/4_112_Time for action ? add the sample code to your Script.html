@@ -1,0 +1,39 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec117"></a>Time for action – add the sample code to your Script</h2></div></div><hr /></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the new code to your <a id="id338" class="indexterm"></a>existing game code. You'll need to shuffle a few lines around. Here is the code with the new stuff highlighted:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>   var smooth : float = 2.0;</strong></span>
+<span class="strong"><strong>   var tiltAngle : float = 30.0;</strong></span>
+   function Update ()
+   {
+     var halfW:float = Screen.width/2;
+     transform.position.x = (Input.mousePosition.x - halfW)/halfW;
+
+     var halfH:float = Screen.height/3;
+     transform.position.z = (Input.mousePosition.y - halfH)/halfH;
+      
+<span class="strong"><strong>  </strong></span>   <span class="strong"><strong>// Smoothly tilts a transform towards a target rotation.</strong></span>
+   <span class="strong"><strong>  var tiltAroundZ : float = Input.GetAxis("Horizontal") *</strong></span>   <span class="strong"><strong>tiltAngle;</strong></span>
+   <span class="strong"><strong>  var tiltAroundX : float = Input.GetAxis("Vertical") * tiltAngle;</strong></span>
+   <span class="strong"><strong>  var target : Quaternion = Quaternion.Euler (tiltAroundX, 0, </strong></span>   <span class="strong"><strong>    tiltAroundZ);</strong></span>
+   <span class="strong"><strong>  // Dampen towards the target rotation</strong></span>
+   <span class="strong"><strong>  transform.rotation = Quaternion.Slerp(transform.rotation, </strong></span>   <span class="strong"><strong>    target,Time.deltaTime * smooth);</strong></span>
+   }</pre></div></li></ol></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip12"></a>Tip</h3><p>
+<span class="strong"><strong>Nobody's perfect</strong></span>
+</p><p>In my version of the Script Reference, there's a typo. The last line ends with two semicolons instead of one. If your version has the same typo, just delete the extra semicolon.</p></div><p>Note that two variables, <code class="literal">smooth</code> and <code class="literal">tiltAngle</code>, are outside the <code class="literal">Update</code> function at the top of the Script. We'll discover why in a moment.</p><p>If you save the Script<a id="id339" class="indexterm"></a> and run the game now, the new rotation code won't work. We have to make a few adjustments. I've highlighted what you need to change in the following code:</p><div class="informalexample"><pre class="programlisting">var smooth : float = <span class="strong"><strong>5.0</strong></span>;
+var tiltAngle : float = <span class="strong"><strong>60.0</strong></span>;
+
+function Update ()
+{
+  var halfW:float = Screen.width/2;
+  transform.position.x = (Input.mousePosition.x - halfW)/halfW;
+
+  var halfH:float = Screen.height/3;
+  transform.position.z = (Input.mousePosition.y - halfH)/halfH;   
+   
+  // Smoothly tilts a transform towards a target rotation.
+  var tiltAroundZ : float = Input.GetAxis("<span class="strong"><strong>Mouse X</strong></span>") * tiltAngle;
+  var tiltAroundX : float = Input.GetAxis("<span class="strong"><strong>Mouse Y</strong></span>") * tiltAngle;
+  var target : Quaternion = Quaternion.Euler (tiltAroundX, 0, tiltAroundZ);
+  // Dampen towards the target rotation
+  transform.rotation = Quaternion.Slerp(transform.rotation, target,Time.deltaTime * smooth);
+}</pre></div><p>Here's what's new:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>We bumped up the smooth variable from <code class="literal">2.0</code> to <code class="literal">5.0</code> to make the motion more… well, quick.</p></li><li style="list-style-type: disc"><p>We asked Unity for <code class="literal">Mouse X</code> and <code class="literal">Mouse Y</code> instead of <code class="literal">Horizontal</code> and <code class="literal">Vertical</code>. <code class="literal">Horizontal</code> and <code class="literal">Vertical</code> are, by default, mapped to the arrow keys and the <span class="emphasis"><em>WASD</em></span> keys on your keyboard. <code class="literal">Mouse X</code> and <code class="literal">Mouse Y</code> will report mouse movement.</p></li></ul></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip13"></a>Tip</h3><p>
+<span class="strong"><strong>Available for comment</strong></span>
+</p><p>Notice the line in the code that says "Smoothly tilts a transform towards a target rotation," and the one a bit farther down that says "Dampen towards the target rotation." That sounds like plain English—not code at all. The double-slashes before these two lines make them comments. Comments are ignored by Unity when we run our game. Comments enable you to type whatever you want in your code as long as you've got those two slashes in front. Many programmers use comments to explain to other programmers (or to themselves, in the future) what a piece of code is supposed to do. While you learn Unity, you can use comments to take notes on the new code concepts that you're learning.</p></div><p>Save the Script and test your game. The paddle should tilt as you move your mouse around. It sort of works,<a id="id340" class="indexterm"></a> but the way it tilts around the Z-axis makes the paddle fire the ball into crazy town. Stop testing your game. We're close—very close.</p></div>

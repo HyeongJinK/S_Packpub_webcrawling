@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec37"></a>Death and particles</h2></div></div><hr /></div><p>In this <a id="id208" class="indexterm"></a>twin-stick shooter game, both the player and enemies are spaceships. When they're destroyed, they should explode in a fiery ball. This is really the only kind of effect that would be believable. To achieve explosions, we can use a particle system. This simply refers to a special kind of object that features two main parts, namely, a <span class="strong"><strong>Hose</strong></span> (or <span class="strong"><strong>Emitter</strong></span>) and <span class="strong"><strong>Particles</strong></span>. The emitter refers to the part that spawns or generates new particles into the world and the particles are many small <a id="id209" class="indexterm"></a>objects or pieces that, once spawned, move and travel along their own trajectories. In short, particle systems are ideal to create rain, snow, fog, sparkles, and explosions. We can create our own Particle Systems from scratch using the menu option, <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Particle System</strong></span>, or we can use any premade particle system included with Unity. Let's use some of the premade particle systems. To do this, import the <code class="literal">ParticleSystems</code> package to the project by navigating to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>ParticleSystems</strong></span> from the application menu. See <span class="emphasis"><em>Figure 3.27</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_27.png.jpg" /><div class="caption"><p>Figure 3.27: Importing Particle Systems to the project</p></div></div><p>After the <span class="strong"><strong>Import</strong></span> dialog appears, leave all settings at their defaults, and simply click on <span class="strong"><strong>Import</strong></span> to import the complete package, including all particle systems. The <code class="literal">ParticleSystems</code> will be added to the <span class="strong"><strong>Project</strong></span> panel in the <code class="literal">Standard Assets</code> | <code class="literal">ParticleSystems</code> | <code class="literal">Prefabs</code> folder. See <span class="emphasis"><em>Figure 3.28</em></span>. You can test each of the particle systems by <a id="id210" class="indexterm"></a>simply dragging and dropping each prefab to the scene. Note that you can only preview a particle system in the <span class="strong"><strong>Scene</strong></span> viewport while it is selected.</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_28.png.jpg" /><div class="caption"><p>Figure 3.28: Particle Systems imported to the Project panel</p></div></div><p>Notice from <span class="emphasis"><em>Figure 3.28</em></span> that an <span class="strong"><strong>Explosion</strong></span> system is included among the default assets, which is great news! To test, we can just drag and drop the explosion to the scene, press play on the toolbar, and see the explosion in action. Good! We're almost done, but there's still a bit more work. We've now seen that an appropriate particle system is available and we could just drag and drop this system to the <span class="strong"><strong>Death Particles Prefab</strong></span> slot in the <span class="strong"><strong>Health</strong></span> component in the <span class="strong"><strong>Inspector</strong></span>. This will work technically: when a player or enemy dies, the explosion system will be spawned, creating an explosion effect. However, the particle system will never be destroyed! This is problematic because, on each enemy death, a new particle system will be spawned. This raises the possibility that, after many deaths, the scene will be full of disused particle systems. We don't want this; it's bad for performance and memory usage to have a scene full of unused objects lingering around. To fix this, we'll modify the explosion system slightly, creating a new and modified prefab that'll suit our needs. To <a id="id211" class="indexterm"></a>create this, drag and drop the existing explosion system anywhere to the scene and position it at the world origin. See <span class="emphasis"><em>Figure 3.29</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_29.png.jpg" /><div class="caption"><p>Figure 3.29: Adding an Explosion system to the scene for modification</p></div></div><p>Next, we must refine the particle system to destroy itself soon after instantiation. By making a prefab from this arrangement, each and every generated explosion will eventually destroy itself. To make an object destroy itself after a specified interval, we'll create a new C# script. I'll name this script <code class="literal">TimeDestroy.cs</code>. Refer the following code in <span class="emphasis"><em>Code Sample 3.4</em></span>:</p><div class="informalexample"><pre class="programlisting">//------------------------------
+using UnityEngine;
+using System.Collections;
+//------------------------------
+public class TimedDestroy : MonoBehaviour 
+{
+  public float DestroyTime = 2f;
+
+  //------------------------------
+  // Use this for initialization
+  void Start ()
+  {
+    Invoke("Die", DestroyTime);
+  }
+  
+  
+  void Die () 
+  {
+    Destroy(gameObject);
+  }
+  //------------------------------
+}
+//------------------------------</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec14"></a>Code Sample 3.4</h3></div></div></div><p>The following points summarize the code sample:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <a id="id212" class="indexterm"></a>
+<code class="literal">TimeDestroy</code> class simply destroys the object to which it's attached after a specified interval (<code class="literal">DestroyTime</code>) has elapsed.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Invoke</code> function is called in the <code class="literal">Start</code> event. Invoke will execute a function of the specified name once, and only once, after a specified interval has elapsed. The interval is measured in seconds.</p></li><li style="list-style-type: disc"><p>Like <code class="literal">SendMessage</code>, the <code class="literal">Invoke</code> function relies on <code class="literal">Reflection</code>. For this reason, it should be used sparingly for best performance.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Die</code> function will be executed by <code class="literal">Invoke</code> after a specified interval to destroy the <code class="literal">gameobject</code> (such as a particle system).</p></li></ul></div><p>Now, drag and drop the <code class="literal">TimedDestroy</code> script file to the explosion particle system in the scene and then press play on the toolbar to test that the code works and the object is destroyed after the specified interval, which can be adjusted from the <span class="strong"><strong>Inspector</strong></span>. See <span class="emphasis"><em>Figure 3.30</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_30.png.jpg" /><div class="caption"><p>Figure 3.30: Adding a TimeDestroy script to an explosion Particle System</p></div></div><p>The <code class="literal">TimeDestroy</code> script should remove the explosion particle system after the delay expires. So let's <a id="id213" class="indexterm"></a>create a new and separate prefab from this modified version. To do this, rename the explosion system in the <span class="strong"><strong>Hierarchy</strong></span> panel to <code class="literal">ExplosionDestroy</code>, and then drag and drop the system from the <span class="strong"><strong>Hierarchy</strong></span> to the <span class="strong"><strong>Project</strong></span> panel in the <code class="literal">Prefabs</code> folder. Unity automatically creates a new prefab, representing the modified particle system. See <span class="emphasis"><em>Figure 3.31</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_31.png.jpg" /><div class="caption"><p>Figure 3.31: Create a timed explosion prefab</p></div></div><p>Now, drag and drop the newly created prefab from the <span class="strong"><strong>Project</strong></span> panel to the <span class="strong"><strong>Death Particle System</strong></span> slot on the <span class="strong"><strong>Health</strong></span> component for the <span class="strong"><strong>Player</strong></span> in the <span class="strong"><strong>Object Inspector</strong></span>. This ensures <a id="id214" class="indexterm"></a>that the prefab is instantiated when the player dies. See <span class="emphasis"><em>Figure 3.32</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_32.png.jpg" /><div class="caption"><p>Figure 3.32: Configuring the health script</p></div></div><p>If you run the game now, you'll see that you cannot initiate a player death event to test the particle system generation. Nothing exists in the scene to destroy or damage the player, and you cannot manually set the <span class="strong"><strong>Health</strong></span> points to <code class="literal">0</code> from the <span class="strong"><strong>Inspector</strong></span> in a way that is detected by the C# property <code class="literal">set</code> function. For now, however, we can insert some test death functionality into the <code class="literal">Health</code> script that triggers an instant kill when the spacebar is pressed. Refer to <span class="emphasis"><em>Code Sample 3.5</em></span> for the modified <code class="literal">Health</code> script:</p><div class="informalexample"><pre class="programlisting">//------------------------------
+using UnityEngine;
+using System.Collections;
+//------------------------------
+public class Health : MonoBehaviour
+{
+  public GameObject DeathParticlesPrefab = null;
+  private Transform ThisTransform = null;
+  public bool ShouldDestroyOnDeath = true;
+  //------------------------------
+  void Start()
+  {
+    ThisTransform = GetComponent&lt;Transform&gt;();
+  }
+  //------------------------------
+  public float HealthPoints
+  {
+    get
+    {
+      return _HealthPoints;
+    }
+
+    set
+    {
+      _HealthPoints = value;
+
+      if(_HealthPoints &lt;= 0)
+      {
+        SendMessage("Die", SendMessageOptions.DontRequireReceiver);
+
+        if(DeathParticlesPrefab != null)
+          Instantiate(DeathParticlesPrefab, ThisTransform.position, ThisTransform.rotation);
+
+        if(ShouldDestroyOnDeath)Destroy(gameObject);
+      }
+    }
+  }
+  //------------------------------
+  <span class="strong"><strong>void Update()</strong></span>
+  <span class="strong"><strong>{</strong></span>
+    <span class="strong"><strong>if(Input.GetKeyDown(KeyCode.Space))</strong></span>
+      <span class="strong"><strong>HealthPoints = 0;</strong></span>
+  <span class="strong"><strong>}</strong></span>
+  //------------------------------
+  [SerializeField]
+  private float _HealthPoints = 100f;
+}
+//------------------------------</pre></div><p>On running the game now, with the modified <code class="literal">Health</code> script, you can trigger an instant player death by <a id="id215" class="indexterm"></a>pressing the spacebar key on the keyboard. When you do this, the player object is destroyed and the particle system is generated until the timer destroys that too. Excellent work! We now have a playable, controllable player character that supports health and death functionality. Things are looking good. See <span class="emphasis"><em>Figure 3.33</em></span>:</p><div class="mediaobject"><img src="/graphics/9781785888380/graphics/B05118_03_33.png.jpg" /><div class="caption"><p>Figure 3.33: Trigger the Explosion particle system</p></div></div></div></div>

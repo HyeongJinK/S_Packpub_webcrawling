@@ -1,0 +1,32 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec61"></a>The unavailable button</h2></div></div><hr /></div><p>We need to correct the following issue: right now, all four elemental buttons are always enabled, which means a power source of fire can be re-switched to the same fire element. This makes no sense.</p><p>If the power source element is fire, then the fire elemental button should be visible, but non-interactive. We could <a id="id746" class="indexterm"></a>simply disable the GameObject itself, but then the button would be invisible. We want it to be grayed out and transparent so that the player knows he/she cannot interact with it right now but still has knowledge of its existence.</p><p>This is what we need it to look like:</p><div class="mediaobject"><img src="/graphics/9781783552979/graphics/2979OT_06_06.jpg" /></div><p>Let's see how we can achieve this through code.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec120"></a>The EnableAllButtons() method</h3></div></div></div><p>First, we need to add a method to our <code class="literal">GameManager</code> component, which will enable all buttons. Afterwards, we'll <a id="id747" class="indexterm"></a>disable the power source's <a id="id748" class="indexterm"></a>current element button. Open our <code class="literal">GameManger.cs</code> script, and add this new <code class="literal">EnableAllButtons()</code> method:</p><div class="informalexample"><pre class="programlisting">// Enable all elemental buttons
+<span class="strong"><strong>public void EnableAllButtons()</strong></span>
+{
+  // For each elemental button
+<span class="strong"><strong>  foreach(UIButton currentButton in allButtons)</strong></span>
+  {
+    // Mark it as enabled
+<span class="strong"><strong>    currentButton.isEnabled = true;</strong></span>
+    // Update its color
+<span class="strong"><strong>    currentButton.UpdateColor(true);</strong></span>
+  }
+}</pre></div><p>The preceding helper method activates all elemental switch buttons.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec121"></a>The SetButtonState() method</h3></div></div></div><p>Now, let's add a <code class="literal">SetButtonState()</code> method in our <code class="literal">GameManager.cs</code> script that will enable or disable <a id="id749" class="indexterm"></a>elemental UI switch buttons <a id="id750" class="indexterm"></a>accordingly. Open <code class="literal">GameManager.cs</code>, and add the following code for the new <code class="literal">SetButtonState()</code> method:</p><div class="informalexample"><pre class="programlisting">// Used to enable / disable elemental buttons
+<span class="strong"><strong>public void SetButtonState(Elements.Type type, bool state)</strong></span>
+{
+  // For each button in allButtons[]
+<span class="strong"><strong>  foreach (UIButton currentButton in allButtons)</strong></span>
+  {
+    // If currentButton is the one to enable/disable
+<span class="strong"><strong>    if (currentButton.name == type.ToString())</strong></span>
+    {
+      // Change its isEnabled state
+<span class="strong"><strong>      currentButton.isEnabled = state;</strong></span>
+      // Update its color now
+<span class="strong"><strong>      currentButton.UpdateColor(true);</strong></span>
+      return;
+    }
+  }
+}</pre></div><p>The preceding method can be used to disable the power source's element button. The <code class="literal">UpdateColor()</code> method updates<a id="id751" class="indexterm"></a> the button's color with the gray, transparent <code class="literal">Disabled</code> color we configured earlier for all our elemental buttons.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec122"></a>Changing button states</h3></div></div></div><p>Let's implement the buttons' state change. Open our <code class="literal">PowerSource.cs</code> script and add these two new lines<a id="id752" class="indexterm"></a> within the <code class="literal">OnPress()</code> method, just<a id="id753" class="indexterm"></a> above the <code class="literal">GameManager.Instance.ShowElementalSwitch(transform);</code> instruction:</p><div class="informalexample"><pre class="programlisting">// Re-enable all buttons
+<span class="strong"><strong>GameManager.Instance.EnableAllButtons();</strong></span>
+// Disable this power source's element button
+<span class="strong"><strong>GameManager.Instance.SetButtonState(type, false);</strong></span>
+</pre></div><p>And that's it! You can now notice that the current element's switch button is disabled, transparent, and grayed out, because that's how we configured our <code class="literal">Disabled</code> color when we created our elemental switch UI.</p><p>When you switch<a id="id754" class="indexterm"></a> the power source to a new element, the elemental switch UI buttons are updated accordingly.</p></div></div>

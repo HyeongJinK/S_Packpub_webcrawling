@@ -1,0 +1,13 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec95"></a>The foreach keyword</h2></div></div><hr /></div><p>C# iterators <a id="id1349" class="indexterm"></a>use <code class="literal">foreach</code> instead of <code class="literal">for</code>. Also notice the variable declaration within the <code class="literal">for/foreach</code> statement in the following code. C# requires the type of the item contained in the list to be explicitly declared:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+for (var item in itemList) {
+  item.DoSomething();
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+foreach (ItemType item in itemList) {
+  item.DoSomething();
+}</pre></div></div>

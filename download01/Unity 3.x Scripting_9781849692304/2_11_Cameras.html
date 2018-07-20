@@ -1,0 +1,169 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec16"></a>Cameras</h2></div></div><hr /></div><a id="id200" class="indexterm"></a><p>They are important! It does not matter what discipline an individual is in. A camera and its uses are crucial to the development of the game and/or positions that the players will find themselves in. We will build a generic camera script that we will be able to configure for various positions.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec18"></a>Camera scripting</h3></div></div></div><a id="id201" class="indexterm"></a><p>The camera script is quite heavy when it comes to scripting. So, we are going to first script functionality for the fps camera, which will form the basic structure for the other types of cameras.</p><p>It will come down to the following steps:<a id="id202" class="indexterm"></a></p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the camera script.</p></li><li><p>Write the camera switching functions.</p></li><li><p>Write the camera movement functionality.</p></li><li><p>Influence character movement through camera positioning.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_02_09.jpg" /></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec13"></a>Creating camera script</h4></div></div></div><a id="id203" class="indexterm"></a><p>First, we will create a JavaScript named <code class="literal">CameraScr</code>. In that, we will have the functionalities for the reader to be able to manipulate various properties for the camera setup, such as the height that the camera will sit at and the distance from which the camera will be located from the target. In the script:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>We will set up some simple variables</p></li><li style="list-style-type: disc"><p>There will be a variable for the object to be tracked, another for distance, for height offset, side offset, smooth follow, and the current camera type</p></li></ul></div><p>In the case of the object to be tracked, this will be the <code class="literal">GameObject</code> character. Make sure to set its type as <code class="literal">Transform</code> and make the variable <code class="literal">public</code>. We will use a list of variables of specified types to store multiple values of a specific type in a single variable. Be sure to use the square brackets after the following variable types and make them <code class="literal">public</code>, as we will be adding values to them in the <span class="strong"><strong>Inspector</strong></span> menu:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The second variable is the current camera state and will be of the type <code class="literal">int</code> and defaulted to <code class="literal">0</code>. It is okay if it is <code class="literal">private</code>.</p></li><li style="list-style-type: disc"><p>The third variable is for the distance, which we define as the camera distance and have its type defined as <code class="literal">float</code>.</p></li><li style="list-style-type: disc"><p>The fourth variable is for height and its type is again <code class="literal">float</code>. This variable will handle the height offset for the camera.</p><p>The following is an example of what these variables may look like:</p><div class="informalexample"><pre class="programlisting">public var charObj : Transform;
+public var camNum: int = 0;
+public var camDistance: float[];
+public var heightOffset : float[];</pre></div></li></ul></div><p>At this point, we only care about the values that are in position <code class="literal">0</code> of the array variables.<a id="id204" class="indexterm"></a></p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec14"></a>Creating an enumeration list</h4></div></div></div><a id="id205" class="indexterm"></a><a id="id206" class="indexterm"></a><p>Next, we will set up an enumeration that will deal with switching the values for the different camera types. An <span class="strong"><strong>enumeration</strong></span> is a variable that can hold integer values in any form. The user just needs to keep in mind that whatever is put into an <code class="literal">enum</code>, enumeration for short, will be converted into an integer. The first value in an <code class="literal">enum</code> is considered in the first spot, the second in the second spot, and so on. Create an <code class="literal">enum</code> and call it <code class="literal">CamType</code>.</p><p>Remember that <code class="literal">enum</code> is like a class or list of variables (names in this case) and must use curly braces to begin and end its statement. Inside <code class="literal">enum</code>, create the camera types (<code class="literal">FP</code>, <code class="literal">SP</code>, <code class="literal">TP</code>). The camera types <code class="literal">FP</code>, <code class="literal">SP</code>, and <code class="literal">TP</code>, will have the variable integer values of 0, 1, and 2.</p><p>In order not to get an error at this point, you will have to create a variable, of type <code class="literal">enum</code>. Call it <code class="literal">CamType</code>. This variable allows the reader to change the <code class="literal">enum</code> type at will in the <span class="strong"><strong>Inspector</strong></span> menu. The variable may be <code class="literal">private</code> but remember, if you wish to change the type in <span class="strong"><strong>Inspector</strong></span>, it must be <code class="literal">public</code>. The variable and <code class="literal">enum</code> should resemble the following code snippet:</p><div class="informalexample"><pre class="programlisting">private var cameraType : CamType;
+enum CamType {  FP, SP, TP }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec15"></a>Writing functions</h4></div></div></div><a id="id207" class="indexterm"></a><a id="id208" class="indexterm"></a><p>For now, we have taken care of variables, and we have to begin to write the functions.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch02lvl4sec04"></a>The Initialize function</h5></div></div></div><a id="id209" class="indexterm"></a><a id="id210" class="indexterm"></a><a id="id211" class="indexterm"></a><p>We will start with giving values to our variables. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Right off the bat, we will need to write an <code class="literal">Initialize</code> function.</p></li><li><p>In this function, we want to change the camera type to the default camera type, which we want the character to start off with. In this case, it is camera 1. This is based upon the camera's value in <code class="literal">enum</code>.</p></li><li><p>After that, we will need to change the camera <code class="literal">enum</code> type to the first-person camera.</p></li><li><p>Set <code class="literal">charObj</code> with received <code class="literal">Player</code> value.</p></li></ol></div><p>Right now, the <code class="literal">Initialize</code> function will look similar to the following code snippet:</p><div class="informalexample"><pre class="programlisting">function Initialize(Player : Transform){
+    camNum = 1;
+    cameraType = CamType.FP;
+charObj = Player;
+}</pre></div><a id="id212" class="indexterm"></a><a id="id213" class="indexterm"></a><a id="id214" class="indexterm"></a><p>So, we have that function taken care of for the time being; next, we want another function to handle the switching of the camera.</p><p>In order to work, the <code class="literal">Initialize</code> function needs to be called. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open the <span class="strong"><strong>CH_Controller</strong></span> script.</p></li><li><p>Create a <code class="literal">public</code> variable <code class="literal">CPrefab</code> of a type <code class="literal">GameObject</code>.</p></li><li><p>Inside the <code class="literal">Start</code> function, check if this object exists.</p></li><li><p>If it does, set the <code class="literal">charObj</code> value to <code class="literal">transform</code>. Call the <code class="literal">Initialize</code> function with transform information about the character.</p></li><li><p>If it doesn't, try to find an object with a <code class="literal">MainCamera</code> tag, call the <code class="literal">Initialize</code> function and set the <code class="literal">charObj</code> value to <code class="literal">transform</code>.</p></li></ol></div><p>This function needs to be called from <code class="literal">CH_Controller</code> just in case we forgot to set the camera. In the <code class="literal">CH_Controller</code> script<a id="id215" class="indexterm"></a>, write the following code snippet:</p><div class="informalexample"><pre class="programlisting">public var CPrefab : GameObject;
+function Start(){
+...
+if (CPrefab == null){
+CPrefab = GameObject.FindGameObjectWithTag("MainCamera");CPrefab.GetComponent("CameraScr").charObj = transform;CPrefab.GetComponent("CameraScr").Initialize(transform);}
+else{CPrefab.GetComponent("CameraScr").charObj = transform;CPrefab.GetComponent("CameraScr").Initialize(transform);} 
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch02lvl4sec05"></a>Changing camera function</h5></div></div></div><a id="id216" class="indexterm"></a><a id="id217" class="indexterm"></a><a id="id218" class="indexterm"></a><p>The changing camera function will be called <code class="literal">ChangeCamType</code>. As its name implies, this function will change the camera from one type to another.</p><p>In this function, we need to check a couple of things, such as identify the current camera type and then change the camera to the next type. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, create the <code class="literal">ChangeCamType</code> function.</p></li><li><p>Check for the camera number, inside of which we want to use the same camera switching line that we used in the <code class="literal">Initialize</code> function. After that line, we want to state that the camera number is now equal to the next camera type. This function should look similar to the following code snippet:</p><div class="informalexample"><pre class="programlisting">function ChangeCamType(){
+            If(camNum == 1){
+        cameraType = camType.SP;
+        camNum = 2;
+}
+}</pre></div></li></ol></div><a id="id219" class="indexterm"></a><a id="id220" class="indexterm"></a><a id="id221" class="indexterm"></a><p>Now that we have the camera switching, we need to assign the list variable values to our equation variables. To do this, we will use a <code class="literal">switch</code> <code class="literal">case</code> statement to change the equation variables based upon the current camera type.</p><p>A <code class="literal">switch</code> statement is pretty much an <code class="literal">if</code> statement except that you can switch variable values without having to reassign them. This type of statement works great for <span class="strong"><strong>Artificial Intelligence</strong></span> (<span class="strong"><strong>AI</strong></span>) behaviors and will be used later on in the book for just that purpose.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch02lvl4sec06"></a>Changing the camera values function</h5></div></div></div><a id="id222" class="indexterm"></a><a id="id223" class="indexterm"></a><p>The changing camera values function will be called <code class="literal">SetCamValues</code>. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>The first thing is to call the <code class="literal">ChangeCamType</code> function.</p></li><li><p>For the <code class="literal">switch</code> statement, the first thing that we have to check is that camera type is <code class="literal">true</code>. After that, we can use a <code class="literal">case</code> statement to switch variables based upon the current camera type. The first <code class="literal">case</code> statement will check for when the current camera is first person.</p></li></ol></div><p>Now, we will create the equation variables. These variables will be used to hold the values from the selected array variables and in the final equations that will determine the final setup of the camera. This is done so that there can be one block of code for all of the camera types instead of a block of code for each of the camera types. Each of these variables will have the same type, minus the square brackets, of the values which they will be taking on but can be made <code class="literal">private</code> if preferred.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>The variables to be created are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">camDist</code>: This variable will deal with camera distance list variable</p></li><li style="list-style-type: disc"><p><code class="literal">hOffset</code>: This variable will deal with height offset list variable</p></li></ul></div></li><li><p>Inside the <code class="literal">case</code> statement, after the reader has matched all of the equation variables with the list variables, we need to make sure that the right list number has been assigned to the variable. For camera number 1, FP, the number is one but with lists, as in most scripting or programming languages, they start at 0. So, make sure that the list variables that the equation variables are equaling, have 0 in the brackets for FP, 1 for SP, and 2 for TP.</p></li><li><p>At the end of the <code class="literal">case</code> statement, we then want to put a <code class="literal">break</code> line in. This <code class="literal">break</code> line prevents the code from moving on to the next <code class="literal">case</code> statement.</p></li></ol></div><p>In the <code class="literal">Initialize</code> function, at the end of it, we want to add this function in <a id="id224" class="indexterm"></a><a id="id225" class="indexterm"></a>there as well. The following is an example of the code:</p><div class="informalexample"><pre class="programlisting">function SetCamValues(){
+ChangeCamValues();
+switch(cameraType ){
+case CamType.FP :
+            camDist = camDistance[0];
+            hOffset = heightOffset[0];
+            break;
+}
+}
+function Initialize(Player : Transform){
+...
+SetCameraValues();
+}</pre></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec16"></a>Writing camera switching controls</h4></div></div></div><a id="id226" class="indexterm"></a><a id="id227" class="indexterm"></a><p>Now that the primary functionality is done, we need to write one more script that will deal with the player's input to toggle between camera types. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create another JavaScript called <code class="literal">Player_Input</code>. Hook it up to camera.</p></li><li><p>In this script, we will need an <code class="literal">Update</code> function to always be checking for player's pressing of the toggle camera button, in this case <span class="emphasis"><em>T</em></span>.</p></li><li><p>Create an <code class="literal">Update</code> function and put an <code class="literal">if</code> statement inside. This statement will check for the pressed status of <span class="emphasis"><em>T</em></span> using Unity's built-in function—<code class="literal">Input.GetKeyDown(KeyCode.T)</code>.</p></li><li><p>Inside the <code class="literal">if</code> statement, we will call the <code class="literal">SetCameraValues</code> function in <code class="literal">CameraScr</code>.</p><p>The script should resemble the following code snippet:</p><div class="informalexample"><pre class="programlisting">function Update(){
+    If(Input.GetKeyDown(KeyCode.T){
+    this.gameObject.GetComponent(CameraScr).SetCameraValues();
+}
+}</pre></div></li></ol></div><a id="id228" class="indexterm"></a><a id="id229" class="indexterm"></a><p>Make sure to hook up the <code class="literal">cameraObj</code> as your target camera.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec17"></a>Character movement and camera positioning</h4></div></div></div><a id="id230" class="indexterm"></a><a id="id231" class="indexterm"></a><a id="id232" class="indexterm"></a><a id="id233" class="indexterm"></a><p>Now for secondary functionality of the camera, orbiting and character movement based upon camera positioning and the coding for the two other cameras. Third-person view camera is demonstrated in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_02_10.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec18"></a>Updating camera type changing</h4></div></div></div><a id="id234" class="indexterm"></a><a id="id235" class="indexterm"></a><p>First we will tackle the two other cameras as they are the easier of the two functionalities to implement. Let's venture back to the <code class="literal">ChangeCamType</code> function<a id="id236" class="indexterm"></a>. In here, we only had a <code class="literal">change</code> statement for one camera. Now we need to add the other two in. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We just need to copy and paste the existing <code class="literal">if</code> statement two times.</p></li><li><p>Change the <code class="literal">if</code> statements to the <code class="literal">else</code> <code class="literal">if</code> statements. The camera numbers should be from 1 to 2 for the middle statement and 1 to 3 for the lower statement.</p></li><li><p>The <code class="literal">CampType</code> value for the middle statement should be changed from <code class="literal">SP</code> to <code class="literal">TP</code> as well and for the lower statement, <code class="literal">SP</code> to <code class="literal">FP</code>.</p></li><li><p>Lastly, the camera numbers found within the <code class="literal">if</code> statement blocks should be changed to <code class="literal">3</code> for the middle one and <code class="literal">1</code> for the lower one.</p><p>These statements allow the camera to change its <code class="literal">enum</code> type whenever the <span class="emphasis"><em>T</em></span> button <a id="id237" class="indexterm"></a><a id="id238" class="indexterm"></a>is pressed. This function should now look like the following code snippet:</p><div class="informalexample"><pre class="programlisting">function ChangeCamType(){
+if (camNum == 1){
+        cameraType = camType.SP;
+        camNum = 2;
+}
+if (camNum == 2){
+        cameraType = camType.TP;
+        camNum = 3;
+}
+if (camNum == 3){
+        cameraType = camType.FP;
+        camNum = 1;
+}
+}</pre></div></li><li><p>Next, we will add in the <code class="literal">SetCameraValues</code> function to the <code class="literal">switch</code> <code class="literal">case</code> statement. All we have to do again is copy the <code class="literal">case</code> statement and change some values in the copies.</p></li><li><p>After copying and pasting the current <code class="literal">case</code> statement twice below the current one, we need to change <code class="literal">CamType</code> for the middle one to <code class="literal">SP</code> and the lower one to <code class="literal">TP</code>.</p></li><li><p>The bracket values need to change as well. For the middle statement, all bracket numbers need to be <code class="literal">1</code> and for the lower statement, all bracket numbers need to be <code class="literal">2</code>:</p><div class="informalexample"><pre class="programlisting">function SetCamValue(){
+ChangeCamValues();
+switch(cameraType ){
+case CamType.FP :
+            camDist = camDistance[0];
+            hOffset = heightOffset[0];
+            break;
+case CamType.SP :
+            camDist = camDistance[1];
+            hOffset = heightOffset[1];
+            break;
+case CamType.TP :
+            camDist = camDistance[2];
+            hOffset = heightOffset[2];
+            break;
+}
+}<a id="id239" class="indexterm"></a><a id="id240" class="indexterm"></a>
+</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec19"></a>Influencing camera with a mouse</h4></div></div></div><a id="id241" class="indexterm"></a><p>The last two things to write now for the camera are mouse input for camera control and the <code class="literal">ClampAngle</code> function<a id="id242" class="indexterm"></a>. First, we will add the mouse control to the <code class="literal">Apply</code> function<a id="id243" class="indexterm"></a>. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>At the bottom of the <code class="literal">Apply</code> function, we want to get the mouse X positioning and add it to the <code class="literal">x</code> angle of the camera and grab the mouse Y positioning and subtract it from the <code class="literal">y</code> angle of the camera.</p></li><li><p>As we want to limit the angle by which the camera can move on the Y axis, we will call the <code class="literal">ClampAngle</code> function<a id="id244" class="indexterm"></a>.</p></li><li><p>As we wish to follow the rotation of the player, which is the Y axis, we grab the player's angle by using Unity's built-in euler angles functionality.</p></li><li><p>Then, we grab the camera's euler angle on Y.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note06"></a>Note</h3><p><code class="literal">eulerAngles</code>
+<a id="id245" class="indexterm"></a> is a representation of a rotation around a specific axis. <code class="literal">eulerAngles.x</code> is, therefore, a rotation around the X axis and the same goes for the Y and Z axes.</p></div></li><li><p>After this, we want to create a variable for rotation and position.</p></li><li><p>The rotation variable will be equal to Quaternion Euler angles using the <code class="literal">x</code> value of the mouse, and the <code class="literal">y</code> value of the mouse.</p></li><li><p>Starting position of the character should be recorded when camera initializes.</p></li><li><p>For the positioning variable, we will take the rotation and multiply it by the camera distance and add the target object's position.</p></li><li><p>Lastly, we will have the camera's rotation equal to the variable rotation and the camera's position equal to the variable position.</p></li></ol></div><a id="id246" class="indexterm"></a><p>The following code will go into the <code class="literal">Initialize</code> function and variable section of the script:</p><div class="informalexample"><pre class="programlisting">private var x : float = 0.0;
+private var y : float = 0.0;
+private var startRotation : int;
+function Initialize(Player : Transform){
+ camNum = 1;
+ cameraType = CamType.FP;
+ startRotation = charObj.transform.eulerAngles.y;
+   x = transform.eulerAngles.y;
+   y = transform.eulerAngles.x;
+ charObj = Player;
+ SetCameraValues();
+}</pre></div><p>The following code shows what should have been added to the bottom of the <code class="literal">Apply</code> function:</p><div class="informalexample"><pre class="programlisting">x += Input.GetAxis("Mouse X") * mouseSpeed[0] * Time.deltaTime;
+y -= Input.GetAxis("Mouse Y") * mouseSpeed[1]  * Time.deltaTime;
+y = ClampAngle(y, yLimit[0], yLimit[1]);
+var targPos = Quaternion.Euler(y, x + startRotation, 0);
+var position = rotation * Vector3(0.0, 0.0, camDist) + charObj.position;
+
+transform.rotation = rotation;
+transform.position = targPos;</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec20"></a>Clamping angles</h4></div></div></div><a id="id247" class="indexterm"></a><a id="id248" class="indexterm"></a><p>The last function to write for this script is the <code class="literal">ClampAngle</code> function. It has the following characteristics:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">ClampAngle</code> function is going to be taking three parameters.</p></li><li style="list-style-type: disc"><p>Those parameters are <code class="literal">angle</code>, <code class="literal">min</code>, and <code class="literal">max</code>.</p></li><li style="list-style-type: disc"><p>There will be two <code class="literal">if</code> statements in the function and then a <code class="literal">return</code> function.</p></li><li style="list-style-type: disc"><p>The parameters that are coming in are the angle, which we want to check and see if it is smaller or greater than 360 degrees. If greater, we subtract 360 so that the angle becomes within the acceptable range. If lower, we add 360 degrees. We return the result back to the function so that it makes sure that the angle never goes out of range.</p></li></ul></div><p>The following is an example of the code:</p><div class="informalexample"><pre class="programlisting">function ClampAngle(angle:float, min:float, max:float){
+    If(angle &lt; -360)
+        Angle += 360;
+    If(angle &gt; 360){
+    Angle -=360;
+}
+return Mathf.Clamp(angle, min, max);
+}</pre></div><p>Now that everything is compiled, we need to go back to <span class="strong"><strong>Inspector</strong></span> and add in the values for the list variables and the target object. These variables can be set to your own <a id="id249" class="indexterm"></a><a id="id250" class="indexterm"></a>discretion but the following is a screenshot of our values:</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_02_11.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec21"></a>Camera's late update</h4></div></div></div><a id="id251" class="indexterm"></a><a id="id252" class="indexterm"></a><p>There is one more function to write for this stage of the camera and that is the <code class="literal">LateUpdate</code> function.</p><p>This function is used because during the <code class="literal">Update</code> function, the target object of the script might have moved beyond an area where the camera can see, that is, inside of a building. This function will handle the calling of the remaining functions. Perform the following steps: <a id="id253" class="indexterm"></a><a id="id254" class="indexterm"></a></p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the function and inside of it, do a simple check to make sure that a target exists (<code class="literal">charObj</code>).</p></li><li><p>Inside of this check, we want to call the <code class="literal">Apply</code> function.</p><p>The following code snippet shows what it should look like:</p><div class="informalexample"><pre class="programlisting">function LateUpdate(){
+    If(charObj)
+    Apply();
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec22"></a>Rotating character with a camera</h4></div></div></div><a id="id255" class="indexterm"></a><a id="id256" class="indexterm"></a><p>One more function before we are done. In the <code class="literal">Character Controller</code> script,<a id="id257" class="indexterm"></a> inside of the <code class="literal">FixedUpdate</code> function, right before the calling of the <code class="literal">Movement</code> function<a id="id258" class="indexterm"></a>, we will add the following line of code:</p><div class="informalexample"><pre class="programlisting">transform.Rotate(Vector3(0, Input.GetAxis("Mouse X"), 0) * Time.deltaTime * 250.0);</pre></div><p>This line allows the character to rotate with the rotation of the camera. We grab the mouse <code class="literal">x</code> and rotate the character by it and we dampen it by the delta time to make sure that it becomes smooth gradually. The following code snippet, which shows the complete <code class="literal">CamerScr</code> script is the final code:</p><div class="informalexample"><pre class="programlisting">public var charObj: Transform; 
+public var camDistance: float[];
+public var heightOffset: float[];
+public var mouseSpeed : float[];
+public var yAngleLimit : float[];
+private var camNum : float = 0;
+private var cameraType : CamType;
+private var camDist : float;
+private var hOffset : float;
+private var x = 0.0;
+private var y = 0.0;
+enum CamType{FP,SP,TP}
+function Initialize(Player : Transform){
+    camNum = 1;
+    cameraType = CamType.FP;
+startRotation = charObj.transform.eulerAngles.y;
+    x = transform.eulerAngles.y;
+    y = transform.eulerAngles.x;
+charObj = Player;
+    SetCameraValues();
+}
+function ChangeCamType(){
+        if(camNum == 1 ){
+            cameraType = CamType.SP;
+            camNum = 2;
+        }
+    else if( camNum == 2 ){
+            cameraType = CamType.TP;
+            camNum = 3;
+        }    
+    else if( camNum == 3 ){
+            cameraType = CamType.FP;
+            camNum = 1;
+        }
+}
+function SetCameraValues(){    
+    ChangeCamType();
+    switch(cameraType ){
+        caseCamType.FP :
+            camDist = camDistance[0];
+            hOffset = heightOffset[0];
+            break;
+        caseCamType.SP :
+            camDist = camDistance[1];
+            hOffset = heightOffset[1];
+            break;
+        case CamType.TP :
+            camDist = camDistance[2];
+            hOffset = heightOffset[2];
+            break;
+    }
+}
+function Apply(){
+    x += Input.GetAxis("Mouse X") * mouseSpeed[0] * Time.deltaTime;
+    y -= Input.GetAxis("Mouse Y") * mouseSpeed[1] * Time.deltaTime;	
+    y = ClampAngle(y, yAngleLimit[0], yAngleLimit[1]);\
+    var rotation = Quaternion.Euler(y, x + startRotation, 0);
+    var targPos = rotation * Vector3(0.0, 0.0, camDist) + charObj.position;
+    targPos.y += hOffset;
+    transform.rotation = rotation;
+    transform.position = targPos;
+}
+function ClampAngle (angle : float, min : float, max : float) {
+    if (angle &lt; -360)
+        angle += 360;
+    if (angle &gt; 360)
+        angle -= 360;
+    return Mathf.Clamp (angle, min, max);
+}
+function LateUpdate () {	
+        Apply();
+}</pre></div><p>In the <code class="literal">Player_Input</code> script<a id="id259" class="indexterm"></a>, add the following code snippet:</p><div class="informalexample"><pre class="programlisting">function Update (){
+    if(Input.GetKeyDown(KeyCode.T))
+    this.gameObject.GetComponent(CameraScr).SetCameraValues();
+}</pre></div><p>Congratulations! You can now have a camera rig that will give you a lot of functionality <a id="id260" class="indexterm"></a><a id="id261" class="indexterm"></a><a id="id262" class="indexterm"></a>in a small limited package.</p></div></div></div>

@@ -1,0 +1,55 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec122"></a>C# Addendum</h2></div></div><hr /></div><p>The C# version of the <code class="literal">DisappearMe</code> script is nearly identical to the JavaScript version. There are just a<a id="id356" class="indexterm"></a> few differences between the way in which JavaScript and C# scripts are set up.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class DisappearMeCSharp : MonoBehaviour {
+
+  // Use this for initialization
+  void Start () {
+
+  }
+
+  // Update is called once per frame
+  void Update () {
+    renderer.enabled = false;
+  }
+}</pre></div><p>Notice that the C# script has two <code class="literal">using</code> statements at the top. This is because there are thousands of collections of code and keywords that you can tap into with C#, and if we assume that every project needs to have access to every nook and cranny of the C# language, we'll wind up with a massive final file! The <code class="literal">using</code> keyword tells Unity which specific sections of the C# language this script needs to access.</p><p>Another difference is the "class" declaration beneath the <code class="literal">using</code> statements.  Every C# script is its own class (like the <code class="literal">Renderer</code> class we discussed earlier).</p><p>The word <code class="literal">class</code> is prefaced with the word <a id="id357" class="indexterm"></a>
+<span class="strong"><strong>public</strong></span>. Public is an <a id="id358" class="indexterm"></a>
+<span class="strong"><strong>access modifier</strong></span> that determines which bits of this script other scripts can "see" and futz around with. The four different access modifiers in C# are <a id="id359" class="indexterm"></a>
+<span class="strong"><strong>public</strong></span>, <a id="id360" class="indexterm"></a>
+<span class="strong"><strong>private</strong></span>, <a id="id361" class="indexterm"></a>
+<span class="strong"><strong>protected</strong></span>, and<a id="id362" class="indexterm"></a> <span class="strong"><strong>internal</strong></span>. We'll deal exclusively with the <span class="strong"><strong>public</strong></span> and <span class="strong"><strong>private</strong></span> access modifiers throughout this book.</p><p>There are some more salient changes in the C# version of the <code class="literal">MouseFollow</code> script:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class MouseFollowCSharp : MonoBehaviour {
+
+
+  private float smooth = 5.0f;
+  private float tiltAngle = 30.0f;
+
+
+  // Use this for initialization
+  void Start () {
+
+  }
+
+
+
+  // Update is called once per frame
+  void Update () {
+    float halfW = Screen.width / 2;
+    float halfH = Screen.height/2;
+    transform.position = new Vector3 ((Input.mousePosition.x -halfW) / halfW, transform.position.y, (Input.mousePosition.y - halfH)/ halfH);
+
+    // Smoothly tilts a transform towards a target rotation.
+    float tiltAroundZ = Input.GetAxis("Mouse X") * tiltAngle * 2;
+    float tiltAroundX = Input.GetAxis("Mouse Y") * tiltAngle * -2;
+    Quaternion target = Quaternion.Euler (tiltAroundX, 0, tiltAroundZ);
+
+    // Dampen towards the target rotation
+    transform.rotation = Quaternion.Slerp(transform.rotation, target,Time.deltaTime * smooth);
+  }
+}</pre></div><p>Note, first of all, that the<a id="id363" class="indexterm"></a> <span class="strong"><strong>member variables</strong></span>—the ones we declared up top, outside of any functions, have <a id="id364" class="indexterm"></a>
+<span class="strong"><strong>private</strong></span> access modifiers next to them. Technically speaking, these access modifiers aren't required, and indeed, we could have added them to our member variables in our JavaScript code. Including them here is good form. (Remember—the Queen is watching).</p><p>Another change is the way we type variables in C#. In JavaScript, the format is <span class="strong"><strong>variableName : datatype</strong></span>. <a id="id365" class="indexterm"></a>In C#, the format is <span class="strong"><strong>datatype variableName</strong></span><a id="id366" class="indexterm"></a> (note: no colon required). C# also does away with the <code class="literal">var</code> keyword when declaring variables. Finally, when a float definition has a decimal place in it, you need to append the lowercase letter <span class="emphasis"><em>f</em></span>.</p><p>Here are the differences, side by side:</p><div class="informalexample"><pre class="programlisting">var someNumber : float = 3.5; // JavaScript member variable declaration
+private float  someNumber = 3.5f; // C# member variable declaration</pre></div><p>A little further down in the C# code, there's another change. Whereas with JavaScript, we were able to set the <code class="literal">transform.position.x</code> and <code class="literal">transform.position.z</code> values of the paddle individually, C# is a little less kind and friendly. C# wants us to change the entire <code class="literal">transform.position</code> all at once, which means passing it a newly-minted <code class="literal">Vector3</code> with all three of the float values it requires.</p><p>So while in the JavaScript code, we were allowed to set the <code class="literal">x</code> and <code class="literal">z</code> parameters like so:</p><div class="informalexample"><pre class="programlisting">  transform.position.x = whateverX;
+  transform.position.z = whateverZ;</pre></div><p>In a C# script, we have to knock it all out in one shot, like this:</p><div class="informalexample"><pre class="programlisting">  transform.position = new Vector3(whateverX, whateverY, whateverZ);</pre></div><p>The <a id="id367" class="indexterm"></a>
+<code class="literal">new</code> keyword is how we stamp out an instance using the industrial Class mold, as we discussed earlier in the chapter. <code class="literal">Vector3</code> is the template, and the <code class="literal">new</code> keyword is how we use it to crank out an instance of that template. To put it another way, the <code class="literal">Vector3</code> class is our cookie cutter, and the <code class="literal">new</code> keyword is how we cut new gingerbread men out of the dough.</p><p>It's interesting, because in the case of this script, we know what the <code class="literal">whateverX</code> and <code class="literal">whateverZ</code> values are, but there should be no change to the paddle's <code class="literal">transform.position.y</code> value. So what do we put in there that means "no change"? Your first instinct might be to leave it blank, but Unity will surely throw an error if we try to feed the <code class="literal">Vector3</code> class an non-existent value. Your second instinct might be to pass a value of zero, but that's not quite what we're after either. What if the paddle's initial <code class="literal">y</code> value isn't zero?</p><p>The way to pass a value that means "no change" is to simply pass the current transform value of <span class="strong"><strong>GameObject</strong></span> for a given axis.  This line of code, for example, will not change the position of <span class="strong"><strong>GameObject</strong></span> at all:</p><div class="informalexample"><pre class="programlisting">transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);</pre></div><p>To change the paddle's <code class="literal">x</code> and <code class="literal">z transform.position</code> values, then, without changing its <code class="literal">y transform.position</code> value, the code (as above) looks like this:</p><div class="informalexample"><pre class="programlisting">transform.position = new Vector3 ((Input.mousePosition.x -halfW) / halfW, <span class="strong"><strong>transform.position.y</strong></span>, (Input.mousePosition.y - halfH)/ halfH);</pre></div><p>You may have already sniffed out the fact that C# requires you to write more code than JavaScript does. Nobody said high tea with the Queen was going to be easy.</p></div>

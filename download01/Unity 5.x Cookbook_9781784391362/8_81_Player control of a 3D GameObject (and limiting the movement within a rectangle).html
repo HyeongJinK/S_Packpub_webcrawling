@@ -1,0 +1,79 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec81"></a>Player control of a 3D GameObject (and limiting the movement within a rectangle)</h2></div></div><hr /></div><p>Many of the <a id="id849" class="indexterm"></a>3D recipes in this chapter are built on this basic project, which constructs a scene with a textured terrain, a <span class="strong"><strong>Main Camera</strong></span>, and a red cube that can be moved around by the user with the four directional arrow keys. The bounds of movement of the cube are constrained using the same technique as in the previous 2D recipe.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_08_01.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec232"></a>How to do it...</h3></div></div></div><p>To create a basic 3D <a id="id850" class="indexterm"></a>cube controlled game, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new, empty 3D project.</p></li><li><p>Once the project has been created, import the single Terrain Texture named <code class="literal">SandAlbedo</code> (it was named <code class="literal">GoodDirt</code> in Unity 4). Choose menu: <span class="strong"><strong>Assets | Import Package | Environments</strong></span>, deselect everything, and then locate and tick the asset: <code class="literal">Assets/Environment/TerrainAssets/SurfaceTextures/ SandAlbedo.psd</code>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip08"></a>Tip</h3><p>You could have just added the Environment Asset Package when creating the project—but this would have imported 100s of files, and we only needed this one. Starting a project in Unity, then selectively importing just what we need is the best approach to take, if you want to keep the project's Asset folders to small sizes.</p></div></li><li><p>Create a terrain positioned at (-15, 0, -10) and sized 30 by 20.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note37"></a>Note</h3><p>The transform position for the terrains relates to their corner and not their center.</p><p>Since the Transform position of the terrains relates to the corner of the object, we center such objects at (0,0,0) by setting the X-coordinate equal to ( -1*width/2), and the Z-coordinate equal to (-1*length/2). In other words, we slide the object by half its width and half its height to ensure that its center is just where we want it.</p><p>In this case, the width is 30 and the length is 20, hence we get -15 for X (-1 * 30/2), and -10 for Z (-1 * 20/2).</p></div></li><li><p>Texture paint this terrain with your texture called <code class="literal">SandAlbedo</code>.</p></li><li><p>Create a <a id="id851" class="indexterm"></a>directional light (it should face downwards to the terrain with the default settings—but if it doesn't for some reason, then rotate it so that the terrain is well lit).</p></li><li><p>Make the following changes to the Main Camera:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>position = (0, 20, -15)</p></li><li style="list-style-type: disc"><p>rotation = (60, 0, 0)</p></li></ul></div></li><li><p>Change the <span class="strong"><strong>Aspect Ratio</strong></span> of the <span class="strong"><strong>Game Panel</strong></span> from <span class="strong"><strong>Free Aspect</strong></span> to <span class="strong"><strong>4:3</strong></span>. You will now see the whole of the <span class="strong"><strong>Terrain</strong></span> in the <span class="strong"><strong>Game Panel</strong></span>.</p></li><li><p>Create a new empty GameObject named <span class="strong"><strong>corner_max</strong></span>, and position it at (14, 0, 9). With this GameObject selected in the <span class="strong"><strong>Hierarchy,</strong></span> choose the large, yellow oblong icon, highlighted in the <span class="strong"><strong>Inspector</strong></span> panel.</p></li><li><p>Duplicate the <span class="strong"><strong>corner_max</strong></span> GameObject, naming the clone as <span class="strong"><strong>corner_min</strong></span>, and position this clone at (-14, 0, -9). The coordinates of these two GameObjects will determine the maximum and minimum bounds of the movement permitted for the player's character.</p></li><li><p>Create a new <span class="strong"><strong>Cube </strong></span>GameObject named <span class="strong"><strong>Cube-player</strong></span> at a position called (0, 0.5, 0), and size it as (1,1,1).</p></li><li><p>Add to the <span class="strong"><strong>Cube-player </strong></span>GameObject, apply a component called <span class="strong"><strong>Physics | RigidBody</strong></span>, and uncheck the <span class="strong"><strong>RigidBody</strong></span> property <span class="strong"><strong>Use Gravity</strong></span>.</p></li><li><p>Create a red <span class="strong"><strong>Material</strong></span> named <span class="strong"><strong>m_red</strong></span>, and apply this <span class="strong"><strong>Material</strong></span> to <span class="strong"><strong>Cube-player</strong></span>.</p></li><li><p>Add the following C# script class called <code class="literal">PlayerControl</code> to the <span class="strong"><strong>Cube-player</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerControl : MonoBehaviour {
+  public Transform corner_max;
+  public Transform corner_min;
+
+  public float speed = 40;
+  private Rigidbody rigidBody;
+
+  private float x_min;
+  private float x_max;
+  private float z_min;
+  private float z_max;
+
+  void Awake (){
+    rigidBody = GetComponent&lt;Rigidbody&gt;();
+    x_max = corner_max.position.x;
+    x_min = corner_min.position.x;
+    z_max = corner_max.position.z;
+    z_min = corner_min.position.z;
+  }
+
+  void FixedUpdate() {
+    KeyboardMovement();
+    KeepWithinMinMaxRectangle();
+  }
+
+  private void KeyboardMovement (){
+    float xMove = Input.GetAxis("Horizontal") * speed * Time.deltaTime;
+    float zMove = Input.GetAxis("Vertical") * speed * Time.deltaTime;
+
+    float xSpeed = xMove * speed;
+    float zSpeed = zMove * speed;
+
+    Vector3 newVelocity = new Vector3(xSpeed, 0, zSpeed);
+
+    rigidBody.velocity = newVelocity;	
+
+    // restrict player movement
+    KeepWithinMinMaxRectangle ();
+  }
+
+  private void KeepWithinMinMaxRectangle (){
+    float x = transform.position.x;
+    float y = transform.position.y;
+    float z = transform.position.z;
+    float clampedX = Mathf.Clamp(x, x_min, x_max);
+    float clampedZ = Mathf.Clamp(z, z_min, z_max);
+    transform.position = new Vector3(clampedX, y, clampedZ);
+  }
+
+  void OnDrawGizmos (){
+    Vector3 top_right = Vector3.zero;
+    Vector3 bottom_right = Vector3.zero;
+    Vector3 bottom_left = Vector3.zero;
+    Vector3 top_left = Vector3.zero;
+
+    if(corner_max &amp;&amp; corner_min){
+      top_right = corner_max.position;
+      bottom_left = corner_min.position;
+
+      bottom_right = top_right;
+      bottom_right.z = bottom_left.z;
+
+      top_left = bottom_left;
+      top_left.z = top_right.z;
+    } 
+
+    //Set the following gizmo colors to YELLOW
+    Gizmos.color = Color.yellow;
+
+    //Draw 4 lines making a rectangle
+    Gizmos.DrawLine(top_right, bottom_right);
+    Gizmos.DrawLine(bottom_right, bottom_left);
+    Gizmos.DrawLine(bottom_left, top_left);
+    Gizmos.DrawLine(top_left, top_right);
+  }
+}</pre></div></li><li><p>With the <span class="strong"><strong>Cube-player</strong></span> GameObject selected in the <span class="strong"><strong>Hierarchy,</strong></span> drag the GameObjects called <span class="strong"><strong>corner_max</strong></span> and <span class="strong"><strong>corner_min</strong></span> over the public variables called <code class="literal">corner_max</code> and <code class="literal">corner_min</code> in the <span class="strong"><strong>Inspector</strong></span> panel.</p></li><li><p>When you <a id="id852" class="indexterm"></a>run the scene, the positions of the <span class="strong"><strong>corner_max</strong></span> and <span class="strong"><strong>corner_min</strong></span> GameObjects will define the bounds of movement for the Player's <span class="strong"><strong>Cube-player</strong></span> character.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec233"></a>How it works...</h3></div></div></div><p>The scene contains a positioned terrain so that its center is <code class="literal">(0,0,0)</code>. The red cube is controlled by the user's arrow keys through the <code class="literal">PlayerControl</code> script.</p><p>Just as with the previous 2D recipe, a reference to the (3D) RigidBody component is stored when the <code class="literal">Awake()</code> method executes, and the maximum and minimum X- and Z- values are retrieved from the two corner GameObjects, and is stored in the <code class="literal">x_min</code>, <code class="literal">x_max</code>, <code class="literal">z_min</code>, and <code class="literal">z_max</code> variables. Note that for this basic 3D game, we won't allow any Y-movement, although such movement (and bounding limits by adding a third 'max-height' corner GameObject) can be easily added by extending the code in this recipe.</p><p>The <code class="literal">KeyboardMovement() m</code>ethod reads<a id="id853" class="indexterm"></a> the horizontal and vertical input values (which the Unity default settings read from the four directional arrow keys). Based on these left-right and up-down <a id="id854" class="indexterm"></a>values, the velocity of the cube is updated. The amount it will move depends on the speed variable.</p><p>The <code class="literal">KeepWithinMinMaxRectangle()</code> method uses the <code class="literal">Math.Clamp(…)</code> function to move the character back inside the<a id="id855" class="indexterm"></a> X and Z limits, so that the player's character is not permitted to move outside the area defined by the <span class="strong"><strong>corner_max</strong></span> and <span class="strong"><strong>corner_min</strong></span> GameObjects.</p><p>The <code class="literal">OnDrawGizmos()</code> method tests<a id="id856" class="indexterm"></a> that the references to the <span class="strong"><strong>corner_max</strong></span> and <span class="strong"><strong>corner_min</strong></span> GameObjects are not null, and then sets the positions of the four Vector3 objects, representing the four corners defined by the rectangle with the <span class="strong"><strong>corner_max</strong></span> and <span class="strong"><strong>corner_min</strong></span> GameObjects at the opposite corners. It then sets the Gizmo color to <span class="strong"><strong>yellow</strong></span>, and draws lines connecting the four corners in the <span class="strong"><strong>Scene</strong></span> panel.</p></div></div>

@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec324"></a>Time for action – begin at the end</h2></div></div><hr /></div><p>There's no shame in starting simple. Let's start writing these functions from the bottom up, until we reach the most complex ones at the top.</p><p>The <code class="literal">GetRandomEmptySquare()</code> function<a id="id992" class="indexterm"></a> does what our stupidest possible computer player does: finds any empty square and marks it with no thought to strategy. We can just reuse code we've already written:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>function GetRandomEmptySquare():GameObject</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  var square:GameObject</strong></span>
+<span class="strong"><strong>  var aEmptySquares:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;();</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  for(var i:int = 0; i &lt; aSquares.Length; i++)</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    square = aSquares[i];</strong></span>
+<span class="strong"><strong>    if(square.GetComponent.&lt;Square&gt;().player == 0) </strong></span>
+<span class="strong"><strong>      aEmptySquares.Add(square);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  square = aEmptySquares[Random.Range(0,aEmptySquares.Count)];</strong></span>
+<span class="strong"><strong>  return square;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note29"></a>Note</h3><p>This will be our fall-through code. If all else fails and none of the other functions manage to return a square, we can count on this line to just grab an empty space in the grid.</p></div><p>The <code class="literal">GetEmptySide</code> function needs to look at all four of the side squares, and return an empty one (if one exists). We could just return the first one we find, but as we saw earlier, that might break the illusion that the computer is "thinking" intelligently. A better approach is to make a list of all the empty sides, and choose one at random, just as we did with the empty squares in the unintelligent version of our computer player.</p><p>We know we'll need a list. We'll add any empty side we find to that list. Then, if the list has at least one empty side in it, we'll return a random side from the list. Otherwise, we'll return <code class="literal">null</code>.</p><p>In pseudocode, it looks like this:</p><p>The <code class="literal">GetEmptySide</code> function returns a <code class="literal">GameObject</code>.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create an empty list.</p></li><li><p>If the top side is empty, add it to the list.</p></li><li><p>If the left side is empty, add it to the list.</p></li><li><p>If the right side is empty, add it to the list.</p></li><li><p>If the bottom side is empty, add it to the list.</p></li><li><p>If the list has at least one thing in it, choose a thing at random and return it.</p></li><li><p>Otherwise, return <code class="literal">null</code>.</p></li></ol></div><p>In UnityScript, it looks like this:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong> function GetEmptySide():GameObject</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    var aEmptySides:List.&lt;GameObject&gt; = </strong></span>
+<span class="strong"><strong>      new List.&lt;GameObject&gt;();</strong></span>
+<span class="strong"><strong>    if(GetPlayer(1,0) == 0) aEmptySides.Add(aGrid[1,0]);</strong></span>
+<span class="strong"><strong>    if(GetPlayer(0,1) == 0) aEmptySides.Add(aGrid[0,1]);</strong></span>
+<span class="strong"><strong>    if(GetPlayer(2,1) == 0) aEmptySides.Add(aGrid[2,1]);</strong></span>
+<span class="strong"><strong>    if(GetPlayer(1,2) == 0) aEmptySides.Add(aGrid[1,2]);</strong></span>
+<span class="strong"><strong>    if(aEmptySides.Count &gt; 0) return </strong></span>
+<span class="strong"><strong>      aEmptySides[Random.Range(0,aEmptySides.Count)];</strong></span>
+<span class="strong"><strong>    return null;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+</pre></div><p>It's a nearly identical process to return an empty corner. Add this function to your code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>function GetEmptyCorner():GameObject</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  var aEmptyCorners:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;();</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  if(GetPlayer(0,0) == 0) aEmptyCorners.Add(aGrid[0,0]);</strong></span>
+<span class="strong"><strong>  if(GetPlayer(2,0) == 0) aEmptyCorners.Add(aGrid[2,0]);</strong></span>
+<span class="strong"><strong>  if(GetPlayer(0,2) == 0) aEmptyCorners.Add(aGrid[0,2]);</strong></span>
+<span class="strong"><strong>  if(GetPlayer(2,2) == 0) aEmptyCorners.Add(aGrid[2,2]);</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  if(aEmptyCorners.Count &gt; 0) return aEmptyCorners</strong></span>
+<span class="strong"><strong>    [Random.Range(0,aEmptyCorners.Count)];</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  return null;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>It's an even simpler task to get the status of the center square and return it if it's empty. Tack on this function to your code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>function GetCentre():GameObject</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  if( GetPlayer(1,1) == 0 ) return aGrid[1,1];</strong></span>
+<span class="strong"><strong>  return null;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>Keep in mind throughout these three functions that a <code class="literal">return</code> statement prevents all other code in the function from executing. In the <code class="literal">GetCentre</code> function,<a id="id993" class="indexterm"></a> for example, if the code finds an empty square in the center, it returns the square and bounces back out of the function, so that the <code class="literal">return null</code> line is never executed.</p></div>

@@ -1,0 +1,322 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec93"></a>Extending the editor</h2></div></div><hr /></div><p>Now that we have the basic functionality of our game set up, let's look at some interesting things we can do to make further development easier.</p><p>Everyone who uses Unity knows about the editor. It's the core place where you will spend a great deal of time putting your game together. You will spend the rest of your time in your code editor, patching things together, adding values, and working around with what most see as limitations of the editor itself. This, however, is not the case.</p><p>The people at Unity realized early that they couldn't do everything, since everyone wanted something different or little tweaks here and there; if they had tried to do everything, nothing would have ever left their doors.</p><p>So, from the ground up, Unity was designed to be extensible, and they exposed much of what is needed to build your own editor in effect within Unity itself.</p><p>If you browse the <span class="strong"><strong>Asset Store</strong></span> (<a class="ulink" href="https://www.assetstore.unity3d.com/en" target="_blank">https://www.assetstore.unity3d.com/</a>), you will see a lot of assets that take advantage of this, and they have produced some really snazzy bolt-ons for the editor. These can reduce the need to code and just build things using the editor GUI.</p><p>These aren't magical things and most don't even require low-level C++ coding to achieve (although some do). You can update your editor to fix your game very easily, and you can do this in any of the languages that Unity supports.</p><p>The scripting framework behind the editor is broken up into several distinct layers that can be combined to give you almost any effect you need to build your content.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec153"></a>The property drawers</h3></div></div></div><p>The editor only has a basic way of looking at properties in the <span class="strong"><strong>Inspector</strong></span> pane based on the classes and objects used in your game. If you are using an existing Unity class, such as a string, color, or curve, Unity already has ready-made property drawers (or visual handles) to manage these with their own editor windows in some cases (such as the curve editor). The majority of these are also built on the extensible framework that Unity exposes and is available to you as well.</p><p>Other classes such as vectors and numbers have a basic implementation, which is usually fine, but sometimes you just prefer it in a different way.</p><p>This is where the property drawers come in. They can either replace the existing property viewer for a single field or for a type of object entirely. If you want a slider to alter a value between two values, add a <code class="literal">PropertyDrawer</code> attribute to the property to show a slider instead of just <code class="literal">int</code> or <code class="literal">float</code> as follows:</p><pre class="programlisting">[Range (0, 100)] &#13;
+public float health = 100; &#13;
+</pre><p>The preceding code example shows a range slider instead of a single <code class="literal">float</code> value as you can see in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_011.jpg" /></div><p>
+</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip128"></a>Tip</h3><p>For a more advanced example, check out the post on the Unity blog, which shows several different patterns to use your property drawers and even create them. The post is available at <a class="ulink" href="http://blogs.unity3d.com/2012/09/07/property-drawers-in-unity-4/" target="_blank">http://blogs.unity3d.com/2012/09/07/property-drawers-in-unity-4/</a>.</p></div><p>While building the property drawers, you will use the <code class="literal">EditorGUI</code> controls to draw the elements on the screen. The <code class="literal">EditorGUI</code> class provides a rich collection of controls that can be used. For a list of available controls, visit <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/EditorGUI.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/EditorGUI.html</a>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note129"></a>Note</h3><p>The property drawers can only use the default layouts in the <code class="literal">EditorGUI</code> class. For performance reasons, they cannot use the automatic controller found in the <code class="literal">EditorGUILayout</code> class, which is used in <code class="literal">EditorWindows</code>.</p></div><p>For more information on property drawers, see the Unity reference guide at <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/PropertyDrawer.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/PropertyDrawer.html</a>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip130"></a>Tip</h3><p>If you want to see some more creative uses for property drawers, check out the simple little GitHub repository at <a class="ulink" href="https://github.com/tenpn/ChestOfPropertyDrawers" target="_blank">https://github.com/tenpn/ChestOfPropertyDrawers</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec46"></a>Examples property drawers</h4></div></div></div><p>Using the <code class="literal">NPC</code> script in <code class="literal">Assets\Scripts\Classes</code>, let's see the effect of adding some simple property drawers to our NPCs in the <span class="strong"><strong>Inspector</strong></span> pane.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch13lvl4sec10"></a>Built-in property drawers</h5></div></div></div><p>Starting simply, we can decorate some of the properties of the <code class="literal">NPC</code> class in our game with the <code class="literal">Range</code> attribute by adding the following code:</p><pre class="programlisting">public string Name; &#13;
+[Range(10, 100)] &#13;
+public int Age; &#13;
+public string Faction; &#13;
+public string Occupation; &#13;
+[Range(1, 10)] &#13;
+public int Level; &#13;
+</pre><p>Now if you look at the <code class="literal">Mayor</code> class's <span class="strong"><strong>Inspector</strong></span> (remember, he's in the <code class="literal">Town</code> scene), the preceding code has the following effect on the editor Inspector:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_012.jpg" /></div><p>
+</p><p>This just makes it easier to manage your settings and makes it a little prettier to look at. Now, let's look at something a little more complicated.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch13lvl4sec11"></a>Custom property drawers</h5></div></div></div><p>Creating your own property drawer is certainly a bit more advanced. However, once you have learned the basics, it is quite easy to build your own.</p><p>For this example, we will create a simple pop-up that takes an array of values for possible selection, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_013.jpg" /></div><p>
+</p><p>First, we need a property type or attribute that we want to control. This could be a set of parameters (such as the <code class="literal">Range</code> property, which has a beginning and an end), a validation string, or even an enumeration.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note131"></a>Note</h3><p>The property type or attribute you want to control has to live in your project folder and <span class="strong"><strong>not</strong></span> in the special <code class="literal">Editor</code> folder. Unity's documentation is not clear enough on this.</p></div><p>So, create a new folder named <code class="literal">Properties</code> in <code class="literal">Assets\Scripts\Classes</code>. Then, create a new C# script named <code class="literal">PopUpAttribute</code> in the <code class="literal">Properties</code> folder and replace its contents with the following code:</p><pre class="programlisting">using UnityEngine; &#13;
+public class PopUpAttribute: PropertyAttribute &#13;
+{ &#13;
+  public string[] value; &#13;
+  public PopUpAttribute(params string[] input) &#13;
+  { &#13;
+    value = input; &#13;
+  } &#13;
+} &#13;
+</pre><p>Note that your <code class="literal">property</code> class must be derived from the <code class="literal">PropertyAttribute</code> class, and it must have a constructor with the same number of parameters required for your attribute (for example, the <code class="literal">Range</code> attribute has two <code class="literal">int</code> values).</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip132"></a>Tip</h3><p>In a strange (I suspect reflection) circumstance, you can either call your class by its name or suffix it with the word <code class="literal">Attribute</code> (as shown in the preceding code); both will be recognized by the name alone.</p><p>For example, <code class="literal">PopUpAttribute</code> can be recognized as <code class="literal">PopUp</code> or <code class="literal">PopUpAttribute</code>.</p></div><p>With the property in place, we can now add our custom property drawer code. Unlike the property we just created, this does have to live in the special <code class="literal">Editor</code> folder.</p><p>So, create a new folder named <code class="literal">PropertyDrawers</code> in the <code class="literal">Assets\Scripts\Editor</code> folder and create a new script named <code class="literal">PopUpCustomPropertyDrawer</code>, replacing its contents with the following code:</p><pre class="programlisting">using UnityEditor; &#13;
+using UnityEngine; &#13;
+ &#13;
+[CustomPropertyDrawer(typeof(PopUpAttribute))] &#13;
+public class PopUpCustomPropertyDrawer : PropertyDrawer { &#13;
+ &#13;
+  PopUpAttribute popUpAttribute {  &#13;
+    get { return ((PopUpAttribute)attribute); } } &#13;
+} &#13;
+</pre><p>The preceding code gives us the basic framework for our custom property drawer (the <code class="literal">public</code> property I've added isn't mandatory, but provides quick and easy access to the underlying property type we are enabling). Next, we need to add the <code class="literal">OnGUI</code> function, which will draw our custom property UI using the following code:</p><pre class="programlisting">public override void OnGUI(Rect position, SerializedProperty prop,    GUIContent label) &#13;
+{ &#13;
+  if (prop.propertyType != SerializedPropertyType.String) &#13;
+  { &#13;
+    throw new UnityException("property " + prop + " must be string        to use with PopUpAttribute "); &#13;
+  } &#13;
+ &#13;
+  var popupRect = EditorGUI.PrefixLabel(position,      GUIUtility.GetControlID(FocusType.Passive), label); &#13;
+ &#13;
+  var currentItem = prop.stringValue; &#13;
+  var currentIndex = popUpAttribute.value.Length - 1; &#13;
+  for (; currentIndex &gt;= 0; currentIndex--) &#13;
+  { &#13;
+    if (popUpAttribute.value[currentIndex] == currentItem) &#13;
+      break; &#13;
+  } &#13;
+ &#13;
+  int selectedIndex = EditorGUI.Popup(popupRect, currentIndex,      popUpAttribute.value); &#13;
+  prop.stringValue = selectedIndex &lt; 0 ? "" :      popUpAttribute.value[selectedIndex]; &#13;
+} &#13;
+</pre><p>Walking through the preceding script is quite simple; it is described as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The class is decorated with a <code class="literal">CustomPropertyDrawer</code> attribute and the type of class it is targeted at.</p></li><li style="list-style-type: disc"><p>As stated, the class is derived from the <code class="literal">PropertyDrawer</code> class.</p></li><li style="list-style-type: disc"><p>A helper property (<code class="literal">popUpAttribute</code>) gets the correct type of class from the attribute property of the <code class="literal">PropertyDrawer</code> base class (optional).</p></li><li style="list-style-type: disc"><p>We override the <code class="literal">OnGUI</code> function for the property drawers.</p></li><li style="list-style-type: disc"><p>We then check whether the target property (the variable you will attach this to) is of the correct type (in this case, a string). It returns <code class="literal">UnityException</code> if it is not correct.</p></li><li style="list-style-type: disc"><p>A <code class="literal">Rect</code> variable is defined for where we want to draw the output from our property drawer (a requirement for using the <code class="literal">EditorGUI.Popup</code> control).</p></li><li style="list-style-type: disc"><p>We get the current value for the property we are attached to and compare it with the possible values for the item. We do this only because we have a list of options and need to know which is the current one. For other types, this may not be needed.</p></li><li style="list-style-type: disc"><p>We draw a pop-up control using the <code class="literal">EditorGUI.Popup</code> control.</p></li><li style="list-style-type: disc"><p>Lastly, we set the property we are attached to with the value the user has selected.</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note133"></a>Note</h3><p>We could have used an <code class="literal">enum</code> object instead of an array to give us a more programmatic approach, in which case the preceding steps would be very similar. However, this approach allows us to set the scope of the selection for each property.</p></div><p>With the property and our custom property drawer in place, we can decorate the variables in our <code class="literal">NPC</code> class to achieve the result I pictured earlier, as follows:</p><pre class="programlisting">public string Name; &#13;
+[Range(10, 100)] &#13;
+public int Age; &#13;
+[PopUp("Good Guy", "Independent", "Bad Guy")] &#13;
+public string Faction; &#13;
+[PopUp("Mayor", "Shopkeep", "Layabout")] &#13;
+public string Occupation; &#13;
+[Range(1, 10)] &#13;
+public int Level; &#13;
+</pre><p>It may seem like a lot of fuss. However, once it's complete, you can tune the Unity editor to work for you more efficiently.</p></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec154"></a>Custom editors</h3></div></div></div><p>Say you want to control the entire scope of a single class or <code class="literal">ScriptableObject</code>; this is where <code class="literal">CustomEditor</code> scripts come in.</p><p>They can be used against any script that can be attached to a game object to alter how it works in the Unity editor Inspector.</p><p>As an example of these (the best way to show custom editors is through code), we will add some functionality to a camera to provide us with better control over it in a scene. This is just an example, and won't be implemented in our game.</p><p>First, we'll need a very simple camera script that will point the camera at a specified target, starting at 0, 0, 0. So, create a new script named <code class="literal">CameraLookAt</code> in <code class="literal">Assets\Scripts</code> and replace its contents with the following code:</p><pre class="programlisting">using UnityEngine; &#13;
+ &#13;
+public class CameraLookAt : MonoBehaviour &#13;
+{ &#13;
+  public Vector3 cameraTarget = Vector3.zero; &#13;
+ &#13;
+  void Update() &#13;
+  { &#13;
+    transform.LookAt(cameraTarget); &#13;
+  } &#13;
+} &#13;
+</pre><p>We can then define a <code class="literal">CustomEditor</code> script that will be run by the editor whenever it detects a game object with the script attached to it.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note134"></a>Note</h3><p>As with a lot of editor features, remember (as a good rule of thumb) that, if a class requires the <code class="literal">UnityEditor</code> namespace, it will need to live in the special <code class="literal">Editor</code> folder in your project.</p></div><p>So, create a new C# script called <code class="literal">CameraTargetEditor</code> in <code class="literal">Assets\Scripts\Editor</code> in your project and replace its contents with the following code:</p><pre class="programlisting">using UnityEngine; &#13;
+using UnityEditor; &#13;
+ &#13;
+[CustomEditor(typeof(CameraLookAt))] &#13;
+public class CameraTargetEditor : Editor &#13;
+{ &#13;
+    public override void OnInspectorGUI() &#13;
+    { &#13;
+        CameraLookAt targetScript = (CameraLookAt)target; &#13;
+         &#13;
+        targetScript.cameraTarget = &#13;
+          EditorGUILayout.Vector3Field ("Look At Point", &#13;
+            targetScript.cameraTarget); &#13;
+        if (GUI.changed) &#13;
+            EditorUtility.SetDirty(target);         &#13;
+    } &#13;
+} &#13;
+</pre><p>This script doesn't do much yet; we now have a <code class="literal">Vector3</code> handle in our script that displays the position of the camera's target (the specific point it is looking at). What is very nice here is that you can edit the values and the camera will automatically transform itself to look at the new point. To demonstrate this, create a new scene named <code class="literal">EditorDemos</code> in <code class="literal">Assets\Scenes</code> and attach the <code class="literal">CameraLookAt</code> script to <span class="strong"><strong>Main Camera</strong></span>. If you then select the <span class="strong"><strong>Main Camera</strong></span> game object in the Hierarchy, you will see the following settings in the <span class="strong"><strong>Inspector</strong></span> pane:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_014.jpg" /></div><p>
+</p><p>This is a lot easier than messing with the rotation values of the ordinary camera. Let's continue to add more functionalities that will blow your mind.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note135"></a>Note</h3><p>If the custom editor script depends on certain properties or components being available on the game object you attach it to, then be sure to use the <code class="literal">RequireConponent</code> attribute on the base class (not the <code class="literal">CustomEditor</code> script).</p></div><p>To make it even more useful, we can also represent this selection in the scene view as a control handle. To do this, we simply add another function to our <code class="literal">CameraTargetEditor</code>
+<code class="literal">CustomEditor</code> script; add the following <code class="literal">OnSceneGUI</code> function to the script:</p><pre class="programlisting">void OnSceneGUI() &#13;
+{ &#13;
+    CameraLookAt targetScript = (CameraLookAt)target; &#13;
+  &#13;
+    targetScript.cameraTarget = Handles.PositionHandle( &#13;
+            targetScript.cameraTarget, Quaternion.identity); &#13;
+  &#13;
+    if (GUI.changed) &#13;
+        EditorUtility.SetDirty(target); &#13;
+} &#13;
+</pre><p>Just as the <code class="literal">OnGUI</code> method draws in to your game, this function will draw in to the editor scene. Using the <code class="literal">Handles.PositionHandle</code> control, it will draw a regular handlebars control in the scene at the point you have specified, in this case, the camera's look-at target, as seen in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_015.jpg" /><div class="caption"><p>Camera Target (1) and Camera Transform (2)</p></div></div><p>
+</p><p>Want more? You can then alter how the handlebars will look on the screen with the following code:</p><pre class="programlisting">void OnSceneGUI() &#13;
+{ &#13;
+    CameraLookAt targetScript = (CameraLookAt)target; &#13;
+  &#13;
+    targetScript.cameraTarget = Handles.PositionHandle( &#13;
+targetScript.cameraTarget, Quaternion.identity); &#13;
+    Handles.SphereCap(0, targetScript.cameraTarget,  &#13;
+Quaternion.identity, 2); &#13;
+    if (GUI.changed) &#13;
+        EditorUtility.SetDirty(target); &#13;
+} &#13;
+</pre><p>As shown in the following screenshot, this simply alters the handlebars we are drawing, decorating them with a sphere. There are several other options as well should you choose to explore them:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_016.jpg" /><div class="caption"><p>(1) Camera Target Sphere, (2) Camera Transform</p></div></div><p>
+</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip136"></a>Tip</h3><p>For more information about custom editors, see the Unity reference guide at <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Editor.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Editor.html</a>.</p><p>For more information about handles and what you can do with them, see the Unity reference guide at <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Handles.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Handles.html</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec155"></a>The editor window</h3></div></div></div><p>Quite simply, Unity editor windows are just separate containers for collections of editor GUI controls. These windows are a more advanced version of the property drawers described previously, and as such use a different set of custom controls.</p><p>The <span class="strong"><strong>Inspector</strong></span>, <span class="strong"><strong>Game</strong></span>, and <span class="strong"><strong>Scene</strong></span> windows, and pretty much every other dockable window in the Unity editor, are editor windows. In fact, they are all built in the same way using the same scripting framework.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note137"></a>Note</h3><p>As stated previously, remember that any script that uses the editor functionality or the <code class="literal">UnityEditor</code> namespace must be placed in a special project folder titled <code class="literal">Editor</code>.</p></div><p>To implement your own editor window, you simply need to create a class derived from <code class="literal">EditorWindow</code> instead of <code class="literal">MonoBehaviour</code>. The script must also live in the special <code class="literal">Editor</code> folder within the project structure, so create a new script called <code class="literal">MyEditorWindow</code> in <code class="literal">Assets\Scripts\Editor</code>, as follows:</p><pre class="programlisting">using UnityEditor; &#13;
+using UnityEngine; &#13;
+ &#13;
+public class MyEditorWindow : EditorWindow &#13;
+{ &#13;
+string windowName = "My Editor Window"; &#13;
+bool groupEnabled; &#13;
+bool DisplayToggle = true; &#13;
+float Offset = 1.23f; &#13;
+ &#13;
+} &#13;
+</pre><p>I've added some properties to give some depth to the example.</p><p>With your new window in place, you then need to implement a function to display the window when it is called inside the new <code class="literal">MyEditorWindow</code> class:</p><pre class="programlisting">[MenuItem ("Window/My Window")] &#13;
+public static void ShowWindow () &#13;
+{ &#13;
+    EditorWindow.GetWindow(typeof(MyEditorWindow)); &#13;
+} &#13;
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note138"></a>Note</h3><p>It doesn't matter what the preceding function is called; it's just an editor reference attribute attached to the function to show where the option will appear in the Unity editor menu.</p></div><p>If you want more control over the size and position of your editor window, instead of using the preceding <code class="literal">GetWindow</code> function, you can use the following <code class="literal">GetWindowWithRect</code> function:</p><pre class="programlisting">[MenuItem ("Window/My Window")] &#13;
+public static void ShowWindow () &#13;
+{ &#13;
+    EditorWindow.GetWindowWithRect(typeof(MyEditorWindow), &#13;
+      new Rect(0, 0, 400, 150)); &#13;
+} &#13;
+</pre><p>This will set the position and size of the window to a fixed point on the screen but, as with all other editor windows, it can then be resized and docked like any other window. This method is more useful for displaying a collection of properties in the scene view to edit nodes or other position-based visual configuration.</p><p>Lastly, you need some GUI code. This is pretty much the same as the normal GUI code, but with a few editor extensions because it is being drawn in the editor. This goes in to an <code class="literal">OnGUI</code> method, for example:</p><pre class="programlisting">void OnGUI() &#13;
+{ &#13;
+    // Your custom Editor Window GUI code &#13;
+    GUILayout.Label("Base Settings", EditorStyles.boldLabel); &#13;
+    windowName = EditorGUILayout.TextField("Window Name",  &#13;
+      windowName); &#13;
+  &#13;
+    groupEnabled =  &#13;
+      EditorGUILayout.BeginToggleGroup("Optional Settings",  &#13;
+        groupEnabled); &#13;
+ &#13;
+    DisplayToggle =  &#13;
+      EditorGUILayout.Toggle("Display Toggle", DisplayToggle); &#13;
+ &#13;
+    Offset = EditorGUILayout.Slider("Offset Slider", &#13;
+      Offset, -3, 3); &#13;
+    EditorGUILayout.EndToggleGroup(); &#13;
+} &#13;
+</pre><p>The preceding example will show the following menu window:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_017.jpg" /></div><p>
+</p><p>When you put GUI elements together in an editor window, you can use either the basic <code class="literal">EditorGUI</code> controls or the more advanced <code class="literal">EditorGUILayout</code> controls, which implement some additional automatic layout features on top of the basic controls.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip139"></a>Tip</h3><p>For more details about the controls available with <code class="literal">EditorGUILayout</code>, check out the Unity reference at <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/EditorGUILayout.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/EditorGUILayout.html</a>.</p><p>For more information on editor windows, see the Unity reference guide at <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/EditorWindow.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/EditorWindow.html</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec156"></a>Gizmos</h3></div></div></div><p>With custom editors, you could also have handles to represent a control in the scene view, extending the <span class="strong"><strong>Inspector</strong></span> features in to the scene.</p><p>We also have another way to have class-based features that are only available in the editor through the use of <span class="strong"><strong>Gizmos</strong></span>.</p><p>Gizmos offer a much richer graphical way to add visual elements to the scene to aid the use of a class, unlike custom editors; which are only added to your base class, which the editor will then make use of.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note140"></a>Note</h3><p>The <code class="literal">OnDrawGizmo</code> functions are only available on classes that are derived from <code class="literal">MonoBehaviour</code>, not the <code class="literal">Editor</code> classes.</p></div><p>For example, we can amend the <code class="literal">CameraLookAt</code> script we created earlier and make it draw a Gizmo line from the camera to the target's look-at point by adding the following code to the script:</p><pre class="programlisting">void OnDrawGizmos() &#13;
+{ &#13;
+    Gizmos.color = Color.yellow; &#13;
+    Gizmos.DrawLine(transform.position, cameraTarget); &#13;
+} &#13;
+</pre><p>The code produces the following result:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_018.jpg" /></div><p>
+</p><p>Now, when you return to the editor and move the look-at point or the camera, there will be a yellow line drawn between them.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note141"></a>Note</h3><p>If you collapse the script in the <span class="strong"><strong>Inspector</strong></span> pane, this will turn off the Gizmo. This is handy if you want to just hide it.</p></div><p>If you don't want the Gizmo drawn all the time, you can also track when the user has the Gizmo selected using the <code class="literal">OnDrawGizmosSelected</code> method, as follows:</p><pre class="programlisting">void OnDrawGizmosSelected() &#13;
+{ &#13;
+    Gizmos.color = Color.red; &#13;
+    Gizmos.DrawLine(transform.position, cameraTarget); &#13;
+} &#13;
+</pre><p>Now when the GameObject the script is attached to is selected in the editor, the line will be drawn in red instead of yellow. Alternatively, just use the <code class="literal">OnDrawGizmosSelected</code> function on its own to only draw a line when selected.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip142"></a>Tip</h3><p>For more information on Gizmos, see the Unity reference guide at <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Gizmos.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Gizmos.html</a>.</p><p>For fantastic additional resources and tutorials, check out the article on CatLike Coding's blog at <a class="ulink" href="http://catlikecoding.com/unity/tutorials/editor/star/" target="_blank">http://catlikecoding.com/unity/tutorials/editor/star/</a>.</p><p>Or, you can check out the excellent Gimzo-driven design tutorial at <a class="ulink" href="http://code.tutsplus.com/tutorials/how-to-add-your-own-tools-to-unitys-editor--active-10047" target="_blank">http://code.tutsplus.com/tutorials/how-to-add-your-own-tools-to-unitys-editor--active-10047</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec157"></a>Building your editor menus</h3></div></div></div><p>Another way of extending in to the editor is to customize it by adding your own menus. We covered little bits of this in previous chapters by adding extra options to create your assets; however, there's much more to it than that.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note143"></a>Note</h3><p>The <code class="literal">MenuItem</code> functions must be declared as a <code class="literal">Static</code> functions, otherwise they will not be recognized. Scripts must be placed in the special <code class="literal">Editor</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec47"></a>Adding a MenuItem attribute</h4></div></div></div><p>The main way to add a new menu item is to define a script in <code class="literal">Assets\Scripts\Editor</code> and append the <code class="literal">MenuItem</code> attribute to a static method within it. So, create a new script called <code class="literal">MyMenu</code> in this folder and replace its contents with the following code:</p><pre class="programlisting">using UnityEditor; &#13;
+using UnityEngine; &#13;
+public class MyMenu   &#13;
+{ &#13;
+    // Add a menu item named MenuItem1 to a Menu option called  &#13;
+    // MenuName in the menu bar. &#13;
+    [MenuItem ("MenuName/MenuItem1")] &#13;
+    static void EnableMyAwesomeFeature () &#13;
+    { &#13;
+        Debug.Log ("I am a leaf on the wind. Watch how I soar."); &#13;
+    } &#13;
+} &#13;
+</pre><p>This code simply creates a new top-level menu option called <code class="literal">MenuName</code> with a single item called <code class="literal">MenuItem1</code>, as shown here:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_019.jpg" /></div><p>
+</p><p>From here, you can execute whatever you need to.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note144"></a>Note</h3><p>When you return to Unity after adding a menu script, it may sometimes not show up immediately. You can either click on the menu bar or restart the editor to make it appear (it just needs a nudge).</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec48"></a>Enabling/disabling a MenuItem attribute</h4></div></div></div><p>We can extend this further by adding a validation logic method to support a <code class="literal">MenuItem</code> attribute. This controls whether the menu option is enabled or not.</p><p>For this, you need to create a pair of the following items:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>A menu item</p></li><li style="list-style-type: disc"><p>A menu item validator</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note145"></a>Note</h3><p>The menu item and the menu item validator must have the same menu path. So, if the menu item (as declared previously) is <code class="literal">[MenuItem ("MenuName/MenuItem1")]</code>, the validator must have the same menu definition as follows:</p><p>
+<code class="literal">[MenuItem ("MenuName/MenuItem1", true)]</code>
+</p><p>Validators do not add menu items. They only extend or validate existing menu items.</p></div><p>So, using the menu item we just added earlier, we can add a validator menu function. It must have a return type of <code class="literal">bool</code> and an additional flag set against the function attribute, as follows:</p><pre class="programlisting">[MenuItem ("MenuName/MenuItem1", true)] &#13;
+static bool CheckifaGameObjectisselected() { &#13;
+    // Return false if no transform is selected. &#13;
+    return Selection.activeTransform != null; &#13;
+} &#13;
+</pre><p>This simple validator just checks whether you have a game object selected in the editor; if not, then <code class="literal">MenuItem1</code> is disabled.</p><p>This new validation function is evaluated by the editor whenever it displays the menu item of the same name. Setting the <code class="literal">bool</code> flag at the end of the <code class="literal">MenuItem</code> attribute tells the editor that this function provides the validation logic for a <code class="literal">MenuItem</code> attribute of the same name. Then, the editor will enable or disable that <code class="literal">MenuItem</code> attribute based on the return of the validator function.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec49"></a>Adding shortcut keys to a MenuItem attribute</h4></div></div></div><p>If you add <code class="literal">%</code> and a letter to the end of your <code class="literal">MenuItem</code> attribute, Unity will also enable a shortcut key for that letter.</p><p>So, <code class="literal">%g</code> would enable a shortcut of <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>G</em></span> on Windows and <span class="emphasis"><em>cmd</em></span> + <span class="emphasis"><em>G</em></span> on a Mac.</p><p>For example, add a new function to our <code class="literal">MyMenu</code> script as follows:</p><pre class="programlisting">[MenuItem ("MenuName/MenuItem2 %g")] &#13;
+static void EnableMyOtherAwesomeFeature() &#13;
+{ &#13;
+    Debug.Log ("Find my key and win the prize - g"); &#13;
+} &#13;
+</pre><p>This will show us an additional option with the shortcut defined, as you can see here:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_020.jpg" /></div><p>
+</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec50"></a>Adding contextual MenuItems</h4></div></div></div><p>The last bit of trickery you can perform is to add menu items to the existing features of Unity, even <span class="strong"><strong>Inspector</strong></span>.</p><p>You do this with a custom name for the <code class="literal">MenuItem</code> attribute and a different signature for the function. So, we add the following method to our <code class="literal">MyMenu</code> script:</p><pre class="programlisting">[MenuItem("CONTEXT/Transform/Move to Center")] &#13;
+static void MoveToCenter(MenuCommand command) &#13;
+{ &#13;
+    Transform transform = (Transform)command.context; &#13;
+    transform.position = Vector3.zero; &#13;
+    Debug.Log("Moved object to " +  &#13;
+      transform.position + " from a Context Menu."); &#13;
+} &#13;
+</pre><p>The preceding script attaches itself to any transform component (in this case, the <span class="strong"><strong>Inspector</strong></span> pane). Then, when it is run, the parameter on the function receives the instance of the object it was run on and lets you interrogate or alter it, resulting in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_13_021.jpg" /></div><p>
+</p><p>The structure of the special <code class="literal">MenuItem</code> name is as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Context</strong></span>: This is a fixed item to identify the menu as a contextual item</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Object</strong></span>: This is the type of object this context menu will be available on</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Name</strong></span>: This is the name of the menu item</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note146"></a>Note</h3><p>You can just add extra dimensions/children to context menus by adding additional <code class="literal">"/"</code> characters.</p><p>However, if there is an error or your menus are too deep, Unity won't show the error; it just won't display the menu item (leaving you scratching your head). If this happens, try setting a shorter or different menu name.</p></div><p>Context menus can be added to just about any object/component in the Unity editor, including your own objects.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip147"></a>Tip</h3><p>For more information on the <code class="literal">MenuItem</code> class and its use in Unity Editor, see the Unity scripting reference guide at <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/MenuItem.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/MenuItem.html</a>.</p></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec158"></a>Running scripts in the Editor folder</h3></div></div></div><p>The last little tidbit you should be aware of surrounds scripts and their execution.</p><p>If you put a script in the <code class="literal">Editor</code> folder, it will be executed when you are in the editor. However, what about all your other scripts?</p><p>You can certainly run the game and see the script running, but that doesn't help you when you are in the editor. What if you want to see the effect of your script while manipulating game objects in your scene?</p><p>Thankfully, there is a way to force the editor to run your script, and all it takes is yet another attribute called <code class="literal">ExecuteInEditMode</code> added to your class. To do this, simply add the following line above the class definition of the script you want to affect:</p><pre class="programlisting">[ExecuteInEditMode] &#13;
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note148"></a>Note</h3><p>If you are applying this to the GUI that repositions itself to the scene, the visual aspect you see in the editor may not be the same as when the game is running. So, things may position differently. You either manage it in the code or live with it in the editor; it's up to you.</p></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip149"></a>Tip</h3><p>If you have portions of your script that rely on other components that may not be active in the editor, be sure to check for null references in your code to avoid nasty errors in the console, which may lead you down a dark path.</p><p>Also, any calls to the <code class="literal">Static</code> classes in the <code class="literal">OnDestroy</code> method may generate errors/warnings when they are run in the editor; so just be aware!</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec51"></a>Alternative approaches</h4></div></div></div><p>There is always more than one way to cut the cheese as they say, and so too it is with Unity. Some more advanced options to run the scripts in the editor include the following methods.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch13lvl4sec12"></a>The [InitialiseOnLoad] attribute</h5></div></div></div><p>Another advanced feature with the editor is to make use of the <code class="literal">[InitialiseOnLoad]</code> attribute. What this attribute does is run whatever class or script it is attached to when the editor opens or when a build event occurs (such as after you edit a script or run the project). Most developers use this for tracking purposes or to have background processes run whenever something has changed. This is especially useful if you have some level data stored in a custom file and need to regenerate a scene or level based on that configuration.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note150"></a>Note</h3><p>Unlike <code class="literal">[ExecuteInEditMode]</code>, the <code class="literal">[InitialiseOnLoad]</code> attribute is an editor-only feature, and the scripts using it must be placed in the special <code class="literal">Editor</code> folder in your project.</p></div><p>It is recommended that you combine the use of the <code class="literal">[InitialiseOnLoad]</code> attribute together with a static constructor to ensure the script will run before any other scripts in the scene or project.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip151"></a>Tip</h3><p>If you are loading resources in an <code class="literal">[InitialiseOnLoad]</code> class, beware that the file system may not be initialized when the script starts. It's recommended you delay it until the first editor update (using the following method). For more details, check out the detailed post at <a class="ulink" href="http://bit.ly/InitiliseOnLoadResources" target="_blank">http://bit.ly/InitiliseOnLoadResources</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch13lvl4sec13"></a>Editor application callbacks</h5></div></div></div><p>The editor, like a lot of things in Unity, also comes adorned with several callbacks to mark when things happen. Exposed through the <code class="literal">EditorApplication</code> class, you can gain access to the following events:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /></colgroup><thead><tr><th style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<span class="strong"><strong>Event/delegate</strong></span>
+</p>
+</th><th style="border-bottom: 0.5pt solid ; ">
+<p>
+<span class="strong"><strong>Description</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">update</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p><span class="strong"><strong>This event is called every time the editor window is updated or refreshed. Note that this is more often when the game or scenes update calls.</strong></span></p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">projectWindowItemOnGUI</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This event is called for each project item in the view of the Project window when it is drawn to the screen.</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">hierarchyWindowItemOnGUI</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This event is called for each item in the Hierarchy window when it is drawn to the screen.</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">projectWindowChanged</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This event is called whenever an item is changed in the Project window.</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">hierarchyWindowChanged</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This event is called whenever an item is changed in the Hierarchy window.</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">playmodeStateChanged</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This event is called when you start or stop the game in the editor.</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">searchChanged</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This event is called whenever search criteria are changed in any Editor window.</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; ">
+<p>
+<code class="literal">modifierKeysChanged</code>
+</p>
+</td><td style="">
+<p>This event is used to track when a modifier key (<span class="emphasis"><em>Alt</em></span>, <span class="emphasis"><em>cmd</em></span>, <span class="emphasis"><em>Ctrl</em></span>, and so on) is pressed. So, you need to change a view when a modifier key is pressed, and you need to watch for this event/delegate.</p>
+</td></tr></tbody></table></div><p>These events can be added to any class/script in your <code class="literal">Editor</code> project folder, so you can hook up a functionality to run when these events occur using the following syntax. For example, let's employ the following methods in an editor script to fire whenever we change the project's Hierarchy:</p><pre class="programlisting">void OnEnable() &#13;
+{ &#13;
+    // Event / delegate registration, usually put in the OnEnable  &#13;
+    //or other function &#13;
+    EditorApplication.hierarchyWindowChanged +=        HierarchyWindowChanged; &#13;
+} &#13;
+ &#13;
+//callback function for when event occurs &#13;
+void HierarchyWindowChanged() &#13;
+{ &#13;
+    //Scan hierarchy for new items &#13;
+    //If found add something to the editor window &#13;
+} &#13;
+  &#13;
+void OnDestroy() &#13;
+{ &#13;
+    // Don't forget to unregister the delegate when it goes out of  &#13;
+    //scope or is not needed &#13;
+    EditorApplication.hierarchyWindowChanged -=        HierarchyWindowChanged; &#13;
+} &#13;
+</pre><p>This gives your editor scripts the ability to react to whatever the editor does by attaching to the <code class="literal">hierarchyWindowChanged</code> event when the script is enabled (make sure you unattach it when the script is disabled).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch13lvl4sec14"></a>Mixing it up</h5></div></div></div><p>In more advanced cases, you can build a framework that combines with the previous approaches effectively to create a complete editor manager. This needs to be implemented in a class with a static constructor so that it is initialized as soon as the editor starts.</p><p>To demonstrate this, let's create a simple script that will save the scene for us when we hit the Play button. First, create a new script called <code class="literal">SaveSceneOnPlay</code> in <code class="literal">Assets\Scripts\Editor</code> and replace its contents with the following code:</p><pre class="programlisting">using UnityEditor; &#13;
+using UnityEngine; &#13;
+[InitializeOnLoad] &#13;
+public class SaveSceneOnPlay &#13;
+{ &#13;
+    // Static class constructor,  &#13;
+    // this is initialized as soon as Unity Starts &#13;
+    static SaveSceneOnPlay() &#13;
+    { &#13;
+  &#13;
+    } &#13;
+} &#13;
+</pre><p>This gives us the framework for an <code class="literal">[InitializeOnLoad]</code> script that will run when Unity starts. Then, we add our static function to do the work of saving the scene:</p><pre class="programlisting">static void SaveSceneIfPlaying() &#13;
+{ &#13;
+  &#13;
+    if (EditorApplication.isPlayingOrWillChangePlaymode &amp;&amp;  &#13;
+      !EditorApplication.isPlaying) &#13;
+    { &#13;
+  &#13;
+        Debug.Log("Automatically saving scene (" +  &#13;
+          EditorApplication.currentScene +  &#13;
+            ") before entering play mode "); &#13;
+  &#13;
+        EditorApplication.SaveAssets(); &#13;
+        EditorApplication.SaveScene(); &#13;
+    } &#13;
+} &#13;
+</pre><p>This method checks whether the editor is about to change the play state and is not being played currently; if this is the case, then it saves the current changed assets and the current scene.</p><p>Next, we hook up this function with the <code class="literal">playmodeStateChanged</code> event delegate in the static constructor as follows:</p><pre class="programlisting">static SaveSceneOnPlay() &#13;
+{ &#13;
+    EditorApplication.playmodeStateChanged += SaveSceneIfPlaying; &#13;
+} &#13;
+</pre><p>Now, with this script in our project, whenever we hit Play, the script will automatically save the project for us.</p></div></div></div></div>

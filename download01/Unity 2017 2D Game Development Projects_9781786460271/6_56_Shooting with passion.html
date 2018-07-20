@@ -1,0 +1,55 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec59"></a>Shooting with passion</h2></div></div><hr /></div><p>In order to finish implementing our shooting system, the last thing we need to do is to create our bullets. At this stage, it shouldn't be a too complicated.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec89"></a>Creating a bullet prefab</h3></div></div></div><p>First, we need to drag and drop our projectile sprite that we sliced in the previous chapter into the scene. Then, we need to add a <strong class="userinput"><code>Box Collider 2D</code></strong>, and the default settings should be good to go. We also need to enable <strong class="userinput"><code>Is Trigger</code></strong>, like we did for the cakes in the previous project:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/71350e43-9522-4ff2-9088-5734df4b054c.png" /></div><p>Then, since our bullet will move, we also need to add a <strong class="userinput"><code>Rigidbody 2D</code></strong>, and we just need to change the <strong class="userinput"><code>Gravity Scale</code></strong> to <code class="literal">0</code> and freeze the rotation around <strong class="userinput"><code>Z</code></strong>; exactly as we did for the player:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/056b8e24-ce76-4b0a-bdfd-15ccab74707e.png" /></div><p>Finally, by using the <strong class="userinput"><code>Add Component</code></strong> button, we can create a new C# script and name it <code class="literal">BulletController</code>. We are going to implement its functionalities in the next section, but first, we need to create two new prefabs. Why two prefabs? One is for the bullets of the player and the other one is for the bullets of the enemies (in case you have different graphics you can have many more, but in this project, we will just keep two of them). In fact, even if they don't differ in the graphics, we will make a slight change in a public variable in the script, but we will see this once we have finished with our script. For now, you can call the two prefabs respectively <code class="literal">BulletPrefab_Player</code> and <code class="literal">BulletPrefab_Enemy</code>. You can drag and drop from the <strong class="userinput"><code>Hierarchy</code></strong> panel the same <strong class="userinput"><code>BulletSprite</code></strong> on both of them <span>before removing </span>the object from the scene.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec90"></a>Creating a bullet controller</h3></div></div></div><p>Open the <code class="literal">BulletController</code> script and remove the <code class="literal">Update()</code> function, since we don't need it. It's time to break through the creation of this controller.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec40"></a>Enforcing components</h4></div></div></div><p>As we did with the other scripts in this book, once again we need to enforce the components, so we can write:</p><pre class="programlisting">using System.Collections; 
+using System.Collections.Generic; 
+using UnityEngine; 
+ 
+[RequireComponent(typeof(Rigidbody2D))] 
+[RequireComponent(typeof(Collider2D))] 
+public class BulletController : MonoBehaviour { 
+//[...] 
+} </pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec41"></a>Exposing variables in the Inspector</h4></div></div></div><p>In order to let designers customize the bullet according to the gameplay of the game, we need to expose some variables by declaring them public. This concept should be clear by now. In particular, we want to expose the speed at which the bullet moves, and the time before it is destroyed in case it didn't hit anything. This last one is just an optimization since we don't want bullets going around in our game world in regions that are not visible.</p><p>So, here are the two public variables we need:</p><pre class="programlisting">// [...] 
+public class BulletController : MonoBehaviour { 
+ 
+    public float speed = 10.0f; 
+ 
+    public float timeBeforeDestruction = 10.0f; 
+ 
+   // [...] 
+} </pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec42"></a>Getting the reference to the rigidbody</h4></div></div></div><p>As we already know, we need to get a reference to the <span class="strong"><strong>rigidbody</strong></span> component so we can use it in the <code class="literal">FixedUpdate()</code> function to move the bullet. As such, let's declare another variable:</p><pre class="programlisting">// [...] 
+public class BulletController : MonoBehaviour { 
+ 
+    public float speed = 10.0f; 
+ 
+    public float timeBeforeDestruction = 10.0f; 
+ 
+    private Rigidbody2D rigidBody; 
+ 
+   // [...] 
+} </pre><p>The <code class="literal">Start()</code> function is always a perfect place to initialize references to other components, so we can just write:</p><pre class="programlisting">    void Start() { 
+        rigidBody = GetComponent&lt;Rigidbody2D&gt;(); 
+    } </pre><p>As a result, we are now able to use the <span class="strong"><strong>rigidbody</strong></span> of the bullet.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec43"></a>Auto-destroying the bullet</h4></div></div></div><p>As we have mentioned, we would like to destroy the bullet after a certain time specified by the <code class="literal">timeBeforeDestruction</code> variable. Unity comes with a built-in function to destroy a game object after a delay, and once again the <code class="literal">Start()</code> function is the perfect place for such a thing. In fact, we just need to specify the game object to destroy (in this case the bullet itself), and the time. So, the <code class="literal">Start()</code> function at the end should be like the following:</p><pre class="programlisting">    void Start() { 
+        rigidBody = GetComponent&lt;Rigidbody2D&gt;(); 
+ 
+        //Destroy the bullet if it didn't hit anything after 10 seconds 
+        Destroy(gameObject, timeBeforeDestruction); 
+    } </pre><p>If you were to place a bullet in the scene now and hit play, it would be destroyed after ten seconds, which is the default value for the <code class="literal">timeBeforeDestruction</code> variable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec44"></a>Moving the bullet</h4></div></div></div><p>In a similar way to the player controller, we need to move the bullet. We use the same equation for the motion and the same lines of code. However, we need to make the movement happen only on the y-axis; there is no clamp, and the bullet moves regardless of the input of the player. Here is the final code, which shouldn't be hard for you to understand:</p><pre class="programlisting">    void FixedUpdate() { 
+        //Get the new position of our bullet 
+        var y = transform.position.y + Time.deltaTime * speed; 
+ 
+        //Set the position of our bullet through the RigidBody2D component (since we are using physics) 
+        rigidBody.MovePosition(new Vector2(transform.position.x, y)); 
+    } </pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note32"></a>Note</h3><p>It's worth mentioning here that if we have the speed as a negative value, the bullet will move down rather than up. We will use this to make the enemies' bullets; their speed will be negative. </p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec45"></a>Hit spaceships</h4></div></div></div><p>Here, we face something different from the player controller; we need to check what happens once the bullet hits the player or the enemy. Of course, this is something we are going to do within the <code class="literal">OnTriggerEnter2D()</code> function. In order to distinguish between whether we hit the player or the enemy, we are going to use a tag. Moreover, we also need to check whether the bullet was shot by the player or by the enemy. In fact, we don't want the player shooting a bullet and immediately exploding. Since in this simple implementation we don't pass any information to the bullet, how can we distinguish between the two? The enemy's bullets will go downwards, and thus they will have a negative speed. So, by checking if the speed is positive or negative, we can determine if the bullet belongs to the player or to the enemy. Once we have checked if the bullet hit the player or an enemy, we need to call the <code class="literal">Hit()</code> function on the respective controller and destroy the bullet.</p><p>Wrapping up, here is the final code for the <code class="literal">OnTriggerEnter2D()</code> function:</p><pre class="programlisting">    void OnTriggerEnter2D(Collider2D other) { 
+        //Check if the player collides with the bullet (and it has been shot by an enemy) 
+        if (other.tag == "Player" &amp;&amp; speed &lt; 0) { 
+            //Send the message to the player that the spaceship has been hit 
+            other.GetComponent&lt;PlayerController&gt;().Hit(transform.position); 
+ 
+            //Destroy the bullet 
+            Destroy(gameObject); 
+        } else if (other.tag == "Enemy" &amp;&amp; speed &gt; 0) { 
+            //Send the message to the enemy that the spaceship has been hit 
+            other.GetComponent&lt;EnemyController&gt;().Hit(transform.position); 
+ 
+            //Destroy the bullet 
+            Destroy(gameObject); 
+        } 
+    } </pre><p>You can now save the script, and as a result, you have all the basic gameplay scripts working for our space shooter game. In the next chapter, we will finish it up and make it operative by exploring some interesting UI features and building a world.</p></div></div></div>

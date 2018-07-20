@@ -1,0 +1,34 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec43"></a>Adding character facing directions</h2></div></div><hr /></div><p>The last task we have is to <a id="id270" class="indexterm"></a>add a functionality that will allow the player to change the direction he or she faces. Then, we can add some functionality that will allow the sword to swing in the same direction that the player is facing. To achieve this, we will have to start in the <code class="literal">MovingObject</code> class.</p><p>The <code class="literal">AttempMove</code> function is where the direction of the player is managed. This is where we can poll what direction the player is moving in, and change the sprite direction accordingly. <span class="emphasis"><em>Code snip 6.9</em></span> shows the update that should be added to the top of the <code class="literal">AttemptMove</code> function definition:</p><div class="informalexample"><pre class="programlisting">1 protected virtual bool AttemptMove &lt;T&gt; (int xDir, int yDir)
+2   where T : Component
+3 {
+4   if (xDir == 1) {
+5     transform.eulerAngles = Vector3.zero;
+6   } else if (xDir == -1) {
+7     transform.eulerAngles = new Vector3(0,180,0);
+8     }
+...</pre></div><p>The <code class="literal">AttemptMove</code> function was initially written with the integers representing the direction that the player is moving in. If <code class="literal">xDir</code> is <code class="literal">1</code>, then the player moves to the right of the screen, and if <code class="literal">xDir</code> is <code class="literal">-1</code>, the player moves to the left. This is reminiscent of a coordinate plane.</p><p>So, in <code class="literal">lines 4-8</code>, we write a conditional statement that states when the player is headed to the right, we set the transform rotation to <code class="literal">0</code>. If the player is headed to the left, then we rotate the player sprite 180 degrees on the <span class="emphasis"><em>y</em></span> axis. This will flip the sprite so that it faces the left of the screen. When the player is headed to the right, it will flip back to the origin. The following screenshot<a id="id271" class="indexterm"></a> shows our player character, who at first, only faced right and now faces left:</p><div class="mediaobject"><img src="/graphics/9781785287473/graphics/B04808_06_15.jpg" /><div class="caption"><p>The player can now face left</p></div></div><p>You can head back to the Unity Editor and check this work correctly. But if you obtain a weapon and try to use it while facing left, it will still swing to the right. So, we need to do a little more work to correct the swing of the weapon.</p><p>First, we need to add some functionality to the <code class="literal">Weapon</code> class. In the <code class="literal">Update</code> function where the animation takes place, we will need to add a condition in which the weapon can swing to the left. <span class="emphasis"><em>Code snip 6.10</em></span> shows the necessary changes that need to be made to the <code class="literal">Weapon</code> class's <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">1 void Update () {
+2   if (inPlayerInventory) {
+3     transform.position = player.transform.position;
+4     if (weaponUsed == true) {
+5       float degreeY = 0, degreeZ = -90f, degreeZMax = 275f;
+6       Vector3 returnVecter = Vector3.zero;
+7       if (Player.isFacingRight) {
+8         degreeY = 0;
+9         returnVecter = Vector3.zero;
+10      } else if (!Player.isFacingRight) {
+11        degreeY = 180;
+12        returnVecter = new Vector3(0,180,0);
+13      }
+14      transform.rotation = Quaternion.Slerp (transform.rotation, Quaternion.Euler (0, degreeY, degreeZ), Time.deltaTime * 20f);
+15      if (transform.eulerAngles.z &lt;= degreeZMax) {
+16        transform.eulerAngles = returnVecter;
+17        weaponUsed = false;
+18        enableSpriteRender (false);
+19      }
+20    }
+21  }
+22 }</pre></div><p>Lines 7-14 are the new <a id="id272" class="indexterm"></a>additions. We add a conditional statement that checks whether the player is facing to the right or not. We use a <code class="literal">bool</code> variable that doesn't exist yet, but we will add this to the <code class="literal">Player</code> class definition shortly. The conditional statement changes the rotation of the <span class="emphasis"><em>y</em></span> axis via <code class="literal">degreeY</code>, which will make the weapon face toward the right or left, like the player does. Then, it sets the value that will return the weapon to it's upright starting position relative to the direction that it faces.</p><p>Once this is complete, we can move on to the <code class="literal">Player</code> class definition and make some final changes there. At the top of the <code class="literal">Player</code> class definition, add the <code class="literal">public static bool isFacingRight;</code> line. This variable is the one we refer to in the Weapon class to determine the direction that the player faces.</p><p>Next, we need to actually set the value for the <code class="literal">isFacingRight</code> variable. This will take place in the <code class="literal">Player</code> class override of the <code class="literal">AttemptMove</code> function. At the top of the function definition, add this conditional statement:</p><div class="informalexample"><pre class="programlisting">1 if (xDir == 1 &amp;&amp; !isFacingRight) {
+2   isFacingRight = true;
+3 } else if (xDir == -1 &amp;&amp; isFacingRight) {
+4   isFacingRight = false;
+5 }</pre></div><p>Save your changes and head back to the Unity Editor. You can test the newly completed weapon system. Your character now turns to the left and right as well and swings his or her weapon in the correct direction. You can see this best if you find and use the asymmetrical curved <a id="id273" class="indexterm"></a>sword.</p><div class="mediaobject"><img src="/graphics/9781785287473/graphics/B04808_06_16.jpg" /><div class="caption"><p>The player can swing the sword toward the left</p></div></div><p>The sword now swings to the left and right, but what about upward and downward? Our character can attack in four directions and we have only handled two of them. This is a good exercise for you to tackle on your own. Try adding a sword animation that arcs the sword above the player's head and below his or her feet.</p></div>

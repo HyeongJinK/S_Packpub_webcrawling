@@ -1,0 +1,66 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec22"></a>Packing and blending textures</h2></div></div><hr /></div><p>Textures are <a id="id138" class="indexterm"></a>useful to store not only loads of data, not just pixel colors as we <a id="id139" class="indexterm"></a>generally tend to think of them, but also for multiple sets of pixels in both the <span class="emphasis"><em>x</em></span> and <span class="emphasis"><em>y</em></span> directions and RGBA channels. We can actually pack multiple images into one single RGBA texture and use each of the R, G, B, and A components as individual textures themselves by extracting each of these components in the shader code.</p><p>The result of packing individual grayscale images into a single RGBA texture can be seen in the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_02_17.jpg" /></div><p>Why is this helpful? Well, in terms of the amount of actual memory that your application takes up, textures are a large portion of your application's size. So, to begin reducing the size of your application, we can look at all of the images that we are using in our shader and see if we can merge these textures into a single texture.</p><p>Any texture that is grayscale can be packed into one of the RGBA channels of another texture. This might sound a bit odd at first, but this recipe is going to demonstrate one of the uses of packing a texture and using these packed textures in a shader.</p><p>One example of using these packed textures is when you want to blend a set of textures together onto a single surface. You see this most often in terrain type shaders, where you need to blend into another texture nicely using some sort of control texture or the packed texture, in this case. This recipe covers this technique and shows you how you can construct the beginnings of a nice four-texture blended terrain shader.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec53"></a>Getting ready</h3></div></div></div><p>Let's create a new shader file in your <code class="literal">Shaders</code> folder and then create a new material for this shader. The naming convention is entirely up to you for your shader and material files, so try your best to keep them organized and easy to reference later on.</p><p>Once you have your shader and material ready, create a new scene in which we can test our shader.</p><p>You will also need to gather up four textures that you would want to blend together. These can be anything, but for a nice terrain shader, you will want grass, dirt, rocky dirt, and rock textures.</p><p>These are the color <a id="id140" class="indexterm"></a>textures that we will be using for this recipe, which are included with this book.</p><p>Finally, we will also <a id="id141" class="indexterm"></a>need a blending texture that is packed with grayscale images. This will give us the four blending textures that we can use to direct how the color textures will be placed on the object surface.</p><p>We can use very intricate blending textures to create a very realistic distribution of terrain textures over a terrain mesh, as seen in the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_02_18.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec54"></a>How to do it…</h3></div></div></div><p>Let's learn how to use packed textures by entering the code shown in the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We need to add a few properties to our <code class="literal">Properties</code> block. We will need five <code class="literal">sampler2D</code> objects, or textures, and two color properties:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>Properties</strong></span>
+{
+_MainTint (<span class="strong"><strong>"Diffuse Tint"</strong></span>, Color) = (1,1,1,1)
+    
+<span class="strong"><strong>//Add the properties below so we can input all of our textures</strong></span>
+  _ColorA (<span class="strong"><strong>"Terrain Color A"</strong></span>, Color) = (1,1,1,1)
+  _ColorB (<span class="strong"><strong>"Terrain Color B"</strong></span>, Color) = (1,1,1,1)
+  _RTexture (<span class="strong"><strong>"Red Channel Texture"</strong></span>, 2D) = <span class="strong"><strong>""</strong></span>{}
+  _GTexture (<span class="strong"><strong>"Green Channel Texture"</strong></span>, 2D) = <span class="strong"><strong>""</strong></span>{}
+  _BTexture (<span class="strong"><strong>"Blue Channel Texture"</strong></span>, 2D) = <span class="strong"><strong>""</strong></span>{}
+  _ATexture (<span class="strong"><strong>"Alpha Channel Texture"</strong></span>, 2D) = <span class="strong"><strong>""</strong></span>{}
+  _BlendTex (<span class="strong"><strong>"Blend Texture"</strong></span>, 2D) = <span class="strong"><strong>""</strong></span>{}
+}</pre></div></li><li><p>We then need to create the <code class="literal">SubShader{}</code> section variables that will be our link to the data in the <code class="literal">Properties</code> block:</p><div class="informalexample"><pre class="programlisting">CGPROGRAM
+<span class="strong"><strong>#pragma</strong></span> surface surf Lambert
+
+<span class="strong"><strong>float4</strong></span> _MainTint;
+<span class="strong"><strong>float4</strong></span> _ColorA;
+<span class="strong"><strong>float4</strong></span> _ColorB;
+<span class="strong"><strong>sampler2D</strong></span> _RTexture;
+<span class="strong"><strong>sampler2D</strong></span> _GTexture;
+<span class="strong"><strong>sampler2D</strong></span> _BTexture;
+<span class="strong"><strong>sampler2D</strong></span> _BlendTex;
+<span class="strong"><strong>sampler2D</strong></span> _ATexture;</pre></div></li><li><p>So, now <a id="id142" class="indexterm"></a>we have our texture properties and we are passing <a id="id143" class="indexterm"></a>them to our <code class="literal">SubShader{}</code> function. In order to allow the user to change the tiling rates on a per-texture basis, we will need to modify our <code class="literal">Input</code> struct. This will allow us to use the tiling and offset parameters on each texture:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>struct</strong></span> Input 
+{
+  <span class="strong"><strong>float2</strong></span> uv_RTexture;
+  <span class="strong"><strong>float2</strong></span> uv_GTexture;
+  <span class="strong"><strong>float2</strong></span> uv_BTexture;
+  <span class="strong"><strong>float2</strong></span> uv_ATexture;
+  <span class="strong"><strong>float2</strong></span> uv_BlendTex;
+};</pre></div></li><li><p>In the <code class="literal">surf()</code> function, get the texture information and store them in their own variables so that we can work with the data in a clean, easy-to-understand way:</p><div class="informalexample"><pre class="programlisting">//Get the pixel data from the blend texture
+//we need a float 4 here because the texture 
+//will return R,G,B,and A or X,Y,Z, and W
+<span class="strong"><strong>float4</strong></span> blendData = tex2D(_BlendTex, IN.uv_BlendTex);
+      
+//Get the data from the textures we want to blend
+<span class="strong"><strong>float4</strong></span> rTexData = tex2D(_RTexture, IN.uv_RTexture);
+<span class="strong"><strong>float4</strong></span> gTexData = tex2D(_GTexture, IN.uv_GTexture);
+<span class="strong"><strong>float4</strong></span> bTexData = tex2D(_BTexture, IN.uv_BTexture);
+<span class="strong"><strong>float4</strong></span> aTexData = tex2D(_ATexture, IN.uv_ATexture);</pre></div></li><li><p>Let's blend each of our textures together using the <code class="literal">lerp()</code> function. It takes three arguments, <code class="literal">lerp(value : a, value : b, blend: c)</code>. The <code class="literal">lerp()</code> function takes in two textures and blends them with the float value given in the last argument:</p><div class="informalexample"><pre class="programlisting">//No we need to contruct a new RGBA value and add all 
+//the different blended texture back together
+<span class="strong"><strong>float4</strong></span> finalColor;
+finalColor = lerp(rTexData, gTexData, blendData.g);
+finalColor = lerp(finalColor, bTexData, blendData.b);
+finalColor = lerp(finalColor, aTexData, blendData.a);finalColor.a = 1.0;</pre></div></li><li><p>Finally, we <a id="id144" class="indexterm"></a>multiply our blended textures with the color tint <a id="id145" class="indexterm"></a>values and use the red channel to determine where the two different terrain tint colors go:</p><div class="informalexample"><pre class="programlisting">//Add on our terrain tinting colors
+<span class="strong"><strong>float4</strong></span> terrainLayers = lerp(_ColorA, _ColorB, blendData.r);
+finalColor *= terrainLayers;
+finalColor = saturate(finalColor);
+        
+o.Albedo = finalColor.rgb * _MainTint.rgb;
+o.Alpha = finalColor.a;</pre></div></li></ol></div><p>The result of blending together four terrain textures and creating a terrain tinting technique can be seen in the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_02_15.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec55"></a>How it works…</h3></div></div></div><p>This might seem like <a id="id146" class="indexterm"></a>quite a few lines of code, but the concept behind blending <a id="id147" class="indexterm"></a>is actually quite simple. For the technique to work, we have to employ the built-in <code class="literal">lerp()</code> function from the CgFX standard library. This function allows us to pick a value between argument one and argument two using argument three as the blend amount:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Function</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">lerp( a , b, f )</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This involves linear interpolation:</p>
+<p>
+<code class="literal">(1 – f )* a + b * f</code>
+</p>
+<p>Here, <code class="literal">a</code> and <code class="literal">b</code> are matching vector or scalar types. The <code class="literal">f</code> parameter can be either a scalar or vector of the same type as <code class="literal">a</code> and <code class="literal">b</code>.</p>
+</td></tr></tbody></table></div><p>So, for example, if we wanted to find the mid-value between 1 and 2, we could feed the value 0.5 as the third argument to the <code class="literal">lerp()</code> function and it would return the value 1.5. This works perfectly for our blending needs as the values of an individual channel in an RGBA texture are single float values, usually in the range of 0 to 1.</p><p>In the shader, we simply take one of the channels from our blend texture and use it to drive the color that is picked in a <code class="literal">lerp()</code> function for each pixel. For instance, we take our grass texture and dirt texture, use the red channel from our blending texture, and feed this to a <code class="literal">lerp()</code> function. This will give us the correct blended color result for each pixel on the surface.</p><p>A more visual representation of what is happening when using the <code class="literal">lerp()</code> function is shown in the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_02_12.jpg" /></div><p>The shader code simply uses the four channels of the blend texture and all the color textures to create <a id="id148" class="indexterm"></a>a final blended texture. This final texture then becomes our <a id="id149" class="indexterm"></a>color that we can multiply with our diffuse lighting.</p></div></div>

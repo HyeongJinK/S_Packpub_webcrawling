@@ -1,0 +1,12 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec64"></a>Infinite arguments</h2></div></div><hr /></div><p>Though not technically a part of .NET or Mono, our exploration of both these libraries has touched several<a id="id495" class="indexterm"></a> times on functions that accept seemingly an endless chain of arguments, such as the <code class="literal">String.Format</code> function. With <code class="literal">String.Format</code>, it's possible to plug in as many object arguments as you need for inclusion into a formatted string. In this section, I want to take a small (and very quick) diversion to show that you can code your own functions that accept and process limitless arguments; they're simple to create. Refer to the following code sample 6-20 for a function that can sum a potentially limitless array of integers:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>01 public int Sum(params int[] Numbers)</strong></span>
+02 {
+03 int Answer = 0;
+04 
+<span class="strong"><strong>05 for(int i=0; i&lt;Numbers.Length; i++)</strong></span>
+06         Answer += Numbers[i];
+07 
+08 return Answer;
+09 }</pre></div><p>The following are the comments for code sample 6-20:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 01</strong></span>: To accept a potentially infinite number of arguments, use the <code class="literal">params</code> keyword and declare the argument as an array type</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 05</strong></span>: The <code class="literal">params</code> argument can be accessed like a regular array</p></li></ul></div></div>

@@ -1,0 +1,48 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec220"></a>Time for action – adding the lose condition</h2></div></div><hr /></div><p>The easiest way to figure out if the player has lost is to check the <code class="literal">transform.position.y</code> value of the heart.<a id="id672" class="indexterm"></a> If the heart has fallen through the floor, the player obviously isn't bouncing it on the tray any longer.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the logic for incrementing the player's score (number of hits/bounces before losing):</p><div class="informalexample"><pre class="programlisting">function OnCollisionEnter(col : Collision) {
+  if(col.gameObject.CompareTag("tray")) {
+    //Debug.Log("yes! hit tray!");
+    if (!velocityWasStored) {
+      storedVelocity = rigidbody.velocity;
+       velocityWasStored = true;
+    }
+<span class="strong"><strong>    if(rigidbody.velocity.y &gt; 1) {</strong></span>
+<span class="strong"><strong>      numHits ++;</strong></span>
+<span class="strong"><strong>    }</strong></span>
+  rigidbody.velocity.y = storedVelocity.y;
+}</pre></div></li><li><p>Add the "lose the game" check to the <a id="id673" class="indexterm"></a>
+<code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">function Update() {
+  var str:String = "";
+
+  if(!hasLost){
+     str = numHits.ToString();
+  } else {
+    str = "Hits:" +  numHits.ToString() + "\nYour best:" +
+      bestScore;
+      
+    if(bestScore &gt; lastBest) str += "\nNEW RECORD!";
+  }
+  hitCount.text = str;
+<span class="strong"><strong>  if(transform.position.y &lt; -3){</strong></span>
+<span class="strong"><strong>    if(!hasLost) {</strong></span>
+<span class="strong"><strong>      hasLost = true;</strong></span>
+<span class="strong"><strong>      lastBest = bestScore;</strong></span>
+<span class="strong"><strong>      if(numHits &gt; bestScore) {</strong></span>
+<span class="strong"><strong>        bestScore = numHits;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div></li><li><p>Add these variables to the top of the script:</p><div class="informalexample"><pre class="programlisting">var hitCount:GUIText;
+var numHits:int = 0;
+var hasLost:boolean = false;
+<span class="strong"><strong>var bestScore:int = 0;</strong></span>
+<span class="strong"><strong>var lastBest:int = 0;</strong></span>
+var velocityWasStored = false;
+var storedVelocity : Vector3;</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec92"></a>
+<span class="emphasis"><em>What just happened – understanding the code</em></span>
+</h3></div></div></div><p>We start by incrementing <code class="literal">numHits</code> whenever the heart hits the tray:</p><div class="informalexample"><pre class="programlisting">if(rigidbody.velocity.y &gt; 1) {
+  numHits ++;
+}</pre></div><p>By checking if the heart's velocity is greater<a id="id674" class="indexterm"></a> than 1, we're making sure it's on the upward part of its bounce.  We put this conditional check on the heart's velocity so that the player doesn't score any points if he catches the heart on the tray and it just starts rolling around. No bounce, no points.  </p><div class="informalexample"><pre class="programlisting">if(transform.position.y &lt; -3){
+     if(!hasLost) {
+       hasLost = true;</pre></div><p>This is like saying "if the heart is through the floor (<code class="literal">transform.position.y</code> is less than negative 3), and the player hasn't lost yet, make the player lose".</p><p>Next, we record what the last high score was.</p><div class="informalexample"><pre class="programlisting">lastBest = bestScore;</pre></div><p>If the number of hits the player pulled off in this round beats the player's best score, reset the best score to the player's number of hits.</p><div class="informalexample"><pre class="programlisting">if(numHits &gt; bestScore) {
+  bestScore = numHits;
+}</pre></div><p>Save the script and test the game. The on-screen score counter updates with every hit you get, and when you drop the heart, you get<a id="id675" class="indexterm"></a> a recap of your last and best scores.</p></div></div>

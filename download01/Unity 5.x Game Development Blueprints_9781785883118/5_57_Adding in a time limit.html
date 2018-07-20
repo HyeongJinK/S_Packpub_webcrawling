@@ -1,0 +1,34 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec59"></a>Adding in a time limit</h2></div></div><hr /></div><p>Of course, if we kept<a id="id286" class="indexterm"></a> playing the game, it would get boring over time due to their being no stakes, so let's add in a time limit to have the player hit as many ducks as possible within that time!</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's add in a text to display to the player how much time they have left. To do this, go to <span class="strong"><strong>Game Object</strong></span> | <span class="strong"><strong>UI</strong></span> | <span class="strong"><strong>Text</strong></span> and then switch over to the <span class="strong"><strong>Game</strong></span> tab to see it.</p></li><li><p>Select the <span class="strong"><strong>Text</strong></span> object from the <span class="strong"><strong>Hierarchy</strong></span> and then from the <span class="strong"><strong>Inspector</strong></span> tab, rename it to <span class="strong"><strong>Time Text</strong></span>. Afterwards, open up the <span class="strong"><strong>Anchor Presets</strong></span> menu on the left-hand side of the <span class="strong"><strong>Rect Transform</strong></span> component, then hold <span class="emphasis"><em>Alt</em></span>+<span class="emphasis"><em>Shift</em></span> and then click on the top-center option to reposition the object.</p></li><li><p>Then, change <span class="strong"><strong>Height</strong></span> to <span class="strong"><strong>100</strong></span> and <span class="strong"><strong>Width</strong></span> to <span class="strong"><strong>400,</strong></span> so when we increase the size, it'll still show up. </p></li><li><p>After this, change the <span class="strong"><strong>Text</strong></span> component's <span class="strong"><strong>Text</strong></span> to <span class="strong"><strong>50</strong></span> and then changes the <span class="strong"><strong>Font Size</strong></span> to <span class="strong"><strong>60</strong></span> and the <span class="strong"><strong>Horizontal Alignment</strong></span> to <span class="strong"><strong>Centered</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781785883118/graphics/B05212_05_18.jpg" /></div></li><li><p>Next, let's add<a id="id287" class="indexterm"></a> in an <code class="literal">Outline</code> component, change the color to white with 255 alpha and then change the <span class="strong"><strong>Effect Distance</strong></span> to <code class="literal">2</code>, <code class="literal">-2</code>.</p></li><li><p>Now that we have this, open up the <code class="literal">GameController</code> and add the following line to the top include add:</p><div class="informalexample"><pre class="programlisting">using UnityEngine.UI; // Text</pre></div></li><li><p>Next, add in the following variables:</p><div class="informalexample"><pre class="programlisting">    private float timeLeft;
+    public Text timeText;</pre></div></li><li><p>Afterwards, add the following to the <code class="literal">Awake</code> function:</p><div class="informalexample"><pre class="programlisting">        timeLeft = 50;
+        timeText.text = timeLeft.ToString();</pre></div></li><li><p>Update the <code class="literal">Start</code> function to the following:</p><div class="informalexample"><pre class="programlisting">    // Use this for initialization
+    void Start ()
+    {
+        iTween.ValueTo(gameObject, iTween.Hash(
+                        "from", timeLeft,
+                        "to", 0,
+                        "time", timeLeft,
+                        "onupdatetarget", gameObject,
+                        "onupdate", "tweenUpdate",
+                        "oncomplete", "GameComplete"
+                        ));
+        StartCoroutine("SpawnTargets");
+    }</pre></div></li><li><p>Then, add<a id="id288" class="indexterm"></a> the following functions:</p><div class="informalexample"><pre class="programlisting">    void GameComplete()
+    {
+        StopCoroutine("SpawnTargets");
+        timeText.color = Color.black;
+        timeText.text = "GAME OVER";
+    }
+
+    void tweenUpdate(float newValue)
+    {
+        timeLeft = newValue;
+        if (timeLeft &gt; 10)
+        {
+            timeText.text = timeLeft.ToString("#");
+        }
+        else
+        {
+            timeText.color = Color.red;
+            timeText.text = timeLeft.ToString("#.0");
+        }
+    }</pre></div></li><li><p>Back in the editor, go back to the <span class="strong"><strong>Hierarchy</strong></span> tab, select the <code class="literal">GameController</code> object, and assign the <code class="literal">Time Text </code>variable to our <code class="literal">Time Text</code> object.</p></li><li><p>Save your project and start the game!</p><div class="mediaobject"><img src="/graphics/9781785883118/graphics/B05212_05_19.jpg" /></div></li></ol></div><p>As expected, we <a id="id289" class="indexterm"></a>now have a timer, and when we get to 10 seconds or less, it will turn red!</p><div class="mediaobject"><img src="/graphics/9781785883118/graphics/B05212_05_20.jpg" /></div></div>

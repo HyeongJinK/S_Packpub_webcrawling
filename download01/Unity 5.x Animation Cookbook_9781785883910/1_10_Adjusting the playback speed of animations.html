@@ -1,0 +1,27 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec17"></a>Adjusting the playback speed of animations</h2></div></div><hr /></div><p>Unity allows you to slow down and speed the <span>animation</span><a id="id325289112" class="indexterm"></a> playback in the <strong class="userinput"><code>Animator Controller</code></strong>. You can do it in runtime with scripts to achieve interesting effects, for instance, slow motion.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec39"></a>Getting ready</h3></div></div></div><p>Before we start, you should prepare and import a rig with at least one animation and create an <strong class="userinput"><code>Animator Controller</code></strong> with at least one animation state for it. You can also use the provided example Unity project and go to the <code class="literal">Chapter 01 Working with animations\Recipe 08 Adjusting the playback speed of animations</code>directory. There is a scene called <code class="literal">Example.unity</code> there. In the scene <strong class="userinput"><code>Hierarchy</code></strong>, you can find and <strong class="userinput"><code>AdjustSpeed</code></strong> game object. It has an attached <strong class="userinput"><code>Animator Controller</code></strong> in which you can find two animation states: <strong class="userinput"><code>WaveSpeedNormal</code></strong> and <strong class="userinput"><code>WaveSpeedIncreased</code></strong>. There is also an <strong class="userinput"><code>AdjustSpeedByScript</code></strong> game object in the scene. You can increase the playback speed of its animations by pressing the <strong class="userinput"><code>Space</code></strong> button on your keyboard in runtime.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec40"></a>How to do it...</h3></div></div></div><p>To change the animation <span>playback speed</span><a id="id325509754" class="indexterm"></a>, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open an <strong class="userinput"><code>Animator Controller</code></strong>.</li><li>Select an animation state.</li><li>Go to the animation state Inspector and find the <strong class="userinput"><code>Speed </code></strong>parameter below the <strong class="userinput"><code>Motion </code></strong>field.</li><li>Enter a number in the <strong class="userinput"><code>Speed </code></strong>parameter to change the playback speed.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec41"></a>How it works...</h3></div></div></div><p>The <strong class="userinput"><code>Speed</code></strong> parameter set for an animation state in the <strong class="userinput"><code>Animator Controller</code></strong> multiplies the speed playback of the animation state. Setting this parameter to zero will freeze the animation.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec42"></a>There's more...</h3></div></div></div><p>You can also set the <span>parameter</span><a id="id325509848" class="indexterm"></a> using scripts. Following is an example script (it is used by the <code class="literal">AdjustSpeedByScript</code> game object in the provided <code class="literal">Example.unity</code>). You can assign it to your animated game object that has the <strong class="userinput"><code>Animator</code></strong> component and an <strong class="userinput"><code><span>Animator Controller</span><a id="id325509867" class="indexterm"></a></code></strong> attached:</p><pre class="programlisting">using UnityEngine; 
+using System.Collections; 
+ 
+public class AdjustSpeedByScript : MonoBehaviour { 
+//This is a variable, in which we store the reference to the 
+Animator component 
+private Animator anim; 
+//We store the wanted animation speed in this variable, the 
+default value is 2 (200%). 
+ 
+public float newAnimationSpeed = 2f; 
+void Start () { 
+//At the start of the game we assign the Animator 
+component to our anim variable 
+anim = GetComponent&lt;Animator&gt;(); 
+} 
+void Update () { 
+//We check if player pressed the Space button 
+if (Input.GetKeyDown(KeyCode.Space)) { 
+//And set the playback speed of the whole Animator 
+Controller (it multiplies all states animation 
+playback speed) 
+ 
+anim.speed = newAnimationSpeed; 
+} 
+} 
+} </pre><p>If you want to change the speed of just one animation state, then add a float parameter to your <strong class="userinput"><code>Animator Controller</code></strong>, use this parameter in the <strong class="userinput"><code>Multiplier</code></strong> field in the animation state <strong class="userinput"><code>Inspector</code></strong>, and change the parameter with scripts using the following function:</p><pre class="programlisting">anim.SetFloat(string name, float value); </pre><p>Here <code class="literal">name</code> is the name of your parameter in the <strong class="userinput"><code>Animator Controller</code></strong> and <code class="literal">value</code> is the float value you want to set the parameter and playback speed to.</p></div></div>

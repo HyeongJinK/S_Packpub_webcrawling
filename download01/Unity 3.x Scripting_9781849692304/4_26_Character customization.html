@@ -1,0 +1,318 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec29"></a>Character customization</h2></div></div><hr /></div><a id="id559" class="indexterm"></a><p>In this next part of the chapter, we will talk about character customization and how to make our character change outfit by dragging different parts of equipment in inventory slots.</p><p>Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a 3D avatar of our character to be displayed on the <span class="strong"><strong>Inventory</strong></span> screen.</p></li><li><p>Add the <span class="strong"><strong>adding</strong></span> <span class="strong"><strong>items</strong></span> functionality.</p></li><li><p>Make our character swap outfits when we drag outfit item into the appropriate item slot.</p></li><li><p>Make our character take ammo from the inventory to reload (as a bonus).</p></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec43"></a>3D character avatar</h3></div></div></div><a id="id560" class="indexterm"></a><a id="id561" class="indexterm"></a><p>Creating a 3D character avatar isn't as hard as it might seem. Technically speaking, we don't need to create anything at all. The following are the steps that we will take to create it:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new camera and locate it to show our character.</p></li><li><p>Put the character on a separate layer and order the camera to render that layer only.</p></li><li><p>Put the rendered image on the screen.</p></li><li><p>Make sure our image always aligns with the inventory when we are dragging it.</p></li></ol></div><p>Not too hard, is it? Let's get to it.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec38"></a>Dealing with a camera</h4></div></div></div><a id="id562" class="indexterm"></a><p>As mentioned previously, we need to set up our camera. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new <span class="strong"><strong>Camera</strong></span> object and give it a name <span class="strong"><strong>avatar_Camera</strong></span>.</p></li><li><p>Locate a camera in front of the character; make sure that it doesn't cut it anywhere.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_04_12.jpg" /></div></li><li><p>Attach <span class="strong"><strong>Camera</strong></span> to the character under the <span class="strong"><strong>robot</strong></span> <span class="strong"><strong>GameObject</strong></span> in the <span class="strong"><strong>Hierarchy</strong></span> view. This way we will make sure that, whatever happens, the camera will be facing the same direction.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_04_13.jpg" /></div></li></ol></div><p>Great! Now the problem is the camera is acting just like a usual camera and rendering everything that it captures. To make the camera render our character only, we will need to put <a id="id563" class="indexterm"></a>our character on a separate layer and make our camera render only that layer. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Having <span class="strong"><strong>avatar_Camera</strong></span> selected, go to the <span class="strong"><strong>Inspector</strong></span> view. Under the <span class="strong"><strong>Layer</strong></span> drop-down menu, select <span class="strong"><strong>Add</strong></span> <span class="strong"><strong>Layer</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_04_14.jpg" /></div></li><li><p>Create a new <span class="strong"><strong>Layer</strong></span> and call it <span class="strong"><strong>Avatar</strong></span>.</p></li><li><p>Select our character and put him on <span class="strong"><strong>Avatar</strong></span> <span class="strong"><strong>Layer</strong></span>.</p></li><li><p>Reselect the <span class="strong"><strong>camera</strong></span> <span class="strong"><strong>GameObject</strong></span>. Go to the <span class="strong"><strong>Camera</strong></span> component and set <span class="strong"><strong>Culling</strong></span> <span class="strong"><strong>Mask</strong></span> to <span class="strong"><strong>Avatar</strong></span> only (deselect all other layers). <span class="strong"><strong>Culling</strong></span> <span class="strong"><strong>Mask</strong></span> will not render anything with that camera, but only the selected layer.</p></li><li><p>Set the <span class="strong"><strong>Clear</strong></span> <span class="strong"><strong>Flags</strong></span> value to <span class="strong"><strong>Depth</strong></span> <span class="strong"><strong>only</strong></span> to get rid of the background color.</p></li><li><p>Set <span class="strong"><strong>Projection</strong></span> to <span class="strong"><strong>Orthographic</strong></span> and adjust <span class="strong"><strong>Size</strong></span> to fit the character in completely:</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_04_15.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec39"></a>Adjusting the camera</h4></div></div></div><a id="id564" class="indexterm"></a><p>Camera setup is almost complete, however, if you try and hit <span class="strong"><strong>Play</strong></span> right now, you won't be able to see our <span class="strong"><strong>avatar_Camera</strong></span> render. That is because it's being overlapped by our main camera. To prevent that from happening, we need to make sure that our <span class="strong"><strong>avatar_Camera</strong></span> always stays on top. To do that, we need to set the <span class="strong"><strong>Depth</strong></span> value of our camera to <span class="strong"><strong>100</strong></span>. <span class="strong"><strong>Depth</strong></span> is determining the layer order on the screen; the higher the value, the closer it is to the screen.</p><p>Having dealt with the depth, we have one more important thing to fix—camera screen space. It is obvious that we don't want our <span class="strong"><strong>avatar_Camera</strong></span> to occupy the entire screen, but only a small portion of it. to make that happen, we need to adjust the <span class="strong"><strong>Normalized</strong></span> <span class="strong"><strong>View</strong></span> <span class="strong"><strong>Port</strong></span> <span class="strong"><strong>Rect</strong></span> values that dictate what part of the screen our camera should occupy. The <span class="strong"><strong>X</strong></span> and <span class="strong"><strong>Y</strong></span> values are the <span class="strong"><strong>Vector2D</strong></span> parameters of the screen, however, they can be set between <span class="strong"><strong>0</strong></span> and <span class="strong"><strong>1</strong></span> to allow us to specify which percentage of the screen we want to occupy. <span class="strong"><strong>W</strong></span> and <span class="strong"><strong>H</strong></span> are width and height, respectively.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>Adjusting the <span class="strong"><strong>Normalized</strong></span> <span class="strong"><strong>View</strong></span> <span class="strong"><strong>Port</strong></span> <span class="strong"><strong>Rect</strong></span> values of two cameras can be done to create a split screen for 2 players (or more if you have more cameras).</p></div><p>Usually, we don't have to worry about these things and simply convert render of the second camera into a texture and apply it to any object, but this option is only available in Unity Pro. For those of you who don't have it, we will have to manually adjust the position of the render with the position of the dynamically moving inventory window. To make that happen, we will have to get back to scripting into the <code class="literal">CH_Inventory script</code>. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Declare a new variable to hold the camera object; call it <span class="strong"><strong>avatarCamera</strong></span>.</p></li><li><p>Declare two variables of a <code class="literal">Vector2</code> type—<code class="literal">AvatarLoc</code> with a default value of <code class="literal">Vector2(20,-45)</code> and <code class="literal">AvatarLocation</code>.</p></li><li><p>Declare the <code class="literal">Update</code> function; it will handle the modification of render position every frame.</p></li></ol></div><p>The following code snippet goes into the <code class="literal">CH_Inventory</code> script:</p><div class="informalexample"><pre class="programlisting">public var avatarCamera : Camera;
+public var AvatarLocation : Vector2;
+var AvatarLoc : Vector2 = Vector2(20,-45);
+function Update(){}</pre></div><p>To make sure that our render always moves with the window, we need to use the window position to modify the render position. The rest of the code will be written inside the <code class="literal">Update</code> <a id="id565" class="indexterm"></a>function:</p><div class="informalexample"><pre class="programlisting">function Update(){
+AvatarLocation = Vector2(windowRect.x + AvatarLoc.x, Screen.height - windowRect.y + AvatarLoc.y  );
+avatarCamera.rect = Rect ( AvatarLocation.x/Screen.width, AvatarLocation.y/Screen.height - 0.2, 0.2, 0.2);
+}</pre></div><p>We are using the <code class="literal">AvatarLoc</code> value to adjust the position of the render inside the window. As GUI space has different coordinates, we need to subtract the window location from the overall screen height. All of that will give us the render location on the screen, but to adjust the render position, we need values from 0 to 1. That's why we are calculating the relation of the render position with respect to the overall screen size.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec40"></a>Window dragging limits</h4></div></div></div><a id="id566" class="indexterm"></a><p>If we try to drag our window around the screen, we will notice that the render starts to shrink when we are dragging the window outside of the screen borders. Unfortunately, this cannot be helped and the only way to fix it is to make sure that our window is never being dragged outside of the screen borders. Additionally, we probably don't want our window to become draggable everywhere, that's why we need to limit, not only where it can go, but also the space where we can grab it. All the fixes will go at the very end of the <code class="literal">DoMyWindow</code> function, right before calling <code class="literal">GUI.DragWindow</code>:</p><div class="informalexample"><pre class="programlisting">GUI.EndScrollView ();
+if(windowRect.x &lt; 0)
+windowRect.x = 0;
+if(windowRect.y &lt; 0)
+windowRect.y = 0;
+if (windowRect.y &gt; Screen.height - windowRect.height)
+ windowRect.y = Screen.height - windowRect.height;
+ if (windowRect.x &gt; Screen.width - windowRect.width)
+ windowRect.x = Screen.width - windowRect.width;
+if(Input.mousePosition.y &gt;= Screen.height - windowRect.y-20 &amp;&amp; Input.mousePosition.x &lt;= windowRect.x + windowRect.width &amp;&amp; dragging == false)
+GUI.DragWindow ();</pre></div><p>First, we check if the window is in the wrong position and pushing it back when it should be on the screen space. Lastly, we will check the mouse position. If we are not dragging anything and pointing at the tab of the window, then we can grab and drag it.</p><p>That concludes our work with cameras.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec44"></a>Customization</h3></div></div></div><a id="id567" class="indexterm"></a><p>In order to customize our character, we need an actual outfit. The easiest way to make changeable parts of the body is to attach meshes and toggle them based on the item in the slot. That way, we can have 20 weapons attached to the character, but render one at a time to save performance.</p><p>In this example we will look into something different, like changing only visuals, but not the form of robot parts. To make this happen, we will perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Set up variables and items that will be used in the inventory.</p></li><li><p>Add items to the inventory.</p></li><li><p>Make them influence the character.</p></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec41"></a>Setting up items</h4></div></div></div><a id="id568" class="indexterm"></a><a id="id569" class="indexterm"></a><p>Our outfit will be changing by changing the textures in materials that are applied to our character. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Declare variables for inventory slots to hold textures for items in the <code class="literal">CH_Inventory</code> script:</p><div class="informalexample"><pre class="programlisting">public var ChestIconFull : Texture;
+public var LeftArmIconFull : Texture;
+public var RightWeaponIconFull : Texture;
+public var HeadIconFull : Texture;
+public var ShoulderIconFull : Texture;
+public var BootsIconFull : Texture;</pre></div></li><li><p>Declare variables to hold materials that we will need to modify:</p><div class="informalexample"><pre class="programlisting">public var HeadMaterial : Material;
+public var ChestMaterial : Material;
+public var RightWeaponMaterial : Material;
+public var LeftArmMaterial : Material;
+public var BootsMaterial : Material;
+public var ShoulderMaterial : Material;</pre></div></li><li><p>Declare variables to hold two textures that we will be modifying our materials with:</p><div class="informalexample"><pre class="programlisting">public var MainOutfit : Texture;
+public var AltOutfit : Texture;</pre></div></li></ol></div><a id="id570" class="indexterm"></a><p>Having done that, we need to grab textures and materials from the <span class="strong"><strong>custom_materials</strong></span> and <span class="strong"><strong>custom_textures</strong></span> folders in the <span class="strong"><strong>Project</strong></span> view and assign them to the variables, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_04_16.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec42"></a>Adding items</h4></div></div></div><a id="id571" class="indexterm"></a><a id="id572" class="indexterm"></a><p>To add items to the inventory, we need to create a function called <code class="literal">FindFirstAvailableSlot()</code>, which will find the first available slot and return it. To do that, we need to go through all the slots, check if they are empty, and return the last one. This function will go through all the slots in the <code class="literal">InventorySet</code> array, and it will find the first one that is empty, or return null if all are full:</p><p>In the <code class="literal">CH_Inventory</code> script, add the following code snippet:<a id="id573" class="indexterm"></a><a id="id574" class="indexterm"></a></p><div class="informalexample"><pre class="programlisting">...
+private function FindFirstAvailableSlot(){
+    for (var i : int = 0; i &lt; 40; i ++){
+        if (InventorySet[i].empty)
+        return i;
+        if(i == 40 &amp;&amp; !InventorySet[i].empty)
+        return null;
+    }
+}</pre></div><p>Now, we need a function that will take advantage of that and will add items to the inventory. All we need to pass here is a string of the object that we needs to add, when we will check it through the <code class="literal">if</code> statement and modify the slot icon and status accordingly. The following is an example of this function:</p><div class="informalexample"><pre class="programlisting">function AddInventory(ObjectType : String){
+var emptySlot : int = FindFirstAvailableSlot(); 
+if (ObjectType == "Chest"){
+    InventorySet[emptySlot].icon = ChestIconFull;
+    InventorySet[emptySlot].Type = "Chest";
+    InventorySet[emptySlot].empty = false;
+}
+else if (ObjectType == "RightWeapon"){
+    InventorySet[emptySlot].icon = RightWeaponIconFull;
+    InventorySet[emptySlot].Type = "RightWeapon";
+    InventorySet[emptySlot].empty = false;
+    }
+else if (ObjectType == "LeftArm"){
+    InventorySet[emptySlot].icon = LeftArmIconFull;
+    InventorySet[emptySlot].Type = "LeftArm";
+    InventorySet[emptySlot].empty = false;
+    }
+else if (ObjectType == "Shoulder"){
+    InventorySet[emptySlot].icon = ShoulderIconFull;
+    InventorySet[emptySlot].Type = "Shoulder";
+    InventorySet[emptySlot].empty = false;
+    }
+else if (ObjectType == "Head"){
+    InventorySet[emptySlot].icon = HeadIconFull;
+    InventorySet[emptySlot].Type = "Head";
+    InventorySet[emptySlot].empty = false;
+    }
+else if (ObjectType == "Boots"){
+    InventorySet[emptySlot].icon = BootsIconFull;
+    InventorySet[emptySlot].Type = "Boots";
+    InventorySet[emptySlot].empty = false;
+    }
+else if (ObjectType == "MedKit"){
+    InventorySet[emptySlot].icon = MedKitIcon;
+    InventorySet[emptySlot].Type = "MedKit";
+    InventorySet[emptySlot].empty = false;
+    }
+else if (ObjectType == "Ammo"){
+    InventorySet[emptySlot].icon = AmmoIcon;
+    InventorySet[emptySlot].Type = "Ammo";
+    InventorySet[emptySlot].empty = false;
+}
+}<a id="id575" class="indexterm"></a><a id="id576" class="indexterm"></a>
+</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec43"></a>Modifying character</h4></div></div></div><a id="id577" class="indexterm"></a><a id="id578" class="indexterm"></a><p>As mentioned previously, we need to modify texture inside the material to change the outfit of the character. This can be done with the <code class="literal">SetTexture</code> function and specifying the type of the texture and the texture file itself. In our case, the character has two texture maps on the material—diffuse and illumination. Diffuse map sets a color of the object and illumination sets the glowing color.</p><p>Once we have changed the textures in the game, the change will remain until the next launch, as we are changing the properties of the material. To make sure that we are receiving default texture when the game loads, we need to set textures in the <code class="literal">Awake</code> function:</p><div class="informalexample"><pre class="programlisting">ChestMaterial.SetTexture("_MainTex", MainOutfit);
+ChestMaterial.SetTexture("_Illum", MainOutfit);
+RightWeaponMaterial.SetTexture("_MainTex", MainOutfit);
+RightWeaponMaterial.SetTexture("_Illum", MainOutfit);
+LeftArmMaterial.SetTexture("_MainTex", MainOutfit);
+LeftArmMaterial.SetTexture("_Illum", MainOutfit);
+HeadMaterial.SetTexture("_MainTex", MainOutfit);
+HeadMaterial.SetTexture("_Illum", MainOutfit);
+BootsMaterial.SetTexture("_MainTex", MainOutfit);
+BootsMaterial.SetTexture("_Illum", MainOutfit);
+ShoulderMaterial.SetTexture("_MainTex", MainOutfit);
+ShoulderMaterial.SetTexture("_Illum", MainOutfit);</pre></div><p>Next, we need to change the texture, once we are dragging the item away from the full item slot and every time we put an item in the item slot. All of that will go into the <code class="literal">DoMyWindow</code> function, which should now look like the following code snippet:</p><div class="informalexample"><pre class="programlisting">...
+if (ChestSlot.Focused){
+if (dragging){DraggedObject.HoveringSlot = ChestSlot;}
+else if (Event.current.type == EventType.MouseDrag &amp;&amp; !ChestSlot.empty){
+if (!dragging){
+    DraggedObject.icon = ChestSlot.icon;
+    DraggedObject.Type = ChestSlot.Type;
+    DraggedObject.LastSlot = ChestSlot;
+    ChestSlot.empty = true;
+    ChestSlot.icon = ChestIcon;
+    ChestMaterial.SetTexture("_MainTex", MainOutfit);
+    ChestMaterial.SetTexture("_Illum", MainOutfit);
+                    }
+        dragging = true;
+    }
+}
+if (RightWeaponSlot.Focused){
+if (dragging){DraggedObject.HoveringSlot = RightWeaponSlot;}
+else if (Event.current.type == EventType.MouseDrag &amp;&amp; !RightWeaponSlot.empty){
+if (!dragging){
+    DraggedObject.icon = RightWeaponSlot.icon;
+    DraggedObject.Type = RightWeaponSlot.Type;
+    DraggedObject.LastSlot = RightWeaponSlot;
+    RightWeaponSlot.empty = true;
+    RightWeaponSlot.icon = RightWeaponIcon;
+    RightWeaponMaterial.SetTexture("_MainTex", MainOutfit);
+    RightWeaponMaterial.SetTexture("_Illum", MainOutfit);
+                    }
+        dragging = true;
+    }
+}
+if (LeftArmSlot.Focused){
+if (dragging){DraggedObject.HoveringSlot = LeftArmSlot;}
+else if (Event.current.type == EventType.MouseDrag&amp;&amp; !LeftArmSlot.empty){
+if (!dragging){
+    DraggedObject.icon = LeftArmSlot.icon;
+    DraggedObject.Type = LeftArmSlot.Type;
+    DraggedObject.LastSlot = LeftArmSlot;
+    LeftArmSlot.empty = true;
+    LeftArmSlot.icon = LeftArmIcon;
+    LeftArmMaterial.SetTexture("_MainTex", MainOutfit);
+    LeftArmMaterial.SetTexture("_Illum", MainOutfit);
+                    }
+        dragging = true;
+    }
+}
+if (HeadSlot.Focused){
+if (dragging){DraggedObject.HoveringSlot = HeadSlot;}
+else if (Event.current.type == EventType.MouseDrag &amp;&amp; !HeadSlot.empty){
+if (!dragging){
+    DraggedObject.icon = HeadSlot.icon;
+    DraggedObject.Type = HeadSlot.Type;
+    DraggedObject.LastSlot = HeadSlot;
+    HeadSlot.empty = true;
+    HeadSlot.icon = HeadIcon;
+    HeadMaterial.SetTexture("_MainTex", MainOutfit);
+    HeadMaterial.SetTexture("_Illum", MainOutfit);
+                    }
+        dragging = true;
+    }
+}
+if (ShoulderSlot.Focused){
+if (dragging){DraggedObject.HoveringSlot = ShoulderSlot;}
+else if (Event.current.type == EventType.MouseDrag &amp;&amp; !ShoulderSlot.empty){
+if (!dragging){
+    DraggedObject.icon = ShoulderSlot.icon;
+    DraggedObject.Type = ShoulderSlot.Type;
+    DraggedObject.LastSlot = ShoulderSlot;
+    ShoulderSlot.empty = true;
+    ShoulderSlot.icon = ShoulderIcon;
+    ShoulderMaterial.SetTexture("_MainTex", MainOutfit);
+    ShoulderMaterial.SetTexture("_Illum", MainOutfit);
+                    }
+        dragging = true;
+    }
+}
+if (BootsSlot.Focused){
+if (dragging){DraggedObject.HoveringSlot = BootsSlot;}
+else if (Event.current.type == EventType.MouseDrag &amp;&amp; !BootsSlot.empty){
+if (!dragging){
+    DraggedObject.icon = BootsSlot.icon;
+    DraggedObject.Type = BootsSlot.Type;
+    DraggedObject.LastSlot = BootsSlot;
+    BootsSlot.empty = true;
+    BootsSlot.icon = BootsIcon;
+    BootsMaterial.SetTexture("_MainTex", MainOutfit);
+    BootsMaterial.SetTexture("_Illum", MainOutfit);
+                    }
+        dragging = true;
+    }
+}
+...    
+for (var i : int = 0; i &lt; 10; i ++){
+for(var j: int = 0; j &lt; 4; j++){
+if (InventorySet[counter] != null){
+InventorySet[counter].location = GUIUtility.GUIToScreenPoint(Vector2(30 * i, 30 * j));
+if (InventorySet[counter].empty){
+InventorySet[counter].icon = EmptySlotTexture;
+}
+InventorySet[counter].CheckFocus();
+if(InventorySet[counter].Focused == true &amp;&amp; Event.current.type == EventType.MouseDrag &amp;&amp; InventorySet[counter].empty == false){
+if (!dragging){
+DraggedObject.icon = InventorySet[counter].icon;
+DraggedObject.Type = InventorySet[counter].Type;
+DraggedObject.LastSlot = InventorySet[counter];
+InventorySet[counter].empty = true;
+InventorySet[counter].icon = EmptySlotTexture;
+}
+dragging = true;
+DraggedObject.HoveringSlot = InventorySet[counter];
+}
+else if (InventorySet[counter].Focused &amp;&amp; Event.current.type == EventType.MouseDown){
+    if (ClickCount == 0){
+    LastClick = InventorySet[counter];
+    if (!dragging)
+    ClickCount++;
+    }
+    else{
+        if(LastClick.location == InventorySet[counter].location &amp;&amp; ClickCount == 1){
+            switch (InventorySet[counter].Type){
+            case "RightWeapon":
+                if(RightWeaponSlot.empty){
+                    RightWeaponSlot.empty = false;
+                    RightWeaponSlot.icon = InventorySet[counter].icon;
+                    InventorySet[counter].empty = true;
+                    InventorySet[counter].icon = EmptySlotTexture;
+                    RightWeaponMaterial.SetTexture("_MainTex", AltOutfit);
+                    RightWeaponMaterial.SetTexture("_Illum", AltOutfit);
+                    }
+                    break;
+            case "LeftArm":
+                if(LeftArmSlot.empty){
+                    LeftArmSlot.empty = false;
+                    LeftArmSlot.icon = InventorySet[counter].icon;
+                    InventorySet[counter].empty = true;
+                    InventorySet[counter].icon = EmptySlotTexture;
+                    LeftArmMaterial.SetTexture("_MainTex", AltOutfit);
+                    LeftArmMaterial.SetTexture("_Illum", AltOutfit);
+                    }
+                    break;
+            case "Head":
+                if(HeadSlot.empty){
+                    HeadSlot.empty = false;
+                    HeadSlot.icon = InventorySet[counter].icon;
+                    InventorySet[counter].empty = true;
+                    InventorySet[counter].icon = EmptySlotTexture;
+                    HeadMaterial.SetTexture("_MainTex", AltOutfit);
+                    HeadMaterial.SetTexture("_Illum", AltOutfit);
+                    }
+                    break;
+            case "Shoulder":
+                if(ShoulderSlot.empty){
+                    ShoulderSlot.empty = false;
+                    ShoulderSlot.icon = InventorySet[counter].icon;
+                    InventorySet[counter].empty = true;
+                    InventorySet[counter].icon = EmptySlotTexture;
+                    ShoulderMaterial.SetTexture("_MainTex", AltOutfit);
+                    ShoulderMaterial.SetTexture("_Illum", AltOutfit);
+                    }
+                    break;
+            case "Boots":
+                if(BootsSlot.empty){
+                    BootsSlot.empty = false;
+                    BootsSlot.icon = InventorySet[counter].icon;
+                    InventorySet[counter].empty = true;
+                    InventorySet[counter].icon = EmptySlotTexture;
+                        BootsMaterial.SetTexture("_MainTex", AltOutfit);
+                    BootsMaterial.SetTexture("_Illum", AltOutfit);
+                    }
+                    break;
+            case "Chest":
+                if(ChestSlot.empty){
+                    ChestSlot.empty = false;
+                    ChestSlot.icon = InventorySet[counter].icon;
+                    InventorySet[counter].empty = true;
+                    InventorySet[counter].icon = EmptySlotTexture;
+                    ChestMaterial.SetTexture("_MainTex", AltOutfit);
+                    ChestMaterial.SetTexture("_Illum", AltOutfit);
+                    }
+                    break;
+...</pre></div><p>Done! now our character is fully customizable.</p><a id="id579" class="indexterm"></a><a id="id580" class="indexterm"></a><p>The last thing that we will add are defaulted items in the inventory. For that, we will go into the <code class="literal">Start</code> function and add the following code at the very bottom:</p><div class="informalexample"><pre class="programlisting">yield WaitForSeconds (2);
+AddInventory("RightWeapon");
+AddInventory("Head");
+AddInventory("Shoulder");
+AddInventory("LeftArm");
+AddInventory("Boots");
+AddInventory("Chest");
+AddInventory("Ammo");</pre></div><p>The following screenshot shows the <span class="strong"><strong>Inventory</strong></span> screen:<a id="id581" class="indexterm"></a></p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_04_17.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec44"></a>Reloading and inventory</h4></div></div></div><a id="id582" class="indexterm"></a><a id="id583" class="indexterm"></a><p>Now that we can have ammo in the inventory, we also need to make use of it. The idea is that every time we run out of ammo, we send an issue to the inventory and search for an ammo item. If we find an item, we destroy an item in the inventory and replenish our ammo.</p><p>First of all, let's create a <code class="literal">FindAmmo</code> function<a id="id584" class="indexterm"></a> in the <code class="literal">CH_Inventory</code> script that will be searching for the ammo item in the inventory (this function is similar to the <code class="literal">FindFirstAvailableSlot</code> function<a id="id585" class="indexterm"></a> that we wrote earlier). The following is an example of the <code class="literal">FindAmmo</code> function:</p><div class="informalexample"><pre class="programlisting">public function FindAmmo(){
+    for (var i : int = 0; i &lt; 40; i ++){
+        if (InventorySet[i].Type == "Ammo"){
+        InventorySet[i].icon = EmptySlotTexture;
+        InventorySet[i].Type = "";
+        InventorySet[i].empty = true;
+        Stats.AddAmmo(1,40,1);
+        }
+        if(i == 40 &amp;&amp; !InventorySet[i].empty)
+        Debug.Log("No Ammo");
+    }
+}</pre></div><a id="id586" class="indexterm"></a><a id="id587" class="indexterm"></a><p>Now, we need to call this function when we run out of ammo. The best way to do it is to call the function from the <code class="literal">CH_Controller</code> script, from the <code class="literal">AltShooting</code> function<a id="id588" class="indexterm"></a>:</p><div class="informalexample"><pre class="programlisting">public var inventory : CH_Inventory; 
+function Start(){
+Stats = this.gameObject.GetComponent("CH_PlayerStats");
+inventory = this.gameObject.GetComponent("CH_Inventory");
+...
+}
+function AltShooting(){
+var hit: RaycastHit;
+Stats.AddAmmo(1, -1, 1);
+if (Stats.GetAmmo(1) == 0){
+inventory.FindAmmo();
+    }
+...
+}</pre></div><p>Our weapon will now reload with ammo from the inventory.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec45"></a>Finishing adjustments</h4></div></div></div><p>There are some last touch-ups that need to be done in the code.</p><p>Open the <span class="strong"><strong>CH_Inventory</strong></span> script<a id="id589" class="indexterm"></a> and perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <code class="literal">Start</code> function, disable <code class="literal">AvatarCamera</code>.</p></li><li><p>At the very top of the <code class="literal">OnGUI</code> function, we need to enable or disable the camera based on the <code class="literal">inventoryOpened</code> value and return from the function if <code class="literal">inventoryOpened</code> is <code class="literal">false</code>:</p><div class="informalexample"><pre class="programlisting">function Start(){
+...
+avatarCamera.enabled = false;
+}
+function OnGUI(){
+avatarCamera.enabled = (inventoryOpened) ? true : false;
+if (!inventoryOpened)
+    return;
+...
+}</pre></div></li></ol></div><p>Open the <span class="strong"><strong>CH_Controller</strong></span> script and perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <code class="literal">FixedUpdate</code> function<a id="id590" class="indexterm"></a>, check if inventory is open before calling the <code class="literal">Movement</code> function; if it is, return.</p></li><li><p>In the end of the <code class="literal">FixedUpdate</code> function, check if the player has hit the <span class="emphasis"><em>I</em></span> button and toggle the <code class="literal">inventoryOpened</code> variable inside the <code class="literal">CH_Inventory</code> script.</p></li><li><p>Now, we will go to the <span class="strong"><strong>weapon_pickUp</strong></span> script and change the last line of the <code class="literal">OnTriggerEnter</code> function<a id="id591" class="indexterm"></a> to this.</p></li><li><p>Save the <span class="strong"><strong>weapon_pickUp</strong></span> script and open the <span class="strong"><strong>treasure</strong></span> script. Create a reference to the <span class="strong"><strong>CH_Inventory</strong></span> script.</p></li><li><p>In the <code class="literal">switch</code> statement where we are checking the type of treasure, add last case <span class="strong"><strong>MedKit</strong></span>, reference <span class="strong"><strong>Inventory</strong></span>, and add <span class="strong"><strong>MedKit</strong></span> to it.</p></li></ol></div><p>In the <code class="literal">FixedUpdate</code> function<a id="id592" class="indexterm"></a>, add the following code snippet:</p><div class="informalexample"><pre class="programlisting">...
+transform.Rotate(Vector3(transform.rotation.x, Input.GetAxis("Mouse X"), transform.rotation.z) * Time.deltaTime * 250.0); 
+if (inventory.inventoryOpened)
+return;
+    Movement()
+...
+if (Input.GetKeyDown (KeyCode.I) ){
+        inventory.inventoryOpened = (inventory.inventoryOpened) ? false : true;
+    }</pre></div><p>Go to the <span class="strong"><strong>weapon_pickUp</strong></span> script and change the last line of the <code class="literal">OnTriggerEnter</code> function:</p><div class="informalexample"><pre class="programlisting">other.gameObject.GetComponent("CH_Inventory").AddInventory("RightWeapon");</pre></div><p>That is it, we are done.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_04_18.jpg" /></div></div></div></div>

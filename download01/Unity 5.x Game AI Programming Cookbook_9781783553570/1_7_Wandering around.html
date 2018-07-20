@@ -1,0 +1,34 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec14"></a>Wandering around</h2></div></div><hr /></div><p>This technique <a id="id21" class="indexterm"></a>works like a charm for random crowd simulations, animals, and almost any kind of NPC that requires random movement when idle.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec26"></a>Getting ready</h3></div></div></div><p>We need to add another function to our <code class="literal">AgentBehaviour</code> class called <code class="literal">OriToVec</code> that converts an orientation value to a vector.</p><div class="informalexample"><pre class="programlisting">public Vector3 GetOriAsVec (float orientation) {
+    Vector3 vector  = Vector3.zero;
+    vector.x = Mathf.Sin(orientation * Mathf.Deg2Rad) * 1.0f;
+    vector.z = Mathf.Cos(orientation * Mathf.Deg2Rad) * 1.0f;
+    return vector.normalized;
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec27"></a>How to do it...</h3></div></div></div><p>We could see it as a big three-step process in which we manipulate the internal target position in a parameterized random way, face that position, and move accordingly:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Wander</code> class deriving from <code class="literal">Face</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Wander <span class="strong"><strong>: Face</strong></span>
+{
+    public float offset;
+    public float radius;
+    public float rate;
+}</pre></div></li><li><p>Define the <code class="literal">Awake</code> function in order to set up the internal target:</p><div class="informalexample"><pre class="programlisting">public override void Awake()
+{
+    target = new GameObject();
+    target.transform.position = transform.position;
+    base.Awake();
+}</pre></div></li><li><p>Define the <a id="id22" class="indexterm"></a>
+<code class="literal">GetSteering</code> function:</p><div class="informalexample"><pre class="programlisting">public override Steering GetSteering()
+{
+    Steering steering = new Steering();
+    float wanderOrientation = Random.Range(-1.0f, 1.0f) * rate;
+    float targetOrientation = wanderOrientation + agent.orientation;
+    Vector3 orientationVec = OriToVec(agent.orientation);
+    Vector3 targetPosition = (offset * orientationVec) + transform.position;
+    targetPosition = targetPosition + (OriToVec(targetOrientation) * radius);
+    targetAux.transform.position = targetPosition;
+    steering = base.GetSteering();
+    steering.linear = targetAux.transform.position - transform.position;
+    steering.linear.Normalize();
+    steering.linear *= agent.maxAccel;
+    return steering;
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec28"></a>How it works...</h3></div></div></div><p>The behavior takes into consideration two radii in order to get a random position to go to next, looks towards that random point, and converts the computed orientation into a direction vector <a id="id23" class="indexterm"></a>in order to advance.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3561_01_03.jpg" /><div class="caption"><p>A visual description of the parameters for creating the Wander behavior</p></div></div></div></div>

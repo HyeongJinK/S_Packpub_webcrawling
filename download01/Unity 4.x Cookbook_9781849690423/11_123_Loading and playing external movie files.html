@@ -1,0 +1,76 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec119"></a>Loading and playing external movie files</h2></div></div><hr /></div><p>In this recipe, we will <a id="id902" class="indexterm"></a>load an external image video and play it on the screen. Also, we will have the <a id="id903" class="indexterm"></a>option of loading it from two different sources: the Web or <a id="id904" class="indexterm"></a>
+<span class="strong"><strong>Unity Default Resources</strong></span> (a library created once the game is built).</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec416"></a>Getting ready</h3></div></div></div><p>For this recipe, you'll need a video clip in OGG/Theora format. We have provided one, named <code class="literal">videoTexture.theora.ogg</code> in the <code class="literal">0423_11_05</code> folder. If you wish to use your own video files,you might need a converter. <a id="id905" class="indexterm"></a> In this case, a good option is <a id="id906" class="indexterm"></a>
+<span class="strong"><strong>Miro Video Converter</strong></span>, available at <a class="ulink" href="http://www.mirovideoconverter.com" target="_blank">www.mirovideoconverter.com</a>.</p><p>Also, if you want to load the video clip from<a id="id907" class="indexterm"></a> the Web, you will need access to a provider where you can host the files. In this case, please note that the image file should be stored in the same domain as the Unity file.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec417"></a>How to do it...</h3></div></div></div><p>To load and play an external movie file, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <span class="strong"><strong>Project</strong></span> view, create a new folder and rename it to <code class="literal">Resources</code>.</p></li><li><p>Place the <code class="literal">videoTexture.theora.ogg</code> file into the <code class="literal">Resources</code> folder.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, click on the <span class="strong"><strong>Create</strong></span> button and add a <span class="strong"><strong>GUI Texture</strong></span> to the scene. Then, rename it to <code class="literal">videoTexture</code>:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_12_12.jpg" /></div></li><li><p>Through the <span class="strong"><strong>Inspector</strong></span> view, remove the default <span class="strong"><strong>GUI Texture</strong></span> from <span class="strong"><strong>videoTexture</strong></span> by selecting <span class="strong"><strong>None</strong></span> in the <span class="strong"><strong>Texture</strong></span> field:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_12_13.jpg" /></div></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, <a id="id908" class="indexterm"></a>create a new C# script and rename it to <code class="literal">LoadMovie</code>.</p></li><li><p>Open the <a id="id909" class="indexterm"></a>script in your editor and replace everything with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.IO;
+[RequireComponent (typeof (AudioSource))]
+public class LoadMovie : MonoBehaviour  {
+    public enum source {Resources_folder, Internet};
+    public source VideoSource = source.Resources_folder;
+    public string fileName = "";
+    public string fileUrl = "";
+    public bool  relativePath = false;
+    private MovieTexture movieTexture;
+    private string url;
+
+    void  Start (){
+            if(VideoSource != source.Resources_folder){
+                GetData("external");
+            } else {
+                GetData("default");
+        }
+    }
+            
+    void  GetData ( string mode  ){
+        if(mode == "web"){
+            url = fileUrl;
+           if(relativePath){
+                url = Application.dataPath + "/" + fileUrl;
+            }
+            StartCoroutine(LoadWWW());
+        } else if(mode == "default"){
+            movieTexture = (MovieTexture) Resources.Load(fileName);; 
+            StartCoroutine(PlayMovie());
+        }   
+    }
+    
+    IEnumerator  LoadWWW (){
+        Debug.Log(url);
+        WWW www = new WWW (url);
+      yield return www;
+        movieTexture = www.movie;
+        StartCoroutine(PlayMovie());
+    }
+
+    IEnumerator PlayMovie(){
+        while (!movieTexture.isReadyToPlay)
+            yield return 0;
+        Debug.Log(movieTexture);
+        guiTexture.texture = movieTexture;
+        audio.clip = movieTexture.audioClip;
+        Debug.Log("Movie Dimensions: " + movieTexture.width +", " + movieTexture.height);
+        float movieAspectRatio = movieTexture.width / movieTexture.height;
+        float screenAspectRatio = Screen.width / Screen.height;
+        int movieWidth;
+        int movieHeight; 
+        if (movieAspectRatio &gt;= screenAspectRatio){
+          movieWidth = Screen.width;
+          movieHeight = Mathf.RoundToInt(movieWidth / movieAspectRatio);
+        } else {
+          movieHeight = Screen.height;
+          movieWidth = Mathf.RoundToInt(movieHeight * movieAspectRatio);
+        }
+        guiTexture.pixelInset = new Rect(-(movieWidth * 0.5f), -(movieHeight * 0.5f), movieWidth, movieHeight);  
+        movieTexture.Play();
+        audio.Play();
+    }
+
+    void  OnGUI (){
+    if(GUI.Button( new Rect(0, Screen.height - 20, 60, 20),"Play"))
+      movieTexture.Play();
+    if(GUI.Button( new Rect(60, Screen.height - 20, 60, 20),"Pause"))
+      movieTexture.Pause();
+    if(GUI.Button( new Rect(120, Screen.height - 20, 60, 20),"Stop"))
+      movieTexture.Stop();
+    }
+}</pre></div></li><li><p>Save your<a id="id910" class="indexterm"></a> script and attach it to the <span class="strong"><strong>videoTexture</strong></span> game object by dragging it from the <span class="strong"><strong>Project</strong></span> view to the <span class="strong"><strong>videoTexture</strong></span> game object in the <span class="strong"><strong>Hierarchy</strong></span> view.</p></li><li><p>Once the <a id="id911" class="indexterm"></a>script is attached to the camera, let's check its properties. As <span class="strong"><strong>Video Source</strong></span>, select <span class="strong"><strong>Resources_folder</strong></span>. Fill out <span class="strong"><strong>File Name</strong></span> by typing in the name of the video file in the <code class="literal">Resources</code> folder (in our case, <code class="literal">videoTexure.theora</code>):</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_12_14.jpg" /></div></li><li><p>Play the scene. The texture will be loaded and displayed on the screen.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec418"></a>How it works...</h3></div></div></div><p>As soon as the scene starts, the script calls the <code class="literal">GetData()</code> function, <a id="id912" class="indexterm"></a>which loads the movie file using the appropriate method, according to the preferences expressed in the component's options in the <span class="strong"><strong>Inspector</strong></span> view.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec419"></a>There's more...</h3></div></div></div><p>Next, you will find some information on how to fine-tune and customize this recipe:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec95"></a>Loading videos from the Internet</h4></div></div></div><p>If you want to load <a id="id913" class="indexterm"></a>the file from the Web, select <span class="strong"><strong>Internet</strong></span> as <span class="strong"><strong>Video Source</strong></span>, and fill out the <span class="strong"><strong>File Url</strong></span> field with the complete file URL (unless the <span class="strong"><strong>Relative Path</strong></span> option is checked).</p></div></div></div>

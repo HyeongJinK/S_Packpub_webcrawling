@@ -1,0 +1,60 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec90"></a>Creating XML text files – saving XML directly to text files with XMLDocument.Save()</h2></div></div><hr /></div><p>It is possible<a id="id634" class="indexterm"></a> to create an XML data structure and then save that data directly to a text file using the <code class="literal">XMLDocument.Save()</code> method<a id="id635" class="indexterm"></a>; this recipe illustrates how.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec315"></a>How to do it...</h3></div></div></div><p>To save XML data to text files directly, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new C# script named <code class="literal">PlayerXMLWriter</code>:</p><div class="informalexample"><pre class="programlisting">// file: PlayerXMLWriter.cs
+using System.Text;
+using System.Xml;
+using System.IO;
+
+public class PlayerXMLWriter {
+    private string _filePath;
+    private XmlDocument _xmlDoc;
+    private XmlElement _elRoot;
+
+    public PlayerXMLWriter(string filePath) {
+        _filePath = filePath;
+        _xmlDoc = new XmlDocument();
+
+        if(File.Exists (_filePath)) {
+            _xmlDoc.Load(_filePath);
+            _elRoot = _xmlDoc.DocumentElement;
+            _elRoot.RemoveAll();
+        }
+        else {
+            _elRoot = _xmlDoc.CreateElement("playerScoreList");
+            _xmlDoc.AppendChild(_elRoot);         }
+    }
+
+    public void SaveXMLFile() {
+        _xmlDoc.Save(_filePath);
+    }
+    public void AddXMLElement(string playerName, string playerScore) {
+        XmlElement elPlayer = _xmlDoc.CreateElement("playerScore");
+        _elRoot.AppendChild(elPlayer);
+
+        XmlElement elName = _xmlDoc.CreateElement("name");
+        elName.InnerText = playerName;
+        elPlayer.AppendChild(elName);
+
+        XmlElement elScore = _xmlDoc.CreateElement("score");
+        elScore.InnerText = playerScore;
+        elPlayer.AppendChild(elScore);
+    }
+}</pre></div></li><li><p>Add the <a id="id636" class="indexterm"></a>following C# script to <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: CreateXMLTextFile.cs
+using UnityEngine;
+using System.Collections;
+using System.IO;
+
+public class CreateXMLTextFile : MonoBehaviour {
+    public string fileName = "playerData.xml";
+    public string folderName = "Data";
+
+    private void Start() {
+        string filePath = Application.dataPath + Path.DirectorySeparatorChar + fileName;
+
+        PlayerXMLWriter myPlayerXMLWriter = new PlayerXMLWriter(filePath);
+        myPlayerXMLWriter.AddXMLElement("matt", "55");
+        myPlayerXMLWriter.AddXMLElement("jane", "99");
+        myPlayerXMLWriter.AddXMLElement("fred", "101");
+        myPlayerXMLWriter.SaveXMLFile();
+
+        print( "XML file should now have been created at: " + filePath);
+    }
+}</pre></div></li><li><p>Build and run your (Windows, Mac, or Linux) standalone executable. You'll need to save the current scene and then add this to the list of scenes in the build.</p></li><li><p>You should now find a new text file named <code class="literal">playerData.xml</code> in the <code class="literal">Data</code> folder of your project's <a id="id637" class="indexterm"></a>standalone files, containing the XML data for the three players:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_08_03.jpg" /></div></li><li><p>The contents of the <code class="literal">playerData.xml</code> file should be the XML player list data:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_08_04.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec316"></a>How it works...</h3></div></div></div><p>The <code class="literal">Start()</code> method creates <code class="literal">myPlayerXMLWriter</code>, a new object of the <code class="literal">PlayerXMLWriter</code> class, <a id="id638" class="indexterm"></a>to which it passes the new, required XML text file <code class="literal">filePath</code> as an argument. Three elements are added to the <code class="literal">PlayerXMLWriter</code> object, which store the names and scores of three players. The <code class="literal">SaveXMLFile()</code> method<a id="id639" class="indexterm"></a> is called and a debug <code class="literal">print()</code> message is displayed.</p><p>The <code class="literal">PlayerXMLWriter</code> class<a id="id640" class="indexterm"></a> works as follows: when a new object is created, the provided file path string is stored in a private variable; at the same time, a check is made to see whether any file already exists. If an existing file is found, the content elements are removed; if no existing file is found, then a new root element, <code class="literal">playerScoreList</code>, is created as the parent for child data nodes. The <code class="literal">AddXMLElement()</code> method<a id="id641" class="indexterm"></a> appends a new data node for the provided player name and score. The <code class="literal">SaveXMLFile()</code> method<a id="id642" class="indexterm"></a> saves the XML data structure as a text file for the stored file path string.</p></div></div>

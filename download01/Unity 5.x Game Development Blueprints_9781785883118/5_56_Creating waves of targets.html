@@ -1,0 +1,54 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec58"></a>Creating waves of targets</h2></div></div><hr /></div><p>Now that we have all <a id="id283" class="indexterm"></a>of the pieces together, let's make it so that we will only spawn a few ducks at a time and have a few of them appear at a time.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open up the <code class="literal">TargetBehaviour</code> script, and in the <code class="literal">Start</code> function, remove the following line:</p><div class="informalexample"><pre class="programlisting">ShowTarget(); </pre></div><p>This will keep the targets in their original position until we are ready for them to be shown.</p></li><li><p>Next, we will create a new script named <code class="literal">GameController</code> by going to the <span class="strong"><strong>Project</strong></span> tab and then selecting <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> Script and once it appears give it a name of <code class="literal">GameController</code>. Double-click on the file to open up your IDE of choice and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections; 			 // IEnumerator
+using System.Collections.Generic; // List
+
+public class GameController : MonoBehaviour
+{
+    public static GameController _instance;
+
+    [HideInInspector] // Hides var below from inspector
+    public List&lt;TargetBehaviour&gt; targets = new List&lt;TargetBehaviour&gt;();
+
+    void Awake()
+    {
+        _instance = this;
+    }
+
+    // Use this for initialization
+    void Start ()
+    {
+        StartCoroutine("SpawnTargets");
+    }
+
+    void SpawnTarget()
+    {
+        // Get a random target
+        int index = Random.Range(0, targets.Count);
+        TargetBehaviour target = targets[index];
+
+        // Show it
+        target.ShowTarget();
+    }
+
+    IEnumerator SpawnTargets()
+    {
+        yield return new WaitForSeconds(1.0f);
+
+        // Continue forever
+        while (true)
+        {
+            int numOfTargets = Random.Range(1, 4);
+
+            for (int i = 0; i &lt; numOfTargets; i++)
+            {
+                SpawnTarget();
+            }
+
+            yield return new WaitForSeconds(Random.Range(0.5f *numOfTargets, 2.5f));
+        }
+    }
+}</pre></div></li><li><p>Next, we<a id="id284" class="indexterm"></a> need to fill the values of targets, so to do that, go back into the <code class="literal">TargetBehaviour</code> script and add the following function:</p><div class="informalexample"><pre class="programlisting">    // Called before Start
+    void Awake()
+    {
+        GameController._instance.targets.Add(this);
+    }</pre></div></li><li><p>Then, add an empty game object to the scene (<span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span>), center it at <code class="literal">0</code>, <code class="literal">0</code>, <code class="literal">0</code>, and rename it <span class="strong"><strong>GameController</strong></span>. Afterwards, add a <span class="strong"><strong>GameController</strong></span> component to it.</p></li><li><p>Save your project and run the game:</p><div class="mediaobject"><img src="/graphics/9781785883118/graphics/B05212_05_17.jpg" /></div></li></ol></div><p>Now as you can see<a id="id285" class="indexterm"></a> the ducks appear in waves with a random number of ducks appearing after a period of time. Excellent!</p></div>

@@ -1,0 +1,58 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec58"></a>Zooming a telescopic camera</h2></div></div><hr /></div><p>In this recipe, we <a id="id458" class="indexterm"></a>will create a telescopic camera that zooms in whenever the left mouse button is pressed. This can be very useful, for instance, if we have a sniper in our game.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec159"></a>Getting ready...</h3></div></div></div><p>For this recipe, we have prepared the <code class="literal">BasicScene</code> Unity package, containing a scene named <code class="literal">BasicScene</code>. The package is in the <code class="literal">1362_05_codes</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec160"></a>How to do it...</h3></div></div></div><p>To create a telescopic camera, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the <code class="literal">BasicScene</code> package into a new <span class="strong"><strong>Project</strong></span>.</p></li><li><p>From the <span class="strong"><strong>Project</strong></span> view, open the <span class="strong"><strong>BasicScene</strong></span> level. This is a basic scene featuring an animated character and some extra geometry.</p></li><li><p>Import Unity's <span class="strong"><strong>Effects</strong></span> package by navigating to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>Effects.</strong></span>
+</p></li><li><p>Select the <span class="strong"><strong>Main Camera</strong></span> GameObject within the <span class="strong"><strong>Multipurpose Camera Rig</strong></span> | <span class="strong"><strong>Pivot</strong></span> GameObject and apply the <span class="strong"><strong>Vignette</strong></span> image effect (by navigating to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Image Effects</strong></span> | <span class="strong"><strong>Camera</strong></span> | <span class="strong"><strong>Vignette and Chromatic Aberration</strong></span>).</p></li><li><p>We need to create a script. In the <span class="strong"><strong>Project</strong></span> view, click on the <span class="strong"><strong>Create</strong></span> drop-down menu and choose <span class="strong"><strong>C# Script</strong></span>. Rename it <code class="literal">TelescopicView</code> and open it in your editor.</p></li><li><p>Open your <a id="id459" class="indexterm"></a>script and replace everything with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityStandardAssets.ImageEffects;
+
+public class TelescopicView : MonoBehaviour{
+  public float zoom = 2.0f;
+  public float speedIn = 100.0f;
+  public float speedOut = 100.0f;
+  private float initFov;
+  private float currFov;
+  private float minFov;
+  private float addFov;
+  private VignetteAndChromaticAberration v;
+  public float vMax = 10.0f;
+
+  void Start(){
+    initFov = Camera.main.fieldOfView;
+    minFov = initFov / zoom;
+    v = this.GetComponent&lt;VignetteAndChromaticAberration&gt;() as VignetteAndChromaticAberration;
+  }
+  void Update(){
+    if (Input.GetKey(KeyCode.Mouse0))
+      ZoomView();
+    else
+      ZoomOut();
+    float currDistance = currFov - initFov;
+    float totalDistance = minFov - initFov;
+    float vMultiplier = currDistance / totalDistance;
+    float vAmount = vMax * vMultiplier;
+    vAmount = Mathf.Clamp (vAmount,0,vMax);
+    v.intensity = vAmount;
+  }
+
+  void ZoomView(){
+    currFov = Camera.main.fieldOfView;
+    addFov = speedIn * Time.deltaTime;
+
+    if (Mathf.Abs(currFov - minFov) &lt; 0.5f)
+      currFov = minFov;
+    else if (currFov - addFov &gt;= minFov)
+      currFov -= addFov;
+
+    Camera.main.fieldOfView = currFov;
+  }
+
+  void ZoomOut(){
+    currFov = Camera.main.fieldOfView;
+    addFov = speedOut * Time.deltaTime;
+
+    if (Mathf.Abs(currFov - initFov) &lt; 0.5f)
+      currFov = initFov;
+    else if (currFov + addFov &lt;= initFov)
+      currFov += addFov;
+
+    Camera.main.fieldOfView = currFov;
+  }
+}</pre></div></li><li><p>Save your script <a id="id460" class="indexterm"></a>and apply it to the <span class="strong"><strong>Main Camera</strong></span> GameObject within the <span class="strong"><strong>Multipurpose Camera Rig</strong></span> | <span class="strong"><strong>Pivot</strong></span> GameObject.</p></li><li><p>Play the level. You should see an animated vignette effect in addition to the zooming:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_05_10.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec161"></a>How it works...</h3></div></div></div><p>The zooming effect is actually caused by changes to the value of the camera's <span class="strong"><strong>Field Of View</strong></span> (<span class="strong"><strong>FOV</strong></span>) property; small <a id="id461" class="indexterm"></a>values result in closer views of a smaller area, while high values enlarge the FOV.</p><p>The <code class="literal">TelescopicView</code> script changes the camera's field of view by subtracting from it whenever the left mouse button is pressed. It also adds to the FOV value when the mouse button is <span class="emphasis"><em>not</em></span> being held, until it reaches its original value.</p><p>The zoom limit of the FOV can be deduced from the code <code class="literal">minFov = initFov / zoom;</code>. This means that the minimum value of the FOV is equal to its original value divided by the zoom amount. For instance, if our camera features, originally, a FOV of <code class="literal">60</code>, and we set the <span class="strong"><strong>Telescopic View Zoom</strong></span> amount to <code class="literal">2.0</code>, the minimum FOV allowed will be <code class="literal">60/2 = 30</code>. The difference is shown in the following two screenshots:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_05_11.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec162"></a>There's more...</h3></div></div></div><p>You can also add <a id="id462" class="indexterm"></a>a variable to control the <span class="strong"><strong>Blur Vignette</strong></span> level of the <span class="strong"><strong>Vignette</strong></span> image effect.</p></div></div>

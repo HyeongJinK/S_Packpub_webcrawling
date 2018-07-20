@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec12"></a>Arriving and leaving</h2></div></div><hr /></div><p>Similar to <code class="literal">Seek</code> and <a id="id14" class="indexterm"></a>
+<code class="literal">Flee</code>, the idea behind these algorithms is to apply the same principles and extend the functionality to a point where the agent stops automatically after a <a id="id15" class="indexterm"></a>condition is met, either being close to its destination (arrive), or far enough from a dangerous point (leave).</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec20"></a>Getting ready</h3></div></div></div><p>We need to create one file for each of the algorithms, <code class="literal">Arrive</code> and <code class="literal">Leave</code>, respectively, and remember to set their custom execution order.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec21"></a>How to do it...</h3></div></div></div><p>They use the same approach, but in terms of implementation, the name of the member variables change as well as some computations in the first half of the <code class="literal">GetSteering</code> function:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, implement the <code class="literal">Arrive</code> behaviour with its member variables to define the radius for stopping (target) and slowing down:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Arrive : AgentBehaviour
+{
+    public float targetRadius;
+    public float slowRadius;
+    public float timeToTarget = 0.1f;
+}</pre></div></li><li><p>Create the <code class="literal">GetSteering</code> function:</p><div class="informalexample"><pre class="programlisting">public override Steering GetSteering()
+{
+    // code in next steps
+}</pre></div></li><li><p>Define the first half of the <code class="literal">GetSteering</code> function, in which we compute the desired speed depending on the distance from the target according to the radii variables:</p><div class="informalexample"><pre class="programlisting">Steering steering = new Steering();
+Vector3 direction = target.transform.position - transform.position;
+float distance = direction.magnitude;
+float targetSpeed;
+if (distance &lt; targetRadius)
+    return steering;
+if (distance &gt; slowRadius)
+    targetSpeed = agent.maxSpeed;
+else
+    targetSpeed = agent.maxSpeed * distance / slowRadius;</pre></div></li><li><p>Define the <a id="id16" class="indexterm"></a>second half of the <code class="literal">GetSteering</code> function, in which we <a id="id17" class="indexterm"></a>set the steering value and clamp it according to the maximum speed:</p><div class="informalexample"><pre class="programlisting">Vector3 desiredVelocity = direction;
+desiredVelocity.Normalize();
+desiredVelocity *= targetSpeed;
+steering.linear = desiredVelocity - agent.velocity;
+steering.linear /= timeToTarget;
+if (steering.linear.magnitude &gt; agent.maxAccel)
+{
+    steering.linear.Normalize();
+    steering.linear *= agent.maxAccel;
+}
+return steering;</pre></div></li><li><p>To implement <code class="literal">Leave</code>, the name of the member variables changes:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Leave : AgentBehaviour
+{
+    public float escapeRadius;
+    public float dangerRadius;
+    public float timeToTarget = 0.1f;
+}</pre></div></li><li><p>Define the first half of the <code class="literal">GetSteering</code> function:</p><div class="informalexample"><pre class="programlisting">Steering steering = new Steering();
+Vector3 direction = transform.position - target.transform.position;
+float distance = direction.magnitude;
+if (distance &gt; dangerRadius)
+    return steering;
+float reduce;
+if (distance &lt; escapeRadius)
+    reduce = 0f;
+else
+    reduce = distance / dangerRadius * agent.maxSpeed;
+float targetSpeed = agent.maxSpeed - reduce;</pre></div></li><li><p>And finally, the second half of <code class="literal">GetSteering</code> stays just the same.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec22"></a>How it works...</h3></div></div></div><p>After calculating the direction to go in, the next calculations are based on two radii distances in order to know when to go full throttle, slow down, and stop; that's why we have several <code class="literal">if</code> statements. In the <code class="literal">Arrive</code> behavior, when the agent is too far, we aim to full-throttle, progressively slow down when inside the proper radius, and finally to stop when close enough to the target. The converse train of thought applies to <code class="literal">Leave</code>.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3561_01_02.jpg" /><div class="caption"><p>A visual reference for the Arrive and Leave behaviors</p></div></div></div></div>

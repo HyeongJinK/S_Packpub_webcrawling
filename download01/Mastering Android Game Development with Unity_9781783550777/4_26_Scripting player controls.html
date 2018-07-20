@@ -1,0 +1,31 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec28"></a>Scripting player controls</h2></div></div><hr /></div><p>To control the states we need to attach a script to the player. We will be using the left and right mouse clicks to control the player. The left mouse click will be for attacking, and the right mouse click will be for defending. If neither are clicked, then the idle animation will be played.</p><p>The controls can be changed under Unity's <strong class="userinput"><code>Projects Settings</code></strong> option in the <strong class="userinput"><code>Edit</code></strong> menu. Select the <strong class="userinput"><code>Input</code></strong> option from the list, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_04_026.png" /></div><p>Keep the name in mind, as, while referring in the code, we will be using the name of the button. So, for left-click, we will be referring to the name <strong class="userinput"><code>Fire1</code></strong>. You can check the names of the different buttons in the <strong class="userinput"><code>Inspector</code></strong> panel:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_04_027.png" /></div><p>Let's create a new script by right-clicking in the <strong class="userinput"><code>Assets</code></strong> folder option | <strong class="userinput"><code>Create</code></strong> | <strong class="userinput"><code>C# Script</code></strong> and name it <code class="literal">playerScript</code>. Double-click on it and it should open in Visual Studio.</p><p>Add the following code to the script:</p><pre class="programlisting">    using UnityEngine; 
+    using System.Collections; 
+
+    public class playerScript : MonoBehaviour { 
+        private Animator anim; 
+
+        // Use this for initialization 
+        void Start () { 
+            anim = GetComponent&lt;Animator&gt;(); 
+        } // start 
+
+
+        // Update is called once per frame 
+        void Update () { 
+            
+            //Defending 
+            if (Input.GetButtonDown("Fire2")){ 
+                // Debug.Log("Jump pressed"); 
+                anim.SetBool("bIsDefending", true); 
+            } else if (Input.GetButtonUp("Fire2")) { 
+                anim.SetBool("bIsDefending", false); 
+            } 
+
+            //Attacking 
+            if (Input.GetButtonDown("Fire1")){ 
+                anim.SetBool("bIsDefending", false); 
+                anim.SetTrigger("tIsPunching"); 
+                //Debug.Log("Fire pressed"); 
+            } 
+        } // update 
+    } </pre><p>At the top, we create a <code class="literal">private</code> variable to get the Animator component and store it in the variable.</p><p>Next, in the start function, we get the Animator component and assign it to <code class="literal">anim,</code> as otherwise we would have to do this for every frame which would get very taxing.</p><p>In the <code class="literal">Update</code> function, we first check for defending. If the <code class="literal">Fire 2</code> button, which is the right-click on the mouse, is pressed then we set the <code class="literal">bIsDefending</code> to <code class="literal">true</code>. The <code class="literal">bIsDefending</code> variable is the same as that we defined as a parameter in the <strong class="userinput"><code>Animation Controller</code></strong> option.</p><p>If the button is up, then we set the <code class="literal">bIsDefending</code> variable to <code class="literal">false</code>.</p><p>Next, we set the attacking state. If the <code class="literal">Fire1</code> button is pressed, then we first set defending to <code class="literal">false</code>, and then set <code class="literal">tIsPunching</code> to <code class="literal">true</code>. We also debug logout so that, we can see the specific code of hit.</p><p>To see if this really works, we have to attach it to the player character in the scene and add it as a component: drag the code and add it as a component to <code class="literal">theDude</code> character. Now, if you look in the Inspector, you can see that the script has been added:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_04_028.png" /></div><p>Now, if you right-click on the mouse, the player should block, and if you left-click with the mouse, the player should punch.</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_04_029.png" /></div><p>Let's give the player an enemy to punch at.</p></div>

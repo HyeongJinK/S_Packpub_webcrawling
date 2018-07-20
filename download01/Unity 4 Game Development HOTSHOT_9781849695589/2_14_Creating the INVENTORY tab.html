@@ -1,0 +1,271 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec24"></a>Creating the INVENTORY tab</h2></div></div><hr /></div><p>So, we are <a id="id324" class="indexterm"></a>now in <a id="id325" class="indexterm"></a>the second page of our menu window, which is the <span class="strong"><strong>INVENTORY</strong></span> page. In this section, we will create an item <code class="literal">scroll</code> that the player can use to scroll up and down to select the item and see its name, amount, and information about the item.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec48"></a>Engage thrusters</h3></div></div></div><p>We will start with adding the parameters by performing the following steps, which we will use to store the data in our <span class="strong"><strong>INVENTORY</strong></span> page:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open the <code class="literal">ItemsContainer</code> class; now, we will create the item's array<a id="id326" class="indexterm"></a> object <a id="id327" class="indexterm"></a>and the scroll view that can contain all the items; firstly, add the following highlighted code to create new variables:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+<span class="strong"><strong>import System.Collections.Generic;</strong></span>
+…
+private var _isEquipment : boolean;
+<span class="strong"><strong>private final var ITEM_BOX_POS : Rect = new Rect (257, 87, 320, 200);</strong></span>
+<span class="strong"><strong>private final var TOOL_BOX_RECT : Rect = new Rect (0, 0, 280, 40);</strong></span>
+<span class="strong"><strong>private final var EQUIP_BOX_POS : Rect = new Rect (257, 300, 320, 120);</strong></span>
+<span class="strong"><strong>var items : List.&lt;Item&gt;;  </strong></span>
+<span class="strong"><strong>private var _itemCount : int;</strong></span>
+<span class="strong"><strong>private var _selectedItem : int;</strong></span>
+<span class="strong"><strong>private var _scrollPosition : Vector2;  </strong></span>
+function get guiContent () : GUIContent {
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+<span class="strong"><strong>using System.Collections.Generic;</strong></span>
+…
+bool _isEquipment;
+<span class="strong"><strong>readonly Rect ITEM_BOX_POS = new Rect (257, 87, 320, 200);</strong></span>
+<span class="strong"><strong>readonly Rect TOOL_BOX_RECT = new Rect (0, 0, 280, 40);</strong></span>
+<span class="strong"><strong>readonly Rect EQUIP_BOX_POS = new Rect (257, 300, 320, 120);</strong></span>
+<span class="strong"><strong>public List&lt;Item&gt; items;  </strong></span>
+<span class="strong"><strong>int _itemCount;</strong></span>
+<span class="strong"><strong>int _selectedItem;</strong></span>
+<span class="strong"><strong>Vector2 _scrollPosition;</strong></span>
+public GUIContent guiContent {
+…</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note20"></a>Note</h3><p>
+<code class="literal">List.&lt;T&gt;</code> or <code class="literal">List&lt;T&gt;</code>: The <code class="literal">List&lt;T&gt;</code> array is basically an array of type <code class="literal">&lt;T&gt;</code>, which is easier to add, remove, or insert later in the next step than using<a id="id328" class="indexterm"></a> the<a id="id329" class="indexterm"></a> built-in array. Also the performance is a lot better than using an array. To use the <code class="literal">List&lt;T&gt;</code> array, we need to add the following code at the beginning of the class:</p><div class="informalexample"><pre class="programlisting">import System.Collections.Generic (Unity Javascript) using System.Collections.Generic (C#)</pre></div></div></li><li><p>Next, we will go to the <code class="literal">Init()</code> function and add the highlighted code as follows to set up the value of those variables that we've just created:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Init ( isEquipment : boolean ) : void {
+  _isEquipment = isEquipment;
+  _guiContent = (_isEquipment) ? new GUIContent(UNEQUIP) : new GUIContent(NONE);
+<span class="strong"><strong>  _selectedItem = 0;</strong></span>
+<span class="strong"><strong>  _scrollPosition = Vector2.zero;</strong></span>
+<span class="strong"><strong>  _itemCount = items.Count;  </strong></span>
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public void Init ( bool isEquipment ) {
+  _isEquipment = isEquipment;
+  _guiContent = (_isEquipment) ? new GUIContent(UNEQUIP) : new GUIContent(NONE);
+<span class="strong"><strong>  _selectedItem = 0;</strong></span>
+<span class="strong"><strong>  _scrollPosition = Vector2.zero;</strong></span>
+<span class="strong"><strong>  _itemCount = items.Count;</strong></span>
+}</pre></div></li><li><p>Then, we will add the <code class="literal">SetupScrollBar()</code> function after the <code class="literal">Init()</code> function as shown the following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Init ( isEquipment : boolean ) : void {
+…
+}
+<span class="strong"><strong>function SetupScrollBar () {</strong></span>
+<span class="strong"><strong>  var position : Rect = (_isEquipment) ? EQUIP_BOX_POS : ITEM_BOX_POS;</strong></span>
+<span class="strong"><strong>  var view : Rect = TOOL_BOX_RECT;</strong></span>
+<span class="strong"><strong>  var itemCount = _itemCount;</strong></span>
+<span class="strong"><strong>  var isNoItem : boolean = false;</strong></span>
+<span class="strong"><strong>  if (_isEquipment) {</strong></span>
+<span class="strong"><strong>    itemCount++;</strong></span>
+<span class="strong"><strong>  }  else {</strong></span>
+<span class="strong"><strong>    if (itemCount == 0) {</strong></span>
+<span class="strong"><strong>      itemCount++;</strong></span>
+<span class="strong"><strong>      isNoItem = true;</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  view.height *= itemCount;</strong></span>
+<span class="strong"><strong>  _scrollPosition = GUI.BeginScrollView (position, _scrollPosition, view);</strong></span>
+<span class="strong"><strong>  var itemsContent : GUIContent[] = new GUIContent[itemCount];      </strong></span>
+<span class="strong"><strong>  if (itemCount &gt; 1) {</strong></span>
+<span class="strong"><strong>    for (var i: int = 0; i &lt; itemCount; i++) {</strong></span>
+<span class="strong"><strong>       itemsContent[i] = (_isEquipment) ? ((i == 0) ? new GUIContent(UNEQUIP) : items[i-1].guiContent) : items[i].guiContent;</strong></span>
+<span class="strong"><strong>    }  </strong></span>
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    itemsContent[0] = (isNoItem) ? new GUIContent(NONE) : ((_isEquipment) ? new GUIContent(UNEQUIP) : items[0].guiContent);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  _selectedItem = GUI.SelectionGrid (view, _selectedItem, itemsContent, 1, GUI.skin.GetStyle("Selected Item"));</strong></span>
+<span class="strong"><strong>  GUI.EndScrollView ();</strong></span>
+<span class="strong"><strong>  _guiContent = itemsContent[_selectedItem];</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public void Init ( bool isEquipment ) {
+  …
+}
+
+<span class="strong"><strong>public void SetupScrollBar () {</strong></span>
+<span class="strong"><strong>  Rect position = (_isEquipment) ? EQUIP_BOX_POS : ITEM_BOX_POS;</strong></span>
+<span class="strong"><strong>  Rect view = TOOL_BOX_RECT;</strong></span>
+<span class="strong"><strong>  int itemCount = _itemCount;</strong></span>
+<span class="strong"><strong>bool isNoItem = false;</strong></span>
+<span class="strong"><strong>  if (_isEquipment) {</strong></span>
+<span class="strong"><strong>    itemCount++;</strong></span>
+<span class="strong"><strong>  }  else {</strong></span>
+<span class="strong"><strong>    if (itemCount == 0) {</strong></span>
+<span class="strong"><strong>      itemCount++;</strong></span>
+<span class="strong"><strong>     isNoItem = true;</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  view.height *= itemCount;</strong></span>
+<span class="strong"><strong>  _scrollPosition = GUI.BeginScrollView (position, _scrollPosition, view);  </strong></span>
+<span class="strong"><strong>  GUIContent[] itemsContent = new GUIContent[itemCount];      </strong></span>
+<span class="strong"><strong>  if (itemCount &gt; 1) {</strong></span>
+<span class="strong"><strong>     for (int i = 0; i &lt; itemCount; i++) {</strong></span>
+<span class="strong"><strong>        itemsContent[i] = (_isEquipment) ? ((i == 0) ? new GUIContent(UNEQUIP) : items[i-1].guiContent) : items[i].guiContent;</strong></span>
+<span class="strong"><strong>    }  </strong></span>
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    itemsContent[0] = (isNoItem) ? new GUIContent(NONE) : ((_isEquipment) ? new GUIContent(UNEQUIP) : items[0].guiContent);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  _selectedItem = GUI.SelectionGrid (view, _selectedItem, itemsContent, 1, GUI.skin.GetStyle("Selected Item"));</strong></span>
+<span class="strong"><strong>  GUI.EndScrollView ();</strong></span>
+<span class="strong"><strong>  _guiContent = itemsContent[_selectedItem];</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>There is a bug in <code class="literal">GUI.SelectionGrid</code> in Unity 4.0 to 4.2. When you roll over the items, the tooltip always returns an empty string. If you are using Unity 4.0 to 4.2, you can replace these lines of code with the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+_selectedItem = GUI.SelectionGrid (view, _selectedItem, itemsContent, 1, GUI.skin.GetStyle("Selected Item"));</pre></div><p>The preceding code should be replaced with the following code:</p><div class="informalexample"><pre class="programlisting">for (var j: int = 0; j &lt; itemsContent.Length; j++) {
+   if (_selectedItem == j) {
+     GUI.Label(new Rect (0, j*40, 280, 40),itemsContent[j],GUI.skin.GetStyle("Disabled Click"));
+   }  else {
+     if (GUI.Button(new Rect (0, j*40, 280, 40),itemsContent[j],GUI.skin.GetStyle("Selected Item"))) {
+       _selectedItem = j;
+     }
+   }
+}</pre></div><p>For a C# user, the following code exists:</p><div class="informalexample"><pre class="programlisting">_selectedItem = GUI.SelectionGrid (view, _selectedItem, itemsContent, 1, GUI.skin.GetStyle("Selected Item"));</pre></div><p>The preceding code should be replaced with the following code:</p><div class="informalexample"><pre class="programlisting">for (int j = 0; j &lt; itemsContent.Length; j++) {
+   if (_selectedItem == j) {
+     GUI.Label(new Rect (0, j*40, 280, 40),itemsContent[j],GUI.skin.GetStyle("Disabled Click"));
+   }  else {
+     if (GUI.Button(new Rect (0, j*40, 280, 40),itemsContent[j],GUI.skin.GetStyle("Selected Item"))) {
+       _selectedItem = j;
+    }
+   }
+}</pre></div><p>In this<a id="id330" class="indexterm"></a> function, first, we<a id="id331" class="indexterm"></a> check the equipments or items to get the <code class="literal">Rect</code> position of the item box. Then, we add the <code class="literal">itemCount</code> item if it's the equipment, which is standing for the <code class="literal">UNEQUIP</code> selection. Next, we get the height of the scroll view by calculating the number of items from the <code class="literal">itemCount</code> item. Then, we create the scroll view by using <code class="literal">GUI.BeginScrollView</code>. Next, we create a <code class="literal">GUIContent</code> array to contain our items and check if it's the equipment that we add as the first item to <code class="literal">UNEQUIP</code> then add the rest. Next, we create <code class="literal">GUI.SelectionGrid</code> and apply the selected item to <code class="literal">_guiContent</code>, which will be used in the next step in the <code class="literal">Menu</code> script.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note21"></a>Note</h3><p>In this step, we've used the <code class="literal">?</code> and <code class="literal">:</code> syntaxes. These syntaxes are basically a shortcut to get variables from the <code class="literal">if-else</code> statement. Consider the following example:</p><div class="informalexample"><pre class="programlisting">var something;if (condition) { something  = true; } else { something   = false; }</pre></div><p>We can change this to something like the following code:</p><div class="informalexample"><pre class="programlisting">var something = (condition) ? true : false;</pre></div></div></li><li><p>Next, we go back to the <code class="literal">Menu</code> script and add the variables as highlighted <a id="id332" class="indexterm"></a>in<a id="id333" class="indexterm"></a> the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+var skills : SkillsContainer;
+<span class="strong"><strong>private final var ITEM_BOX_RECT : Rect = new Rect (237, 67, 360, 247);</strong></span>
+<span class="strong"><strong>private final var ITEM_TIP_BOX_RECT : Rect = new Rect (237, 330, 360, 107);</strong></span>
+<span class="strong"><strong>private var _scrollPosition : Vector2 = Vector2.zero;</strong></span>
+function Start () : void {
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+public SkillsContainer skills;
+<span class="strong"><strong>readonly Rect ITEM_BOX_RECT = new Rect (237, 67, 360, 247);</strong></span>
+<span class="strong"><strong>readonly Rect ITEM_TIP_BOX_RECT = new Rect (237, 330, 360, 107);</strong></span>
+<span class="strong"><strong>Vector2 _scrollPosition = Vector2.zero;</strong></span>
+void Start () {
+…</pre></div></li><li><p>Then, we<a id="id334" class="indexterm"></a> will <a id="id335" class="indexterm"></a>add the <code class="literal">ItemWindow()</code> function after the <code class="literal">StatusWindow()</code> function as highlighted in the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+private function StatusWindow() : void {
+  …
+}
+<span class="strong"><strong>private function ItemWindow() : void {</strong></span>
+<span class="strong"><strong>  GUI.Box (ITEM_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.Box (ITEM_TIP_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>  items.SetupScrollBar();</strong></span>
+<span class="strong"><strong>  var info : String = (items.guiContent.tooltip == "") ? "Show items information here" : items.guiContent.tooltip;</strong></span>
+<span class="strong"><strong>  var style : GUIStyle = GUI.skin.GetStyle("Label");</strong></span>
+<span class="strong"><strong>var tooltip : String = ( GUI.tooltip != "") ? GUI.tooltip : info;</strong></span>
+<span class="strong"><strong>  var height : float = style.CalcHeight(GUIContent(tooltip), 330.0f) + 20;</strong></span>
+<span class="strong"><strong>  _scrollPosition = GUI.BeginScrollView (new Rect (257, 343, 320, 75), _scrollPosition, new Rect (0, 0, 280, height));  </strong></span>
+<span class="strong"><strong>  GUI.Label(new Rect (0, 0, 280, height), tooltip);</strong></span>
+<span class="strong"><strong>  GUI.EndScrollView ();</strong></span>
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void StatusWindow() {
+  …
+}
+<span class="strong"><strong>void ItemWindow() {</strong></span>
+<span class="strong"><strong>  GUI.Box (ITEM_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.Box (ITEM_TIP_BOX_RECT, "");  </strong></span>
+<span class="strong"><strong>  items.SetupScrollBar();</strong></span>
+<span class="strong"><strong>  string info = (items.guiContent.tooltip == "") ? "Show items information here" : items.guiContent.tooltip;</strong></span>
+<span class="strong"><strong>  GUIStyle style = GUI.skin.GetStyle("Label");</strong></span>
+<span class="strong"><strong>  string tooltip = ( GUI.tooltip != "") ? GUI.tooltip : info;</strong></span>
+<span class="strong"><strong>  float height = style.CalcHeight(new GUIContent(tooltip), 330.0f) + 20;</strong></span>
+<span class="strong"><strong>  _scrollPosition = GUI.BeginScrollView (new Rect (257, 343, 320, 75), _scrollPosition, new Rect (0, 0, 280, height));  </strong></span>
+<span class="strong"><strong>  GUI.Label(new Rect (0, 0, 280, height), tooltip);</strong></span>
+<span class="strong"><strong>  GUI.EndScrollView (); </strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>In this function, we first set up the item box and the item tooltip box. Then, we create the item scroll view by calling <code class="literal">items.SetupScrollBar()</code>. Lastly, we get the selected item tooltip, check if the tooltip isn't an empty string if it's assigned to our string. Then, we <a id="id336" class="indexterm"></a>calculate<a id="id337" class="indexterm"></a> the height of this tooltip box by<a id="id338" class="indexterm"></a> using the <code class="literal">Label</code> style and create the scroll view for it.</p></li><li><p>Then, we go to the <code class="literal">DoMyWindow()</code> function inside the <code class="literal">switch</code> statement and add the highlighted code inside this function to show the <span class="strong"><strong>INVENTORY</strong></span> window when we click on the <span class="strong"><strong>INVENTORY</strong></span> tab, as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+private function DoMyWindow (windowID : int) : void {
+  …
+  switch (_currentTool) {
+  case TAB.STATUS : //Status
+    …
+    break;
+<span class="strong"><strong>  case TAB.INVENTORY : //Items</strong></span>
+<span class="strong"><strong>    ItemWindow();</strong></span>
+<span class="strong"><strong>    break;</strong></span>
+    }
+  …
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void DoMyWindow (int windowID ) {
+  …
+  switch (_currentTool) {
+  case TAB.STATUS : //Status
+    …
+    break;
+<span class="strong"><strong>  case TAB.INVENTORY : //Items</strong></span>
+<span class="strong"><strong>    ItemWindow();</strong></span>
+<span class="strong"><strong>    break;</strong></span>
+    }
+  …
+}</pre></div></li><li><p>Let's go back to Unity, we can click on <span class="strong"><strong>Play</strong></span> to see the result. We will see <a id="id339" class="indexterm"></a>only <span class="strong"><strong>NONE</strong></span> in the inventory box and<a id="id340" class="indexterm"></a> the <span class="strong"><strong>Show items information here</strong></span> text in the tooltip box. So, we need to create the item <code class="literal">GameObject</code> and add it our <code class="literal">MenuObject</code> by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> to create the empty game object and name it <code class="literal">Golden Key</code>.</p></li><li><p>Next, click on the <code class="literal">Golden Key</code> object that we just created and add the <code class="literal">item</code> script to this object, then go to its <span class="strong"><strong>Inspector</strong></span> view and set up the attributes as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr style="border-bottom: 0.5pt solid ; "><td style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<code class="literal">Item</code> <span class="strong"><strong>(script)</strong></span></p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Icon</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>keyIcon</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Info</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">This golden key looks very old. Looks like, it was made by someone in the Ancient Rome.</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>Next, drag the <code class="literal">Golden Key</code> object from the <span class="strong"><strong>Hierarchy</strong></span> view to the <code class="literal">MenuInRPGGame/Resources/Prefab</code> folder in the <span class="strong"><strong>Project</strong></span> view to create a prefab of this item. Then, we will remove the <code class="literal">Golden Key</code> object from the <span class="strong"><strong>Hierarchy</strong></span> view by right-clicking on the object and choosing <span class="strong"><strong>Delete</strong></span>.</p></li><li><p>Lastly, click on the <code class="literal">MenuObject</code> item in the <span class="strong"><strong>Hierarchy</strong></span> view to bring up its <span class="strong"><strong>Inspector</strong></span> view at the <code class="literal">Menu</code> (script); go to <span class="strong"><strong>Items</strong></span> and add it as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Items</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">Golden Key</code> (drag from the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr></tbody></table></div><p>Now, click on <span class="strong"><strong>Play</strong></span> and press the <span class="emphasis"><em>M</em></span> key to bring up the menu window. Click on the <span class="strong"><strong>INVENTORY</strong></span> tab and we will see our item page. Isn't that cool?</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip15"></a>Tip</h3><p>We can <a id="id341" class="indexterm"></a>add<a id="id342" class="indexterm"></a> more variety of items to the <span class="strong"><strong>INVENTORY</strong></span> page by adding the <code class="literal">GameObject</code> item that has the <code class="literal">item</code> script attached, and give a name, icon, and information to the <code class="literal">Menu</code> (script) as we did in step 10. We can see the result, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_25.jpg" /></div></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec49"></a>Objective complete – mini debriefing</h3></div></div></div><p>We just created our <span class="strong"><strong>INVENTORY</strong></span> page that we'll be able to view by clicking on the <span class="strong"><strong>INVENTORY</strong></span> tab. First, we created the item array by using <code class="literal">List&lt;T&gt;</code> to contain all the items. Then we added the <code class="literal">SetupScrollBar()</code> function in the <code class="literal">ItemsContainer</code>class in this function, we <a id="id343" class="indexterm"></a>created a scroll view for the items by using <code class="literal">GUI.BeginScrollView()</code> and <code class="literal">GUI.EndScrollView()</code>, and created a scrollable area that contains all the items. We also used <code class="literal">GUI.SelectionGrid</code> to align all items in the list from which the player can select any item. Lastly, we passed the <code class="literal">GUIContent</code> selection to use in the <code class="literal">Menu</code> script.</p><p>Then, in<a id="id344" class="indexterm"></a> the <code class="literal">Menu</code> script in the <code class="literal">Start()</code> function, we initialized our items, armors, accessories, weapons, and skills objects. Next, we created the <code class="literal">ItemWindow()</code> function, which<a id="id345" class="indexterm"></a> we used to control our item page. In this function, we created a scroll view. Then, we got the current tooltip from <code class="literal">GUIContent</code> that we get from <code class="literal">ItemsContainer</code> and checked whether there is any information or not. Next, we checked <code class="literal">GUI.tooltip</code> for any stored string; if nothing is stored here, we assigned the current tooltip from our selected items to <code class="literal">GUI.tooltip</code>, which showed the result that if we roll over each item, the current information will change to the roll-overed item. On the other hand, if we roll over from our items list, the result will show the selected item's information. Next, we get the <code class="literal">Label</code> style height from the current <code class="literal">GUI.tooltip</code> item. Then, we created another scroll view to show this tooltip information in the box area.</p><p>In the <code class="literal">DoMyWindow()</code> function, we added the <span class="strong"><strong>INVENTORY</strong></span> state to show the item page when the user clicks on the <span class="strong"><strong>INVENTORY</strong></span> tab by calling the <code class="literal">ItemWindow()</code> function.</p><p>At last, we <a id="id346" class="indexterm"></a>created<a id="id347" class="indexterm"></a> the <code class="literal">GameObject</code> prefab that has the <code class="literal">item</code> script attached to it and added it to our item page.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec50"></a>Classified intel</h3></div></div></div><p>In this step, we were using <code class="literal">GUI.SelectionGrid</code> to create a list of the items. By using <code class="literal">GUI.SelectionGrid</code>, we were able to create a list of buttons using one line of code that have a fixed height and space, which was very convenient. We can see more details on how to<a id="id348" class="indexterm"></a> use <code class="literal">GUI.SelectionGrid</code> at the following URL:</p><p>
+<a class="ulink" href="http://unity3d.com/support/documentation/ScriptReference/GUI.SelectionGrid.html" target="_blank">http://unity3d.com/support/documentation/ScriptReference/GUI.SelectionGrid.html</a>
+</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec05"></a>GUI.tooltip</h4></div></div></div><p>We also used the <code class="literal">GUI.tooltip</code> parameter to show our items' information when the player rolls <a id="id349" class="indexterm"></a>over each item and showed the selected item's information<a id="id350" class="indexterm"></a> if the player rolls out. So, how does <code class="literal">GUI.tooltip</code> work? Basically, <code class="literal">GUI.tooltip</code> will return the string from each button that contains a tooltip string when the player rolls over it. However, if the player rolls out or that button doesn't have any tooltip stored in it, this parameter will automatically return a blank string, similar to the following code that we used in the <code class="literal">ItemWindow()</code> function in the <code class="literal">Menu</code> script's class.</p><p>A Unity JavaScript user can use the following code:</p><div class="informalexample"><pre class="programlisting">var tooltip : String = ( GUI.tooltip != "") ? GUI.tooltip : info;</pre></div><p>A C# user can use the following code:</p><div class="informalexample"><pre class="programlisting">string tooltip = ( GUI.tooltip != "") ? GUI.tooltip : info;</pre></div><p>We basically tell <code class="literal">GUI.tooltip</code> that we will assign the rollover tooltip information to the label when the player rolls over. And, if the player rolls out, we will show the selected item's information for which the default is the first item, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_26.jpg" /></div><p>From the <a id="id351" class="indexterm"></a>preceding screenshot, we can see that the<a id="id352" class="indexterm"></a> left-hand side shows that when we roll over the second key, the information box shows the tooltip of the second key. The right-hand side shows that when we roll out from the second key, the information box shows the tooltip of the selected key, which is the first key.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note23"></a>Note</h3><p>You can see more details about <code class="literal">GUI.tooltip</code> at the following URL:</p><p>
+<a class="ulink" href="http://unity3d.com/support/documentation/ScriptReference/GUI-tooltip.html" target="_blank">http://unity3d.com/support/documentation/ScriptReference/GUI-tooltip.html</a>
+</p></div></div></div></div>

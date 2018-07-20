@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec22"></a>Example using a Rigidbody</h2></div></div><hr /></div><p>Let's assume that in our<a id="id180" class="indexterm"></a> game, we require a cube to be our character. In this case, we won't be using the character controller. Let's follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new scene and save it as <code class="literal">Rigidbody example</code>.</p></li><li><p>As shown in the following screenshot, create a <span class="strong"><strong>Plane</strong></span> game object and set its properties to position <code class="literal">0</code> (all axes), rotation <code class="literal">0</code> (all axes), and scale <code class="literal">20</code>, <code class="literal">1</code>, <code class="literal">20 </code>for the <span class="emphasis"><em>x</em></span>, <span class="emphasis"><em>y</em></span>, and <span class="emphasis"><em>z</em></span> axes respectively:</p><div class="mediaobject"><img src="/graphics/9781783553693/graphics/3693OT_04_06.jpg" /></div></li><li><p>Add a <span class="strong"><strong>Cube</strong></span> game<a id="id181" class="indexterm"></a> object and a Rigidbody Collider. Place it above the plane.</p></li><li><p>As shown in the following screenshot, add material to the red cube:</p><div class="mediaobject"><img src="/graphics/9781783553693/graphics/3693OT_04_07.jpg" /></div></li><li><p>Create another <a id="id182" class="indexterm"></a>
+<span class="strong"><strong>Cube</strong></span> game object. I have used a white cube without a Rigidbody.</p></li><li><p>Create another <span class="strong"><strong>Cube</strong></span> object without a Rigidbody. I have used a blue cube, as shown in the following screenshot, and have set the <span class="strong"><strong>Is Trigger</strong></span> property to true:</p><div class="mediaobject"><img src="/graphics/9781783553693/graphics/3693OT_04_08.jpg" /></div><p>In the <a id="id183" class="indexterm"></a>preceding screenshot, we have set the <span class="strong"><strong>Is Trigger</strong></span> property in the blue cube.</p></li><li><p>Create a new script and save it as <code class="literal">TriggerController.js</code>; add it to the <span class="strong"><strong>Trigger Collider</strong></span> game object and put the following code inside it:</p><div class="informalexample"><pre class="programlisting">functionOnTriggerEnter( other : Collider )
+{
+  Debug.Log("OnTrigger Event");
+}
+
+functionOnTriggerExit( other : Collider )
+{
+  Debug.Log("OnTriggerExit Event");
+}</pre></div><p>The preceding code will show the logon events in the console window: <span class="strong"><strong>OnTriggerEnter</strong></span> and <span class="strong"><strong>OnTriggerExit</strong></span>.</p></li><li><p>Let's move to the next step. Create a new script and save it as <code class="literal">RigidbodyController.js</code>. Add it to the <span class="strong"><strong>Red Cube</strong></span> game object, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553693/graphics/3693OT_04_09.jpg" /></div></li></ol></div><p>Add the following <a id="id184" class="indexterm"></a>code to the <code class="literal">RigidbodyController.js</code> script file:</p><div class="informalexample"><pre class="programlisting">#pragma strict
+@scriptRequireComponent(Rigidbody) 
+/******* RequirementComponent ensure there should be a Rigid body as it asks for Rigidbody as required component/ 
+privatevaronPlane = false; 
+// Multiply the velocity when using the velocity.
+varvelocityMultiplier = 100.0f;
+// Multiply the move distance.
+varmoveMultiplier= 8.0f;
+// Multiply the force to make the cube jump.
+varjumpMultiplier= 700.0f;
+
+
+functionFixedUpdate(){
+// Calculate the velocity/move direction based on the user input.
+  varmoveDirection = Vector3( Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical") ) * Time.deltaTime;
+moveDirection = Camera.main.transform.TransformDirection( moveDirection );
+// Here TransformDirection transforms direction from local space
+// to world space.
+
+  if ( rigidbody != null &amp;&amp; !rigidbody.isKinematic )
+    {
+    rigidbody.MovePosition( rigidbody.position + ( moveDirection * moveMultiplier ) );
+rigidbody.velocity = Vector3( 0, rigidbody.velocity.y, 0 );
+
+  }
+
+if ( Input.GetButtonDown("Jump") &amp;&amp;onPlane )
+  {
+
+    rigidbody.AddForce( Vector3.up * jumpMultiplier );
+     }
+
+}
+
+
+
+functionOnCollisionStay(collisionInfo : Collision)
+{
+  onPlane = true;
+}
+
+
+functionOnCollisionExit( collisionInfo : Collision )
+{
+onPlane = false;
+
+}</pre></div><p>Run the project<a id="id185" class="indexterm"></a> and you will see the Rigidbody actions on the red cube by clicking on the <span class="strong"><strong>Jump</strong></span> button.</p><p>In the preceding example, we have learned how to apply actions on a Rigidbody using scripts.</p></div>

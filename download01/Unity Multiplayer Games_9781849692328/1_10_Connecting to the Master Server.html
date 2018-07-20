@@ -1,0 +1,19 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec17"></a>Connecting to the Master Server</h2></div></div><hr /></div><p>While <a id="id31" class="indexterm"></a>we could just allow the player to enter IP addresses to connect to servers (and many games do, such as Minecraft), it's much more convenient to allow the player to browse a list of public servers. This is what the Master Server is for.</p><p>Now that you can start up a server and connect to it, let's take a look at how to connect to the Master Server you downloaded earlier. First, make sure both the Master Server and Facilitator are running. I will assume you are running them on your local machine (IP is 127.0.0.1), but of course you can run these on a different computer and use that machine's IP address. Keep in mind, if you want the Master Server publicly accessible, it must be installed on a machine with a public IP address (it cannot be in a private network).</p><p>Let's configure Unity to use our Master Server rather than the Unity-hosted test server. The following script configures the Master Server and Facilitator to connect to a given IP (by default 127.0.0.1):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ExampleUnityNetworkingConnectToMasterServer : MonoBehaviour
+{
+  // Assuming Master Server and Facilitator are on the same machine
+  public string MasterServerIP = "127.0.0.1";
+
+  void Awake()
+  {
+    // set the IP and port of the Master Server to connect to
+    MasterServer.ipAddress = MasterServerIP;
+    MasterServer.port = 23466;
+
+    // set the IP and port of the Facilitator to connect to
+    Network.natFacilitatorIP = MasterServerIP;
+    Network.natFacilitatorPort = 50005;
+  }
+}</pre></div></div>

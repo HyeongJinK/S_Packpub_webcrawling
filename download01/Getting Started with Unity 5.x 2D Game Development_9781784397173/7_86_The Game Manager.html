@@ -1,0 +1,89 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec85"></a>The Game Manager</h2></div></div><hr /></div><p>In the previous chapter, we introduced the <code class="literal">GameMangerScript</code>, but even after the second implementation of waypoints, we have left this script empty with no use. However, we do indeed need a game manager in our game to handle a couple of things. So, in case you have erased it from the last chapter, recreate it, along with a game object in the scene with such a script attached (the same way as if you erased the reference from the <code class="literal">PandaScript</code>, because we will need it later on).</p><p>We will use the <code class="literal">Game Manager</code> as a hub for exchanging information between the player's health and the Pandas. In fact, the <code class="literal">Game Manager</code> will spawn Pandas in the scene divided into waves, and it's the only script to be aware of when the level starts and finishes and/or if the player has lost all the health. This makes the Game Manager the perfect candidate to handle and trigger the game over conditions. Let's start with them.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec97"></a>Game over conditions</h3></div></div></div><p>When does our game reach an end? Well, there are two cases: when the player loses his/her health, which means the Pandas have eaten all the cake (losing condition), or when the player has shot down all the Pandas (winning condition). In either case, we need to show to the player the outcome and terminate the game.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec68"></a>Game over feedback</h4></div></div></div><p>In our graphic package, there are two screens ready for when the game is over. Respectively, these are <span class="emphasis"><em>Game Over</em></span>, used for the losing condition, and <span class="emphasis"><em>You Win</em></span>, used for the winning condition.</p><p>Create two UI images, as we learnt in <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Communicating with the Player – the User Interface</em></span>, and place the two sprites of our package, one for each UI image. You probably want to press the <span class="strong"><strong>Set Native Size</strong></span> button, and then scale and move them, so that they are in the middle of the scene, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784397173/graphics/B03794_07_09.jpg" /></div><p>Now, we can disable them, since they shouldn't be displayed until the game ends. However, we need to add a reference to them in the <code class="literal">Game Manager</code>.</p><p>As such, open the <code class="literal">GameManagerScript</code> and let's add these variables:</p><pre class="programlisting">
+<span class="emphasis"><em>//Variable to store the the screen displayed when the player loses</em></span> &#13;
+public GameObject losingScreen; &#13;
+ &#13;
+<span class="emphasis"><em>//Variable to store the screen displayed when the player wins</em></span> &#13;
+public GameObject winningScreen; &#13;
+</pre><p>Save the script, and from the <span class="strong"><strong>Inspector</strong></span> assign the UI images we created previously, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784397173/graphics/B03794_07_10.jpg" /></div><p>As a result, the <code class="literal">Game Manager</code> is able to activate one of the two when certain conditions are met. Let's see how to implement a function for that in the next section.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec69"></a>The GameOver function</h4></div></div></div><p>To keep things ordered within our <code class="literal">GameManagerScript</code>, let's create a function to trigger what happens when the game ends. It will have a Boolean as a parameter to determine if the player has won or not.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note102"></a>Note</h3><p>Of course, what exactly should happen when the game ends is up to you. You can save statistics and the score (if you have any), trigger nice and cool animations, display buttons to load next levels, and so on. In this book, we will just display the UI images created in the previous section, because the goal is to show you where and how to insert code for game over. Feel free to add your own implementation to it.</p></div><p>Therefore, let's write down this function that, based on the parameter, will display the right screen to the player. Then, it stops the time of the game to create a kind of pause situation in the game. As a result, the game won't be running when the game over screen appears (if any UI is present, it will still be possible for the player to press on it):</p><pre class="programlisting">
+<span class="emphasis"><em>//Private function called when some gameover conditions are met, and&#13;
+  displays&#13;
+//the winning or losing screen depending from the value of the&#13;
+  parameter passed.</em></span> &#13;
+private void GameOver(bool playerHasWon) { &#13;
+  <span class="emphasis"><em>//Check if the player has won from the parameter</em></span> &#13;
+  if (playerHasWon) { &#13;
+    <span class="emphasis"><em>//Display the winning screen</em></span> &#13;
+    winningScreen.SetActive(true); &#13;
+  }else { &#13;
+    <span class="emphasis"><em>//Display the losing screen</em></span> &#13;
+    losingScreen.SetActive(true); &#13;
+  } &#13;
+ &#13;
+  <span class="emphasis"><em>//Freeze the game time, so to stop in some way the level to be&#13;
+    executed</em></span> &#13;
+  Time.timeScale = 0; &#13;
+} &#13;
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note103"></a>Note</h3><p>You can find out more about <code class="literal">timeScale</code> here in the official documentation for Unity: <a class="ulink" href="https://docs.unity3d.com/ScriptReference/Time-timeScale.html" target="_blank">https://docs.unity3d.com/ScriptReference/Time-timeScale.html</a></p></div><p>Save the <code class="literal">GameManagerScript</code>, and let's explore when to trigger this function in the next sections.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec98"></a>Keeping track of the game's progress</h3></div></div></div><p>Keeping track of the game's progress is one of the fundamental functions of a Game Manager. So, the first thing we want to ask is: what should we keep track of?</p><p>Definitely not the sugar possessed by the player, since it is separately handled within the Sugar Meter and the trading scripts. What about the player's health? Well, we do indeed want to keep track of it. In fact, when the player loses his/her health, the game ends as well, and the <code class="literal">Game Manager</code> needs to handle this case. What else? The <code class="literal">Game Manager</code> needs to keep track of how many Pandas the player shoots down, because in this way, the game manager is able to determine when the player wins.</p><p>Thus, the first thing we need to do is to get a reference to the health of the player. We can add the following variable:</p><pre class="programlisting">
+<span class="emphasis"><em>//Private variable to store the reference to the Player's health</em></span> &#13;
+private HealthBarScript playerHealth; &#13;
+</pre><p>We can initialize it in the <code class="literal">Start()</code> function, by adding this line at the beginning:</p><pre class="programlisting">void Start () { &#13;
+<span class="emphasis"><em>  //Get the reference to the Player's health</em></span> &#13;
+  playerHealth = FindObjectOfType&lt;HealthBarScript&gt;(); &#13;
+} &#13;
+</pre><p>Then, we need a variable to keep track of how many Pandas there are still to defeat, hence we can add the following variable:</p><pre class="programlisting">
+<span class="emphasis"><em>//Private variable which acts as a counter of how many Pandas are&#13;
+  remained to defeat</em></span> &#13;
+private int numberOfPandasToDefeat; &#13;
+</pre><p>It will be initialized by our spawning system, which we will implement soon.</p><p>Finally, we need to implement a couple of functions, which will be called, respectively, when a Panda is shot down, and when the player loses his/her health.</p><p>For the first, we don't need any parameters or return values, since the <code class="literal">Game Manager</code> just acknowledges that a Panda has been shot down by decreasing the number of Pandas that still need to be defeated:</p><pre class="programlisting">
+<span class="emphasis"><em>//Function that decreases the number of Pandas still to defeat every&#13;
+  time a Panda dies </em></span> &#13;
+public void OneMorePandaInHeaven() { &#13;
+  numberOfPandasToDefeat--; &#13;
+} &#13;
+</pre><p>Regarding the second function, we want to create a hub of communication between the Panda that is eating the cake and the player's health. As such, we need to implement a function that takes the damage of the Panda as a parameter and subtract it from the player's health. Then, it checks if the player is still alive, because if he/she is not, the <code class="literal">GameOver</code> function is triggered. In either case, at the end we need to decrease the number of Pandas still to defeat, because we remember that Pandas eat so much cake that they explode:</p><pre class="programlisting">
+<span class="emphasis"><em>//Function that damages the player when a Panda reaches the player's&#13;
+  cake. &#13;
+//Moreover, it monitors the player's health to trigger the GameOver&#13;
+  function when needed</em></span> &#13;
+public void BiteTheCake(int damage) { &#13;
+ <span class="emphasis"><em> //Apply damage to the player and retrieve a Boolean to see if the&#13;
+    cake has been eaten all</em></span> &#13;
+  bool IsCakeAllEaten = playerHealth.ApplyDamage(damage); &#13;
+ <span class="emphasis"><em> //If the cake has been eaten all, the GameOver function is called in&#13;
+    "losing mode"</em></span> &#13;
+  if (IsCakeAllEaten) { &#13;
+    GameOver(false); &#13;
+  } &#13;
+  <span class="emphasis"><em>//The Panda that bit the cake will also explode, and therefore we&#13;
+    have a Panda less to defeat</em></span> &#13;
+  OneMorePandaInHeaven(); &#13;
+} &#13;
+</pre><p>Save the script, and open the <code class="literal">PandaScript</code> since now we need to slightly modify it. In particular, we need to call the functions just created in the <code class="literal">Game Manager</code>. From <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Through a Sea of Sprinkles – Navigation in Artificial Intelligence</em></span>, we already have a reference to the <code class="literal">Game Manager</code>, which we can use to trigger these functions.</p><p>The first modification is to add the following variable to determine how much cake this specific Panda can eat when it bites (its value needs to be set in the Inspector, don't forget it!):</p><pre class="programlisting">
+<span class="emphasis"><em>//The amount of cake that the Panda eats</em></span> &#13;
+public int cakeEatenPerBite; &#13;
+</pre><p>The second modification is in the <code class="literal">FixedUpdate()</code> function. In fact, we need to detract health from the player by using the <code class="literal">BiteTheCake()</code> function in the <code class="literal">Game Manager</code>. The highlighted part is what we have modified:</p><pre class="programlisting">void FixedUpdate() { &#13;
+  <span class="emphasis"><em>//if the Panda has reached the cake, then it will eat it, by&#13;
+    triggering the right animation, &#13;
+  //and remove this script, since the State Machine Behaviour will take&#13;
+    care of removing the Panda</em></span> &#13;
+  if (currentWaypointNumber == gameManager.waypoints.Length) { &#13;
+    animator.SetTrigger(AnimEatTriggerHash); &#13;
+    gameManager.BiteTheCake(cakeEatenPerBite); &#13;
+    Destroy(this); &#13;
+    return; &#13;
+  } &#13;
+ <span class="emphasis"><em> // [...] The remaining code of the function</em></span>
+</pre><p>The third and last modification is in the <code class="literal">Hit()</code> function, in which we also need to trigger the <code class="literal">OneMorePandaInHeaven()</code> function of the Game Manager. We can do it in the following way (again the highlighted part is what is changed):</p><pre class="programlisting">private void Hit(float damage) { &#13;
+ <span class="emphasis"><em> //Subtract the damage to the health of the Panda</em></span> &#13;
+  health -= damage; &#13;
+ <span class="emphasis"><em> //Then it triggers the Die or the Hit animations based if the Panda&#13;
+    is still alive</em></span> &#13;
+  if(health &lt;= 0) { &#13;
+    animator.SetTrigger(AnimDieTriggerHash); &#13;
+    gameManager.OneMorePandaInHeaven(); &#13;
+  } &#13;
+  else { &#13;
+    animator.SetTrigger(AnimHitTriggerHash); &#13;
+  } &#13;
+} &#13;
+</pre><p>Save the script, because we are going to explore how the Pandas are created/spawned in the next section.</p></div></div>

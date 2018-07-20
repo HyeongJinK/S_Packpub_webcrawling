@@ -1,0 +1,77 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec34"></a>Displaying multiple pickups of different objects as text totals via a dynamic Dictionary&lt;&gt; of PickUp objects and "enum" pickup types</h2></div></div><hr /></div><p>While the previous<a id="id232" class="indexterm"></a> recipe worked fine, any old text might have been typed into the description for a pickup or perhaps mistyped (<span class="strong"><strong>star</strong></span>, <span class="strong"><strong>Sstar</strong></span>, <span class="strong"><strong>starr</strong></span>, and so on). A much better way of restricting game properties to one of a predefined (enumerated) list of possible values is to use C# enums. As well as removing the chance of mistyping a string, it also means that we can write code to appropriately deal <a id="id233" class="indexterm"></a>with the predefined set of possible values. In this recipe, we will improve our general purpose <code class="literal">PickUp</code> class by introducing three possible pickup types (Star, Heart, and Key), and write inventory display code that counts the number of each type of pickup being carried and displays these totals via a UI <span class="strong"><strong>Text</strong></span> object on screen. We also switch from using a <span class="strong"><strong>List</strong></span> to using a <span class="strong"><strong>Dictionary</strong></span>, since the Dictionary data structure is designed specifically for key-value pairs, perfect for associating a numeric total with an enumerated pickup type.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_02_39.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec88"></a>Getting ready</h3></div></div></div><p>This recipe follows on from the previous recipe in this chapter.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec89"></a>How to do it...</h3></div></div></div><p>To display multiple <a id="id234" class="indexterm"></a>pickups of <a id="id235" class="indexterm"></a>different objects as text totals via a dynamic <code class="literal">Dictionary</code>, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Make a copy of your work for the previous recipe.</p></li><li><p>Replace the content of script class <code class="literal">PickUp</code> with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PickUp : MonoBehaviour {
+  public enum PickUpType {
+    Star, Key, Heart
+  }
+
+  public PickUpType type;
+}</pre></div></li><li><p>Replace the content of script class <code class="literal">Player</code> with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+using System.Collections.Generic;
+
+public class Player : MonoBehaviour {
+  private InventoryManager inventoryManager;
+
+  void Start(){
+    inventoryManager = GetComponent&lt;InventoryManager&gt;();
+  }
+  
+  void OnTriggerEnter2D(Collider2D hit){
+    if(hit.CompareTag("Pickup")){
+      PickUp item = hit.GetComponent&lt;PickUp&gt;();
+      inventoryManager.Add( item );
+      Destroy(hit.gameObject);
+    }
+  }
+}</pre></div></li><li><p>Replace the content of script class <code class="literal">PlayerInventoryDisplay</code> with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+using System.Collections.Generic;
+
+public class PlayerInventoryDisplay : MonoBehaviour {
+  public Text inventoryText;
+  private string newInventoryText;
+  
+  public void OnChangeInventory(Dictionary&lt;PickUp.PickUpType, int&gt; inventory){
+    inventoryText.text = "";
+    
+    newInventoryText = "carrying: ";
+    int numItems = inventory.Count;
+
+    foreach(var item in inventory){
+      int itemTotal = item.Value;
+      string description = item.Key.ToString();
+      newInventoryText += " [ " + description + " " + itemTotal +  " ]";
+    }
+    
+    if(numItems &lt; 1) newInventoryText = "(empty inventory)";
+    
+    inventoryText.text = newInventoryText;
+  }
+}</pre></div></li><li><p>Add the<a id="id236" class="indexterm"></a> following C# Script<a id="id237" class="indexterm"></a> <code class="literal">InventoryManager</code> to the GameObject <code class="literal">player-SpaceGirl</code> in the <span class="strong"><strong>Hierarchy</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class InventoryManager : MonoBehaviour {
+  private PlayerInventoryDisplay playerInventoryDisplay;
+  private Dictionary&lt;PickUp.PickUpType, int&gt; items = new Dictionary&lt;PickUp.PickUpType, int&gt;();
+  
+  void Start(){
+    playerInventoryDisplay = GetComponent&lt;PlayerInventoryDisplay&gt;();
+    playerInventoryDisplay.OnChangeInventory(items);
+  }
+  
+  public void Add(PickUp pickup){
+    PickUp.PickUpType type = pickup.type;
+    int oldTotal = 0;
+    if(items.TryGetValue(type, out oldTotal))
+      items[type] = oldTotal + 1;
+    else
+      items.Add (type, 1);
+    
+    playerInventoryDisplay.OnChangeInventory(items);
+  }
+}</pre></div></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span> (or <span class="strong"><strong>Scene</strong></span>) panel, select each pickup GameObject in turn, and choose<a id="id238" class="indexterm"></a> from the<a id="id239" class="indexterm"></a> drop-down menu its corresponding <span class="strong"><strong>Type</strong></span> in the <span class="strong"><strong>Inspector</strong></span> panel. As you can see, public variables that are of an <code class="literal">enum</code> type are automatically restricted to the set of possible values as a combo-box drop-down menu in the <span class="strong"><strong>Inspector</strong></span> panel.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_02_40.jpg" /></div></li><li><p>Play the game. First, you should see a message on screen stating the inventory is empty, and then as you pick up one or more items of each pickup type, you'll see text totals of each type you have collected.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec90"></a>How it works...</h3></div></div></div><p>Each pickup GameObject in the scene has a scripted component of class <code class="literal">PickUp</code>. The <code class="literal">PickUp</code> object for each <code class="literal">Pickup</code> GameObject has a single property, a pickup type, which has to be one of the enumerated set of <code class="literal">Star, Key, Heart</code>. The <code class="literal">Player</code> script class gets a reference to the <code class="literal">InventoryManager</code> component via its <code class="literal">Start()</code> method, and each time the player's character collides with a pickup GameObject, it calls the <code class="literal">Add(…)</code> method of the inventory manager, passing the <code class="literal">PickUp</code> object of the object collided with.</p><p>In this recipe, the inventory being carried by the player is being represented by a C# <code class="literal">Dictionary</code>. In this case, we have in script class <code class="literal">InventoryManager</code> a dictionary of key-value pairs, where the key is one of the possible <code class="literal">PickUp.PickUpType</code> enumerated values, and the value is an integer total of how many of that type of pickup is being carried. Each <code class="literal">InventoryItemTotal</code> object has just two properties: a <code class="literal">PickUp</code> type and an integer total. This <a id="id240" class="indexterm"></a>extra layer of the <code class="literal">InventoryManager</code> has been added between script class <code class="literal">Player</code> and <code class="literal">PlayerInventoryDisplay</code> to both separate the <code class="literal">Player</code> behavior from how the inventory is internally stored and to prevent the <code class="literal">Player</code> script class from becoming too large and attempting<a id="id241" class="indexterm"></a> to handle too many different responsibilities.</p><p>C# dictionaries provide a <code class="literal">TryGetValue(…)</code> method, which receives parameters of a key and is passed a reference to a variable the same data type as the value for the <code class="literal">Dictionary</code>. When the <code class="literal">Add(…)</code> method of the inventory manager is called, the type of the <code class="literal">PickUp</code> object is tested to see if a total for this type is already in <code class="literal">Dictionary items</code>. If an item total is found inside the <code class="literal">Dictionary</code> for the given type, then the value for this item in the <code class="literal">Dictionary</code> is incremented. If no entry is found for the given type, then a new element is added to the <code class="literal">Dictionary</code> with a total of 1.</p><p>The last action of the <code class="literal">Add(…)</code> method is to call the <code class="literal">OnChangeInventory(…)</code> method of the <code class="literal">PlayerInventoryDisplay</code> scripted component of the player's GameObject to update the text totals displayed on screen. This method in <code class="literal">PlayerInventoryDisplay</code> iterates through the <code class="literal">Dictionary</code>, building up a string of the type names and totals, and then updates the text property of the UI Text object with the string showing the inventory totals to the player.</p><p>Learn more about using<a id="id242" class="indexterm"></a> C# lists and dictionaries in Unity in the Unity Technologies tutorial at <a class="ulink" href="https://unity3d.com/learn/tutorials/modules/intermediate/scripting/lists-and-dictionaries" target="_blank">https://unity3d.com/learn/tutorials/modules/intermediate/scripting/lists-and-dictionaries</a>.</p></div></div>

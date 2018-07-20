@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec329"></a>Time for action – to catch a competitor</h2></div></div><hr /></div><p>Combine these two <a id="id1011" class="indexterm"></a>separate function calls:</p><div class="informalexample"><pre class="programlisting"> square = Win();
+  if(square == null) square = Block();
+<span class="strong"><strong>  if(square == null) square = CreateTrap();</strong></span>
+<span class="strong"><strong>  if(square == null) square = PreventTrap();</strong></span>
+</pre></div><p>into this unified call:</p><div class="informalexample"><pre class="programlisting"> square = Win();
+  if(square == null) square = Block();
+<span class="strong"><strong>  if(square == null) square = PreventOrCreateTrap();</strong></span>
+</pre></div><p>The <code class="literal">PreventOrCreateTrap</code> function is very straightforward:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>function PreventOrCreateTrap():GameObject</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  var aP1Corners:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;(); </strong></span>
+<span class="strong"><strong>    // Create an empty list to store X-controlled corners</strong></span>
+<span class="strong"><strong>  var aP2Corners:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;(); </strong></span>
+<span class="strong"><strong>    // Create an empty list to store O-controlled corners</strong></span>
+<span class="strong"><strong>  var aOpenCorners:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;(); </strong></span>
+<span class="strong"><strong>    // Create an empty list to store unoccupied corners</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  var aCorners:GameObject[] = [aGrid[0,0],aGrid[2,0],aGrid[0,2],</strong></span>
+<span class="strong"><strong>    aGrid[2,2]]; </strong></span>
+<span class="strong"><strong>    // Create an array to store the corner coordinates</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  var player:int;</strong></span>
+<span class="strong"><strong>  var square:GameObject;</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  // Loop through the corner coordinates:</strong></span>
+<span class="strong"><strong>  var i:int;</strong></span>
+<span class="strong"><strong>  for(i = 0; i &lt; 4; i++)</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    square = aCorners[i];</strong></span>
+<span class="strong"><strong>    player = square.GetComponent.&lt;Square&gt;().player; </strong></span>
+<span class="strong"><strong>      // Find the piece that's in this corner</strong></span>
+<span class="strong"><strong>    if(player == 1)</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      aP1Corners.Add(square); </strong></span>
+<span class="strong"><strong>        // If it's an X, add it to the X-controlled corners lists</strong></span>
+<span class="strong"><strong>    } else if (player == 2) {</strong></span>
+<span class="strong"><strong>      aP2Corners.Add(square); </strong></span>
+<span class="strong"><strong>        // If it's an O, add it to the X-controlled corners lists</strong></span>
+<span class="strong"><strong>    } else {</strong></span>
+<span class="strong"><strong>      aOpenCorners.Add(square); </strong></span>
+<span class="strong"><strong>        // If it's empty, add it to the empty corners list</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong> // Set a trap!</strong></span>
+<span class="strong"><strong>  // If O has two corners and there's at least one empty corner, </strong></span>
+<span class="strong"><strong>  // randomly return an empty corner from the empty corners list:</strong></span>
+<span class="strong"><strong>  if( aP2Corners.Count == 2 &amp;&amp; aOpenCorners.Count &gt; 0) </strong></span>
+<span class="strong"><strong>    return aOpenCorners[Random.Range(0,aOpenCorners.Count)];</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  // Prevent a trap!</strong></span>
+<span class="strong"><strong>  // If X has two corners, take a side to force him to defend:</strong></span>
+<span class="strong"><strong>  if(aP1Corners.Count == 2) return GetEmptySide();</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>  // If there's no trap to set or prevent, return null:</strong></span>
+<span class="strong"><strong>  return null;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec128"></a>
+<span class="emphasis"><em>What just happened – I'm running out of trap puns</em></span>
+</h3></div></div></div><p>Let's zero in on what's happening in that code.</p><div class="informalexample"><pre class="programlisting">  var aP1Corners:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;(); // Create an empty list to store X-controlled corners
+  var aP2Corners:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;(); // Create an empty list to store O-controlled corners
+  var aOpenCorners:List.&lt;GameObject&gt; = new List.&lt;GameObject&gt;(); // Create an empty list to store unoccupied corners</pre></div><p>We kick off the <code class="literal">PreventOrCreateTrap</code> function<a id="id1012" class="indexterm"></a> by creating three empty Generic Lists to store references to the corner squares player 1 has claimed, references to the corner squares player 2 has claimed, and the list of corner squares neither player has claimed.</p><div class="informalexample"><pre class="programlisting">  var aCorners:GameObject[] = [aGrid[0,0],aGrid[2,0],aGrid[0,2],aGrid[2,2]]; // Create an array to store the corner coordinates</pre></div><p>Then, we define a Generic List of the corner squares, pulling them from the <code class="literal">aGrid</code> array by their coordinates. We can loop through this List later (and, in fact, we do!).</p><div class="informalexample"><pre class="programlisting">  var player:int;
+  var square:GameObject;</pre></div><p>These two variables are needed in the loop:</p><div class="informalexample"><pre class="programlisting">  var i:int;
+  for(i = 0; i &lt; 4; i++)</pre></div><p>This is a standard iterative loop setup that we've used numerous times before. The <code class="literal">i</code> iterator variable is declared outside the loop, allowing us to reuse the iterator in other loops throughout this function, if need be. (In this situation, <code class="literal">i</code> is only used in one iterative loop.)</p><div class="informalexample"><pre class="programlisting">  square = aCorners[i];</pre></div><p>Grab a reference to the ith square in the <code class="literal">aCorners</code> List, and assign it to the lowercase-s variable <code class="literal">square</code>.</p><div class="informalexample"><pre class="programlisting">  player = square.GetComponent.&lt;Square&gt;().player; // Find the piece that's in this corner</pre></div><p>Store a reference to the <span class="strong"><strong>Square's</strong></span> player value (which will be <code class="literal">0</code>, <code class="literal">1</code>, or <code class="literal">2</code>).</p><div class="informalexample"><pre class="programlisting">  if(player == 1)
+  {
+    aP1Corners.Add(square); // If it's an X, add it to the X-controlled corners lists
+  } else if (player == 2) {
+    aP2Corners.Add(square); // If it's an O, add it to the X-controlled corners lists
+  } else {
+    aOpenCorners.Add(square); // If it's empty, add it to the empty corners list
+  }</pre></div><p>If player 1 controls this <span class="strong"><strong>Square</strong></span>, add the <span class="strong"><strong>Square</strong></span> to the <code class="literal">aP1Corners</code> List. If player 2 controls it, add the <span class="strong"><strong>Square</strong></span> to the <code class="literal">aP2Corners</code> List. If neither player controls the <span class="strong"><strong>Square</strong></span>, add its reference to the <code class="literal">aOpenCorners</code> List.</p><div class="informalexample"><pre class="programlisting">  if( aP2Corners.Count == 2 &amp;&amp; aOpenCorners.Count &gt; 0) return aOpenCorners[Random.Range(0,aOpenCorners.Count)];</pre></div><p>If player 2 (the computer player) has claimed two corners and there's at least one empty corner in the <code class="literal">aOpenCorners</code> List, this <span class="strong"><strong>Square</strong></span> represents a chance for the computer to set a Tri-Corner trap! Spit out a randomly-chosen empty corner from the <code class="literal">aOpenCorners</code> List.</p><div class="informalexample"><pre class="programlisting">  if(aP1Corners.Count == 2) return GetEmptySide();</pre></div><p>If player 1, the human player, has claimed two corners, the computer can't allow him to claim a third corner and set a trap. Playing an O in one of the side <span class="strong"><strong>Squares</strong></span> will force the human into a defensive position, so pull a random empty side <span class="strong"><strong>Square</strong></span> using the existing <code class="literal">GetEmptySide</code> function<a id="id1013" class="indexterm"></a> and return it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec129"></a>Perfection Horrible, horrible perfection.</h3></div></div></div><p>With your computer player's "brain" completely programmed, test your game.</p><p>Egad! We've created the Deep Blue of Tic Tac Toe-playing computers! The computer plays so well that every single game ends in either a win for the computer, or a draw. There's no possible way to win. We've created a monster! It won't be long before Skynet starts sending Terminators back in time. What have we wrought??</p></div></div>

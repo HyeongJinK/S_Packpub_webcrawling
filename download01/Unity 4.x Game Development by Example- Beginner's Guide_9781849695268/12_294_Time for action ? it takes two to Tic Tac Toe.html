@@ -1,0 +1,27 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec291"></a>Time for action – it takes two to Tic Tac Toe</h2></div></div><hr /></div><p>A one-playerTic Tac Toe game sounds like a recipe for a bad time. Let's get the O's in there to liven<a id="id917" class="indexterm"></a> things up.</p><p>Add this line to the GameLogic script:</p><div class="informalexample"><pre class="programlisting">var XPiece:GameObject;
+var OPiece:GameObject;
+<span class="strong"><strong>var currentPlayer:int = 1;</strong></span>
+</pre></div><p>And later:</p><div class="informalexample"><pre class="programlisting">function ClickSquare(square:GameObject)
+{
+<span class="strong"><strong>  var piece:GameObject;</strong></span>
+<span class="strong"><strong>  if(currentPlayer == 1)</strong></span>
+  <span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>    piece = XPiece;</strong></span>
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    piece = OPiece;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+
+  Instantiate(<span class="strong"><strong>piece</strong></span>, square.transform.position, Quaternion.identity);
+
+  <span class="strong"><strong>currentPlayer ++;</strong></span>
+<span class="strong"><strong>  if(currentPlayer &gt; 2) currentPlayer = 1;</strong></span>
+}</pre></div><p>Try it out. <a id="id918" class="indexterm"></a>Now when you click, the game alternates between X's and O's. </p><div class="mediaobject"><img src="/graphics/9781849695268/graphics/5268OT_12_19.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec113"></a>
+<span class="emphasis"><em>What just happened – alternating between players</em></span>
+</h3></div></div></div><p>Let's take a closer look at that code.</p><div class="informalexample"><pre class="programlisting">var currentPlayer:int = 1;</pre></div><p>We begin the game with <code class="literal">currentPlayer</code> set to <code class="literal">1</code>.</p><div class="informalexample"><pre class="programlisting">var piece:GameObject;
+if(currentPlayer == 1)
+{
+  piece = XPiece;
+} else {
+  piece = OPiece;
+}</pre></div><p>This chunk of code defines a variable called <code class="literal">piece</code>. If <code class="literal">currentPlayer</code> is <code class="literal">1</code>, it gets set to <code class="literal">XPiece</code> (which is defined at the top of <a id="id919" class="indexterm"></a>the script, and currently contains a reference to our <code class="literal">X</code> Prefab). If <code class="literal">currentPlayer</code> is <code class="literal">2</code>, we store a reference to the <code class="literal">OPiece</code> value, which in turn refers to our <code class="literal">O</code> Prefab.</p><div class="informalexample"><pre class="programlisting">Instantiate(<span class="strong"><strong>piece</strong></span>, square.transform.position, Quaternion.identity);</pre></div><p>Instead of explicitly instantiating <code class="literal">XPiece</code> or <code class="literal">OPiece</code>, we instantiate whichever piece is stored in the <code class="literal">piece</code> variable.</p><div class="informalexample"><pre class="programlisting">currentPlayer ++;
+if(currentPlayer &gt; 2) currentPlayer = 1;</pre></div><p>After a piece is played, we increment the <code class="literal">currentPlayer</code> variable, so that <code class="literal">1</code> becomes <code class="literal">2</code>, and <code class="literal">2</code> becomes <code class="literal">3</code>. In the next line, if we reach <code class="literal">3</code>, then we bust the value back down to <code class="literal">1</code>. In this way, with each move, <code class="literal">currentPlayer</code> toggles between <code class="literal">1</code> and <code class="literal">2</code>.</p></div></div>

@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec42"></a>Adding a pause button to the startScene</h2></div></div><hr /></div><p>Since we are in startScene, let's add one more type of button, called a <span class="emphasis"><em>toggle</em></span> button, to pause or unpause the game.</p><p>Go to <strong class="userinput"><code>GameObject</code></strong> | <strong class="userinput"><code>UI</code></strong> and create a new toggle button. Once created, position it at the top right of the game screen. Rename the button to <strong class="userinput"><code>pauseBtn</code></strong>.</p><p>Like other buttons and UI elements, it has a <strong class="userinput"><code>Rect Transform</code></strong> section which can be used to position the button:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_06_019.png" /></div><p>It also has a <strong class="userinput"><code>Toggle (Script)</code></strong> which can be set to the default values. Select the <strong class="userinput"><code>Background</code></strong> tab, to choose the background image to be used for the button.</p><p>In the <strong class="userinput"><code>Image (Script)</code></strong> under <strong class="userinput"><code>Background</code></strong>, select the <strong class="userinput"><code>pauseBtnOff</code></strong> Sprite type as the background image:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_06_020.png" /></div><p>There is also a label tab for any text script, which you can leave blank as we will only be using the image.</p><p>Whenever you click the button, it will create a tick mark over the pause image to specify that the button is toggled. If you click on it again it will revert to the usual image.</p><p>Now, in the <code class="literal">gameScript</code> file, we create a public variable toggle type, called <code class="literal">pauseButton</code>, and also create a <code class="literal">public</code> Boolean variable, called <code class="literal">bIsGamePaused</code>, and initialize it to <code class="literal">false</code>. We will use this newly created Boolean variable to go through the player and AI update loop.</p><p>So, in the <code class="literal">gameScript</code>, add the following code:</p><pre class="programlisting">    public Text gameOverText; 
+    public Button resetButton; 
+<span class="strong"><strong>    public Toggle pauseButton;</strong></span><span class="strong"><strong>
+    public bool bIsGamePaused = false;</strong></span></pre><p>Next, in the <code class="literal">Update</code> function, set the value of <code class="literal">bIsGamePaused</code> to <code class="literal">pauseButtons.isOn</code> variable. This will set the value to <code class="literal">true</code> or <code class="literal">false</code> based on whether you clicked on the pause button.</p><p>The <code class="literal">Update</code> function will look like the following:</p><pre class="programlisting">    void Update () {     
+        if (!bGameover) { 
+<span class="strong"><strong>            bIsGamePaused = pauseButton.isOn;</strong></span>
+
+            Debug.Log("isGamePaused: " + bIsGamePaused);        
+
+            int playerHealth = pScript.health; 
+            int enemyHealth = eScript.health; 
+
+            // other code 
+        } 
+    } </pre><p>Next, in the <code class="literal">enemyScript</code>, enclose the <code class="literal">Update</code> function and check whether the <code class="literal">bIsGamePaused</code> is <code class="literal">false</code>, in a similar way to how we check if the game is over or not:</p><pre class="programlisting">    void Update () {    
+        gameScript gScript = mainCamera.GetComponent&lt;gameScript&gt;(); 
+
+        if (gScript.bGameover == false) 
+        { 
+            if (gScript.bIsGamePaused == false) 
+            {
+                punchTick--; 
+                myTick++; 
+                currentTick = myTick; 
+
+                GameObject player = GameObject.Find("theDude"); 
+                Animator pAnim = player.GetComponent&lt;Animator&gt;(); 
+                playerScript pScript = player.GetComponent &lt;playerScript&gt;(); 
+
+                // Other game code 
+            } 
+        } 
+    } </pre><p>Do the same in <code class="literal">playerScript</code>:</p><pre class="programlisting">    void Update () { 
+        gameScript gScript = mainCamera.GetComponent&lt;gameScript&gt;(); 
+
+        if (gScript.bGameover == false) 
+        { 
+            if (gScript.bIsGamePaused == false) 
+            { 
+                totalTime += Time.deltaTime; 
+
+                GameObject enemy = GameObject.Find("Enemy"); 
+                Animator eAnim = enemy.GetComponent&lt;Animator&gt;(); 
+                enemyScript eScript = enemy.GetComponent
+                                      &lt;enemyScript&gt;(); 
+
+                // other game code 
+            } 
+        } 
+    } </pre><p>Now, when you run the game, you can pause the game by tapping on the pause button.</p><p>In <code class="literal">mainCamera</code> do not forget to assign the <code class="literal">toggleBtn</code> to the <code class="literal">gameScript</code> script as it is expecting it to be similar to how you attached <code class="literal">resetBtn</code>:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_06_021.png" /></div></div>

@@ -1,0 +1,19 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec26"></a>The device-independent clicker</h2></div></div><hr /></div><p>There is<a id="id172" class="indexterm"></a> one more thing I want to do, which will be very helpful in later chapters of this book. At the time of writing this book, VR input has not yet been settled across all platforms. Input devices may or may not fit under Unity's own <span class="strong"><strong>Input Manager</strong></span> and APIs. In fact, input for VR is a huge topic and deserves its own book. So here, we will keep it simple.</p><p>As a tribute to the late Steve Jobs and a throwback to the origins of Apple Macintosh, I am going to limit these projects to mostly one-click inputs! Let's write a script for it, which checks for any click on the keyboard, mouse, or other managed device. (I have provided a detailed introduction to the Unity scripting in the next chapter, so please just follow along for now):</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <span class="strong"><strong>Project</strong></span> panel, select the top-level <span class="strong"><strong>Assets</strong></span> folder.</p></li><li><p>Right-click and navigate to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Folder</strong></span>. Name it <code class="literal">Scripts</code>.</p></li><li><p>With the <code class="literal">Scripts</code> folder selected, right-click and navigate to <code class="literal">Create | C# Script</code>. Name it <code class="literal">Clicker</code>.</p></li><li><p>Double-click on the <code class="literal">Clicker.cs</code> file in the <span class="strong"><strong>Projects</strong></span> panel to open it in the <span class="strong"><strong>MonoDevelop</strong></span> editor.</p></li><li><p>Now, edit the <code class="literal">Script</code> file, as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Clicker {
+  public bool clicked() {
+    return Input.anyKeyDown;
+  }
+}</pre></div></li><li><p>Save the file.</p></li></ol></div><p>If you<a id="id173" class="indexterm"></a> are developing for Google Cardboard, you can add a check for the Cardboard's integrated trigger when building for mobile devices, as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Clicker {
+  public bool clicked() {
+#if (UNITY_ANDROID || UNITY_IPHONE)
+    return Cardboard.SDK.CardboardTriggered;
+#else
+    return Input.anyKeyDown;
+#endif
+  }
+}</pre></div><p>Any scripts that we write that require user clicks will use this <code class="literal">Clicker</code> file. The idea is that we've isolated the definition of a user click to a single script, and if we change or refine it, we only need to change this file.</p></div>

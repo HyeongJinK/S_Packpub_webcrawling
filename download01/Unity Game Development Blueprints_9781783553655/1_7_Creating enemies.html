@@ -1,0 +1,51 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec13"></a>Creating enemies</h2></div></div><hr /></div><p>Now, it's<a id="id42" class="indexterm"></a> really cool that we have a player, but it'll get really boring if all we can do is move around and shoot some lasers in the dark. Next, we'll introduce some simple enemies that will move toward the player that we'll be able to shoot later. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Exit the game and access our example code's <code class="literal">Assets</code> folder; move the <code class="literal">enemy.png</code> file into our <code class="literal">Sprites</code> folder.</p></li><li><p>Following that, drag-and-drop it into your scene from the <span class="strong"><strong>Scene</strong></span> tab to place it in the level.</p></li><li><p>Right-click on the <span class="strong"><strong>Scripts</strong></span> folder you created earlier, click on <span class="strong"><strong>Create</strong></span>, and select the <span class="strong"><strong>C# Script</strong></span> label. Call this new script <code class="literal">MoveTowardsPlayer</code>. Go to <code class="literal">MonoDevelop</code> and use the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class MoveTowardsPlayer : MonoBehaviour 
+{
+  private Transform player;
+  public float speed = 2.0f;
+
+  // Use this for initialization
+  void Start () 
+  {
+    player = GameObject.Find("playerShip").transform;
+  }
+  
+  // Update is called once per frame
+  void Update () 
+  {
+    Vector3 delta = player.position - transform.position;
+    delta.Normalize();
+    float moveSpeed = speed * Time.deltaTime;
+    transform.position = transform.position + (delta * moveSpeed);
+  }
+}</pre></div><p>In the <a id="id43" class="indexterm"></a>beginning of the game, I find the player ship and get his transform component. Then, in every frame of the project, we move the enemy from where it currently is to the direction where the player is at.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>If you ever want to have objects run away from the player, use a negative value for the <code class="literal">speed</code> variable.</p></div></li><li><p>Drag-and-drop this newly added behavior onto our enemy object.</p></li><li><p>Next, add a circle collider to our enemy by going to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics 2D</strong></span> | <span class="strong"><strong>Circle Collider 2D</strong></span>. Change the <span class="strong"><strong>Radius</strong></span> property to <code class="literal">.455</code>, and run the game. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_01_17.jpg" /></div></li></ol></div><p>Now, you'll see<a id="id44" class="indexterm"></a> that the enemy will always move toward you! But if we shoot it, nothing happens. Let's fix that as follows.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Right-click on the <span class="strong"><strong>Scripts</strong></span> folder you created earlier, click on <span class="strong"><strong>Create</strong></span>, and select the <span class="strong"><strong>C# Script</strong></span> label. Call this new script <code class="literal">EnemyBehaviour</code>. Go to <code class="literal">MonoDevelop</code>, and use the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine; // MonoBehaviour
+
+public class EnemyBehaviour : MonoBehaviour 
+{
+
+  // How many times should I be hit before I die
+  public int health = 2;
+
+  void OnCollisionEnter2D(Collision2D theCollision)
+  {
+    // Uncomment this line to check for collision
+    //Debug.Log("Hit"+ theCollision.gameObject.name);
+
+    // this line looks for "laser" in the names of 
+    // anything collided.
+    if(theCollision.gameObject.name.Contains("laser"))
+    {
+      LaserBehaviour laser = theCollision.gameObject.GetComponent("LaserBehaviour") as LaserBehaviour;
+      health -= laser.damage;
+      Destroy (theCollision.gameObject);
+    }
+    
+    if (health &lt;= 0) 
+    {
+      Destroy (this.gameObject);
+    }
+  }
+}</pre></div><p>Now, you will notice that we have commented a line of code calling the function <code class="literal">Debug.Log</code>. This function will print something onto your console, which may help you when debugging your own code in the future.</p></li><li><p>Save the file, and<a id="id45" class="indexterm"></a> then go back into Unity. Attach the <code class="literal">EnemyBehaviour</code> behavior to your enemy object. For collision events to register we need to add a Rigidbody 2D component to our enemy by going to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics 2D</strong></span> | <span class="strong"><strong>Rigidbody 2D</strong></span>. Change the <span class="strong"><strong>Gravity Scale to 0</strong></span> so it will not fall. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_01_18.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note15"></a>Note</h3><p>
+<code class="literal">OnCollisionEnter2D</code> is a function that will trigger when two objects with 2D colliders collide. It is important to note collision events are only sent if one of the colliders also has a non-kinematic rigidbody attached (which we just did).</p><p>For more info on OnCollisionEnter2D check out <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Collider2D.OnCollisionEnter2D.html" target="_blank">http://docs.unity3d.com/ScriptReference/Collider2D.OnCollisionEnter2D.html</a>.</p></div></li></ol></div><p>Now, whenever <a id="id46" class="indexterm"></a>we hit the enemy with our bullets twice, it will die. Nice!</p></div>

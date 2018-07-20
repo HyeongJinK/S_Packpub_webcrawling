@@ -1,0 +1,68 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec85"></a>Loading external text files using C# file streams</h2></div></div><hr /></div><p>For standalone executable games<a id="id584" class="indexterm"></a> that both read from and <a id="id585" class="indexterm"></a>write to (create or change) text files, .NET data streams are often used for both reading and writing. A later recipe illustrates how to write text data to files, while this recipe illustrates how to read a text file.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note33"></a>Note</h3><p>This technique only works when you compile to a Windows or Mac <span class="emphasis"><em>standalone executable</em></span>; it will not work for Web Player builds, for example.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec297"></a>Getting ready</h3></div></div></div><p>For this recipe, you'll need a text file; two of these have been provided in the <code class="literal">0423_08_01</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec298"></a>How to do it...</h3></div></div></div><p>To load external text files using C# file streams, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new C# script called <a id="id586" class="indexterm"></a>
+<code class="literal">FileReadWriteManager</code>:</p><div class="informalexample"><pre class="programlisting">// file: FileReadWriteManager.cs
+using System;
+using System.IO;
+
+public class FileReadWriteManager {
+    public void WriteTextFile(string pathAndName, string stringData) {
+        // remove file (if exists)
+        FileInfo textFile = new FileInfo(  pathAndName ); 
+        if( textFile.Exists )
+            textFile.Delete();
+
+        // create new empty file
+        StreamWriter writer; 
+        writer = textFile.CreateText(); 
+
+        // write text to file
+        writer.Write(stringData); 
+
+        // close file
+        writer.Close(); 
+    }
+
+    public string ReadTextFile(string pathAndName) { 
+        string dataAsString = "";
+
+        try {
+            // open text file
+            StreamReader textReader = File.OpenText( pathAndName );
+
+            // read contents
+            dataAsString = textReader.ReadToEnd();
+
+            // close file
+            textReader.Close();
+
+        }
+        catch (Exception e) {
+            //display/set e.Message error message here if you wish
+
+        }
+
+        // return contents
+        return dataAsString; 
+    }
+}</pre></div></li><li><p>Add<a id="id587" class="indexterm"></a> the<a id="id588" class="indexterm"></a> following C# script to <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: ReadWithStream.cs
+using UnityEngine;
+using System.Collections;
+using System.IO;
+
+public class ReadWithStream : MonoBehaviour {
+    private string filePath = "";
+    private string textFileContents = "(file not found yet)";
+    private FileReadWriteManager fileReadWriteManager = new FileReadWriteManager();
+
+    private void Start () {
+        string fileName = "cities.txt";
+        filePath = Path.Combine(Application.dataPath, "Resources");
+        filePath = Path.Combine(filePath, fileName);
+
+        textFileContents = fileReadWriteManager.ReadTextFile( filePath );
+    }
+
+    private void OnGUI() {
+        GUILayout.Label ( filePath );
+        GUILayout.Label ( textFileContents );
+    }
+}</pre></div></li><li><p>Build <a id="id589" class="indexterm"></a>your (Windows, Mac, or Linux) standalone executable. You'll need to save the current scene and then add this to the scenes in the build.</p></li><li><p>Copy <a id="id590" class="indexterm"></a>the text file containing your data into your standalone's <code class="literal">Resources</code> folder (that is, the filename you set in the first statement in the <code class="literal">Start()</code> method—in our listing, this is the <code class="literal">cities.txt</code> file)</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note34"></a>Note</h3><p>You will need to place the files in the <code class="literal">Resources</code> folder manually after every compilation.</p><p>For Windows and Linux users: When you create a Windows or Linux standalone executable, there is a <code class="literal">_Data</code> folder that is created with the executable application file. The <code class="literal">Resources</code> folder can be found inside this data folder.</p><p>For Mac users: A Mac standalone application executable looks like a single file, but it is actually a Mac OS "package" folder. Right-click on the executable file and select <span class="strong"><strong>Show Package Contents</strong></span>. You will then find the standalone's <code class="literal">Resources</code> folder inside the <code class="literal">Contents</code> folder.</p></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec299"></a>How it works...</h3></div></div></div><p>When the game <a id="id591" class="indexterm"></a>runs, the <code class="literal">Start()</code> method<a id="id592" class="indexterm"></a> creates the <code class="literal">filePath</code> string and then calls the<a id="id593" class="indexterm"></a> <code class="literal">ReadTextFile()</code> method from the <code class="literal">fileReadWriteManager</code> object, to which it passes it the <code class="literal">filePath</code> string. This method reads the contents of the file and returns them as a string, which is stored in the <code class="literal">textFileContents</code> variable. Our <code class="literal">OnGUI()</code> method displays the values of these two variables (<code class="literal">filePath</code> and <code class="literal">textFileContents</code>).</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note35"></a>Note</h3><p>Note the need to use the <code class="literal">System.IO</code> package for this recipe. The C# script <code class="literal">FileReadWriteManager.cs</code> contains two general purpose file read and write methods that you may find useful in many different projects.</p></div></div></div>

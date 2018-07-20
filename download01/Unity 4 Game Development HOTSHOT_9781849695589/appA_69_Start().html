@@ -1,0 +1,16 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec71"></a>Start()</h2></div></div><hr /></div><p>The <code class="literal">Start()</code> function is<a id="id1285" class="indexterm"></a> called just before<a id="id1286" class="indexterm"></a> any of the <code class="literal">Update()</code> methods is called.</p><p>
+<code class="literal">Start()</code> is only called once in the lifetime of the behavior. The difference between <code class="literal">Awake()</code> and <code class="literal">Start()</code> is that <code class="literal">Start()</code> is only called if the script instance is enabled. This allows you to delay any initialization of code until it is really needed.</p><p>The <code class="literal">Start()</code> function is called after all <code class="literal">Awake()</code> functions on all script instances have been called. An <a id="id1287" class="indexterm"></a>example of the <code class="literal">Start()</code> function is as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+private var myLife : int;
+function Start() {
+    myLife = 5;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+int myLife;
+void Start() {
+    myLife = 5;
+}</pre></div></div>

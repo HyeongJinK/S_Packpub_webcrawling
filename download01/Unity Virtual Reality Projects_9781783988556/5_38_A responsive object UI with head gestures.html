@@ -1,0 +1,116 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec40"></a>A responsive object UI with head gestures</h2></div></div><hr /></div><p>The<a id="id296" class="indexterm"></a> last UI technique that I'll discuss is where the UI elements are not necessarily visible at all times. Rather, they may be invoked in context as a part of the gameplay. I call this a <span class="emphasis"><em>responsive object UI</em></span>.</p><p>For example, in conventional video games, you might have an ammunition gauge that's always visible. In VR, you can wait for the user to look down at the weapon in his hands, and then an ammo meter on the weapon lights up, showing its status.</p><p>In this example, we are going to make the dashboard that we just built appear only when we can infer that it is the user's intent to access it. The mechanism should feel quite natural—you look down towards you feet quickly and the dashboard slides out, and when you look away after a few seconds it tucks itself in again.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec61"></a>Using the head position</h3></div></div></div><p>Let's try<a id="id297" class="indexterm"></a> just using the camera angle to tell if you're looking down, say within 60 degrees of looking straight down. Create a new script on the <code class="literal">GameController</code> named <code class="literal">HeadGesture.cs</code>, which checks whether you're facing down, as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class HeadGesture : MonoBehaviour {
+  public bool isFacingDown = false;
+
+  void Update () {
+    isFacingDown = DetectFacingDown ();
+  }
+
+  private bool DetectFacingDown () {
+    return (CameraAngleFromGround () &lt; 60.0f);
+  }
+
+  private float CameraAngleFromGround () {
+    return Vector3.Angle (Vector3.down, Camera.main.transform.rotation * Vector3.forward);
+  }
+}</pre></div><p>This script defines a <code class="literal">HeadGesture</code> class with a handy public variable, <code class="literal">isFacingDown</code>, which is updated during each <code class="literal">Update()</code>. I put it into its own class so that it is reusable and we can call it from other scripts. The details are broken out into smaller single-purpose functions.</p><p>The <code class="literal">DetectFacingDown()</code> function checks whether the camera angle is within 60 degrees<a id="id298" class="indexterm"></a> of straight down.</p><p>In <code class="literal">CameraAngleFromGround()</code>, we get the angle of the current camera relative to straight down, returning a value between 0 and 180 degrees.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note13"></a>Note</h3><p>Internally, Unity uses a <span class="strong"><strong>Quaternion</strong></span> data structure to represent orientations and rotations <a id="id299" class="indexterm"></a>in three dimensions, which is optimal for calculations and accuracy. The Unity editor lets us specify angles as Euler rotations (pronounced <span class="emphasis"><em>oiler</em></span>) as degree rotations around the <span class="emphasis"><em>x</em></span>, <span class="emphasis"><em>y</em></span>, and <span class="emphasis"><em>z</em></span> axes. See <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Quaternion.html" target="_blank">http://docs.unity3d.com/ScriptReference/Quaternion.html</a>.</p></div><p>Now, create another new script also on the <code class="literal">GameController</code> and name it <code class="literal">FlippinDashboard.cs</code>, which flips opens the dashboard when you're looking down, as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class FlippinDashboard : MonoBehaviour {
+  private HeadGesture gesture;
+  private GameObject dashboard;
+  private bool isOpen = true;
+  private Vector3 startRotation;
+
+  void Start () {
+    gesture = GetComponent&lt;HeadGesture&gt; ();
+    dashboard = GameObject.Find ("Dashboard");
+    startRotation = dashboard.transform.eulerAngles;
+    CloseDashboard ();
+  }
+
+  void Update () {
+    if (gesture.isFacingDown) {
+      OpenDashboard ();
+    } else {
+      CloseDashboard ();
+    }
+  }
+
+  private void CloseDashboard() {
+    if (isOpen) {
+      dashboard.transform.eulerAngles = new Vector3 (180.0f, startRotation.y, startRotation.z);
+      isOpen = false;
+    }
+  }
+
+  private void OpenDashboard() {
+    if (!isOpen) {
+      dashboard.transform.eulerAngles = startRotation;
+      isOpen = true;
+    }
+  }
+}</pre></div><p>This <a id="id300" class="indexterm"></a>script references the other <code class="literal">HeadGesture</code> component. In fact, it finds the component instance from the same <code class="literal">GameController</code> and <span class="emphasis"><em>asks it</em></span> during each update whether the user is looking down (<code class="literal">gesture.isFacingDown</code>). In this case, we're using the <code class="literal">public</code> variable of the <code class="literal">HeadGesture</code> class from another script rather than in the Unity editor's <span class="strong"><strong>Inspector</strong></span> panel.</p><p>In <code class="literal">Start()</code>, we initialize <code class="literal">startRotation</code> of the dashboard in its opened position, like it's set in the Unity editor. Then, we close the dashboard initially.</p><p>The <code class="literal">Update()</code> function checks whether the user is in <code class="literal">isFacingDown</code> gesture, and opens the dashboard. Otherwise, it closes the dashboard. The <code class="literal">CloseDashboard()</code> function closes it by setting its <span class="strong"><strong>X</strong></span> rotation to 180 degrees, but only if it's already open. The <code class="literal">OpenDashboard()</code> function restores the rotation to the open settings, but only if it's presently closed.</p><p>When you <span class="emphasis"><em>Play</em></span> the scene, the dashboard starts folded up. When you look down, it unfolds. When you look away, it folds up again. That's a responsive object UI!</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec62"></a>Using head gestures</h3></div></div></div><p>There are <a id="id301" class="indexterm"></a>many ways to improve this behavior. One idea is that instead of opening the dashboard by simply looking down, the user must look down quickly, as though there's intent in the gesture of looking down. In other words, if you casually look down, the dashboard doesn't open. If you look down quickly, it does. This is a simple example of a head <span class="emphasis"><em>gesture</em></span> input.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip16"></a>Note</h3><p>Separating functional units in your program into their own class, like we did with <code class="literal">HeadGesture</code>, makes your code more modular, reusable, testable, and maintainable.</p></div><p>Let's change<a id="id302" class="indexterm"></a> the <code class="literal">HeadGesture</code> script to do it that way, as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class HeadGesture : MonoBehaviour {
+  public bool isFacingDown = false;
+<span class="strong"><strong>  public bool isMovingDown = false;</strong></span>
+
+<span class="strong"><strong>  private float sweepRate = 100.0f;</strong></span>
+<span class="strong"><strong>  private float previousCameraAngle;</strong></span>
+
+  void Start () {
+<span class="strong"><strong>    previousCameraAngle = CameraAngleFromGround ();</strong></span>
+  }
+
+  void Update () {
+    isFacingDown = DetectFacingDown ();
+<span class="strong"><strong>    isMovingDown = DetectMovingDown ();</strong></span>
+  }
+
+  private float CameraAngleFromGround () {
+    return Vector3.Angle (Vector3.down, camera.transform.rotation * Vector3.forward);
+  }
+
+  private bool DetectFacingDown () {
+    return (CameraAngleFromGround () &lt; 60.0f);
+  }
+
+<span class="strong"><strong>  private bool DetectMovingDown () {</strong></span>
+<span class="strong"><strong>    float angle = CameraAngleFromGround ();</strong></span>
+<span class="strong"><strong>    float deltaAngle = previousCameraAngle - angle;</strong></span>
+<span class="strong"><strong>    float rate = deltaAngle / Time.deltaTime;</strong></span>
+<span class="strong"><strong>    previousCameraAngle = angle;</strong></span>
+<span class="strong"><strong>    return (rate &gt;= sweepRate);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div><p>We now detect a downward movement and set a public <code class="literal">isMovingDown function</code>. The <code class="literal">DetectMovDown()</code> function gets the camera <span class="strong"><strong>X</strong></span> rotation (angle) each time <code class="literal">Update()</code> is called and compares it with <code class="literal">previousCameraAngle</code> from the previous frame. Then, we calculate<a id="id303" class="indexterm"></a> the rotational rate in seconds (rate), and check whether the rate exceeds a threshold (<code class="literal">sweepRate</code>). Then, it counts as a gesture. I've found out that a sweep rate of <code class="literal">100.0</code> works pretty well, but you can experiment.</p><p>Add the <code class="literal">isMovingDown</code> detection to the <code class="literal">FlippingDashboard</code> script and replace <code class="literal">Update()</code>, as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>  void Update() {</strong></span>
+<span class="strong"><strong>    if (gesture.isMovingDown) {</strong></span>
+<span class="strong"><strong>      OpenDashboard ();</strong></span>
+<span class="strong"><strong>    } else if (!gesture.isFacingDown) {</strong></span>
+<span class="strong"><strong>      CloseDashboard ();</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+</pre></div><p>I also discovered that it's a little too sensitive, and adding a two second delay before closing the dashboard once you look up again helps. Add a timer, as follows:</p><div class="informalexample"><pre class="programlisting">  private Vector3 startRotation;
+<span class="strong"><strong>  private float timer = 0.0f;</strong></span>
+<span class="strong"><strong>  private float timerReset = 2.0f;</strong></span>
+
+  ...
+
+  void Update() {
+    if (gesture.isMovingDown) {
+      OpenDashboard ();
+    } else if (!gesture.isFacingDown) {
+<span class="strong"><strong>      timer -= Time.deltaTime;</strong></span>
+<span class="strong"><strong>      if (timer &lt;= 0.0f) {</strong></span>
+<span class="strong"><strong>        CloseDashboard ();</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    } else {</strong></span>
+<span class="strong"><strong>      timer = timerReset;</strong></span>
+<span class="strong"><strong>    }</strong></span>
+  }
+  ...</pre></div><p>To summarize, we have a dashboard that starts in a folded-up position and opens when you look down at it. At first, we simply used the angle of your gaze to decide to open it. Then, we enhanced it so that it opens only when you look down in a gesture (as if indicating intent) and it doesn't open if you casually look down.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>
+<span class="strong"><strong>Extra challenge</strong></span>: Can you figure out how to add a side-to-side head gesture—nod up and down for <span class="emphasis"><em>On</em></span> and shake left to right for <span class="emphasis"><em>Off</em></span>? How about tapping on the side of your headset? Does that count as a click? This idea has gotten a lot of love and <a id="id304" class="indexterm"></a>hate from commenters (<a class="ulink" href="http://www.reddit.com/r/oculus/comments/2cl3wp/tap_the_side_of_the_rift_to_select/" target="_blank">http://www.reddit.com/r/oculus/comments/2cl3wp/tap_the_side_of_the_rift_to_select/</a>).</p></div><p>When implementing the head-gesture input, it's important to distinguish between casually looking around from an intended gesture and maintaining the user's sense of immersion in the VR experience.</p><p>Our<a id="id305" class="indexterm"></a> current implementation is a kind of a cheap trick. For one, we only look back by one frame (for example, 1/60th of a second), whereas gestures would better be measured over multiple frames. Also, gestures certainly can be more complex. Even head nods can have acceleration, deceleration, and bounce. Also, it can vary from one person to the next. There are emerging third-party solutions that promise to provide more complete and robust solutions, including all kinds of head gestures as well as gesture detection from hand and body sensors.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip17"></a>Note</h3><p>When implementing a head-gesture input, it is important that the code is able to distinguish between casually looking around versus an intended gesture and maintain a sense of immersion in the VR experience.</p></div><p>Lots of experimentation is needed by all of us to gain a better understanding of how gestures play in VR. I encourage you to further explore this new user interface vocabulary.</p></div></div>

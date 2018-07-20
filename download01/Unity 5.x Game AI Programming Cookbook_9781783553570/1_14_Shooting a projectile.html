@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec21"></a>Shooting a projectile</h2></div></div><hr /></div><p>This is the <a id="id51" class="indexterm"></a>stepping stone for scenarios where we want to have control over gravity-reliant objects, such as balls and grenades, so we can then predict the projectile's landing spot, or be able to effectively shoot a projectile at a given target.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec57"></a>Getting ready</h3></div></div></div><p>This recipe differs slightly as it doesn't rely on the base <code class="literal">AgentBehaviour</code> class.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec58"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Projectile</code> class along with its member variables to handle the physics:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Projectile : MonoBehaviour
+{
+    private bool set = false;
+    private Vector3 firePos;
+    private Vector3 direction;
+    private float speed;
+    private float timeElapsed;
+}</pre></div></li><li><p>Define the <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">void Update ()
+{
+    if (!set)
+        return;
+    timeElapsed += Time.deltaTime;
+    transform.position = firePos + direction * speed * timeElapsed;
+    transform.position += Physics.gravity * (timeElapsed * timeElapsed) / 2.0f;
+    // extra validation for cleaning the scene
+    if (transform.position.y &lt; -1.0f)
+        Destroy(this.gameObject);// or set = false; and hide it
+}</pre></div></li><li><p>Finally, implement the <code class="literal">Set</code> function in order to fire the game object (for example, calling it after it is instantiated in the scene):</p><div class="informalexample"><pre class="programlisting">public void Set (Vector3 firePos, Vector3 direction, float speed)
+{
+    this.firePos = firePos;
+    this.direction = direction.normalized;
+    this.speed = speed;
+    transform.position = firePos;
+    set = true;
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec59"></a>How it works...</h3></div></div></div><p>This behavior uses high-school physics in order to generate the parabolic movement.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec60"></a>There's more...</h3></div></div></div><p>We could also take <a id="id52" class="indexterm"></a>another approach: implementing public properties in the script or declaring member variables as public and, instead of calling the <code class="literal">Set</code> function, having the script disabled by default in the prefab and enabling it after all the properties have been set. That way, we could easily apply the object pool pattern.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec61"></a>See also</h3></div></div></div><p>For further information <a id="id53" class="indexterm"></a>on the object pool pattern, please refer to the following Wikipedia article and an official Unity Technologies video tutorial available online at the following addresses:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="ulink" href="http://en.wikipedia.org/wiki/Object_pool_pattern" target="_blank">http://en.wikipedia.org/wiki/Object_pool_pattern</a></p></li><li style="list-style-type: disc"><p><a class="ulink" href="http://unity3d.com/learn/tutorials/modules/beginner/live-training-archive/object-pooling" target="_blank">http://unity3d.com/learn/tutorials/modules/beginner/live-training-archive/object-pooling</a></p></li></ul></div></div></div>

@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec22"></a>The projectile item class</h2></div></div><hr /></div><p>It is time <a id="id153" class="indexterm"></a>for our final item class, which is the projectile item class. These kinds of items could be bullets, arrows, thrown items, and so on. The projectile item class will be similar to the melee item class, except this one will have functions that will allow it to move in the game world. We'll start by creating a new script and naming it <code class="literal">itemRanged</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec46"></a>Adding our variables</h3></div></div></div><p>As we <a id="id154" class="indexterm"></a>did in the previous two classes, we'll need <a id="id155" class="indexterm"></a>to first add a few enums to our script. Add these variables to our script:</p><div class="informalexample"><pre class="programlisting">public enum RangedAction {BuffDebuff, ChangeHP, ActivateEnv, None};
+public enum RangedType {Weapon, None};
+public enum MovementType {Basic, Drop, None};</pre></div><p>You can see that we have a couple of familiar variables that we will use for the action and type of the item. We also have a new enum; this one will be used to determine how the object will move when it's created. The basic type will move the object through the air with simple movement. The drop type is similar to the basic type, but will allow the object to drop in the air as if gravity was acting on it.</p><p>Now, let's add the rest of our variables:</p><div class="informalexample"><pre class="programlisting">public int Amount, Value;
+public float Weight, Speed, DropSpeed;
+public string Name, Stat;
+public RangedAction rangedAction = RangedAction.None;
+public RangedType rangedType = RangedType.None;
+public MovementType moveType = MovementType.None;</pre></div><p>As you can tell, many of these variables are similar to the ones we previously used. These variables are typical to our items; the only one that is different is the <code class="literal">MovementType</code> enum. Now let's<a id="id156" class="indexterm"></a> move on to adding our functions.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec07"></a>Buff or debuff stats</h4></div></div></div><p>Let's allow<a id="id157" class="indexterm"></a> our projectile to affect enemy stats; add <a id="id158" class="indexterm"></a>this function to our script:</p><div class="informalexample"><pre class="programlisting">void BuffDebuffStat(GameObject other)
+{
+  other.SendMessage("BuffDebuffStat", new KeyValuePair&lt;string, int&gt;(Stat, Amount));
+}</pre></div><p>Just like the melee item, we receive the GameObject that the projectile collides with. Then, we send a message to that object to call a function and send it a <code class="literal">KeyValuePair</code> variable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec08"></a>The health changer</h4></div></div></div><p>Our next<a id="id159" class="indexterm"></a> function will allow our projectile to do the most <a id="id160" class="indexterm"></a>common effect that projectiles have, which is hurt or heal others. Let's add the following function to our script:</p><div class="informalexample"><pre class="programlisting">void ChangeHealth(GameObject other)
+{
+  other.SendMessage("ChangeHealth", Amount);
+}</pre></div><p>This function should be familiar; it acts the same way as the one we used in the melee item.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec09"></a>Adding movement</h4></div></div></div><p>These <a id="id161" class="indexterm"></a>next few functions will add movement to our<a id="id162" class="indexterm"></a> projectile. We have two kinds of movements, so we'll separate them into two different functions:</p><div class="informalexample"><pre class="programlisting">void BasicMovement()
+{
+  transform.Translate(Vector3.forward * (Time.deltaTime * Speed));
+}
+
+void DropMovement()
+{
+  transform.Translate(new Vector3(0, DropSpeed, 1) * (Time.deltaTime * Speed));
+}
+
+void Update()
+{
+  switch(moveType)
+  {
+  case MovementType.Basic:
+    BasicMovement();
+    break;
+  case MovementType.Drop:
+    DropMovement();
+    break;
+  }
+}</pre></div><p>In <a id="id163" class="indexterm"></a>the <code class="literal">Update</code> function, we check the <code class="literal">moveType</code> variable<a id="id164" class="indexterm"></a> in a <code class="literal">switch</code> statement to determine<a id="id165" class="indexterm"></a> how the projectile will move through the air. Depending on the value you assign to it, it'll either call the <code class="literal">BasicMovement</code> function or the <code class="literal">DropMovement</code> function. Let's take a look at the <code class="literal">BasicMovement</code> code:</p><div class="informalexample"><pre class="programlisting">transform.Translate(Vector3.forward * (Time.deltaTime * Speed));</pre></div><p>Here we set the transform of the GameObject to move forward in the <span class="emphasis"><em>z</em></span> axis. We multiply the movement <code class="literal">Vector</code> by <code class="literal">deltaTime</code> and our <code class="literal">Speed</code> variable. The <code class="literal">Speed</code> variable will allow <a id="id166" class="indexterm"></a>you to control how fast or slow the projectile will go:</p><p>Now let's take a look at the <code class="literal">DropMovement</code> code:</p><div class="informalexample"><pre class="programlisting">transform.Translate(new Vector3(0, DropSpeed, 1) * (Time.deltaTime * Speed));</pre></div><p>This line is similar to the <code class="literal">BasicMovement</code> line, but our movement <code class="literal">Vector</code> is different. We use the <code class="literal">DropSpeed</code> variable in the <span class="emphasis"><em>y</em></span> axis to make our projectile drop to the ground. It will appear as if gravity is acting on our projectile, giving it a more realistic appearance. Dropping the projectile will also make it a little more difficult for the player to attack, adding a new mechanic to the game.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec10"></a>Detecting triggers</h4></div></div></div><p>Now we'll<a id="id167" class="indexterm"></a> add detection method to our projectile. We will<a id="id168" class="indexterm"></a> use a similar system that we used in the melee item class. Add the following code to your script:</p><div class="informalexample"><pre class="programlisting">void OnTriggerEnter(Collider col)
+{
+  switch(col.gameObject.tag)
+  {
+  case "Enemy":
+    if(rangedType == RangedType.Weapon)
+    {
+      if(rangedType != RangedType.None)
+      {
+        if(rangedAction == RangedAction.ChangeHP)
+          ChangeHealth(col.gameObject);
+          
+        if(rangedAction == RangedAction.BuffDebuff)
+          BuffDebuffStat(col.gameObject);
+          
+        if(rangedAction == RangedAction.ActivateEnv)
+          ActivateEnvironment(col.gameObject);
+      }
+    }
+    break;
+  case "Environment":
+    if(rangedType != RangedType.None)
+    {
+      if(rangedAction == RangedAction.ChangeHP)
+        ChangeHealth(col.gameObject);
+        
+      if(rangedAction == RangedAction.BuffDebuff)
+        BuffDebuffStat(col.gameObject);
+        
+      if(rangedAction == RangedAction.ActivateEnv)
+        ActivateEnvironment(col.gameObject);
+    }
+    break;
+  }
+  Destroy(gameObject);
+}</pre></div><p>Just as in<a id="id169" class="indexterm"></a> the melee item class, we use triggers to detect whether <a id="id170" class="indexterm"></a>the projectile has hit something; if it does, we take the collider of that GameObject. Once we have detected the collision and received the collider, we follow these steps to decide what to do next:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>In the <code class="literal">switch</code> statement, we use the tag of the GameObject collider to check what it's colliding with</p></li><li style="list-style-type: disc"><p>We then check if the <code class="literal">rangedType</code> variable isn't equal to <code class="literal">None</code>
+</p></li><li style="list-style-type: disc"><p>Afterwards, we go through a few <code class="literal">if</code> statements to see what action we are using</p></li><li style="list-style-type: disc"><p>Once the action has been found, we call its function accordingly</p></li><li style="list-style-type: disc"><p>While calling the function, we pass the GameObject as well</p></li><li style="list-style-type: disc"><p>Finally, after all this is done, we delete the projectile from the scene</p></li></ul></div><p>At first, it<a id="id171" class="indexterm"></a> may look confusing, but we are really just following <a id="id172" class="indexterm"></a>a step-by-step process of logic to decide what our projectile should do. With this, we conclude the projectile item class as well as all of our item classes we created. Next, we move on to playtesting!</p></div></div></div>

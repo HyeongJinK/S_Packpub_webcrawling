@@ -1,0 +1,117 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec96"></a>Getting up from a ragdoll</h2></div></div><hr /></div><p>This recipe is slightly more advanced but fun to implement. It makes our character use three different rigs: the original animated rig, the rig our character's mesh is skinned with, and a ragdoll. By using these three rigs, we can smoothly blend between <span>ragdoll</span><a id="id325241223" class="indexterm"></a> and animation any time.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec300"></a>Getting ready</h3></div></div></div><p>Again, we are going to use the same character as in the <span class="emphasis"><em>Creating a humanoid ragdoll with the ragdoll wizard</em></span> recipe. We will need two getting up animations: one from face facing down and one from face facing up positions. Name them <strong class="userinput"><code>StandUpFaceUp</code></strong> and <strong class="userinput"><code>StandUpFaceDown</code></strong>. We also need at least a looped <strong class="userinput"><code>Idle</code></strong> animation.</p><p>You can also open the example Unity project and go to the <code class="literal">Chapter 09 Physics and animations\Recipe 08 Getting up from a ragdoll</code> directory. If you open the <code class="literal">Example.unity</code> scene there, play the game and press the space bar; the character will fall down using ragdoll. If you press the space bar again, it will blend from a ragdoll to a getting up animation and will be animated again.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec301"></a>How to do it...</h3></div></div></div><p>To make a character get up from being a <span>ragdoll</span><a id="id325241273" class="indexterm"></a>, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Place your character in the scene.</li><li>Make two copies of it and name the characters <strong class="userinput"><code>CharacterAnimated</code></strong>, <strong class="userinput"><code>CharacterSkinned</code></strong>, and <strong class="userinput"><code>CharacterRagdoll</code></strong>. We will use these names for better clarity.</li><li>Make all characters stand in the exact same place in the scene.</li><li>Select the <strong class="userinput"><code>CharacterRagdoll</code></strong> and follow the <span class="emphasis"><em>Creating a humanoid ragdoll with the ragdoll wizard</em></span> recipe to make a character a working ragdoll. We are not going to use the <code class="literal">HandleRagdoll.cs</code> script this time, so you can stop after using the Ragdoll Wizard.</li><li>Select <strong class="userinput"><code>CharacterRagdoll</code></strong> game object's rig and name it <code class="literal">Ragdoll</code>.</li><li>Select the <strong class="userinput"><code>CharacterAnimated</code></strong> and expand its hierarchy.</li><li>Remove all objects but the rig of the character. You cannot change the rig's name.</li><li>Select the <strong class="userinput"><code>CharacterSkinned</code></strong> and expand its hierarchy.</li><li>Rename the <strong class="userinput"><code>CharacterSkinned</code></strong> rig to <code class="literal">SkinnedRig</code>.</li><li>Select the <strong class="userinput"><code>SkinnedRig</code></strong> and the skinned mesh (or meshes if you have more). Drag and drop them onto <strong class="userinput"><code>CharacterAnimated</code></strong>. A window warning about prefab connection loss may appear. Click on <strong class="userinput"><code>Continue</code></strong>. This will parent the <strong class="userinput"><code>SkinnedRig</code></strong> and the mesh skinned to it to the <strong class="userinput"><code>CharacterAnimated</code></strong> game object.</li><li>Select <strong class="userinput"><code>CharacterRagdoll</code></strong>, grab the <strong class="userinput"><code>Ragdoll</code></strong> rig, and drop it onto the <strong class="userinput"><code>CharacterAnimated</code></strong> game object to parent it. Again click on <strong class="userinput"><code>Continue</code></strong> if the warning appears.</li><li>You can delete the <strong class="userinput"><code>CharacterRagdoll</code></strong> and <strong class="userinput"><code>CharacterSkinned</code></strong> game objects.</li><li>Create an Animator Controller or open an existing one.</li><li>In this controller, create two Triggers: <strong class="userinput"><code>StandUpFaceUp</code></strong> and <strong class="userinput"><code>StandUpFaceDown</code></strong>.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="15" type="1"><li>Create four transitions:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><strong class="userinput"><code>Any State</code></strong> | <strong class="userinput"><code>StandUpFaceDown</code></strong> with one condition: <strong class="userinput"><code>StandUpFaceDown</code></strong> Trigger. <strong class="userinput"><code>Has Exit Time</code></strong> should be set to false and <strong class="userinput"><code>Transition Duration</code></strong> set to 0.</li><li style="list-style-type: disc"><strong class="userinput"><code>Any State</code></strong> | <strong class="userinput"><code>StandUpFaceUp</code></strong> with one condition: <strong class="userinput"><code>StandUpFaceUp</code></strong> Trigger. <strong class="userinput"><code>Has Exit Time</code></strong> should be set to false and <strong class="userinput"><code>Transition Duration</code></strong> set to 0.</li><li style="list-style-type: disc"><strong class="userinput"><code>StandUpFaceDown</code></strong> | <strong class="userinput"><code>Idle</code></strong> with no conditions: <strong class="userinput"><code>Has Exit Time</code></strong> should be set to true and <strong class="userinput"><code>Transition Duration</code></strong> set to around 0.2.</li><li style="list-style-type: disc"><strong class="userinput"><code>StandUpFaceUp</code></strong> | <strong class="userinput"><code>Idle</code></strong> with no conditions: <strong class="userinput"><code>Has Exit Time</code></strong> should be set to true and <strong class="userinput"><code>Transition Duration</code></strong> set to around 0.2.</li></ul></div></li><li>Assign the controller to the character's Animator component.</li><li>[Optional] You can find the <code class="literal">ShowRig.cs</code> script in the <code class="literal">Shared Scripts</code> folder. If you attach it three times to the <strong class="userinput"><code>CharacterAnimated</code></strong> game object, you may drag and drop its three rigs, one to each <code class="literal">ShowRig</code> script. You may also assign different colors for each rig. If you play the game, you will be able to see the three rigs working. In the following screenshot, the red rig is the ragdoll, the yellow one is the one that is animated (we cannot change its name, in our example it's called <strong class="userinput"><code>metarig</code></strong>), and the green one is the one our mesh is skinned to (it's not clearly visible because it's hidden inside the mesh).</li></ol></div><div class="mediaobject"><img src="/graphics/9781785883910/graphics/dbf49fc5-d7f8-443f-b6c5-fbcaf1a411bf.png" /></div><p>Ragdoll rig (red), animated rig (yellow), and skinned rig (green)</p><p></p><div class="orderedlist"><ol class="orderedlist arabic" start="18" type="1"><li>Create a new C# script and name it <code class="literal">RagdollWeight.cs</code>. This script contains several functions. First, in the <code class="literal">void Init()</code> function that is called from the <code class="literal">Start()</code> function, we set references to the bones of our three rigs to be able to blend between them later on. We also get the reference to the <strong class="userinput"><code>Rigidbody</code></strong> and Animator components attached to our character. Finally, we turn the <span>ragdoll</span><a id="id325509846" class="indexterm"></a> game object off:</li></ol></div><pre class="programlisting">      void Init() 
+      { 
+          rb = GetComponent&lt;Rigidbody&gt;(); 
+          anim = GetComponent&lt;Animator&gt;(); 
+     
+          skinnedRigTransforms = 
+          skinnedRig.GetComponentsInChildren&lt;Transform&gt;(); 
+     
+          ragdollTransforms = 
+          ragdoll.GetComponentsInChildren&lt;Transform&gt;(); 
+     
+          animatedRigTransforms = 
+          animatedRig.GetComponentsInChildren&lt;Transform&gt;(); 
+     
+          ragdoll.gameObject.SetActive(false); 
+      } 
+     </pre><div class="orderedlist"><ol class="orderedlist arabic" start="19" type="1"><li>In the <code class="literal">void</code><code class="literal">EnableRagdoll()</code> function, we first check whether our <code class="literal">float blendFactor</code> is not greater than 0.5 (that would mean we are still in the "ragdoll phase"). If it is less than 0.5, we set all ragdoll bones' positions and rotations to match the <code class="literal">animatedRigTransforms</code> (we match the pose of the ragdoll to the current character pose). Finally, we set the main <strong class="userinput"><code>Rigidbody</code></strong> component to kinematic and enable the ragdoll game object. We also set the <code class="literal">blendFactor</code> to 1, which means the ragdoll is fully enabled:</li></ol></div><pre class="programlisting">      void EnableRagdoll() 
+      { 
+          if(blendFactor &gt; 0.5f) 
+          { 
+              return; 
+          } 
+          for (int i = 0; i &lt; ragdollTransforms.Length; i++) 
+          { 
+              ragdollTransforms[i].localPosition = 
+              animatedRigTransforms[i].localPosition; 
+         
+              ragdollTransforms[i].localRotation = 
+              animatedRigTransforms[i].localRotation; 
+          } 
+          rb.isKinematic = true; 
+          ragdoll.gameObject.SetActive(true); 
+          ragdollOn = true; 
+          blendFactor = 1f; 
+      } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="20" type="1"><li>In the <code class="literal">void</code><code class="literal">DisableRagdoll()</code> function, we check if our character is lying face down or face up and play an appropriate standing up animation. After we trigger the animation, we start the <code class="literal">IEnumerator</code><code class="literal">BlendFromRagdoll()</code> coroutine to blend smoothly from the <code class="literal">ragdoll</code> rig to the <code class="literal">animatedRig</code>:</li></ol></div><pre class="programlisting">      void DisableRagdoll() 
+      { 
+          bool faceUp = Vector3.Dot( 
+          faceDirectionHelper.forward, Vector3.up) &gt; 0f; 
+     
+          if (faceUp) 
+          { 
+              anim.SetTrigger("StandUpFaceUp"); 
+          } 
+          else 
+          { 
+              anim.SetTrigger("StandUpFaceDown"); 
+          } 
+ 
+          StartCoroutine("BlendFromRagdoll"); 
+      } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="21" type="1"><li><code class="literal">The IEnumerator BlendFromRagdoll()</code> coroutine decreases the <code class="literal">blendFactor</code> in time and checks if it's still greater than 0. If it is less than or equal to 0, we set it to be exactly 0, enable the main <strong class="userinput"><code>Rigidbody</code></strong> component again, and disable the ragdoll:</li></ol></div><pre class="programlisting">      IEnumerator BlendFromRagdoll() 
+      { 
+          while (blendFactor &gt; 0f) 
+         { 
+              blendFactor -= Time.deltaTime * blendSpeed; 
+              yield return null; 
+          } 
+          blendFactor = 0f; 
+          rb.isKinematic = false; 
+          blendFactor = 0f; 
+          ragdollOn = false; 
+          ragdoll.gameObject.SetActive(false); 
+      } 
+ </pre><div class="orderedlist"><ol class="orderedlist arabic" start="22" type="1"><li>In the <code class="literal">FixedUpdate()</code> function, if the ragdoll is on, we move our character's <strong class="userinput"><code>Rigidbody</code></strong> to the position of the ragdoll's hips. We additionally check the ground position to make sure our main <strong class="userinput"><code>Rigidbody</code></strong> stands on the ground and doesn't levitate. We also rotate the <strong class="userinput"><code>Rigidbody</code></strong> so that the character looks in the hips -&gt; head direction. We intentionally omit the Y component of the <code class="literal">Vector3</code><code class="literal">desiredLookVector</code> to prevent our character's capsule from tilting. Moving our character's <strong class="userinput"><code>Rigidbody</code></strong> to the position of the ragdolls hips makes the blending from <span>ragdoll</span><a id="id325549048" class="indexterm"></a> to animation easier:</li></ol></div><pre class="programlisting">      void FixedUpdate() 
+      { 
+          if (!ragdollOn) 
+          { 
+              return; 
+          } 
+          desiredLookVector = head.position - hips.position; 
+          desiredLookVector.y = 0f; 
+          desiredLookVector = desiredLookVector.normalized; 
+          lookVector = Vector3.Slerp(transform.forward, 
+          desiredLookVector, Time.deltaTime); 
+ 
+          if (Physics.Raycast(hips.position, Vector3.down, 
+          out groundHit, groundCheckDistance, 
+          groundCheckMask)) 
+          { 
+              finalPosition = groundHit.point; 
+          } 
+          else 
+          { 
+              finalPosition = hips.position; 
+          } 
+          rb.MovePosition(finalPosition); 
+          rb.MoveRotation(Quaternion.LookRotation(lookVector 
+          ));          
+      } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="23" type="1"><li>In the <code class="literal">Update()</code> function, we check whether the player pressed the space bar. If so, we enable or disable the ragdoll depending on whether it is enabled or disabled at the moment:</li></ol></div><pre class="programlisting">      void Update() 
+      { 
+          if (Input.GetKeyDown(KeyCode.Space)) 
+          { 
+              if (ragdollOn) 
+              { 
+                  DisableRagdoll(); 
+              } 
+              else 
+              { 
+                  EnableRagdoll(); 
+              } 
+         } 
+      } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="24" type="1"><li>In the <code class="literal">LateUpdate()</code> function, we constantly interpolate the <code class="literal">localPosition</code> and <code class="literal">localRotation</code> of all the bones of the <code class="literal">skinnedRig</code> (the one our character's mesh is using). The position and rotation of the bones is interpolated between the position and rotation of the <code class="literal">ragdoll</code> and the <code class="literal">animatedRig</code>. We use the <code class="literal">blendFactor</code> variable for the interpolation:</li></ol></div><pre class="programlisting">      void LateUpdate() 
+      { 
+          for (int i=0; i&lt;skinnedRigTransforms.Length; i++) 
+          { 
+              skinnedRigTransforms[i].localPosition = 
+              Vector3.Lerp( 
+              animatedRigTransforms[i].localPosition,                   ragdollTransforms[i].localPosition, 
+              blendFactor); 
+ 
+              skinnedRigTransforms[i].localRotation = 
+              Quaternion.Lerp( 
+              animatedRigTransforms[i].localRotation, 
+              ragdollTransforms[i].localRotation, 
+              blendFactor); 
+          } 
+      } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="25" type="1"><li>Add the preceding script to the character.</li><li>Drag and drop the animated rig (in our example it's called <strong class="userinput"><code>metarig</code></strong>) to the <strong class="userinput"><code>Animated Rig</code></strong> field, the <strong class="userinput"><code>Ragdoll</code></strong> to the <strong class="userinput"><code>Ragdoll</code></strong> field, and the <strong class="userinput"><code>SkinnedRig</code></strong> to the <strong class="userinput"><code>Skinned Rig</code></strong> field. Choose the chest bone as the <strong class="userinput"><code>Face Direction Helper</code></strong> (if it doesn't work, you may create an empty object parented to the chest bone—the goal here is to have the forward axis of this helper object point down when the character lays face down, and up when it lays face up). Set the <strong class="userinput"><code>Ground Check Mask</code></strong> to contain your level layers. Assign the hips bone to the <strong class="userinput"><code>Hips</code></strong> field and the head bone to the <strong class="userinput"><code>Head</code></strong> field (you may choose different bones that properly describe your character's rotation when the ragdoll is on).</li><li>Play the game and press the space bar to see the effect.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec302"></a>How it works...</h3></div></div></div><p>The concept behind this recipe is based on having three rigs: one that holds the animations, one that is a simple ragdoll, and one to which the mesh is skinned. To make it work in Unity, we need to copy our character three times. One of the copies is used to create the <span>ragdoll</span><a id="id325240779" class="indexterm"></a>, the second is the animated rig and we need to remove the mesh from it, and the last one is the mesh with the rig but has no <strong class="userinput"><code>Animator</code></strong> component. All these objects finally get parented to the animated rig's parent (the <strong class="userinput"><code>CharacterAnimated</code></strong> game object). This way, our character is still a single game object and can be driven with root motion. The final hierarchy looks like the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><strong class="userinput"><code>CharacterAnimated</code></strong></li><li style="list-style-type: disc"><strong class="userinput"><code>metarig (the original name of the rig of this character)</code></strong></li><li style="list-style-type: disc"><strong class="userinput"><code>SkinnedRig</code></strong></li><li style="list-style-type: disc"><strong class="userinput"><code>SkinnedMesh</code></strong></li><li style="list-style-type: disc"><strong class="userinput"><code>Ragdoll</code></strong></li></ul></div><p>With such a setup, we can get all the transforms from the <code class="literal">metarig</code> (the rig that is actually animated), the <strong class="userinput"><code>SkinnedRig</code></strong> (the rig to which the mesh is skinned), and the ragdoll. Since our character's mesh is using the <strong class="userinput"><code>SkinnedRig</code></strong> (we cannot see the two remaining rigs in the game), we can dynamically set its transforms' location and rotation. This way we can use the <code class="literal">Vector3.Lerp()</code> and <code class="literal">Quaternion.Lerp()</code> functions to interpolate the <strong class="userinput"><code>SkinnedRig</code></strong> transforms' between the <strong class="userinput"><code>Ragdoll</code></strong>'s and <strong class="userinput"><code>metarig</code></strong>'s (the animated rig's) transforms.</p><p>The standing up animations are prepared in such a way that the hips of the character are roughly at the 0,0,0 point. We move the main <strong class="userinput"><code>Rigidbody</code></strong> of the character to the point where the hips of the ragdoll are. This way, when we blend to the standing up animation, our character's animated rig (an animation) matches the position of the ragdoll. The rest is handled by blending the pose from the ragdoll to the current animation.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec303"></a>There's more...</h3></div></div></div><p>You can also use this concept on non-humanoid characters.</p></div></div>

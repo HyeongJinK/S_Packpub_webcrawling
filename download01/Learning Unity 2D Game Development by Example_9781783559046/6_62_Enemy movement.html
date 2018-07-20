@@ -1,0 +1,88 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec63"></a>Enemy movement</h2></div></div><hr /></div><p>To move<a id="id448" class="indexterm"></a> our enemies, we create a script similar to<a id="id449" class="indexterm"></a> the hero's movement controls script. The only additions are the <code class="literal">Accelerate</code> and <code class="literal">InvokeRepeating</code> functions.</p><p>
+<code class="literal">Accelerate</code> increases the speed of the enemies' movement and <code class="literal">InvokeRepeating</code> calls the <a id="id450" class="indexterm"></a>
+<code class="literal">Accelerate</code> function to increase the enemies' speed every five <a id="id451" class="indexterm"></a>seconds.</p><p>The enemy will follow the movements of the hero moving diagonally to catch up with the hero and therefore have a more natural, realistic movement.</p><p>Add the following script, name it <code class="literal">enemy.js</code>, and assign it to our enemy GameObject:</p><div class="informalexample"><pre class="programlisting">var heroObj:GameObject;
+
+var enemyRight:boolean = false;
+var enemyLeft:boolean = false;
+var enemyUp:boolean = false;
+var enemyDown:boolean = false;
+var enemySpeed:float;
+var enemyAnimator: Animator;
+
+InvokeRepeating("Accelerate", 2, 5);
+
+function Start()
+{
+enemySpeed = 1.0;
+}
+
+function Update()
+{
+enemyMove();
+}
+
+
+function enemyMove()
+{</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note61"></a>Note</h3><p>For <a id="id452" class="indexterm"></a>performance <a id="id453" class="indexterm"></a>and best practice, we<a id="id454" class="indexterm"></a> could move the <code class="literal">Find()</code> method within the <code class="literal">Start()</code> function instead of being performed in every <code class="literal">Update()</code>. These are slow<a id="id455" class="indexterm"></a> methods and Unity recommends <a id="id456" class="indexterm"></a>that we avoid using them inside <code class="literal">Update()</code> unless necessary.</p></div><div class="informalexample"><pre class="programlisting">  heroObj = GameObject.Find("hero");
+  enemyAnimator = GetComponent("Animator");
+  if (heroObj != null)
+  {
+  if (transform.position.y &gt; heroObj.transform.position.y)
+  {
+
+      enemyAnimator.SetBool("enemyLeft", false);
+      enemyAnimator.SetBool("enemyUp", false);
+      enemyAnimator.SetBool("enemyDown", true);
+      enemyAnimator.SetBool("enemyRight", false);
+      enemyDown = true;
+      enemyLeft = false;
+      enemyRight = false;
+      enemyUp = false;
+      transform.Translate(Vector3.down * enemySpeed * Time.deltaTime);
+
+  }
+  else
+  {
+      enemyAnimator.SetBool("enemyLeft", false);
+      enemyAnimator.SetBool("enemyUp", true );
+      enemyAnimator.SetBool("enemyDown", false );
+      enemyAnimator.SetBool("enemyRight", false );
+      enemyDown = false;
+      enemyLeft = false;
+      enemyRight = false;
+      enemyUp = true;
+      transform.Translate(Vector3.up * enemySpeed * Time.deltaTime);
+  }
+
+  if (transform.position.x &lt; heroObj.transform.position.x)
+  {
+
+      enemyAnimator.SetBool("enemyLeft", false);
+      enemyAnimator.SetBool("enemyUp", false );
+      enemyAnimator.SetBool("enemyDown", false );
+      enemyAnimator.SetBool("enemyRight", true );
+      enemyDown = false;
+      enemyLeft = false;
+      enemyRight = true;
+      enemyUp = false;
+      transform.Translate(Vector3.right * enemySpeed * Time.deltaTime);
+  }
+  else
+  {
+      enemyAnimator.SetBool("enemyLeft", true);
+      enemyAnimator.SetBool("enemyUp", false );
+      enemyAnimator.SetBool("enemyDown", false );
+      enemyAnimator.SetBool("enemyRight", false );
+      enemyDown = false;
+      enemyLeft = true;
+      enemyRight = false;
+      enemyUp = false;
+      transform.Translate(Vector3.left * enemySpeed * Time.deltaTime);
+  }
+}
+}
+
+function Accelerate()
+{
+enemySpeed = enemySpeed + 1;
+}</pre></div></div>

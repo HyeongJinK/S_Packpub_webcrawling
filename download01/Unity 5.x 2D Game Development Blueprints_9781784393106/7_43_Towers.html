@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec42"></a>Towers</h2></div></div><hr /></div><p>In this section, we will learn how to create the towers of our game. In fact, these are so important that they even give their name to this sub-genre of games.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec24"></a>Creating the tower prefab</h3></div></div></div><p>As we did for the bullet, the first thing to do is to create the prefab for our tower. Therefore, again we need to create a new <code class="literal">Sprite</code> by right-clicking on the <span class="strong"><strong>Hierarchy</strong></span> panel and then clicking on <span class="strong"><strong>2D Object</strong></span> | <span class="strong"><strong>Sprite</strong></span>.</p><p>We have to assign the graphic to the tower, and it can be found in the package. Since there is more than one tower, because the player has the ability to upgrade the tower, we can choose the starting one. It can be found with the following filename: <code class="literal">castle_1</code>. This is what it looks like:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_07_010.jpg" /></div><p>
+</p><p>Probably, we will need to scale it to fit the map. By using the assets of this chapter, we can set all the scale vectors to <code class="literal">2</code>. Furthermore, we have to set the <span class="emphasis"><em>Z</em></span>-axis of the position to <code class="literal">-3</code>. As usual, it's good practice to rename the <code class="literal">GameObject</code> to <code class="literal">Tower</code>, and thus, in the end, the Inspector should appear like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_07_011.jpg" /></div><p>
+</p><p>Finally, we need to save the tower as a prefab. Therefore, let's create one by right-clicking on the <span class="strong"><strong>Project</strong></span> panel and then selecting <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Prefab</strong></span>. Drag the tower inside it, and erase the old one from the scene.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec25"></a>Scripting the towers</h3></div></div></div><p>The next step is to give behaviors to our towers. In particular, they have to shoot at the enemies when they get close. There are different ways to do this and different strategies that the tower itself could choose, starting with which enemy it should target. Here, we are going to implement that the nearest enemy to the tower will be the one targeted.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip24"></a>Tip</h3><p>Other examples that can inspire you to implement different behaviors for the towers are the <code class="literal">furthest enemy</code> from the tower, the <code class="literal">first enemy</code> with respect to the path or, also, the <code class="literal">last enemy</code>.</p></div><p>The first thing to do after creating a new script on the <span class="strong"><strong>Tower</strong></span> prefab is to add some variables. We need three public variables to store, respectively, the bullet prefab that is used to instantiate bullets, the range radius of the tower, and the reload time. Furthermore, we need a fourth private variable to store the time elapsed since the last bullet shot in order to respect the firing rate of the tower. Therefore, we can write the following:</p><pre class="programlisting">  public float rangeRadius; &#13;
+  public float reloadTime; &#13;
+  public GameObject bulletPrefab; &#13;
+   &#13;
+  private float elapsedTime; &#13;
+</pre><p>In the <code class="literal">Update()</code> function, we need to first check whether the time that has elapsed is enough to shoot again and then reset the time. Otherwise, we just increment the variable:</p><pre class="programlisting">  void Update () { &#13;
+    if(elapsedTime &gt;= reloadTime){ &#13;
+      elapsedTime = 0; &#13;
+      //Rest of the code &#13;
+    } &#13;
+    elapsedTime += Time.deltaTime; &#13;
+  } &#13;
+</pre><p>Now, after resetting the <code class="literal">timeElapsed</code> variable, we verify whether there is some enemy in range of the tower. Actually, for now, we are searching for everything that has a collider:</p><pre class="programlisting">      Collider2D[] hitColliders = Physics2D.OverlapCircleAll(transform.position, rangeRadius); &#13;
+      if(hitColliders.Length != 0){ &#13;
+        //Rest of the code &#13;
+      } &#13;
+</pre><p>If we detect different colliders, we need to check which one is an enemy by using tags and then to find which one of these (if there is more than one) is the closest to the tower. This can be done by looping over all of them and taking the minimum distance among all of them, after having verified that they are enemies:</p><pre class="programlisting">        float min = int.MaxValue; &#13;
+        int index = -1; &#13;
+ &#13;
+        for(int i=0; i&lt;hitColliders.Length; i++){ &#13;
+          if(hitColliders[i].tag == "Enemy"){ &#13;
+            float distance = Vector2.Distance(hitColliders[i].transform.position,transform.position); &#13;
+            if (distance &lt; min){ &#13;
+              index = i; &#13;
+              min = distance; &#13;
+            } &#13;
+          } &#13;
+        } &#13;
+</pre><p>Then, we can check to see if there is an enemy among all of our collisions. If so, we instantiate a bullet and give to it the direction of the target we found:</p><pre class="programlisting">        if(index == -1) &#13;
+          return; &#13;
+        Transform target = hitColliders[index].transform; &#13;
+        Vector2 direction = (target.position - transform.position).normalized; &#13;
+        //Create Bullet &#13;
+        GameObject bullet = GameObject.Instantiate(bulletPrefab, transform.position, Quaternion.identity) as GameObject; &#13;
+        bullet.GetComponent&lt;BulletScript&gt;().direction = direction; &#13;
+</pre><p>Now, we can save the script.</p><p>One last thing to do is to drag the prefab of the bullet in the <code class="literal">bulletPrefab</code> variable and set the other variables as we need for the game. For instance, we can set the <code class="literal">reloadTime</code> to <code class="literal">2</code> and the <code class="literal">rangeRadius</code> to <code class="literal">10</code>. Finally, save the tower prefab before we remove it from the scene.</p></div></div>

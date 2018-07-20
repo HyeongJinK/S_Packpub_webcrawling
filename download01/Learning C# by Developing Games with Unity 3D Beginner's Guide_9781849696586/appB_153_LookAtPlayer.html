@@ -1,0 +1,18 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec146"></a>LookAtPlayer</h2></div></div><hr /></div><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class LookAtPlayer : MonoBehaviour 
+{
+  private Transform playerPosition;
+  
+  void Start()
+  {
+    playerPosition = GameObject.Find("Player").transform;
+  }    
+
+  void LateUpdate( ) 
+  {
+    transform.LookAt(playerPosition);
+  }
+<code class="literal">}</code>
+</pre></div></div>

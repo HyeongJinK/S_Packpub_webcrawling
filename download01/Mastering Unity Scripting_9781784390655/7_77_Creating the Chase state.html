@@ -1,0 +1,64 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec79"></a>Creating the Chase state</h2></div></div><hr /></div><p>If the player is seen by the enemy and is not within attacking distance, the enemy would run to attack the player. This state, in which the enemy runs towards the player with hostile intent, is<a id="id590" class="indexterm"></a> the <code class="literal">Chase</code> state. There are two main exit conditions for this state. If the enemy reaches attacking distance, they should change from the <code class="literal">Chase</code> state to the <code class="literal">Attack</code> state. In contrast, if the player disappears from sight, the enemy should continue to chase as best as they can for a while and then give up the chase if, after an interval, the player still cannot be sighted. Refer to the following code sample 7-9:</p><div class="informalexample"><pre class="programlisting">01 //This coroutine runs when object is in chase state
+02 public IEnumerator State_Chase()
+03 {
+04 //Set current state
+05 CurrentState = AI_ENEMY_STATE.CHASE;
+06 
+07 //Set Chase State
+08 ThisAnimator.SetTrigger((int) AI_ENEMY_STATE.CHASE);
+09 
+10 //Loop forever while in chase state
+11 while(CurrentState == AI_ENEMY_STATE.CHASE)
+12 {
+13        //Set destination to player
+14        ThisAgent.SetDestination(PlayerTransform.position);
+15 
+16       //If we lose sight of player, keep chasing 
+17       if(!CanSeePlayer)
+18       {
+19              //Begin time out
+20              float ElapsedTime = 0f;
+21 
+22              //Continue to chase
+23              while(true)
+24              {
+25                    //Increment time
+26                    ElapsedTime += Time.deltaTime;
+27 
+28                    //Set destination to player
+29 ThisAgent.SetDestination( PlayerTransform.position);
+30 
+31                   //Wait for next frame
+32                   yield return null;
+33 
+34                   //Has timeout expired?
+35                   if(ElapsedTime &gt;= ChaseTimeOut)
+36                   {
+37                          //If cannot see player, change to idle
+38                          if(!CanSeePlayer)
+39                          {
+40                                //Change to idle 
+41                                StartCoroutine(State_Idle());
+42                                yield break;
+43                          }
+44                          else
+45                                break; //can see player again
+46                   }
+47              }
+48        }
+49 
+50        //If we have reached player then attack
+51 if(Vector3.Distance(ThisTransform.position, PlayerTransform.position) &lt;= DistEps)
+
+52        {
+53              //We have reached distance, now attack
+54              StartCoroutine(State_Attack());
+55              yield break;
+56        }
+57 
+58        //Wait until next
+59        yield return null;
+60 }
+61 }</pre></div><p>The following are the comments for code sample 7-9:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 17-48</strong></span>: During this phase, the <code class="literal">State</code> loop determines that the player visibility has been lost. When this happens, the enemy will continue to chase the player for a period of <code class="literal">ChaseTimeOut</code>. After this time elapses, the enemy checks for player <a id="id591" class="indexterm"></a>visibility again. If the player is sighted at that time, the chase resumes as it did earlier. Otherwise, the enemy changes to the <code class="literal">Idle</code> state, ready to begin a new patrol in search of the player again.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 51-59</strong></span>: Here, the <code class="literal">Chase</code> state checks whether the enemy has come within the attack range (<code class="literal">DistEps</code>). If so, the FSM would enter <code class="literal">State_Attack</code>.</p></li></ul></div></div>

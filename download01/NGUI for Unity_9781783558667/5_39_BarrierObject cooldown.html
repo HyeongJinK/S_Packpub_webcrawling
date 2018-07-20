@@ -1,0 +1,37 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec41"></a>BarrierObject cooldown</h2></div></div><hr /></div><p>We will <a id="id257" class="indexterm"></a>implement the cooldown system that will deactivate the <span class="strong"><strong>BarrierObject</strong></span> button as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783558667/graphics/8667OT_05_10.jpg" /></div><p>Then, we will make the barrier's apparition smoother by tweening its scale.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec59"></a>Cooldown implementation</h3></div></div></div><p>In order to implement<a id="id258" class="indexterm"></a> the required cooldown, we need to open the <code class="literal">BarrierObjectController.cs</code> script and add the following  two necessary variables with an initialization on <code class="literal">Awake()</code>:</p><div class="informalexample"><pre class="programlisting">//We will need the Button and the Label
+private UIButton button;
+private UILabel label;
+
+void Awake()
+{
+  //Get necessary components at Awake
+  button = GetComponentInChildren&lt;UIButton&gt;();
+  label = GetComponentInChildren&lt;UILabel&gt;();
+}</pre></div><p>Now that we have the button and label, we can add a <code class="literal">Cooldown()</code> coroutine that will deactivate the button and update the label to show the remaining time to the player:</p><div class="informalexample"><pre class="programlisting">public IEnumerator Cooldown(int cooldown)
+{
+  //Deactivate the Barrier button and update Color to Disable
+  button.isEnabled = false;
+  button.UpdateColor(false, true);
+
+  while(cooldown &gt; 0)
+  {
+    //Update Label with localized text each second
+    label.text = Localization.instance.Get("Wait") + " " + cooldown.ToString() + "s";
+    cooldown -= 1;
+    //Wait for a second, then return to start of While
+    yield return new WaitForSeconds(1);
+  }
+  //If cooldown &lt;= 0
+  CooldownFinished();
+}</pre></div><p>The previous coroutine updates the label and decreases the cooldown. We can now add the <code class="literal">CooldownFinished()</code> method that will reactivate the button and reset the label:</p><div class="informalexample"><pre class="programlisting">void CooldownFinished()
+{
+  //Reset the Label's Text to "normal" Barrier
+  label.text = Localization.instance.Get("Barrier");
+  //Reactivate the Barrier button and update Color to Normal
+  button.isEnabled = true;
+  button.UpdateColor(true, true);
+}</pre></div><p>Great, <a id="id259" class="indexterm"></a>everything is ready for our cooldown. We just need to start the <code class="literal">Cooldown()</code> coroutine when a new <span class="strong"><strong>BarrierObject</strong></span> prefab is created.</p><p>In order to do this, let's go back to our <code class="literal">ViewportHolder.cs</code> script and add the following line at the very end of the <code class="literal">RecreateBarrierObject()</code> method:</p><div class="informalexample"><pre class="programlisting">//Start the new BarrierObject's Cooldown Coroutine
+StartCoroutine(newBarrierTrans.GetComponent&lt;BarrierObjectController&gt;().Cooldown((barrierCount +1) *3));</pre></div><p>Perfect. Here, we needed to pass <code class="literal">barrierCount +1</code> as argument because at this stage it is not yet updated (it is incremented in the <code class="literal">CreateActiveBarrier()</code> method).</p><p>Click on the play button. When you drop a <span class="strong"><strong>BarrierObject</strong></span> prefab on the <span class="strong"><strong>Viewport</strong></span> GameObject, you will only be able to drop another one when the cooldown is finished. The more barriers you have, the longer the cooldown.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec60"></a>BarrierObject smooth apparition</h3></div></div></div><p>Let's add a TweenScale<a id="id260" class="indexterm"></a> to make the barrier's availability more obvious to the player. Go back to our <code class="literal">BarrierObjectController.cs</code> script and add the following two lines at the very end of the <code class="literal">CooldownFinished()</code> method:</p><div class="informalexample"><pre class="programlisting">//Set its scale to {0,0,0}
+transform.localScale = Vector3.zero;
+//Tween it back to make it appear smoothly
+TweenScale.Begin(gameObject, 0.3f, new Vector3(1,1,1));</pre></div><p>That's better. Now, the animated apparition of <span class="strong"><strong>BarrierObject</strong></span> attracts the player's eye. But, hey, we created a notification in the previous chapter. Let's reuse it to make it even more obvious!</p></div></div>

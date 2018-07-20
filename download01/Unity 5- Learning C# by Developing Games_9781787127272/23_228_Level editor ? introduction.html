@@ -1,0 +1,116 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch23lvl1sec211"></a>Level editor – introduction</h2></div></div><hr /></div><p>To create something that can save files, we'll need to cover new territory. We've already discussed working with <code class="literal">PlayerPrefs</code> back in <a class="link" href="#" linkend="ch18">Chapter 5</a>, <span class="emphasis"><em>Shooting Gallery – Working with Animations and Tweens</em></span>, but there can be a time when you want to save things other than just <code class="literal">string</code>, <code class="literal">int</code>, or <code class="literal">float</code> variables. To deal with complex data types, there are more<a id="id1074" class="indexterm"></a> things that we can do. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We are going to first open up our <span class="strong"><strong>3D Platformer</strong></span> project we created back in <a class="link" href="#" linkend="ch19">Chapter 6</a>, <span class="emphasis"><em>Side-scrolling Platformer</em></span>. Open your gameplay scene (in the example code saved as <code class="literal">Gameplay</code>) from the link described in the project setup.</p></li><li><p>As it currently stands, the ability to create our levels is inside our <span class="strong"><strong>GameController</strong></span> script. For this project, however, we're going to extract that functionality and move it over to a new class. In <span class="strong"><strong>Project Browser</strong></span>, go to the <code class="literal">Scripts</code> folder and create a new C# script named <code class="literal">LevelEditor</code>. With this finished, open your IDE.</p></li><li><p>Once there, click on the <code class="literal">GameController.cs</code> file and highlight the <code class="literal">level</code> variable. Cut it (<span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>X</em></span>) and paste it (<span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>V</em></span>) as a declaration in the <code class="literal">LevelEditor</code> class.</p></li><li><p>After this, remove the <code class="literal">BuildLevel</code> function from the file and stop it from being called in our <code class="literal">GameController</code> script's <code class="literal">Start</code> function. Instead of calling it here, we will be writing a new version for our new <code class="literal">LevelEditor</code> script.</p><p>Next, we want access to our <code class="literal">goalPS</code> variable inside the <code class="literal">LevelEditor</code> class so that we have a<a id="id1075" class="indexterm"></a> reference to the particle system to turn to when we collect all the orbs, but right now, it's private. Now, I could set this variable as being <code class="literal">public</code> and be done with it, but instead, we're going to use another aspect of programming in C# named <span class="strong"><strong>properties</strong></span>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note112"></a>Note</h3><p>If you decide to make something public but don't want to see it in <span class="strong"><strong>Inspector</strong></span>, you can write code as the following:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>   [HideInInspector]</strong></span>
+<span class="strong"><strong>  public ParticleSystem goalPS;</strong></span>
+</pre></div></div></li><li><p>Add the following code after your <code class="literal">goalPS</code> variable declaration:</p><div class="informalexample"><pre class="programlisting">public ParticleSystem GoalPS
+{
+  get
+  {
+    return goalPS;
+  }
+
+  set
+  {
+    goalPS = value;
+  }
+}</pre></div><p>This will allow us to access this newly created <code class="literal">GoalPS</code> variable to modify <code class="literal">goalPS</code> (our original one). The value that you see in the <code class="literal">set</code> function is a keyword that will be assigned.</p><p>Now, you may be asking why you should do this instead of making it <code class="literal">public</code>. There are two main reasons. First, we are allowed to use <code class="literal">get</code> and <code class="literal">set</code> just like a normal function. This will allow us to check the value of the variable before we actually assign something, which can be really useful if you want to make sure that a variable is within a certain range. Take a look at the following code:</p><div class="informalexample"><pre class="programlisting">private int health;
+public int Health
+{
+  get
+  {
+    return health;
+  }
+
+  set
+  {
+    // Value can only be up to 100
+    health = value % 100;
+    if(health &lt;= 0)
+    print ("I'm dead");
+  }
+}</pre></div><p>Also, by omitting <a id="id1076" class="indexterm"></a>either <code class="literal">set</code> or <code class="literal">get</code>, we can say that the variable cannot be changed outside of the class or accessed outside of the class.</p><p>For more information on properties, check out <a class="ulink" href="http://unity3d.com/learn/tutorials/modules/intermediate/scripting/properties" target="_blank">http://unity3d.com/learn/tutorials/modules/intermediate/scripting/properties</a>.</p><p>We will also no longer need the variables for our object references, so go ahead and <span class="emphasis"><em>remove</em></span> the following lines in our <span class="strong"><strong>GameController</strong></span> script:</p><div class="informalexample"><pre class="programlisting">    [Header("Object References")]
+    public Transform wall;
+    public Transform player;
+    public Transform orb;
+    public Transform goal;</pre></div><p>Now that our level is no longer being created in the <code class="literal">GameController</code>, let's add the functionality back to our <code class="literal">LevelEditor</code>. Perform the following steps:</p></li><li><p>Add the following function:</p><div class="informalexample"><pre class="programlisting">void BuildLevel()
+{
+  
+  //Go through each element inside our level variable
+  for (int yPos = 0; yPos &lt; level.Length; yPos++)
+  {
+    for (int xPos = 0; xPos &lt; (level[yPos]).Length; xPos++)
+    {
+      CreateBlock(level[yPos][xPos], xPos, level.Length - yPos);
+    }
+  }
+}</pre></div></li><li><p>We haven't created the <code class="literal">CreateBlock</code> function, so right now, it'll show up as being red, but before we add it in, we need to create some variables:</p><div class="informalexample"><pre class="programlisting">int xMin = 0;
+int xMax = 0;
+int yMin = 0;
+int yMax = 0;
+
+public List&lt;Transform&gt; tiles;
+
+GameObject dynamicParent;</pre></div></li><li><p>At this <a id="id1077" class="indexterm"></a>point, the <code class="literal">List</code> type will show up in red. This is because it doesn't know what we're talking about. Add the following line to our <code class="literal">using</code> statements up at the top of the file:</p><div class="informalexample"><pre class="programlisting">using System.Collections.Generic; // Lists</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch23lvl2sec127"></a>Lists</h3></div></div></div><p>We used arrays<a id="id1078" class="indexterm"></a> previously in this book, which are containers for multiple copies of an object. One of the problems with arrays is the fact that you have to know the size (or how many elements) of the array in advance, and you cannot add or subtract elements from the array.</p><p>The list type is basically a dynamically sized array, which is to say that we can add and remove elements from it at any point that we want. It also gives us access to some nice helper functions such as <code class="literal">IndexOf</code> (which will return to us the index of an element in a list, something that can be really useful when using the index operator <code class="literal">[]</code>).</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note113"></a>Note</h3><p>For more information on <a id="id1079" class="indexterm"></a>lists, check out <a class="ulink" href="http://unity3d.com/learn/tutorials/modules/intermediate/scripting/lists-and-dictionaries" target="_blank">http://unity3d.com/learn/tutorials/modules/intermediate/scripting/lists-and-dictionaries</a>.</p></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Now we need to actually create our <code class="literal">CreateBlock</code> function, as follows:</p><div class="informalexample"><pre class="programlisting">public void CreateBlock(int value, int xPos, int yPos)
+{
+  Transform toCreate = null;
+
+  // We need to know the size of our level to save later
+  if(xPos &lt; xMin)
+  {
+    xMin = xPos;
+  }
+  if(xPos &gt; xMax)
+  {
+    xMax = xPos;
+  }
+  
+  if(yPos &lt; yMin)
+  {
+    yMin = yPos;
+  }
+  if(yPos &gt; yMax)
+  {
+    yMax = yPos;
+  }
+
+  //If value is set to 0, we don't want to spawn anything
+  if(value != 0)
+  {
+    toCreate = tiles[value-1];
+  }
+  
+  if(toCreate != null)
+  {
+    //Create the object we want to create
+    Transform newObject = Instantiate(toCreate, new Vector3(xPos, yPos,  0), Quaternion.identity) as Transform;
+
+    //Give the new object the same name as ours
+    newObject.name = toCreate.name;
+
+    if(toCreate.name == "Goal")
+    {
+      // We want to have a reference to the particle system 
+      // for later
+      GameController._instance.GoalPS = newObject.gameObject.GetComponent&lt;ParticleSystem&gt;();
+      
+      // Move the particle system so it'll face up
+      newObject.transform.Rotate(-90,0,0);
+    }
+    
+    // Set the object's parent to the DynamicObjects
+    // variable so it doesn't clutter our Hierarchy
+    newObject.parent = dynamicParent.transform;
+  }
+}</pre></div></li><li><p>Finally, we need to<a id="id1080" class="indexterm"></a> initialize all of these variables in our <code class="literal">Start</code> function, as follows:</p><div class="informalexample"><pre class="programlisting">public void Start()
+{
+  // Get the DynamicObjects object so we can make it our
+  // newly created objects' parent
+  dynamicParent = GameObject.Find("Dynamic Objects");
+  BuildLevel();
+  
+  enabled = false;
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note114"></a>Note</h3><p>As we used previously, the <code class="literal">GameObject.Find</code> function looks within our scene to find an object with the name Dynamic Objects. If it does not find the object, it will return <code class="literal">null</code>. It's always a good idea to make sure that the value is not <code class="literal">null</code>, or you may be wondering why something in your code doesn't work when it's a spelling error or something of that sort. It's important to note that case is important and that DynamicObjects and dynamicObjects are different! If anything is different, it will not work:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>if(dynamicParent == null)</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  print("Object not found! Check spelling!");</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>This function should be used only on seldom occasions, as it can be quite slow. For more information on <code class="literal">GameObject.Find</code>, check out <a class="ulink" href="http://docs.unity3d.com/ScriptReference/GameObject.Find.html" target="_blank">http://docs.unity3d.com/ScriptReference/GameObject.Find.html</a>.</p><p>Next, go back to <span class="strong"><strong>Inspector</strong></span> and attach the <code class="literal">LevelEditor</code> script to the <span class="strong"><strong>GameController</strong></span> object by dragging the script file on top of it. Afterward, open up the <span class="strong"><strong>Tiles</strong></span> variable and change <span class="strong"><strong>Size</strong></span> to <code class="literal">4</code>. Then, go to the <code class="literal">Prefabs</code> folder and drag <code class="literal">Wall</code>, <code class="literal">Player</code>, <code class="literal">Collectible</code>, and <code class="literal">Goal</code> to the <span class="strong"><strong>Element 0</strong></span>, <span class="strong"><strong>Element 1</strong></span>, <span class="strong"><strong>Element 2,</strong></span> and <span class="strong"><strong>Element 3</strong></span> variables, respectively.</p></div></li><li><p>Finally, save your scene and play the game! Take a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_10_01.jpg" /></div></li></ol></div><p>You'll note that<a id="id1081" class="indexterm"></a> now, the class creates our level and then turns itself off—a great start for our level editor!</p></div></div>

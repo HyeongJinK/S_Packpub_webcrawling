@@ -1,0 +1,16 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec94"></a>Generics</h2></div></div><hr /></div><p>The C# syntax supports generics that allow you to use classes and methods, which do not specifically <a id="id1348" class="indexterm"></a>declare a type. Instead, the type is passed as a parameter when calling the method or instantiating the class at runtime.</p><p>.Net comes with some useful generic classes such as <code class="literal">List</code> and <code class="literal">Dictionary</code>, and Unity's own API has some generic functions. They remove the need for some of the verbose casting, which would otherwise be necessary in C#, as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+//Automatically cast the correct type
+var someScript : MyScript = GetComponent(MyScript);
+
+//or using the Generic version in JavaScript
+var someScript : MyScript = GetComponent.&lt;MyScript&gt;();
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+//with out Generic
+MyScript someScript = (MyScript)GetComponent(typeof(MyScript));
+//or using the Generic version in C#
+MyScript someScript = GetComponent&lt;MyScript&gt;();</pre></div></div>

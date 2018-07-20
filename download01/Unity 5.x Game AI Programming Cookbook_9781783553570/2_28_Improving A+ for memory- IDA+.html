@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec34"></a>Improving A* for memory: IDA*</h2></div></div><hr /></div><p>IDA* is a <a id="id127" class="indexterm"></a>variant of an algorithm called Iterative Deepening <a id="id128" class="indexterm"></a>Depth-First Search. Its memory usage is lower than A* because it doesn't make use of data structures to store the looked-up and explored nodes.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec112"></a>Getting ready</h3></div></div></div><p>For this recipe, it is important to have some understanding of how recursion works.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec113"></a>How to do it…</h3></div></div></div><p>This is a long recipe that can be seen as an extensive two-step process: creating the main function, and creating an internal recursive one. Please take into consideration the comments in the code to <a id="id129" class="indexterm"></a>understand the indentation and code flow more effectively:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's start by defining the main function called <code class="literal">GetPathIDAstar</code>:</p><div class="informalexample"><pre class="programlisting">public List&lt;Vertex&gt; GetPathIDAstar(GameObject srcObj, GameObject dstObj, Heuristic h = null)
+{
+    if (srcObj == null || dstObj == null)
+        return new List&lt;Vertex&gt;();
+    if (ReferenceEquals(h, null))
+        h = EuclidDist;
+    // next steps;
+}</pre></div></li><li><p>Declare and compute the variables to use along with the algorithm:</p><div class="informalexample"><pre class="programlisting">List&lt;Vertex&gt; path = new List&lt;Vertex&gt;();
+Vertex src = GetNearestVertex(srcObj.transform.position);
+Vertex dst = GetNearestVertex(dstObj.transform.position);
+Vertex goal = null;
+bool[] visited = new bool[vertices.Count];
+for (int i = 0; i &lt; visited.Length; i++)
+visited[i] = false;
+visited[src.id] = true;</pre></div></li><li><p>Implement <a id="id130" class="indexterm"></a>the algorithm's loop:</p><div class="informalexample"><pre class="programlisting">float bound = h(src, dst);
+while (bound &lt; Mathf.Infinity)
+{
+    bound = RecursiveIDAstar(src, dst, bound, h, ref goal, ref visited);
+}
+if (ReferenceEquals(goal, null))
+    return path;
+return BuildPath(goal);</pre></div></li><li><p>Now it's time to build the recursive internal function:</p><div class="informalexample"><pre class="programlisting">private float RecursiveIDAstar(
+        Vertex v,
+        Vertex dst,
+        float bound,
+        Heuristic h,
+        ref Vertex goal,
+        ref bool[] visited)
+{
+    // next steps
+}</pre></div></li><li><p>Prepare everything to start the recursion:</p><div class="informalexample"><pre class="programlisting">// base case
+if (ReferenceEquals(v, dst))
+    return Mathf.Infinity;
+Edge[] edges = GetEdges(v);
+if (edges.Length == 0)
+    return Mathf.Infinity;</pre></div></li><li><p>Apply the recursion for each neighbor:</p><div class="informalexample"><pre class="programlisting">// recursive case
+float fn = Mathf.Infinity;
+foreach (Edge e in edges)
+{
+    int eId = e.vertex.id;
+    if (visited[eId])
+        continue;
+    visited[eId] = true;
+    e.vertex.prev = v;
+    float f = h(v, dst);
+    float b;
+    if (f &lt;= bound)
+    {
+        b = RecursiveIDAstar(e.vertex, dst, bound, h, ref goal, ref visited);
+        fn = Mathf.Min(f, b);
+    }
+    else
+        fn = Mathf.Min(fn, f);
+}</pre></div></li><li><p>Return a value <a id="id131" class="indexterm"></a>based on the recursion result:</p><div class="informalexample"><pre class="programlisting">return fn;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec114"></a>How it works…</h3></div></div></div><p>As we can <a id="id132" class="indexterm"></a>see, the algorithm is very similar to that of the recursive version of Depth-First Search, but uses the principle of making decisions on top of a heuristic from A*. The main function is responsible for starting the recursion and building the resulting path. The recursive function is the one responsible for traversing the graph, looking for the destination node.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec115"></a>There is more…</h3></div></div></div><p>This time we will need to implement a different a <code class="literal">BuildPath</code> function, in case you have followed along with the previous path finding recipes. Otherwise, we will need to implement this method that we haven't defined yet:</p><div class="informalexample"><pre class="programlisting">private List&lt;Vertex&gt; BuildPath(Vertex v)
+{
+    List&lt;Vertex&gt; path = new List&lt;Vertex&gt;();
+    while (!ReferenceEquals(v, null))
+    {
+        path.Add(v);
+        v = v.prev;
+    }
+    return path;
+}</pre></div></div></div>

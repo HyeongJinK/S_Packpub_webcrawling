@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec102"></a>Saving screenshots from the game</h2></div></div><hr /></div><p>In this recipe, we <a id="id1086" class="indexterm"></a>will learn how to take in-game snapshots, and save them in an external file. Better yet, we will make it possible to choose between three different methods.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note51"></a>Note</h3><p>This technique only works when you compile to a Windows or Mac standalone executable—it will not work for Web Player builds, for example.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec310"></a>Getting ready</h3></div></div></div><p>In order to follow this recipe, please import the <code class="literal">screenshots</code> package, which is available in the <code class="literal">1362_10_06</code> folder, to your project. The package includes a basic terrain, and a camera that can be rotated via mouse.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec311"></a>How to do it...</h3></div></div></div><p>To save the screenshots from your game, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the <code class="literal">screenshots</code> package and open the <code class="literal">screenshotLevel</code> scene.</p></li><li><p>Add the following C# Script to the Main Camera:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System;
+using System.IO;
+
+public class TakeScreenshot : MonoBehaviour {
+  public string prefix = "Screenshot";
+  public enum method{captureScreenshotPng, ReadPixelsPng, ReadPixelsJpg};
+  public method captMethod = method.captureScreenshotPng;
+  public int captureScreenshotScale = 1;
+  [Range(0, 100)]
+  public int jpgQuality = 75;
+  private Texture2D texture;
+  private int sw;
+  private int sh;
+  private Rect sRect;
+  string date;
+
+  void Start(){
+    sw = Screen.width;
+    sh = Screen.height;
+    sRect = new Rect(0,0,sw,sh);
+  }
+
+  void  Update (){
+    if (Input.GetKeyDown (KeyCode.P)){
+      TakeShot();
+    }
+  }
+
+  private void TakeShot(){
+    date = System.DateTime.Now.ToString("_d-MMM-yyyy-HH-mm-ss-f");
+
+    if (captMethod == method.captureScreenshotPng){
+      Application.CaptureScreenshot(prefix + date + ".png", captureScreenshotScale);
+    } else {
+      StartCoroutine(ReadPixels());
+    }
+  }
+
+  IEnumerator  ReadPixels (){
+    yield return new WaitForEndOfFrame();
+
+    byte[] bytes;
+    texture = new Texture2D (sw,sh,TextureFormat.RGB24,false);
+    texture.ReadPixels(sRect,0,0);
+    texture.Apply();
+
+    if (captMethod == method.ReadPixelsJpg){
+      bytes = texture.EncodeToJPG(jpgQuality);
+      WriteBytesToFile(bytes, ".jpg");
+    } else if (captMethod == method.ReadPixelsPng){
+      bytes = texture.EncodeToPNG();
+      WriteBytesToFile(bytes, ".png");
+    }
+  }
+
+  private void WriteBytesToFile(byte[] bytes, string format){
+    Destroy (texture);
+    File.WriteAllBytes(Application.dataPath + "/../"+prefix + date + format, bytes);
+  }
+}</pre></div></li><li><p>Save your script and attach it to the Main Camera GameObject, by dragging it from the <span class="strong"><strong>Project</strong></span> view to the Main Camera GameObject, in the <span class="strong"><strong>Hierarchy</strong></span> view.</p></li><li><p>Access the <span class="strong"><strong>Take Screenshot</strong></span> component. Set <span class="strong"><strong>Capt Method</strong></span> as <span class="strong"><strong>Capture Screenshot Png</strong></span>. Change <span class="strong"><strong>Capture Screenshot Scale</strong></span> to <span class="strong"><strong>2</strong></span>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note52"></a>Note</h3><p>If you want <a id="id1087" class="indexterm"></a>your image file's name to start with something different than <code class="literal">Screenshot</code>, then change it in the <span class="strong"><strong>Prefix</strong></span> field.</p></div><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_10_09.jpg" /></div></li><li><p>Play the scene. A new screenshot with twice the original size will be saved in your project folder every time you press <span class="emphasis"><em>P</em></span>.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec312"></a>How it works...</h3></div></div></div><p>The <code class="literal">Start()</code> method creates a Rect object with the screen width and height. Each frame the <code class="literal">Update()</code> methods tests whether the <span class="emphasis"><em>P</em></span> key has been pressed.</p><p>Once the script has detected that the <span class="emphasis"><em>P</em></span> key was pressed, the screen is captured and stored as an image file into the same folder where the executable is. In case the <span class="strong"><strong>Capture Screenshot Png</strong></span> option is selected, the script will call a built-in Unity function called <code class="literal">CaptureScreenshot()</code>, which is capable of scaling up the original screen size (in our case, based on the <code class="literal">Scale</code> variable of our script). If not, the image will be captured by the <code class="literal">ReadPixels</code> function, encoded to PNG or JPG and finally, written via the <code class="literal">WriteAllBytes</code> function.</p><p>In all cases the file created will have the appropriate "<code class="literal">.png</code>" or "<code class="literal">.jpg</code>" file extension, to match its image file format.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec313"></a>There's more...</h3></div></div></div><p>We have included the options using the<a id="id1088" class="indexterm"></a> <code class="literal">ReadPixel</code> function as a demonstration of how to save your images to a disk without using Unity's <code class="literal">CaptureScreenshot()</code> function. One <a id="id1089" class="indexterm"></a>advantage of this method is that it can be adapted to capture and save only a portion of the screen. The <code class="literal">captureScreenshotScale</code> variable from our script will not affect screenshots created with the ReadPixel function though.</p></div></div>

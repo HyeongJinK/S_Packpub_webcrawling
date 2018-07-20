@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec14"></a>The game</h2></div></div><hr /></div><p>In this chapter, the goal for our game is to apply the walk animation when the player is moving. Furthermore, we will prepare the jump animation for the next chapter. To achieve that, we need to set up the rest of the transitions.</p><p>In the <span class="strong"><strong>Animator</strong></span> window, let's add a new transition from <code class="literal">WalkAnim</code> to <code class="literal">Idle</code> and name it <code class="literal">StopWalking</code>. Then, we need to add a condition that will trigger the transition. This transition will use the parameter <span class="strong"><strong>PlayerSpeed</strong></span> so that when its value becomes less than one the transition is triggered.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_02_019.jpg" /></div><p>
+</p><p>Now that the transitions between <code class="literal">Idle</code> and <code class="literal">WalkAnim</code> are ready, let's do the same to the <code class="literal">JumpAnim</code> state.</p><p>We need to make a transition from the <code class="literal">Idle</code> state to the <code class="literal">JumpAnim</code> state and vice-versa; we will name them <code class="literal">StartJump</code> and <code class="literal">EndJump</code>, respectively.</p><p>However, we are going to need another parameter to see if the player is currently jumping. We can do this by adding another parameter named <code class="literal">Jump</code> as a Boolean in the <span class="strong"><strong>Animator</strong></span> window and set it to <code class="literal">false</code>.</p><p>This is what the <span class="strong"><strong>Animator</strong></span> window should look like right now:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_02_020.jpg" /></div><p>
+</p><p>After adding the new <code class="literal">Jump</code> parameter we can configure the two new transitions for <code class="literal">JumpAnim</code>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>For the first transition, name it <code class="literal">Start Jump</code>, add a condition, and choose the <code class="literal">Jump</code> parameter with its value as <code class="literal">true</code>
+</p></li><li style="list-style-type: disc"><p>For the second transition, name it <code class="literal">Stop Jump</code>, add a condition, and choose the <code class="literal">Jump</code> parameter with its value as <code class="literal">false</code>
+</p></li></ul></div><p>What this means is that when the <code class="literal">Jump</code> variable is set to true, our player will play the jump animation and then it will stop once the variable changes to <code class="literal">false</code>, which will be done through code.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_02_021.jpg" /></div><p>
+</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_02_022.jpg" /></div><p>
+</p><p>A good edit to do in this instance is to change the <span class="strong"><strong>Has Exit Time</strong></span> variable in all the transitions to <code class="literal">false</code> in order to avoid waiting for the states to finish their transitions.</p><p>The next step is to apply the walk animation to the player movement and prepare the jump controls. In the project panel, double-click on the script we created in the previous chapter, <code class="literal">PlayerMovement</code>, inside the <code class="literal">Scripts</code> folder to open it.</p><p>We need to add another variable to store the reference to the <code class="literal">Animator Component</code> attached to the <code class="literal">Player</code> game object:</p><pre class="programlisting">    //Reference to the Animator &#13;
+    private Animator anim; &#13;
+</pre><p>In the <code class="literal">Start()</code> function, we need to get the reference to the Animator by calling the <code class="literal">GetComponent()</code> function:</p><pre class="programlisting">    void Start() { &#13;
+        anim = GetComponent&lt;Animator&gt;(); &#13;
+    } &#13;
+</pre><p>We need to change the <code class="literal">Update()</code> function so that we can take care of the <code class="literal">Animator</code> and change its parameters accordingly. As a result, our character will be animated. Let's start to add this piece of code between the two lines of code we had before, just before the <code class="literal">if</code>-statement:</p><pre class="programlisting">        float translation = Input.GetAxis("Horizontal") * speed * Time.deltaTime; &#13;
+ &#13;
+        <span class="strong"><strong>//Change direction if needed &#13;
+        if (translation &gt; 0) { &#13;
+            transform.localScale = new Vector3(1, 1, 1); &#13;
+        } &#13;
+        else if (translation &lt; 0) { &#13;
+            transform.localScale = new Vector3(-1, 1, 1); &#13;
+        }</strong></span> &#13;
+ &#13;
+        // Move along the object's x-axis within the floor bounds &#13;
+// ...</pre><p>In this way, we flip the character according to its direction. Now, we need to take care of the <code class="literal">Animator</code> so it can change the animation accordingly. To do this, let's add this at the end of the <code class="literal">Update()</code> function:</p><pre class="programlisting">        // Switching between Idle and Walk states in the animator &#13;
+        if (translation != 0) { &#13;
+            anim.SetFloat("PlayerSpeed", speed); &#13;
+        } &#13;
+        else { &#13;
+            anim.SetFloat("PlayerSpeed", 0); &#13;
+        } &#13;
+</pre><p>Furthermore, we may want to switch to the <code class="literal">Jump</code> animation. For the sake of learning, we can just switch between the <code class="literal">Jump</code> animation and the walking animation every time the player presses the space bar. So, after what we have written before, let's add:</p><pre class="programlisting">        // Switching between Jump and Walk animation &#13;
+        if (Input.GetKeyUp(KeyCode.Space)) { &#13;
+            anim.SetBool("Jump", !(anim.GetBool("Jump"))); &#13;
+        } &#13;
+</pre><p>Save the changes and press the play button. When moving the player using the left and right arrow (alternatively <span class="emphasis"><em>A</em></span> and <span class="emphasis"><em>D</em></span>), you see the character playing the <code class="literal">Walk</code> animation. Also, when pressing the <code class="literal">Jump</code> (space) button, the character changes from the <code class="literal">Idle</code> sprite to the <code class="literal">Jump</code> sprite (<code class="literal">Animation</code>). Here is a screenshot of the game while playing after saving the changes:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_02_023.jpg" /></div><p>
+</p></div>

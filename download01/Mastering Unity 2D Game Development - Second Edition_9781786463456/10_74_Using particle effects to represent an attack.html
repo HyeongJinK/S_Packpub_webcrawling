@@ -1,0 +1,67 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec71"></a>Using particle effects to represent an attack</h2></div></div><hr /></div><p>The player has made his or her move, and the Dragon has been affected in some way; it would be nice to see what happened. We'll use a different particle effect to represent each of the attacks.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec125"></a>Creating the materials for the particle effects</h3></div></div></div><p>Add the <code class="literal">attacks.png</code> sprite sheet and the <code class="literal">smokeCloud.png</code> sprite to the <code class="literal">Assets\Sprites\FX</code> folder. Change its settings so that it is a multiple sprite sheet and slice it automatically.</p><p>For particle effects to work, they need a material defined, not just the raw texture/sprite itself. So, navigate to <code class="literal">Assets\Materials</code> (create it if you haven't done so already) and right-click on it to create a new material and name it <code class="literal">Attacks</code>.</p><p>Change the <span class="strong"><strong>Shader</strong></span> material used to the <span class="strong"><strong>Particles/Vertex Lit Blended</strong></span> shader. You can change the <span class="strong"><strong>Shader</strong></span> by clicking on the drop-down menu next to the <span class="strong"><strong>Shader</strong></span> property of the <code class="literal">Attacks</code> material and then navigate to <span class="strong"><strong>Particles</strong></span> | <span class="strong"><strong>Vertex Lit Blended</strong></span>.</p><p>Next, change the <span class="strong"><strong>Emissive Color</strong></span> to <span class="strong"><strong>White</strong></span>. Lastly, click on the <span class="strong"><strong>Select</strong></span> button on the material properties in the <span class="strong"><strong>Inspector</strong></span> window for the new <code class="literal">Attacks</code> material and select the <code class="literal">attacks.png</code> image we just imported.</p><p>Your material should now look like the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_011.jpg" /></div><p>
+</p><p>Repeat the preceding steps to create a material for the <code class="literal">smokeCloud.png</code> sprite.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec126"></a>Adding the particles</h3></div></div></div><p>Let's make our participle system. In the Hierarchy, select <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Particle System</strong></span>. Change its transform position to 0,0,0. The particles will initially appear behind the 2D objects, as shown in the following screenshot, but this is an easy fix:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_012.jpg" /></div><p>
+</p><p>Expand the <span class="strong"><strong>Renderer</strong></span> setting of the particle system and change the <span class="strong"><strong>Sorting Layer</strong></span> to <span class="strong"><strong>Foreground</strong></span>, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_013.jpg" /></div><p>
+</p><p>It will now display correctly in the <span class="strong"><strong>Scene</strong></span> view and the <span class="strong"><strong>Game</strong></span> view. The following is a screenshot of the <span class="strong"><strong>Game</strong></span> view:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_014.jpg" /></div><p>
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note120"></a>Note</h3><p>This used to be not so easy to fix as the only way to change the particle's sorting layer was through code.</p></div><p>Rename the particle system <span class="strong"><strong>Smack</strong></span> and change its material to the <code class="literal">Attacks</code> material by dragging the <code class="literal">Attacks</code> material to the <span class="strong"><strong>Material</strong></span> slot within the <span class="strong"><strong>Renderer</strong></span> options, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_015.jpg" /></div><p>
+</p><p>This initially is going to seem like a bad choice, because all of the images will now display and we only want the first image to display, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_016.jpg" /></div><p>
+</p><p>But, check and expand the <span class="strong"><strong>Texture Sheet Animation</strong></span> property. Change the values, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_017.jpg" /><div class="caption"><p>Texture Sheet Animation properties for the Smack attack</p></div></div><p>
+</p><p>To get the <code class="literal">1</code> in <span class="strong"><strong>Frame over Time</strong></span>, select <span class="strong"><strong>Constant</strong></span> from the drop-down menu. You should now see the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_018.jpg" /></div><p>
+</p><p>To get the correct shape, we now need to update the other properties, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_019.jpg" /></div><p>
+</p><p>The hands should now be concentrated to a single area, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_020.jpg" /></div><p>
+</p><p>Now, duplicate this particle system (<span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span>) in the Hierarchy and rename it <code class="literal">Smoke</code>. Deselect the <span class="strong"><strong>Texture Sheet Animation</strong></span> property and change the <span class="strong"><strong>Renderer</strong></span> | <span class="strong"><strong>Material</strong></span> to Smoke. All other properties will remain the same, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_021.jpg" /></div><p>
+</p><p>Now we will group these two particles together by creating an empty GameObject to hold them. In the Hierarchy, select <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Create Empty</strong></span>. Position it at 0,0,0 and rename it <code class="literal">Smack and Smoke</code>. Now, drag the two new particle systems to <code class="literal">Smack and Smoke</code> so that they are children of the empty GameObject.</p><p>Duplicate <code class="literal">Smack and Smoke</code> three times and rename the other three <code class="literal">Wack and Smoke</code>, <code class="literal">Kick and Smoke</code>, and <code class="literal">Chop and Smoke</code>. Rename the first particle system within each appropriately. Now to get each to display the correct image for the attack material, change the <span class="strong"><strong>Texture Sheet Animation</strong></span> | <span class="strong"><strong>Row</strong></span> value. The following screenshot shows the properties for <code class="literal">Wack and Smoke</code>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_022.jpg" /></div><p>
+</p><p>The following screenshot shows the properties for <code class="literal">Kick and Smoke</code>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_023.jpg" /></div><p>
+</p><p>The following screenshot shows the properties for <code class="literal">Chop and Smoke</code>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_024.jpg" /></div><p>
+</p><p>Now drag <code class="literal">Smack and Smoke</code>, <code class="literal">Wack and Smoke</code>, <code class="literal">Kick and Smoke</code>, and <code class="literal">Chop and Smoke</code> into the <code class="literal">Assets/Prefabs/FX</code> folder, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_025.jpg" /></div><p>
+</p><p>You can now delete the particle systems from the scene.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec127"></a>Displaying the particles upon attack</h3></div></div></div><p>Now we will update our <code class="literal">BattleManager</code> script to instantiate these particle systems when the attack is performed.</p><p>Add the following variable declarations to the top of your <code class="literal">BattleManager</code> script:</p><pre class="programlisting">public GameObject smackParticle; &#13;
+public GameObject wackParticle; &#13;
+public GameObject kickParticle; &#13;
+public GameObject chopParticle; &#13;
+private GameObject attackParticle;  &#13;
+</pre><p>Now, update your <code class="literal">AttackTarget()</code> function to appear as follows:</p><pre class="programlisting">IEnumerator AttackTarget(){ &#13;
+   attacking=true; &#13;
+   var damageAmount=GetComponent&lt;Attack&gt;().hitAmount; &#13;
+   switch (damageAmount){ &#13;
+       case 5: &#13;
+       attackParticle = (GameObject)GameObject.Instantiate(smackParticle); &#13;
+       break; &#13;
+   case 10: &#13;
+       attackParticle = (GameObject)GameObject.Instantiate(wackParticle); &#13;
+       break; &#13;
+    case 15: &#13;
+       attackParticle = (GameObject)GameObject.Instantiate(kickParticle); &#13;
+       break; &#13;
+    case 20: &#13;
+       attackParticle = (GameObject)GameObject.Instantiate(chopParticle); &#13;
+       break; &#13;
+    } &#13;
+ &#13;
+    if(attackParticle!=null){ &#13;
+       attackParticle.transform.position=selectedTarget.transform.position; &#13;
+    } &#13;
+ &#13;
+    selectedTarget.EnemyProfile.health-=damageAmount; &#13;
+    yield return new WaitForSeconds(1f); &#13;
+    attacking=false; &#13;
+    GetComponent&lt;Attack&gt;().hitAmount=0; &#13;
+    battleStateManager.SetBool("PlayerReady", false); &#13;
+    Destroy(attackParticle); &#13;
+}  &#13;
+</pre><p>This will look at the amount stored for the attack and select the correct particle system to instantiate. It will place the particle system where the selected Dragon is located. Then it will destroy the newly created particle system when the battle phase has changed.</p><p>The last thing we need to do is place the correct particle systems in the correct variable slot of the <code class="literal">BattleManager</code> script. Drag and drop your particle systems, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_026.jpg" /></div><p>
+</p></div></div>

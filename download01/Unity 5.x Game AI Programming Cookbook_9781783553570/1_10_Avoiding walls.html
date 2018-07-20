@@ -1,0 +1,25 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec17"></a>Avoiding walls</h2></div></div><hr /></div><p>This technique aims at <a id="id34" class="indexterm"></a>imitating our capacity to evade walls by considering a safety margin, and creating repulsion from their surfaces when that gap is broken.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec37"></a>Getting ready</h3></div></div></div><p>This technique uses the <code class="literal">RaycastHit</code> structure and the <code class="literal">Raycast</code> function from the physics engine, so it's recommended that you take a refresher on the docs in case you're a little rusty on the subject.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec38"></a>How to do it...</h3></div></div></div><p>Thanks to our previous hard work, this recipe is a short one:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">AvoidWall</code> behavior derived from <code class="literal">Seek</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class AvoidWall <span class="strong"><strong>: Seek</strong></span>
+{
+    // body
+}</pre></div></li><li><p>Include the member variables for defining the safety margin, and the length of the ray to cast:</p><div class="informalexample"><pre class="programlisting">public float avoidDistance;
+public float lookAhead;</pre></div></li><li><p>Define the <code class="literal">Awake</code> function to set up the target:</p><div class="informalexample"><pre class="programlisting">public override void Awake()
+{
+    base.Awake();
+    target = new GameObject();
+}</pre></div></li><li><p>Define the <code class="literal">GetSteering</code> function for the following steps:</p><div class="informalexample"><pre class="programlisting">public override Steering GetSteering()
+{
+    // body
+}</pre></div></li><li><p>Declare and set the variable needed for ray casting:</p><div class="informalexample"><pre class="programlisting">Steering steering = new Steering();
+Vector3 position = transform.position;
+Vector3 rayVector = agent.velocity.normalized * lookAhead;
+Vector3 direction = rayVector;
+RaycastHit hit;</pre></div></li><li><p>Cast the ray <a id="id35" class="indexterm"></a>and make the proper calculations if a wall is hit:</p><div class="informalexample"><pre class="programlisting">if (Physics.Raycast(position, direction, out hit, lookAhead))
+{
+    position = hit.point + hit.normal * avoidDistance;
+    target.transform.position = position;
+    steering = base.GetSteering();
+}
+return steering;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec39"></a>How it works...</h3></div></div></div><p>We cast a ray in front of the agent; when the ray collides with a wall, the target object is placed in a new position taking into consideration its distance from the wall and the safety distance declared and delegating the steering calculations to the <code class="literal">Seek</code> behavior; this creates the illusion of the agent avoiding the wall.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec40"></a>There's more...</h3></div></div></div><p>We could extend this behavior by adding more rays, like whiskers, in order to get better accuracy. Also, it is usually paired with other movement behaviors, such as <code class="literal">Pursue</code>, using blending.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3561_01_06.jpg" /><div class="caption"><p>The original ray cast and possible extensions for more precise wall avoidance</p></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec41"></a>See also</h3></div></div></div><p>For further information <a id="id36" class="indexterm"></a>on the <code class="literal">RaycastHit</code> structure and the <code class="literal">Raycast</code> function, please <a id="id37" class="indexterm"></a>refer to the official documentation available online at:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="ulink" href="http://docs.unity3d.com/ScriptReference/RaycastHit.html" target="_blank">http://docs.unity3d.com/ScriptReference/RaycastHit.html</a></p></li><li style="list-style-type: disc"><p><a class="ulink" href="http://docs.unity3d.com/ScriptReference/Physics.Raycast.html" target="_blank">http://docs.unity3d.com/ScriptReference/Physics.Raycast.html</a></p></li></ul></div></div></div>

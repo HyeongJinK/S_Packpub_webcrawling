@@ -1,0 +1,164 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec29"></a>AI character</h2></div></div><hr /></div><p>Our AI character will be roaming around the scene in a random direction. It'll have two senses: perspective and touch. The <a id="id183" class="indexterm"></a>perspective sense will check whether the enemy aspect is within a set visible range and distance. Touch sense will detect if the enemy aspect has collided with the box collider, soon to be surrounding our AI character. As we have seen previously, our player tank will have <code class="literal">Enemy</code> aspect. So, these senses will be triggered when they detect the player tank.</p><p>The code in the <a id="id184" class="indexterm"></a>
+<code class="literal">Wander.cs</code> file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Wander : MonoBehaviour {
+  private Vector3 tarPos;
+
+  private float movementSpeed = 5.0f;
+  private float rotSpeed = 2.0f;
+  private float minX, maxX, minZ, maxZ;
+
+  // Use this for initialization
+  void Start () {
+    minX = -45.0f;
+    maxX = 45.0f;
+
+    minZ = -45.0f;
+    maxZ = 45.0f;
+
+    //Get Wander Position
+    GetNextPosition();
+  }
+  
+  // Update is called once per frame
+  void Update () {
+    // Check if we're near the destination position
+    if (Vector3.Distance(tarPos, transform.position) &lt;= 5.0f)
+      GetNextPosition(); //generate new random position 
+
+    // Set up quaternion for rotation toward destination
+    Quaternion tarRot = Quaternion.LookRotation(tarPos - 
+        transform.position);
+
+    // Update rotation and translation
+    transform.rotation = Quaternion.Slerp(transform.rotation, tarRot, 
+        rotSpeed * Time.deltaTime);
+
+    transform.Translate(new Vector3(0, 0, 
+        movementSpeed * Time.deltaTime));
+  }
+
+  void GetNextPosition() {
+    tarPos = new Vector3(Random.Range(minX, maxX), 0.5f, 
+        Random.Range(minZ, maxZ));
+  }
+}</pre></div><p>The <code class="literal">Wander</code> script <a id="id185" class="indexterm"></a>generates a new random position in a specified range whenever the AI character reaches its current destination point. <a id="id186" class="indexterm"></a>The <code class="literal">Update</code> <a id="id187" class="indexterm"></a>method will then rotate our enemy, and move it towards this new destination. Attach this script to our AI character so that it can move around in the scene.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec35"></a>Sense</h3></div></div></div><p>The <code class="literal">Sense</code> class is the interface of <a id="id188" class="indexterm"></a>our sensory system that the other custom senses can <a id="id189" class="indexterm"></a>implement. It defines two virtual methods, <code class="literal">Initialize</code><a id="id190" class="indexterm"></a> and <a id="id191" class="indexterm"></a>
+<code class="literal">UpdateSense</code>, which will be implemented in custom senses, and are executed from the <a id="id192" class="indexterm"></a>
+<code class="literal">Start</code> and <code class="literal">Update</code> <a id="id193" class="indexterm"></a>methods, respectively.</p><p>The code in the <a id="id194" class="indexterm"></a>
+<code class="literal">Sense.cs</code> file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Sense : MonoBehaviour {
+  public bool bDebug = true;
+  public Aspect.aspect aspectName = Aspect.aspect.Enemy;
+  public float detectionRate = 1.0f;
+
+  protected float elapsedTime = 0.0f;
+
+  protected virtual void Initialize() { }
+  protected virtual void UpdateSense() { }
+
+  // Use this for initialization
+  void Start () {
+    elapsedTime = 0.0f;
+    Initialize();
+  }
+  
+  // Update is called once per frame
+  void Update () {
+    UpdateSense();
+  }
+}</pre></div><p>Basic properties include its detection rate to execute the sensing operation as well as the name of the aspect it should look for. <a id="id195" class="indexterm"></a>This script will not be attached to any of our objects.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec36"></a>Perspective</h3></div></div></div><p>The perspective sense will <a id="id196" class="indexterm"></a>detect whether a specific aspect is within its field of <a id="id197" class="indexterm"></a>view and visible distance. If it sees anything, it will take the specified action.</p><p>The code in the <a id="id198" class="indexterm"></a>
+<code class="literal">Perspective.cs</code> file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Perspective : Sense {
+  public int FieldOfView = 45;
+  public int ViewDistance = 100;
+
+  private Transform playerTrans;
+  private Vector3 rayDirection;
+
+  protected override void Initialize() {
+
+    //Find player position
+    playerTrans = 
+      
+  GameObject.FindGameObjectWithTag("Player").transform;
+  }
+
+  // Update is called once per frame
+  protected override void UpdateSense() {
+    elapsedTime += Time.deltaTime;
+
+    // Detect perspective sense if within the detection rate
+    if (elapsedTime &gt;= detectionRate) DetectAspect();
+  }
+
+  //Detect perspective field of view for the AI Character
+  void DetectAspect() {
+    RaycastHit hit;
+
+    //Direction from current position to player position
+    rayDirection = playerTrans.position - 
+        transform.position;
+
+    //Check the angle between the AI character's forward
+    //vector and the direction vector between player and AI
+    if ((Vector3.Angle(rayDirection, transform.forward)) &lt; FieldOfView) {
+      // Detect if player is within the field of view
+      if (Physics.Raycast(transform.position, rayDirection, 
+          out hit, ViewDistance)) {
+        Aspect aspect = 
+        hit.collider.GetComponent&lt;Aspect&gt;();
+
+        if (aspect != null) {
+          //Check the aspect
+          if (aspect.aspectName == aspectName) {
+            print("Enemy Detected");
+          }
+        }
+      }
+    }
+  }</pre></div><p>We need to implement <a id="id199" class="indexterm"></a>
+<code class="literal">Initialize</code> and <a id="id200" class="indexterm"></a>
+<code class="literal">UpdateSense</code> methods that will be called from the <code class="literal">Start</code> and <code class="literal">Update</code> methods of the <a id="id201" class="indexterm"></a>parent <code class="literal">Sense</code> class, respectively. Then, in the <code class="literal">DetectAspect</code> <a id="id202" class="indexterm"></a>method, we first check the angle between the player and the AI's current direction. If it's in the field of view <a id="id203" class="indexterm"></a>range, we shoot a ray in the direction where the player tank is located. The ray length is the value of visible distance property. The <a id="id204" class="indexterm"></a>
+<code class="literal">Raycast</code> method will return when it first hits another object. Then, we'll check against the aspect component and the aspect name. This way, even if the player is in the visible range, the AI character <a id="id205" class="indexterm"></a>will not be able to see if it's hidden behind the wall.</p><p>The <code class="literal">OnDrawGizmos</code> method <a id="id206" class="indexterm"></a>draws lines based on the perspective field of view angle and viewing distance, so that we can see the AI character's line-of-sight in the editor window during play testing. Attach this script to our AI character, and be sure that the <a id="id207" class="indexterm"></a>aspect name is set to <code class="literal">Enemy</code>.</p><p>This method can be illustrated as follows:</p><div class="informalexample"><pre class="programlisting">  void OnDrawGizmos() {
+    if (!bDebug || playerTrans == null) return;
+
+    Debug.DrawLine(transform.position, playerTrans.position, Color.red);
+
+    Vector3 frontRayPoint = transform.position + 
+        (transform.forward * ViewDistance);
+
+    //Approximate perspective visualization
+    Vector3 leftRayPoint = frontRayPoint;
+    leftRayPoint.x += FieldOfView * 0.5f;
+
+    Vector3 rightRayPoint = frontRayPoint;
+    rightRayPoint.x -= FieldOfView * 0.5f;
+
+    Debug.DrawLine(transform.position, frontRayPoint, Color.green);
+
+    Debug.DrawLine(transform.position, leftRayPoint, Color.green);
+
+    Debug.DrawLine(transform.position, rightRayPoint, Color.green);
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec37"></a>Touch</h3></div></div></div><p>Another sense we're going to <a id="id208" class="indexterm"></a>implement is <code class="literal">Touch.cs</code>, which is triggered when the player entity is within a certain area near the AI entity. Our AI character has a box collider <a id="id209" class="indexterm"></a>component, and its <code class="literal">Is Trigger</code> flag is on.</p><p>We need to implement <a id="id210" class="indexterm"></a>
+<code class="literal">OnTriggerEnter</code> event that will be fired whenever the collider component is collided with another collider component. Since our tank entity also has a collider and rigid body components, collision events will be raised as soon as the colliders of the AI character and player tank are collided.</p><p>The code in the <a id="id211" class="indexterm"></a>
+<code class="literal">Touch.cs</code> file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Touch : Sense {
+  void OnTriggerEnter(Collider other) {
+    Aspect aspect = other.GetComponent&lt;Aspect&gt;();
+    if (aspect != null) {
+      //Check the aspect
+      if (aspect.aspectName == aspectName) {
+        print("Enemy Touch Detected");
+      }
+    }
+  }
+}</pre></div><p>We implement the <a id="id212" class="indexterm"></a>
+<code class="literal">OnTriggerEnter</code> event to be fired whenever the collider component is collided with another collider <a id="id213" class="indexterm"></a>component. Since our tank entity also has a collider and the <a id="id214" class="indexterm"></a>rigid body components, collision events will be raised as soon as the colliders of the AI character and the player tank are collided.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_04_07.jpg" /><div class="caption"><p>The collider around our player</p></div></div><p>The previous figure shows the box collider of our enemy AI that we'll use to implement touch sense. In the following screenshot, we see how our AI character is set up.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_04_06.jpg" /><div class="caption"><p>Properties of our player</p></div></div><p>Inside the <code class="literal">OnTriggerEnter</code> method, <a id="id215" class="indexterm"></a>we access the aspect component of the other collided entity and check if the name <a id="id216" class="indexterm"></a>of the <a id="id217" class="indexterm"></a>aspect is the aspect this AI character is looking for. And, for demo purposes, we just print out that the enemy aspect has been detected by touch sense. We can also implement other behaviors if in real projects; maybe the player will turn over to an enemy and start chasing, attacking, and so on.</p></div></div>

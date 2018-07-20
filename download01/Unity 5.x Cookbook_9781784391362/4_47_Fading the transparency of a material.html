@@ -1,0 +1,60 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec51"></a>Fading the transparency of a material</h2></div></div><hr /></div><p>In this recipe, we will create an object that, once clicked, fades out and disappears. However, the script will be flexible enough to allow us adjust the initial and final alpha values. Plus, we will have the option of making the object self-destructible when turned invisible.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec135"></a>How to do it...</h3></div></div></div><p>Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add a <span class="strong"><strong>Sphere</strong></span> to your scene by accessing the <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>3D Object</strong></span> | <span class="strong"><strong>Sphere </strong></span>menu.</p></li><li><p>Select the <span class="strong"><strong>Sphere</strong></span> and make sure it has a collider (if you are using a custom 3D object, you might have to add a collider through the <span class="strong"><strong>Components | Physics</strong></span> menu).</p></li><li><p>Create a new material. The easiest way to do that is to access the <span class="strong"><strong>Project</strong></span> view, click the <span class="strong"><strong>Create</strong></span> drop-down menu, and choose <span class="strong"><strong>Material</strong></span>.</p></li><li><p>Rename your new material. For this example, let's call it <code class="literal">Fade_MAT</code>.</p></li><li><p>Select your material. From the <span class="strong"><strong>Inspector</strong></span> view, use the drop-down menu to change its <span class="strong"><strong>Rendering Mode</strong></span> to <span class="strong"><strong>Fade</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_04_57.jpg" /></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip07"></a>Tip</h3><p>The <span class="strong"><strong>Fade</strong></span> rendering mode is specifically designed for situations like this. Other rendering modes, such as Transparent, will fade turn the Albedo color transparent, but not the specular highlights nor the reflections, in which case the object will still be visible.</p></div></li><li><p>Apply the <span class="strong"><strong>FadeMaterial</strong></span> to <span class="strong"><strong>Sphere</strong></span> by dragging it from the <span class="strong"><strong>Project</strong></span> view into the <span class="strong"><strong>Sphere</strong></span> Game Object name in the <span class="strong"><strong>Hierarchy</strong></span> view.</p></li><li><p>From the <span class="strong"><strong>Project</strong></span> view, click the <span class="strong"><strong>Create</strong></span> drop down menu and choose <span class="strong"><strong>C# Script</strong></span>. Rename it as <code class="literal">FadeMaterial</code> and open it in your editor.</p></li><li><p>Replace your script with the code below:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class FadeMaterial : MonoBehaviour {
+  public float fadeDuration = 1.0f;
+  public bool useMaterialAlpha = false;
+  public float alphaStart = 1.0f;
+  public float alphaEnd = 0.0f;
+  public bool destroyInvisibleObject = true;
+  private bool isFading = false;
+  private float alphaDiff;
+  private float startTime;
+  private Renderer rend;
+  private Color fadeColor;
+
+  void Start () {
+    rend = GetComponent&lt;Renderer&gt;();
+    fadeColor = rend.material.color;
+
+    if (!useMaterialAlpha) {
+      fadeColor.a = alphaStart;
+    } else {
+      alphaStart = fadeColor.a;
+    }
+
+    rend.material.color = fadeColor;
+    alphaDiff = alphaStart - alphaEnd;
+  }
+
+  void Update () {
+    if(isFading){
+      var elapsedTime = Time.time - startTime;
+
+      if(elapsedTime &lt;= fadeDuration){
+        var fadeProgress = elapsedTime / fadeDuration;
+        var alphaChange = fadeProgress * alphaDiff;
+        fadeColor.a = alphaStart - alphaChange;
+        rend.material.color = fadeColor;
+        } else {
+        fadeColor.a = alphaEnd;
+        rend.material.color = fadeColor;
+
+        if(destroyInvisibleObject)
+          Destroy (gameObject);
+        isFading = false;  
+      }
+    }
+  }
+
+  void OnMouseUp(){
+    FadeAlpha();
+  }
+
+  public void FadeAlpha(){
+    isFading = true;
+    startTime = Time.time;
+  }
+}</pre></div></li><li><p>Save your script and apply it to the <span class="strong"><strong>Sphere</strong></span> Game.</p></li><li><p>Play your scene and click on the <span class="strong"><strong>Sphere</strong></span> to see it fade away and self-destruct.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec136"></a>How it works...</h3></div></div></div><p>Since the opaqueness of the material using a transparent Shader is determined by the alpha value of its main color, all we need to do in order to fade it is changing that value over a given amount of time. This transformation is expressed, in our script, on the following lines of code:</p><div class="informalexample"><pre class="programlisting">var fadeProgress = elapsedTime / fadeDuration;
+var alphaChange = fadeProgress * alphaDiff;
+fadeColor.a = alphaStart - alphaChange;
+rend.material.color = fadeColor;</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec137"></a>There's more...</h3></div></div></div><p>You could call the <code class="literal">FadeAlpha</code> function in other circumstances (such as a <code class="literal">Rigidbody</code> collision, for instance). In fact, you could even call it from another Game Object's script by using the <code class="literal">GetComponent</code> command. The script would be something like:</p><div class="informalexample"><pre class="programlisting">GameObject.Find("Sphere").GetComponent&lt;FadeMaterial&gt;().FadeAlpha();</pre></div></div></div>

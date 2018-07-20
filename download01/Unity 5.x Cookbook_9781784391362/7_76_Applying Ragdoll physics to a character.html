@@ -1,0 +1,89 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec77"></a>Applying Ragdoll physics to a character</h2></div></div><hr /></div><p>Action games <a id="id813" class="indexterm"></a>often make use of <span class="strong"><strong>Ragdoll physics </strong></span>to simulate the character's body reaction to being unconsciously under the effect of a hit or explosion. In this recipe, we will learn how to set up and activate Ragdoll physics to our <a id="id814" class="indexterm"></a>character whenever she steps in a landmine object. We will also use the opportunity to reset the character's position and animations a number of seconds after that event has occurred.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec219"></a>Getting ready</h3></div></div></div><p>For this recipe, we have prepared a Unity Package named <code class="literal">Ragdoll</code>, containing a basic scene that features an animated character and two prefabs, already placed into the scene, named <span class="strong"><strong>Landmine</strong></span> and <span class="strong"><strong>Spawnpoint</strong></span>. The package can be found inside the <code class="literal">1362_07_08</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec220"></a>How to do it...</h3></div></div></div><p>To apply Ragdoll physics to your character, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new project and import the <code class="literal">Ragdoll</code> Unity Package. Then, from the <span class="strong"><strong>Project</strong></span> view, open the <span class="strong"><strong>mecanimPlayground</strong></span> level.</p></li><li><p>You will see the animated MsLaser character and two discs: <span class="strong"><strong>Landmine</strong></span> and <span class="strong"><strong>Spawnpoint</strong></span>.</p></li><li><p>First, let's set up our <a id="id815" class="indexterm"></a><span class="strong"><strong>Ragdoll</strong></span>. Access the <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>3D Object</strong></span> | <span class="strong"><strong>Ragdoll...</strong></span> menu<a id="id816" class="indexterm"></a> and the <span class="strong"><strong>Ragdoll wizard</strong></span> will<a id="id817" class="indexterm"></a> pop-up.</p></li><li><p>Assign the<a id="id818" class="indexterm"></a> transforms as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Pelvis</strong></span>: mixamorig:Hips</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Left Hips</strong></span>: mixamorig:LeftUpLeg</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Left Knee</strong></span>: mixamorig:LeftLeg</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Left Foot</strong></span>: mixamorig:LeftFoot</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Right Hips</strong></span>: mixamorig:RightUpLeg</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Right Knee</strong></span>: mixamorig:RightLeg</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Right Foot</strong></span>: mixamorig:RightFoot</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Left Arm</strong></span>: mixamorig:LeftArm</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Left Elbow</strong></span>: mixamorig:LeftForeArm</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Right Arm</strong></span>: mixamorig:RightArm</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Right Elbow</strong></span>: mixamorig:RightForeArm</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Middle Spine</strong></span>: mixamorig:Spine1</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Head</strong></span>: mixamorig:Head</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Total Mass</strong></span>: 20</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Strength</strong></span>: 50</p></li></ul></div><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_07_45.jpg" /></div></li><li><p>From the <span class="strong"><strong>Project</strong></span> <a id="id819" class="indexterm"></a>view, create a new <span class="strong"><strong>C# Script</strong></span> named <code class="literal">RagdollCharacter.cs</code>.</p></li><li><p>Open the <a id="id820" class="indexterm"></a>script and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class RagdollCharacter : MonoBehaviour {
+
+  void Start () {
+      DeactivateRagdoll();
+    }
+
+    public void ActivateRagdoll(){
+    gameObject.GetComponent&lt;CharacterController&gt; ().enabled = false;
+    gameObject.GetComponent&lt;BasicController&gt; ().enabled = false;
+    gameObject.GetComponent&lt;Animator&gt; ().enabled = false;
+    foreach (Rigidbody bone in GetComponentsInChildren&lt;Rigidbody&gt;()) {
+        bone.isKinematic = false;
+        bone.detectCollisions = true;
+    }
+    foreach (Collider col in GetComponentsInChildren&lt;Collider&gt;()) {
+        col.enabled = true;
+    }
+    StartCoroutine (Restore ());
+
+    }
+  public void DeactivateRagdoll(){
+
+    gameObject.GetComponent&lt;BasicController&gt;().enabled = true;
+    gameObject.GetComponent&lt;Animator&gt;().enabled = true;
+    transform.position = GameObject.Find("Spawnpoint").transform.position;
+    transform.rotation = GameObject.Find("Spawnpoint").transform.rotation;
+    foreach(Rigidbody bone in GetComponentsInChildren&lt;Rigidbody&gt;()){
+        bone.isKinematic = true;
+          bone.detectCollisions = false;
+      }
+    foreach (CharacterJoint joint in GetComponentsInChildren&lt;CharacterJoint&gt;()) {
+      joint.enableProjection = true;
+    }
+    foreach(Collider col in GetComponentsInChildren&lt;Collider&gt;()){
+      col.enabled = false;
+    }
+  gameObject.GetComponent&lt;CharacterController&gt;().enabled= true;
+
+    }
+
+  IEnumerator Restore(){
+    yield return new WaitForSeconds(5);
+    DeactivateRagdoll();
+  }
+}</pre></div></li><li><p>Save and close the script.</p></li><li><p>Attach the <span class="strong"><strong>RagdollCharacter.cs</strong></span> script to the <span class="strong"><strong>MsLaser</strong></span> GameObject. Then, select the <span class="strong"><strong>MsLaser</strong></span> character and, from the top of the <span class="strong"><strong>Inspector</strong></span> view, change its tag to <span class="strong"><strong>Player</strong></span>.</p></li><li><p>From the <span class="strong"><strong>Project</strong></span> view, create<a id="id821" class="indexterm"></a> a new <span class="strong"><strong>C# Script</strong></span> named <code class="literal">Landmine.cs</code>.</p></li><li><p>Open the script <a id="id822" class="indexterm"></a>and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Landmine : MonoBehaviour {
+  public float range = 2f;
+  public float force = 2f;
+  public float up = 4f;
+  private bool active = true;
+
+  void  OnTriggerEnter ( Collider collision  ){
+    if(collision.gameObject.tag == "Player" &amp;&amp; active){
+      active = false;
+      StartCoroutine(Reactivate());
+      collision.gameObject.GetComponent&lt;RagdollCharacter&gt;().ActivateRagdoll();
+      Vector3 explosionPos = transform.position;
+            Collider[] colliders = Physics.OverlapSphere(explosionPos, range);
+          foreach (Collider hit in colliders) {
+        if (hit.GetComponent&lt;Rigidbody&gt;())
+                  hit.GetComponent&lt;Rigidbody&gt;().AddExplosionForce(force, explosionPos, range, up);
+             }
+        }
+    }
+  IEnumerator Reactivate(){
+    yield return new WaitForSeconds(2);
+    active = true;
+  }
+}</pre></div></li><li><p>Save and close the script.</p></li><li><p>Attach the script to the <span class="strong"><strong>Landmine</strong></span> GameObject.</p></li><li><p>Play the scene. Using the <span class="emphasis"><em>WASD</em></span> keyboard control scheme, direct the character to the <span class="strong"><strong>Landmine</strong></span> GameObject. Colliding with it will activate the character's Ragdoll physics and apply an explosion force to it. As a result, the character will be thrown away to a considerable distance and will no longer be in the control<a id="id823" class="indexterm"></a> of its body movements, akin to a ragdoll.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec221"></a>How it works...</h3></div></div></div><p>Unity's <span class="strong"><strong>Ragdoll Wizard</strong></span> assigns, to <a id="id824" class="indexterm"></a>selected transforms, the components <code class="literal">Collider</code>, <code class="literal">Rigidbody</code>, and <code class="literal">Character Joint</code>. In conjunction, those components make Ragdoll physics possible. However, those components must be disabled whenever we want our character to be <a id="id825" class="indexterm"></a>animated and controlled by the player. In our case, we switch those components on and off using the <code class="literal">RagdollCharacter</code> script and its two functions: <code class="literal">ActivateRagdoll()</code> and <code class="literal">DeactivateRagdoll()</code>, the latter includes instructions to re-spawn our character in the appropriate place.</p><p>For the testing purposes, we have also created the <code class="literal">Landmine</code> script, which calls <code class="literal">RagdollCharacter</code> script's function named <code class="literal">ActivateRagdoll()</code>. It also applies an explosion force to our ragdoll character, throwing it outside the explosion site.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec222"></a>There's more...</h3></div></div></div><p>Instead of resetting the character's transform settings, you could have destroyed its GameObject and instantiated a new one<a id="id826" class="indexterm"></a> over the respawn point using <span class="strong"><strong>Tags</strong></span>. For more information<a id="id827" class="indexterm"></a> on this subject, check Unity's documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/GameObject.FindGameObjectsWithTag.html" target="_blank">http://docs.unity3d.com/ScriptReference/GameObject.FindGameObjectsWithTag.html</a>.</p></div></div>

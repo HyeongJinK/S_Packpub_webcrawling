@@ -1,0 +1,220 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec64"></a>Creating the UserData and Hiscore scripts</h2></div></div><hr /></div><p>In the first section, we will create the<a id="id1210" class="indexterm"></a> <code class="literal">UserData</code> script, which <a id="id1211" class="indexterm"></a>will collect the username and score. This script will inherit from the <code class="literal">IComparable&lt;T&gt;</code> interface, which is a custom comparison method in the .NET library that a value type or class<a id="id1212" class="indexterm"></a> implements to create a type-specific comparison method to order instances. This class will have the<a id="id1213" class="indexterm"></a> <code class="literal">CompareTo()</code> function, which<a id="id1214" class="indexterm"></a> will be used to sort users by their score. Then, we will add the <code class="literal">UserData</code> object in the <code class="literal">UIHiscore</code> script and set up the input text field for the player's name.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note85"></a>Note</h3><p>For more information about the <code class="literal">IComparable&lt;T&gt;</code> interface, visit the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://msdn.microsoft.com/en-us/library/4d7sx9hd(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/4d7sx9hd(v=vs.110).aspx</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://www.dotnetperls.com/icomparable" target="_blank">http://www.dotnetperls.com/icomparable</a>
+</p></li></ul></div></div><p>Then, we will create the <code class="literal">Hiscore</code> script, which will be the super class of both the <code class="literal">LocalHiscore</code> and <code class="literal">ServerHiscore</code> scripts. The <code class="literal">Hiscore</code> script will include the necessary variables such as the array of the <code class="literal">UserData</code>, <code class="literal">Save</code> and <code class="literal">Load</code> functions, <code class="literal">Sort</code> function, and so on.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec138"></a>Prepare for lift off</h3></div></div></div><p>We will begin with importing the package, preparing the assets folder, and making sure that we have everything ready to start. Let's create a new project and import the package:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the assets package by navigating to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>Custom Package…</strong></span>, choose the <code class="literal">Chapter8.unityPackage</code> file, which we downloaded earlier, and then click on the <span class="strong"><strong>Import</strong></span> button in the pop-up window, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_08_01.jpg" /></div></li><li><p>Wait until it's done and we will see the <span class="strong"><strong>Chapter8</strong></span>, <span class="strong"><strong>Editor</strong></span>, <span class="strong"><strong>Gizmos</strong></span>, <span class="strong"><strong>Resources</strong></span>, and <span class="strong"><strong>Standard Assets</strong></span> folders in the <span class="strong"><strong>Project</strong></span> view. Then, we will navigate to <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scenes</strong></span> and double-click on either scene (for C# users, double-click<a id="id1215" class="indexterm"></a> on the <span class="strong"><strong>Hiscore_C#</strong></span> scene; for Unity JavaScript users, double-click on the <span class="strong"><strong>Hiscore_JS</strong></span> scene), as shown<a id="id1216" class="indexterm"></a> in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_08_02.jpg" /></div></li><li><p>Next, we will navigate to <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts/C#/Hiscore</strong></span> (for C# users) or <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>Javascript</strong></span> | <span class="strong"><strong>Hiscore</strong></span> (for Unity JavaScript users), right-click and navigate to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span> (for C# users) or <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span>, and name it <code class="literal">UserData</code>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_08_03.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec139"></a>Engage thrusters</h3></div></div></div><p>Now, we can start creating the <code class="literal">UserData</code> script by <a id="id1217" class="indexterm"></a>performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Double-click on the <code class="literal">UserData</code> script that we just created and include the code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+import System;
+import System.Collections.Generic;
+
+public class UserData implements IComparable.&lt;UserData&gt; {
+  var name : String;
+  var score : int;
+
+  public function CompareTo ( compare : UserData ) : int
+  {
+    // Null value means that this object is greater
+    if (compare == null) return 1;
+    else {
+      return this.score.CompareTo(compare.score);
+    }
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+[System.Serializable]
+public class UserData : IComparable&lt;UserData&gt; {
+  public string name;
+  public int score;
+
+  public int CompareTo (UserData compare )
+  {
+    // Null value means that this object is greater
+    if (compare == null) return 1;
+    else {
+      return this.score.CompareTo(compare.score);
+    }
+  }
+}</pre></div><p>In this step in C# script, we added <code class="literal">[System.Serializable]</code> to enable the ability to serialize the <code class="literal">UserData</code> object. This process will translate the object data structure to a series of bits, which can easily be stored in a file or memory buffer. On the other hand, we don't need to include any script for Unity JavaScript because all Unity JavaScript classes are automatically<a id="id1218" class="indexterm"></a> serialized. This script is used to contain the information for each user. This will be used with <code class="literal">BinaryFormatter</code> and <code class="literal">MemoryStream</code> to save multiple users' data to the local machine using <code class="literal">PlayerPrefs</code> in the <span class="emphasis"><em>Saving and loading the local high score</em></span> section.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip39"></a>Tip</h3><p>In C#, sometimes, we add <code class="literal">[System.Serializable]</code> in<a id="id1219" class="indexterm"></a> our code to embed a class with subproperties in the inspector. This is similar to how <code class="literal">Vector3</code> looks in the inspector. However, we don't need to add anything for Unity JavaScript because the <code class="literal">Serializable</code> attribute is implicit and not necessary.</p><p>More details can be found at <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Serializable.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Serializable.html</a>.</p></div></li><li><p>Next, we will<a id="id1220" class="indexterm"></a> navigate to <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>UI</strong></span> (for C# users) or <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>Javascript</strong></span> | <span class="strong"><strong>UI</strong></span> (for Unity JavaScript users); double-click on <span class="strong"><strong>UIHiscore</strong></span> to open it, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_08_04.jpg" /></div></li><li><p>Next, we will go inside the <code class="literal">UIHiscore</code> script to add the script. Let's add the variables, as shown in the following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+…
+var customSkin : GUISkin;
+<span class="strong"><strong>@Range(1,50) var maxUser : int = 10;</strong></span>
+<span class="strong"><strong>private var _user : UserData;</strong></span>
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+public GUISkin customSkin;
+<span class="strong"><strong>[Range(1,50)] public int maxUser = 10;</strong></span>
+<span class="strong"><strong>UserData _user;</strong></span>
+</pre></div></li><li><p>Then, we will go to the <code class="literal">Start()</code> function and add the highlighted code as follows to create the current <code class="literal">UserData</code> script and set the default value for it:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+…
+function Start () {
+  _page = PAGE.GAMEOVER;
+  _clickRestart = false;
+  _clickSubmit = false;
+  _user = new UserData();
+  _user.name = "PLAYER 1";
+  _user.score = 0;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+void Start () {
+  _page = PAGE.GAMEOVER;
+  _clickRestart = false;
+  _clickSubmit = false;
+  _user = new UserData();
+  _user.name = "PLAYER 1";
+  _user.score = 0;
+}</pre></div></li><li><p>Now go to the <code class="literal">Gameover()</code> function. Inside the <code class="literal">if (_clickSubmit == false) {</code> line, we will add the highlighted code as follows to create<a id="id1221" class="indexterm"></a> the input text field for the username:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+…
+private function Gameover ()
+{
+  …
+  if (_clickSubmit == false) {
+   GUI.Label(new Rect((Screen.width - 300)*0.5f, (Screen.height*0.1f) + 80, 300, 25), "Enter Your Name", GUI.skin.GetStyle("CustomText3"));
+   //Creating the input text field to get the player name
+<span class="strong"><strong>     _user.name = GUI.TextField(new Rect((Screen.width - 240)*0.5f, (Screen.height*0.1f) + 120, 240, 40), _user.name, 8);</strong></span>
+     //Submit button
+     if (GUI.Button(_buttonRect1, "SUBMIT")) {
+       _clickSubmit = true;
+       <span class="strong"><strong>_user.score = HitPoint.CURRENT_SCORE;</strong></span>
+       //Submitting both local and server high score here
+     }
+   }
+  …
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+…
+void Gameover ()
+{
+  …
+  if (_clickSubmit == false) {
+   GUI.Label(new Rect((Screen.width - 300)*0.5f, (Screen.height*0.1f) + 80, 300, 25), "Enter Your Name", GUI.skin.GetStyle("CustomText3"));
+   //Creating the input text field to get the player name
+<span class="strong"><strong>     _user.name = GUI.TextField(new Rect((Screen.width - 240)*0.5f, (Screen.height*0.1f) + 120, 240, 40), _user.name, 8);</strong></span>
+     //Submit button
+     if (GUI.Button(_buttonRect1, "SUBMIT")) {
+<span class="strong"><strong>       </strong></span>_clickSubmit = true;
+<span class="strong"><strong>       _user.score = HitPoint.CURRENT_SCORE;</strong></span>
+<span class="strong"><strong>       </strong></span>//Submitting both local and server high score here
+     }
+   }
+  …
+}</pre></div></li><li><p>Now, we have finished adding <code class="literal">UserData</code> in the <code class="literal">UIHiscore</code> script. If we click on <span class="strong"><strong>Play</strong></span> and let our character die or kill all enemies, we will see that there is the<a id="id1222" class="indexterm"></a> <span class="strong"><strong>GAMEOVER</strong></span> UI similar to to the following screenshot (to make it faster to test, we can set the <code class="literal">CharacterClass.IS_GAMEOVER</code> to <code class="literal">true</code> and click on <span class="strong"><strong>Play</strong></span> to see the result too):</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_08_05.jpg" /></div><p>The <span class="strong"><strong>SUBMIT</strong></span>, <span class="strong"><strong>LOCAL HI-SCORE</strong></span>, and <span class="strong"><strong>SERVER HI-SCORE</strong></span> buttons don't do anything right now. We will add the functionality for each of the other buttons later.</p></li><li><p>Next, we will create the <code class="literal">Hiscore</code> script, which will be the base case of both the <code class="literal">LocalHiscore</code> and <code class="literal">ServerHiscore</code> scripts. So, let's navigate to <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>Hiscore</strong></span> (for C# users) or <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>Javascript</strong></span> | <span class="strong"><strong>Hiscore</strong></span> (for Unity JavaScript users), right-click and navigate to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span> (for C# users) or <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for Unity JavaScript users), and name it <code class="literal">Hiscore</code>.</p></li><li><p>Double-click on<a id="id1223" class="indexterm"></a> the <code class="literal">Hiscore</code> script and add the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+#pragma strict
+import System.Collections.Generic;
+
+public class Hiscore extends MonoBehaviour {
+  protected var _hashKey : String = "UNITYGAMEDEVELOPMENTHOTSHOT";
+  protected var _privateMaxUser : int;
+  protected var _users : List.&lt;UserData&gt;;
+
+  function get userLength() : int {
+    return (_users.Count &lt; _privateMaxUser) ? _users.Count : _privateMaxUser; 
+  }
+  
+  function Initialize ( maxUser : int  ) {
+    _privateMaxUser = maxUser;
+  }
+
+  function LoadUserData () {
+    _users = new List.&lt;UserData&gt;();
+  }
+
+  function SaveUserData ( user : UserData ) { }
+    
+  function GetUserDataAt ( index : int  ) : UserData {
+    return _users[index];
+  }
+
+  function SortByScore () {
+    _users.Sort();
+    _users.Reverse();
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Hiscore : MonoBehaviour {
+  protected string _hashKey = "UNITYGAMEDEVELOPMENTHOTSHOT";
+  protected int _privateMaxUser;
+  protected List&lt;UserData&gt; _users;
+
+  public int userLength {
+    get { 
+      return (_users.Count &lt; _privateMaxUser) ? _users.Count : _privateMaxUser; 
+    }
+  }
+
+  public virtual void Initialize ( int maxUser ) {
+    _privateMaxUser = maxUser;
+  }
+
+  public virtual void LoadUserData () {
+    _users = new List&lt;UserData&gt;();
+  }
+
+  public virtual void SaveUserData ( UserData user ) { }
+    
+  public UserData GetUserDataAt ( int index ) {
+    return _users[index];
+  }
+
+  public void SortByScore () {
+    _users.Sort();
+    _users.Reverse();
+  }
+}</pre></div></li></ol></div><p>Now we have finished this<a id="id1224" class="indexterm"></a> step. In the next step, we will create the <code class="literal">LocalHiscore</code> script to save and load the user data from the local machine.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec140"></a>Objective complete – mini debriefing</h3></div></div></div><p>In this step, we created the <code class="literal">UserData</code> script that implements from the <code class="literal">IComparable&lt;T&gt;</code> generic interface to create a custom sort for the <code class="literal">UserData</code> object. We also added <code class="literal">System.Serialiable</code> to the <code class="literal">UserData</code> script to enable the ability to serialize this object and save it in a later step. Then, we added the <code class="literal">UserData</code> object in the <code class="literal">UIHiscore</code> script and created the username input text field. Finally, we created the <code class="literal">Hiscore</code> class that will be the base class for the <code class="literal">LocalHiscore</code> and <code class="literal">ServerHiscore</code> scripts in the next step. In this <code class="literal">Hiscore</code> class, we created <code class="literal">List&lt;UserData&gt;</code> to store all the users' data. Then, we sorted them using <code class="literal">_users.Sort()</code> to sort from the lowest to the highest score. However, we need to show the score from the highest, so we also use <code class="literal">users.Reverse()</code> to reverse the sorting object.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec141"></a>Classified intel</h3></div></div></div><p>In this section, we used the <code class="literal">IComparable&lt;T&gt;</code> generic interface to create a custom sorting method to sort the generic <code class="literal">List&lt;T&gt;</code> objects. We know that the generic <code class="literal">List&lt;T&gt;</code> objects are similar to <code class="literal">ArrayList</code>, except with the specific type; in this case, <code class="literal">UserData</code>.</p><p>To be able to order <code class="literal">List&lt;T&gt;</code>, we will call the <code class="literal">List&lt;T&gt;.Sort()</code> method. This method will automatically call the <code class="literal">CompareTo()</code> function, which is the method in <code class="literal">IComparable&lt;T&gt;</code>. This method is used to compare the value between two objects, which will return only three values (less than 0 or -1, 0, greater than 0 or 1). The value less than 0 means the first object is less than other object. 0 means both objects are equal. Then the value greater than 0 means the first object is greater than other object.</p><p>In the <code class="literal">Hiscore</code> script in <code class="literal">SortByScore()</code>, we will see that we used the <code class="literal">Sort()</code> function for <code class="literal">_users</code>, which is the <code class="literal">List&lt;UserData&gt;()</code> array. The <code class="literal">Sort()</code> method uses the default comparer, <code class="literal">Comparer&lt;T&gt;.Default</code>, for type <code class="literal">T</code> to determine the order of the list elements. Then, the <code class="literal">Comparer&lt;T&gt;.Default</code> property will check whether or not the <code class="literal">IComparable&lt;T&gt;</code> generic interface is implemented, which we already implemented in our <code class="literal">UserData</code> script.</p><p>The result from the sorting method will return <code class="literal">_users</code> from the lowest score to the highest score. So, we use the <a id="id1225" class="indexterm"></a>
+<code class="literal">Reverse()</code> function to reverse the result, which will give <code class="literal">_users</code> order from the highest to the lowest score.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note86"></a>Note</h3><p>
+<code class="literal">List&lt;T&gt;</code> is in the .NET framework class library. We might want to check out the following MSDN Microsoft library links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>For more information about<a id="id1226" class="indexterm"></a> the <code class="literal">List&lt;T&gt;</code> method, visit <a class="ulink" href="http://msdn.microsoft.com/en-us/library/s6hkc2c4(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/s6hkc2c4(v=vs.110).aspx</a>.</p></li><li style="list-style-type: disc"><p>For more information<a id="id1227" class="indexterm"></a> about the <code class="literal">Sort()</code> method, visit <a class="ulink" href="http://msdn.microsoft.com/en-us/library/b0zbh7b6(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/b0zbh7b6(v=vs.110).aspx</a>.</p></li><li style="list-style-type: disc"><p>For more<a id="id1228" class="indexterm"></a> information about the <code class="literal">Comparer&lt;T&gt;</code> class and example, visit <a class="ulink" href="http://msdn.microsoft.com/en-us/library/azhsac5f(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/azhsac5f(v=vs.110).aspx</a>.</p></li><li style="list-style-type: disc"><p>For more information about the <code class="literal">IComparable&lt;T&gt;</code> interface and the <code class="literal">CompareTo()</code> method, visit the<a id="id1229" class="indexterm"></a> following links: <a class="ulink" href="http://msdn.microsoft.com/en-us/library/4d7sx9hd(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/4d7sx9hd(v=vs.110).aspx</a> and <a class="ulink" href="http://msdn.microsoft.com/en-us/library/43hc6wht(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/43hc6wht(v=vs.110).aspx</a> respectively</p></li><li style="list-style-type: disc"><p>For more<a id="id1230" class="indexterm"></a> information about the <code class="literal">List&lt;T&gt;.Reverse()</code> method, visit <a class="ulink" href="http://msdn.microsoft.com/en-us/library/b0axc2h2(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/b0axc2h2(v=vs.110).aspx</a>.</p></li></ul></div></div><p>We can also overload the <code class="literal">Sort()</code> function to sort using the name of the user instead of the score by adding the following code in the <code class="literal">Hiscore</code> script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+function SortByName () {
+  _users.Sort(function (user1 : UserData, user2 : UserData)
+  {
+    if (user1.name == null &amp;&amp; user2.name == null) return 0;
+    else if (user1.name == null) return -1;
+    else if (user2.name == null) return 1;
+    else return user1.name.CompareTo(user2.name);
+  });
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+public void SortByName () {
+  _users.Sort(delegate (UserData user1, UserData user2)
+  {
+    if (user1.name == null &amp;&amp; user2.name == null) return 0;
+    else if (user1.name == null) return -1;
+    else if (user2.name == null) return 1;
+    else return user1.name.CompareTo(user2.name);
+  });
+}</pre></div><p>From the method, we will see that we still use the <code class="literal">Sort()</code> function, but this time, we compare using the name. The result will order the usernames from A to Z.</p></div></div>

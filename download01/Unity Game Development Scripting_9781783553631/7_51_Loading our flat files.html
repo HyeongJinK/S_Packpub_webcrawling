@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec52"></a>Loading our flat files</h2></div></div><hr /></div><p>For the <a id="id432" class="indexterm"></a>final feature in our flat file system, we add the loading functionality.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec103"></a>Time to load our file</h3></div></div></div><p>Now that<a id="id433" class="indexterm"></a> we have created a way to save information to a flat file, we need to create a way to load that information. To do this, we will use a similar process as the one that we used to save the information. Let's add our final function to the script:</p><div class="informalexample"><pre class="programlisting">void ReadFile(string file = "")
+{
+  if(file != "")
+    sFileName = file;
+
+  using(StreamReader sr = new StreamReader(sDirectory + sFileName))
+  {
+    int kills = Convert.ToInt32(sr.ReadLine());
+    int deaths = Convert.ToInt32(sr.ReadLine());
+    int totgold = Convert.ToInt32(sr.ReadLine());
+    int curgold = Convert.ToInt32(sr.ReadLine());
+    int level = Convert.ToInt32(sr.ReadLine());
+    int rwon = Convert.ToInt32(sr.ReadLine());
+    int rlost = Convert.ToInt32(sr.ReadLine());
+    float pkdr = Convert.ToSingle(sr.ReadLine());
+    float pwlr = Convert.ToSingle(sr.ReadLine());
+    float ptime = Convert.ToSingle(sr.ReadLine());
+    float x = Convert.ToSingle(sr.ReadLine());
+    float y = Convert.ToSingle(sr.ReadLine());
+    float z = Convert.ToSingle(sr.ReadLine());
+    Player.transform.position = new Vector3(x, y, z);
+  }
+}</pre></div><p>To load our data from the file, we will use <code class="literal">StreamReader</code>. <code class="literal">StreamReader</code> is very similar to <code class="literal">StreamWriter</code>, except that it loads data from a file instead of writing to a file. We pass<a id="id434" class="indexterm"></a> the directory and filename that we want to load into our <code class="literal">StreamReader</code> class. Next, we <a id="id435" class="indexterm"></a>read each line using the <code class="literal">ReadLine</code> function within the <code class="literal">StreamReader</code> class. For every line that we read, we can assign it to a variable, therefore loading the data.</p></div></div>

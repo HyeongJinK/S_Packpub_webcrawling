@@ -1,0 +1,72 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec17"></a>Starting to work with Update</h2></div></div><hr /></div><p>Next, we will <a id="id90" class="indexterm"></a>set up the <code class="literal">Update</code> function to look after any touch input from the user. In order to do this so that it works in the editor and on the device, we will need a bit of logic to repeat itself. This is because the mouse input isn't related to the touch input.</p><p>To begin, add the <a id="id91" class="indexterm"></a>following code to the <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">  void Update () 
+  {
+    if (Application.isEditor)
+    {
+      if (Input.GetMouseButton(0))
+      {
+      }
+    }
+    else
+    {
+      if (Input.touches.Length &gt; 0)
+      {
+      }
+    }
+  }</pre></div><p>In this comparison, we will check whether the game can run in the editor. If it is not, we run what is in <code class="literal">else</code>.</p><p>If <code class="literal">isEditor</code> is true, we then check whether <code class="literal">MouseButton(0)</code> is pressed. Otherwise, as most people know, left-click on it.</p><p>If <code class="literal">isEditor</code> is false, we can check whether <code class="literal">touches.Length</code> is more than zero. If it is more than zero, we know that there is a touch on the screen.</p><p>Furthermore, you can also use platform-dependent conditions to check for specific devices. For example, you could use the following code:</p><div class="informalexample"><pre class="programlisting">#if UNITY_IOS
+  // Code goes here
+#endif</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip14"></a>Tip</h3><p>There are many platform-specific conditions you can use in this way, which can be found at <a class="ulink" href="http://docs.unity3d.com/Manual/PlatformDependentCompilation.html" target="_blank">http://docs.unity3d.com/Manual/PlatformDependentCompilation.html</a>.</p></div><p>Given the context of the game we are making and the level of knowledge that is required to follow along, <code class="literal">Application.isEditor</code> is suitable.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec21"></a>The in-editor input logic</h3></div></div></div><p>Under <a id="id92" class="indexterm"></a>
+<code class="literal">Application.isEditor</code> and inside <code class="literal">Input.GetMouseButton(0)</code>, add the following code:</p><div class="informalexample"><pre class="programlisting">  if (Input.GetMouseButton(0))
+  {
+    if (ActiveTouch.Phase == TouchPhase.Canceled)
+    {
+      ActiveTouch.CurrentTouchLocation = Input.mousePosition;
+      ActiveTouch.StartTouchLocation = Input.mousePosition;
+      ActiveTouch.StartTime = System.DateTime.Now;
+      ActiveTouch.Phase = TouchPhase.Began;
+    }
+    else
+    {
+      ActiveTouch.CurrentTouchLocation = Input.mousePosition;
+    }
+  }</pre></div><p>As mentioned before, when you go through <code class="literal">CalculateTouchInput</code>, you will need a few values to compare them with each other to know the type of input we will calculate. This is how they get their value, which will represent a touch.</p><p>To begin this block of code, we will first compare <code class="literal">ActiveTouch.Phase</code> to check whether it is equal to <code class="literal">TouchPhase.Canceled</code>. If this is true and we know that the left mouse button is down, we know that it is a new touch. As this is a new touch, we will assign the values we need based on the location of the mouse and the time of <span class="emphasis"><em>now</em></span> and set <code class="literal">ActiveTouch.Phase</code> to <code class="literal">TouchPhase.Began</code>.</p><p>Now, if the mouse button is still down, but <code class="literal">ActiveTouch.Phase</code> does not equal <code class="literal">TouchPhase.Canceled</code>, we know that the user sill has an input pressed, so we will update <code class="literal">CurrentTouchLocation</code> of <code class="literal">ActiveTouch</code> to represent where their mouse, or finger, is on the screen.</p><p>As we have all the information we need for when the user had the finger on the screen, we can now check and handle what happens if they stop the input.</p><p>Under the <code class="literal">if (Input.GetMouseButton(0))</code> code block, add the <code class="literal">else</code> statement and the following code:</p><div class="informalexample"><pre class="programlisting">  else
+  {
+    if (ActiveTouch.Phase == TouchPhase.Began)
+    {
+      CalculateTouchInput( ActiveTouch );
+      ActiveTouch.Phase = TouchPhase.Canceled;
+    }
+  }</pre></div><p>To keep up, the entire <code class="literal">Update</code> function should look similar to the following code:</p><div class="informalexample"><pre class="programlisting">  /* Update is called once per frame */
+  void Update () 
+  {
+    if (Application.isEditor)
+    {
+      if (Input.GetMouseButton(0))
+      {
+        if (ActiveTouch.Phase == TouchPhase.Canceled)
+        {
+          ActiveTouch.CurrentTouchLocation = Input.mousePosition;
+          ActiveTouch.StartTouchLocation = Input.mousePosition;
+          ActiveTouch.StartTime = System.DateTime.Now;
+          ActiveTouch.Phase = TouchPhase.Began;
+        }
+        else
+        {
+          ActiveTouch.CurrentTouchLocation = Input.mousePosition;
+        }
+      }
+      else
+      {
+        if (ActiveTouch.Phase == TouchPhase.Began)
+        {
+          CalculateTouchInput( ActiveTouch );
+          ActiveTouch.Phase = TouchPhase.Canceled;
+        }
+      }
+    }
+    else
+    {
+      if (Input.touches.Length &gt; 0)
+      {
+      }
+    }
+  }</pre></div><p>As <code class="literal">Update</code> is called for every frame rendered, we want to make sure that code is being run when it is time. In <a id="id93" class="indexterm"></a>order to make sure that we handled <code class="literal">ActiveTouch</code> when we need to, we first check to make sure that the mouse button is not down. Once we know that the mouse button is <span class="emphasis"><em>not</em></span> down, we then check whether <code class="literal">ActiveTouch.Phase</code> is equal to <code class="literal">TouchPhase.Began</code>.</p><p>If this is <code class="literal">true</code>, we know that the player has just let go of the mouse as we assign <code class="literal">TouchPhase.Began</code> in the block that checks whether <code class="literal">GetMouseButton(0)</code> is <code class="literal">true</code>.</p><p>As the player has let go of the input, we can send the <code class="literal">ActiveTouch</code> data to <code class="literal">CalculateTouchInput</code> to see what type of touch it is. Once this is done, we can also make sure to <a id="id94" class="indexterm"></a>assign <code class="literal">ActiveTouch.Phase</code> back to <code class="literal">TouchPhase.Canceled</code> because the touch is no longer active.</p></div></div>

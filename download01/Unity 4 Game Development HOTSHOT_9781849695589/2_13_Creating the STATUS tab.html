@@ -1,0 +1,377 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec23"></a>Creating the STATUS tab</h2></div></div><hr /></div><p>In this step, we <a id="id295" class="indexterm"></a>will create a <span class="strong"><strong>STATUS</strong></span> page for our menu, which will show <a id="id296" class="indexterm"></a>all attributes of the character, including hit points, magic points, levels, experiences, experience needed for the next level, attacks, defense, agility, intelligence, luck, and the current equipments and skills of that character, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_23.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec45"></a>Engage thrusters</h3></div></div></div><p>We will start with assigning the <span class="strong"><strong>STATUS</strong></span> parameters for our character and displaying them on the menu by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's go back to our <code class="literal">menu</code> script in MonoDevelop, and include variables before the <code class="literal">Start()</code> function as highlighted in the following code.</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private var _isMenuOpen : boolean = false;
+<span class="strong"><strong>var fullHP : int = 9999;</strong></span>
+<span class="strong"><strong>var fullMP : int = 999;</strong></span>
+<span class="strong"><strong>var currentHP : int = 9999;</strong></span>
+<span class="strong"><strong>var currentMP : int = 999;</strong></span>
+<span class="strong"><strong>var currentLV : int = 99;</strong></span>
+<span class="strong"><strong>var currentEXP : int = 9999999;</strong></span>
+<span class="strong"><strong>var currentNEXT : int = 99999;</strong></span>
+<span class="strong"><strong>var currentATK : int = 999;</strong></span>
+<span class="strong"><strong>var currentDEF : int = 999;</strong></span>
+<span class="strong"><strong>var currentAGI : int = 999;</strong></span>
+<span class="strong"><strong>var currentINT : int = 999;</strong></span>
+<span class="strong"><strong>var currentLUC : int = 999;</strong></span>
+<span class="strong"><strong>private final var MAX_HP : int = 9999;</strong></span>
+<span class="strong"><strong>private final var MAX_MP : int = 999;</strong></span>
+<span class="strong"><strong>private final var MAX_LV : int = 99;</strong></span>
+<span class="strong"><strong>private final var MAX_EXP : int = 9999999;</strong></span>
+<span class="strong"><strong>private final var MAX_NEXT : int = 99999;</strong></span>
+<span class="strong"><strong>private final var MAX_ATK : int = 999;</strong></span>
+<span class="strong"><strong>private final var MAX_DEF : int = 999;</strong></span>
+<span class="strong"><strong>private final var MAX_AGI : int = 999;</strong></span>
+<span class="strong"><strong>private final var MAX_INT : int = 999;</strong></span>
+<span class="strong"><strong>private final var MAX_LUC : int = 999;</strong></span>
+<span class="strong"><strong>private final var STAT_1_RECT : Rect = new Rect (252, 77, 331, 125);</strong></span>
+<span class="strong"><strong>private final var STAT_2_RECT : Rect = new Rect (252, 244, 331, 142);</strong></span>
+<span class="strong"><strong>private final var HP_RECT : Rect = new Rect (313, 75, 120, 25);</strong></span>
+<span class="strong"><strong>private final var MP_RECT : Rect = new Rect (313, 100, 120, 25);</strong></span>
+<span class="strong"><strong>private final var LV_RECT : Rect = new Rect (313, 124, 120, 25);</strong></span>
+<span class="strong"><strong>private final var EXP_RECT : Rect = new Rect (313, 150, 120, 25);</strong></span>
+<span class="strong"><strong>private final var NEXT_RECT : Rect = new Rect (313, 177, 120, 25);</strong></span>
+<span class="strong"><strong>private final var ATK_RECT : Rect = new Rect (529, 75, 50, 25);</strong></span>
+<span class="strong"><strong>private final var DEF_RECT : Rect = new Rect (529, 100, 50, 25);</strong></span>
+<span class="strong"><strong>private final var AGI_RECT : Rect = new Rect (529, 124, 50, 25);</strong></span>
+<span class="strong"><strong>private final var INT_RECT : Rect = new Rect (529, 150, 50, 25);</strong></span>
+<span class="strong"><strong>private final var LUC_RECT : Rect = new Rect (529, 177, 50, 25);</strong></span>
+<span class="strong"><strong>private final var STAT_BOX_RECT : Rect = new Rect (237, 67, 360, 147);</strong></span>
+<span class="strong"><strong>private final var WEAPON_BOX_RECT : Rect = new Rect (237, 230, 360, 207);</strong></span>
+<span class="strong"><strong>private final var WEAPON_LABEL_RECT : Rect = new Rect (252, 264, 180, 40);</strong></span>
+<span class="strong"><strong>private final var ARMOR_LABEL_RECT : Rect = new Rect (252, 324, 180, 40);</strong></span>
+<span class="strong"><strong>private final var ACCESS_LABEL_RECT : Rect = new Rect (252, 386, 180, 40);</strong></span>
+<span class="strong"><strong>private final var SKILL_TEX_RECT : Rect = new Rect (464, 288, 119, 117);</strong></span>
+<span class="strong"><strong>private final var SKILL_BOX_RECT : Rect = new Rect (460, 284, 127, 125);</strong></span>
+function Start () : void {
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+bool _isMenuOpen = false;  
+<span class="strong"><strong>public int fullHP = 9999;</strong></span>
+<span class="strong"><strong>public int fullMP = 999;</strong></span>
+<span class="strong"><strong>public int currentHP = 9999;</strong></span>
+<span class="strong"><strong>public int currentMP = 999;</strong></span>
+<span class="strong"><strong>public int currentLV = 99;</strong></span>
+<span class="strong"><strong>public int currentEXP = 9999999;</strong></span>
+<span class="strong"><strong>public int currentNEXT = 99999;</strong></span>
+<span class="strong"><strong>public int currentATK = 999;</strong></span>
+<span class="strong"><strong>public int currentDEF = 999;</strong></span>
+<span class="strong"><strong>public int currentAGI = 999;</strong></span>
+<span class="strong"><strong>public int currentINT = 999;</strong></span>
+<span class="strong"><strong>public int currentLUC = 999;</strong></span>
+<span class="strong"><strong>const int MAX_HP = 9999;</strong></span>
+<span class="strong"><strong>const int MAX_MP = 999;</strong></span>
+<span class="strong"><strong>const int MAX_LV = 99;</strong></span>
+<span class="strong"><strong>const int MAX_EXP = 9999999;</strong></span>
+<span class="strong"><strong>const int MAX_NEXT = 99999;</strong></span>
+<span class="strong"><strong>const int MAX_ATK = 999;</strong></span>
+<span class="strong"><strong>const int MAX_DEF = 999;</strong></span>
+<span class="strong"><strong>const int MAX_AGI = 999;</strong></span>
+<span class="strong"><strong>const int MAX_INT = 999;</strong></span>
+<span class="strong"><strong>const int MAX_LUC = 999;  </strong></span>
+<span class="strong"><strong>readonly Rect STAT_1_RECT = new Rect (252, 77, 331, 125);</strong></span>
+<span class="strong"><strong>readonly Rect STAT_2_RECT = new Rect (252, 244, 331, 142);</strong></span>
+<span class="strong"><strong>readonly Rect HP_RECT = new Rect (313, 75, 120, 25);</strong></span>
+<span class="strong"><strong>readonly Rect MP_RECT = new Rect (313, 100, 120, 25);</strong></span>
+<span class="strong"><strong>readonly Rect LV_RECT = new Rect (313, 124, 120, 25);</strong></span>
+<span class="strong"><strong>readonly Rect EXP_RECT = new Rect (313, 150, 120, 25);</strong></span>
+<span class="strong"><strong>readonly Rect NEXT_RECT = new Rect (313, 177, 120, 25);</strong></span>
+<span class="strong"><strong>readonly Rect ATK_RECT = new Rect (529, 75, 50, 25);</strong></span>
+<span class="strong"><strong>readonly Rect DEF_RECT = new Rect (529, 100, 50, 25);</strong></span>
+<span class="strong"><strong>readonly Rect AGI_RECT = new Rect (529, 124, 50, 25);</strong></span>
+<span class="strong"><strong>readonly Rect INT_RECT = new Rect (529, 150, 50, 25);</strong></span>
+<span class="strong"><strong>readonly Rect LUC_RECT = new Rect (529, 177, 50, 25);</strong></span>
+<span class="strong"><strong>readonly Rect STAT_BOX_RECT = new Rect (237, 67, 360, 147);</strong></span>
+<span class="strong"><strong>readonly Rect WEAPON_BOX_RECT = new Rect (237, 230, 360, 207);</strong></span>
+<span class="strong"><strong>readonly Rect WEAPON_LABEL_RECT = new Rect (252, 264, 180, 40);</strong></span>
+<span class="strong"><strong>readonly Rect ARMOR_LABEL_RECT = new Rect (252, 324, 180, 40);</strong></span>
+<span class="strong"><strong>readonly Rect ACCESS_LABEL_RECT = new Rect (252, 386, 180, 40);</strong></span>
+<span class="strong"><strong>readonly Rect SKILL_TEX_RECT = new Rect (464, 288, 119, 117);</strong></span>
+<span class="strong"><strong>readonly Rect SKILL_BOX_RECT = new Rect (460, 284, 127, 125);</strong></span>
+void Start () {
+…</pre></div><p>We basically created variables for the <code class="literal">Rect</code> positions for each UI texture and text labels for each attribute.</p></li><li><p>Next, we will create a new function in this <code class="literal">menu</code> script after the <code class="literal">DoMyWindow()</code> function and call it <code class="literal">CheckMax()</code>, which will limit the maximum<a id="id297" class="indexterm"></a> and minimum values of the <a id="id298" class="indexterm"></a>attributes that are<a id="id299" class="indexterm"></a> highlighted in the following code.</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private function DoMyWindow (windowID : int) : void {
+…
+}
+<span class="strong"><strong>private function CheckMax () : void {</strong></span>
+<span class="strong"><strong>  fullHP = Mathf.Clamp(fullHP, 0, MAX_HP);</strong></span>
+<span class="strong"><strong>  fullMP = Mathf.Clamp(fullMP, 0, MAX_MP);</strong></span>
+<span class="strong"><strong>  currentHP = Mathf.Clamp(currentHP, 0, fullHP);</strong></span>
+<span class="strong"><strong>  currentMP = Mathf.Clamp(currentMP, 0, fullMP);</strong></span>
+<span class="strong"><strong>  currentLV = Mathf.Clamp(currentLV, 0, MAX_LV);</strong></span>
+<span class="strong"><strong>  currentEXP = Mathf.Clamp(currentEXP, 0, MAX_EXP);</strong></span>
+<span class="strong"><strong>  currentNEXT = Mathf.Clamp(currentNEXT, 0, MAX_NEXT);</strong></span>
+<span class="strong"><strong>  currentATK = Mathf.Clamp(currentATK, 0, MAX_ATK);</strong></span>
+<span class="strong"><strong>  currentDEF = Mathf.Clamp(currentDEF, 0, MAX_DEF);</strong></span>
+<span class="strong"><strong>  currentAGI = Mathf.Clamp(currentAGI, 0, MAX_AGI);</strong></span>
+<span class="strong"><strong>  currentINT = Mathf.Clamp(currentINT, 0, MAX_INT);</strong></span>
+<span class="strong"><strong>  currentLUC = Mathf.Clamp(currentLUC, 0, MAX_LUC);</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+void DoMyWindow (int windowID ) {
+  …
+}
+<span class="strong"><strong>void CheckMax () {</strong></span>
+<span class="strong"><strong>  fullHP = Mathf.Clamp(fullHP, 0, MAX_HP);</strong></span>
+<span class="strong"><strong>  fullMP = Mathf.Clamp(fullMP, 0, MAX_MP);</strong></span>
+<span class="strong"><strong>  currentHP = Mathf.Clamp(currentHP, 0, fullHP);</strong></span>
+<span class="strong"><strong>  currentMP = Mathf.Clamp(currentMP, 0, fullMP);</strong></span>
+<span class="strong"><strong>  currentLV = Mathf.Clamp(currentLV, 0, MAX_LV);</strong></span>
+<span class="strong"><strong>  currentEXP = Mathf.Clamp(currentEXP, 0, MAX_EXP);</strong></span>
+<span class="strong"><strong>  currentNEXT = Mathf.Clamp(currentNEXT, 0, MAX_NEXT);</strong></span>
+<span class="strong"><strong>  currentATK = Mathf.Clamp(currentATK, 0, MAX_ATK);</strong></span>
+<span class="strong"><strong>  currentDEF = Mathf.Clamp(currentDEF, 0, MAX_DEF);</strong></span>
+<span class="strong"><strong>  currentAGI = Mathf.Clamp(currentAGI, 0, MAX_AGI);</strong></span>
+<span class="strong"><strong>  currentINT = Mathf.Clamp(currentINT, 0, MAX_INT);</strong></span>
+<span class="strong"><strong>  currentLUC = Mathf.Clamp(currentLUC, 0, MAX_LUC);</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Then, we will create a <code class="literal">StatusWindow()</code> function, which will show all<a id="id300" class="indexterm"></a> the statuses in the menu window, so add <a id="id301" class="indexterm"></a>this function <a id="id302" class="indexterm"></a>after <code class="literal">CheckMax()</code>.</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private function CheckMax () : void {
+  …
+}
+<span class="strong"><strong>private function StatusWindow() : void {</strong></span>
+<span class="strong"><strong>  GUI.Box (STAT_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.Box (WEAPON_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>  GUI.DrawTexture(STAT_1_RECT, statBox1Texture);</strong></span>
+<span class="strong"><strong>  GUI.DrawTexture(STAT_2_RECT, statBox2Texture);</strong></span>
+<span class="strong"><strong>  GUI.DrawTexture(SKILL_BOX_RECT, skillBoxTexture);</strong></span>
+<span class="strong"><strong>  CheckMax();</strong></span>
+<span class="strong"><strong>  GUI.Label(HP_RECT, currentHP.ToString() + "/" + fullHP.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(MP_RECT, currentMP.ToString() + "/" + fullMP.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(LV_RECT, currentLV.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(EXP_RECT, currentEXP.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(NEXT_RECT, currentNEXT.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(ATK_RECT, currentATK.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(DEF_RECT, currentDEF.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(AGI_RECT, currentAGI.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(INT_RECT, currentINT.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>  GUI.Label(LUC_RECT, currentLUC.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+void CheckMax () {
+  …
+}
+<span class="strong"><strong>void StatusWindow() {</strong></span>
+<span class="strong"><strong>    GUI.Box (STAT_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>    GUI.Box (WEAPON_BOX_RECT, "");</strong></span>
+<span class="strong"><strong>    GUI.DrawTexture(STAT_1_RECT, statBox1Texture);</strong></span>
+<span class="strong"><strong>    GUI.DrawTexture(STAT_2_RECT, statBox2Texture);</strong></span>
+<span class="strong"><strong>    GUI.DrawTexture(SKILL_BOX_RECT, skillBoxTexture);</strong></span>
+<span class="strong"><strong>    CheckMax();</strong></span>
+<span class="strong"><strong>    GUI.Label(HP_RECT, currentHP.ToString() + "/" + fullHP.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(MP_RECT, currentMP.ToString() + "/" + fullMP.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(LV_RECT, currentLV.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(EXP_RECT, currentEXP.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(NEXT_RECT, currentNEXT.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(ATK_RECT, currentATK.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(DEF_RECT, currentDEF.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(AGI_RECT, currentAGI.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(INT_RECT, currentINT.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>    GUI.Label(LUC_RECT, currentLUC.ToString(), "Text Amount");</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Then, we need to call <code class="literal">StatusWindow()</code> from our <code class="literal">DoMyWindow()</code> to make it<a id="id303" class="indexterm"></a> show<a id="id304" class="indexterm"></a> up on our menu window; for this, go back to the <code class="literal">DoMyWindow()</code> function and add the highlighted code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private function DoMyWindow (windowID : int) : void {
+  _currentTool = GUI.Toolbar (TAB_BTN_RECT, parseInt(_currentTool), TOOLBARS, GUI.skin.GetStyle("Tab Button"));
+<span class="strong"><strong>  switch (_currentTool) {</strong></span>
+<span class="strong"><strong>    case TAB.STATUS : //Status</strong></span>
+<span class="strong"><strong>      StatusWindow();</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+      }
+  GUI.DrawTexture(HERO_RECT, heroTexture);
+  …
+}
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+void DoMyWindow (int windowID ) {
+  _currentTool = (TAB) GUI.Toolbar (TAB_BTN_RECT, (int)_currentTool, TOOLBARS, GUI.skin.GetStyle("Tab Button"));
+<span class="strong"><strong>  switch (_currentTool) {</strong></span>
+<span class="strong"><strong>    case TAB.STATUS : //Status</strong></span>
+<span class="strong"><strong>      StatusWindow();</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+      }  
+  GUI.DrawTexture(HERO_RECT, heroTexture);
+  …
+}</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip13"></a>Tip</h3><p>
+<code class="literal">switch-case</code>: To make the code run efficiently, why don't we use the <code class="literal">if-else</code> statement? Well, the <code class="literal">switch-case</code> statement makes the code easier to read, and also, this<a id="id305" class="indexterm"></a> performs faster because the complier doesn't need to compare the value of each state before jumping to the next one, which might be the case when we use the <code class="literal">if-else</code> statement. The last state might take more time to access because of waiting for the previous state to finish.</p><p>Basically, for the <code class="literal">switch-case</code> statement, all the items will get access at the same time. In our case, we will add another two states later in the next step. Even though there is a slight boost in our code, it recommended to use the <code class="literal">switch-case</code> if we have more than two states.</p></div><p>We can go back to Unity and click on <span class="strong"><strong>Play</strong></span> to see the result; we will see that all the attributes are shown in the window. However, we will still see that there is no text shown under the <span class="strong"><strong>Weapon</strong></span>, <span class="strong"><strong>Armor</strong></span>, and <span class="strong"><strong>Accessory</strong></span> sections.</p></li><li><p>Next, we<a id="id306" class="indexterm"></a> will <a id="id307" class="indexterm"></a>create a new class named <code class="literal">Item</code>, which basically contains the information of the item, icon, and name. For this, go to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for Unity JavaScript users) or <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> (for C# users), name it <code class="literal">Item</code>, double-click on it to launch MonoDevelop, and replace the code as follows.</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+var icon : Texture;
+var info : String;
+private var _guiContent : GUIContent;
+function get guiContent () : GUIContent {
+  return new GUIContent(this.name, this.icon, this.info);
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+[System.Serializable]
+public class Item : MonoBehaviour {
+  public Texture icon;
+  public string info;
+  GUIContent _guiContent;
+  public GUIContent guiContent {
+    get { return new GUIContent(this.name, this.icon, this.info); }
+  }
+}</pre></div><p>This class is basically to set the information of each item and then return the information as <code class="literal">GUIContent</code> via the <code class="literal">guiContent()</code> function, which will be shown in our information window.</p></li><li><p>Then, we<a id="id308" class="indexterm"></a> need<a id="id309" class="indexterm"></a> to create a class called <code class="literal">ItemsContainer</code> to contain all the items, initializations, and to set the scroll view (which we will use in the next step); go to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for Unity JavaScript users) or <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> (for C# users), name it <code class="literal">ItemsContainer</code>, double-click on it to launch <span class="strong"><strong>MonoDevelop</strong></span>, and replace the code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+class ItemsContainer {
+private final var UNEQUIP : String = "UNEQUIP";
+  private final var NONE : String = "NONE";
+  private var _guiContent : GUIContent;
+  private var _isEquipment : boolean;
+  function get guiContent () : GUIContent { 
+    return _guiContent;
+  }
+  function Init ( isEquipment : boolean ) : void {
+    _isEquipment = isEquipment;  
+    _guiContent = (_isEquipment) ? new GUIContent(UNEQUIP) : new GUIContent(NONE);
+  }
+}
+
+
+// C# user (put the code inside the class):
+
+using UnityEngine;
+using System.Collections;
+[System.Serializable]
+public class ItemsContainer {
+  const string UNEQUIP = "UNEQUIP";
+  const string NONE = "NONE";  
+  GUIContent _guiContent;  
+  bool _isEquipment;
+  public GUIContent guiContent {
+    get { return _guiContent; }
+  }
+  public void Init ( bool isEquipment ) {
+    _isEquipment = isEquipment;
+    _guiContent = (_isEquipment) ? new GUIContent(UNEQUIP) : new GUIContent(NONE);
+  }
+}</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip14"></a>Tip</h3><p>
+<code class="literal">get</code>: We use the <code class="literal">get</code> keyword<a id="id310" class="indexterm"></a> here because we don't want to set a value outside of this class. This is very helpful to prevent an error from setting the value of this variable outside of this class.</p></div></li><li><p>Next, we <a id="id311" class="indexterm"></a>still <a id="id312" class="indexterm"></a>need to create the last class, which is similar to the <code class="literal">ItemsContainer</code> class, but this one will contain the skill information; go to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for Unity JavaScript users) or <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> (for C# users), name it <code class="literal">SkillsContainer</code>, double-click on it to launch <span class="strong"><strong>MonoDevelop</strong></span>, and replace the code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+class SkillsContainer {
+  private var _guiContent : GUIContent;
+  private var _skillBoxTexture : Texture;
+  function get guiContent () : GUIContent {
+    return _guiContent;
+  }
+  function Init ( skillBoxTexture : Texture ) : void {
+    _guiContent = new GUIContent("");
+    _skillBoxTexture = skillBoxTexture;
+  }
+}
+
+
+<span class="strong"><strong>// C# user (put the code inside the class):</strong></span>
+
+using UnityEngine;
+using System.Collections;
+[System.Serializable]
+public class SkillsContainer {  
+  GUIContent _guiContent;
+  Texture _skillBoxTexture;
+  public GUIContent guiContent {
+    get { return _guiContent; }
+  }
+  public void Init ( Texture skillBoxTexture ) {
+    _guiContent = new GUIContent("");
+    _skillBoxTexture = skillBoxTexture;
+  }
+}</pre></div></li><li><p>Then, we <a id="id313" class="indexterm"></a>will add<a id="id314" class="indexterm"></a> variables and initialize it to our menu script; open the menu script and type the following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+…
+private final var SKILL_BOX_RECT : Rect = new Rect (460, 284, 127, 125);
+<span class="strong"><strong>var weapons : ItemsContainer;</strong></span>
+<span class="strong"><strong>var armors : ItemsContainer;</strong></span>
+<span class="strong"><strong>var accessories : ItemsContainer;</strong></span>
+<span class="strong"><strong>var items : ItemsContainer;</strong></span>
+<span class="strong"><strong>var skills : SkillsContainer;</strong></span>
+function Start () : void {
+  _isMenuOpen = false;
+<span class="strong"><strong>  weapons.Init(true);</strong></span>
+<span class="strong"><strong>  armors.Init(true);</strong></span>
+<span class="strong"><strong>  accessories.Init(true);</strong></span>
+<span class="strong"><strong>  items.Init(false);</strong></span>
+<span class="strong"><strong>  skills.Init(skillBoxTexture);</strong></span>
+}
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+…
+readonly Rect SKILL_BOX_RECT = new Rect (460, 284, 127, 125);
+<span class="strong"><strong>public ItemsContainer weapons;</strong></span>
+<span class="strong"><strong>public ItemsContainer armors;</strong></span>
+<span class="strong"><strong>public ItemsContainer accessories;</strong></span>
+<span class="strong"><strong>public ItemsContainer items;</strong></span>
+<span class="strong"><strong>public SkillsContainer skills;</strong></span>
+void Start () {
+  _isMenuOpen = false;
+<span class="strong"><strong>  weapons.Init(true);</strong></span>
+<span class="strong"><strong>  armors.Init(true);</strong></span>
+<span class="strong"><strong>  accessories.Init(true);</strong></span>
+<span class="strong"><strong>  items.Init(false);</strong></span>
+<span class="strong"><strong>  skills.Init(skillBoxTexture);</strong></span>
+}
+…</pre></div></li><li><p>Lastly, we <a id="id315" class="indexterm"></a>go to the <code class="literal">StatusWindow()</code> function in this <code class="literal">SkillsCointainer</code> class, and add the<a id="id316" class="indexterm"></a> following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+private function StatusWindow() : void {
+  …
+  GUI.Label(LUC_RECT, currentLUC.ToString(), "Text Amount");
+<span class="strong"><strong>  GUI.Label(WEAPON_LABEL_RECT, weapons.guiContent, "Text Item");</strong></span>
+<span class="strong"><strong>  GUI.Label(ARMOR_LABEL_RECT, armors.guiContent, "Text Item");</strong></span>
+<span class="strong"><strong>  GUI.Label(ACCESS_LABEL_RECT, accessories.guiContent, "Text Item");</strong></span>
+<span class="strong"><strong>  GUI.Label(SKILL_TEX_RECT, skills.guiContent, "Text Item");</strong></span>
+}
+
+
+<span class="strong"><strong>// C# user (put the code inside the class):</strong></span>
+
+void StatusWindow() {
+  …
+  GUI.Label(LUC_RECT, currentLUC.ToString(), "Text Amount");
+<span class="strong"><strong>  GUI.Label(WEAPON_LABEL_RECT, weapons.guiContent, "Text Item");</strong></span>
+<span class="strong"><strong>  GUI.Label(ARMOR_LABEL_RECT, armors.guiContent, "Text Item");</strong></span>
+<span class="strong"><strong>  GUI.Label(ACCESS_LABEL_RECT, accessories.guiContent, "Text Item");</strong></span>
+<span class="strong"><strong>  GUI.Label(SKILL_TEX_RECT, skills.guiContent, "Text Item");</strong></span>
+}</pre></div></li><li><p>Now, we can go back to Unity, click on <span class="strong"><strong>Play</strong></span>, and press the <span class="emphasis"><em>M</em></span> key to bring up our menu window. We will see all the attributes for our character, as<a id="id317" class="indexterm"></a> shown<a id="id318" class="indexterm"></a> in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_24.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec46"></a>Objective complete – mini debriefing</h3></div></div></div><p>We just created the <code class="literal">Item</code>, <code class="literal">ItemsContainer</code>, and <code class="literal">SkillsContainer</code> classes to contain our items and skills information, which will be shown on the equipment box. All these classes will be used in the next step to create the item's scroll view. Then, in the <code class="literal">Start()</code> function, we<a id="id319" class="indexterm"></a> initialized items, equipments, and skills. In this function, we also set the equipment to the default state, which is the <code class="literal">UNEQUIP</code> state.</p><p>Next, we created the <code class="literal">StatusWindow()</code> function<a id="id320" class="indexterm"></a> to show the <span class="strong"><strong>STATUS</strong></span> page when the players see our menu when they first click on the <span class="strong"><strong>STATUS</strong></span> tab. We also created a <code class="literal">CheckMax()</code> function to make sure that the number of the character<a id="id321" class="indexterm"></a> attributes is not over or under the limit.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec47"></a>Classified intel</h3></div></div></div><p>In this section, we used <code class="literal">GUIContent</code> to contain information of our items and skills, then passed it to the <code class="literal">GUI.Label()</code> function. Basically, if we take a look at each <code class="literal">GUI</code> class's function, we will see that they can take many variables such as <code class="literal">Rect</code>, <code class="literal">string</code>, <code class="literal">Texture</code>, <code class="literal">GUIContent</code>, and <code class="literal">GUIStyle</code>. We already know <code class="literal">Rect</code>, <code class="literal">string</code>, and <code class="literal">Texture</code>. Also, <code class="literal">GUIStyle</code> is the name of the style from our <code class="literal">MenuSkin</code> object that we created, but what is <code class="literal">GUIContent</code>? It is basically a class that contains the necessary variables (image, text, and tooltip) to apply to our GUI. For example, if we want our button to have an icon, name, and information when the user rolls over it, we can add the following code:</p><div class="informalexample"><pre class="programlisting">GUI.Button(Rect(0,0,100,20), GUIContent("My Button Name", icon, "This is the button info").</pre></div><p>The first parameter is the string that will be the text or in our case, it is the button name, which is seen on the button, and next is the graphic's texture or icon that will also be seen on this button. The last <a id="id322" class="indexterm"></a>string is the information that will be stored in<a id="id323" class="indexterm"></a> this button, which we call tooltip. We can show this tooltip when the user rolls over this button by calling <code class="literal">GUI.tooltip</code>. This will automatically show the current button's tooltip that the user rolls over. We will use it in the next section.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note19"></a>Note</h3><p>For more details about <code class="literal">GUIContent</code> and <code class="literal">GUI.tooltip</code>, check out the following website:</p><p>
+<a class="ulink" href="http://unity3d.com/support/documentation/ScriptReference/GUIContent.html" target="_blank">http://unity3d.com/support/documentation/ScriptReference/GUIContent.html</a>
+</p></div></div></div>

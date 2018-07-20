@@ -1,0 +1,81 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec64"></a>Creating a networked object</h2></div></div><hr /></div><p>Before we <a id="id283" class="indexterm"></a>can apply interpolation or prediction, we'll need a base to build off of. We'll create a networked object which can be moved around via arrow keys. We'll start with absolutely no interpolation whatsoever—the object instantly appears at the newest location received over the network.</p><p>First, let's create a very simple player script.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Player : MonoBehaviour
+{
+  public float MoveSpeed = 5f;
+
+  void Update()
+  {
+    if( networkView == null || networkView.isMine )
+    {
+      transform.Translate( new Vector3( Input.GetAxis( "Horizontal" ), 0, Input.GetAxis( "Vertical" ) ) * MoveSpeed * Time.deltaTime );
+    }
+  }
+}</pre></div><p>This script is very basic. It simply checks if the network view belongs to the local player (or does not exist), and if so it moves the transform with the horizontal and vertical axes (in Unity, by default these correspond to WASD and arrow key pairs, as well as left thumb stick axes on many controllers).</p><p>We'll also create our networking script, which is watched by the network view:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class NetworkedPlayer : MonoBehaviour
+{
+  void OnSerializeNetworkView( BitStream stream, NetworkMessageInfo info )
+  {
+    Vector3 position = Vector3.zero;
+    if( stream.isWriting )
+    {
+      position = transform.position;
+      stream.Serialize( ref position );
+    }
+    else
+    {
+      stream.Serialize( ref position );
+      transform.position = position;
+    }
+  }
+}</pre></div><p>This is the <a id="id284" class="indexterm"></a>absolute simplest script for networking. It simply sends and receives position. Upon receiving position it immediately "snaps" to the received value. Naturally, this is going to suffer the most in the presence of lag—even the smallest delay will be noticeable, and even with zero lag, position updates will appear jittery as most games send position updates between 10 to 20 times per second. However, it will serve well as the basis for our demo.</p><p>To complete our testbed, we'll create two scenes: Our main menu, and our networked scene. I'll name these <code class="literal">MainMenu</code> and <code class="literal">GameScene</code>.</p><p>We'll first create the script for the main menu as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class MainMenu : MonoBehaviour
+{
+  private string connectIP = "127.0.0.1";
+
+  void OnGUI()
+  {
+    if( GUILayout.Button( "Host" ) )
+    {
+      // host a game
+      Network.InitializeServer( 8, 25005, true );
+
+      // load level
+      Application.LoadLevel( "GameScene" );
+    }
+
+    connectIP = GUILayout.TextField( connectIP );
+    if( GUILayout.Button( "Connect" ) )
+    {
+      // connect
+      Network.Connect( connectIP, 25005 );
+    }
+  }
+
+  void OnConnectedToServer()
+  {
+    Network.isMessageQueueRunning = false;
+
+    // load level
+    Application.LoadLevel( "GameScene" );
+  }
+}</pre></div><p>This script<a id="id285" class="indexterm"></a> allows the user to either host a server (by clicking on the <span class="strong"><strong>Host</strong></span> button), or connect to a server (by entering the server's IP and clicking on <span class="strong"><strong>Connect</strong></span>).</p><p>In both cases, the game will load the <code class="literal">GameScene</code> object after hosting or joining a game. If the user is joining a server, it will additionally disable the network queue, so that important messages do not arrive until the level has been loaded (otherwise, as covered in the first chapter, spawned objects will be deleted upon level load).</p><p>Place this script on an empty object in the <code class="literal">MainMenu</code> scene.</p><p>Next, we'll create a script to spawn our networked object. For simplicity, we'll simply spawn at the game object position the script is attached to. In a real game you might randomly select a spawn point.</p><p>Note that we use a coroutine for this. We first wait for two frames, then enable the message queue and spawn our object.</p><p>This is because, if we join a server, we've disabled the network queue before loading the level. Level loading takes two frames, so we'll need to wait for those two frames and then enable the message queue.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SpawnPlayer : MonoBehaviour
+{
+  public GameObject Player;
+
+  IEnumerator Start()
+  {
+    yield return null;
+    yield return null;
+    Network.isMessageQueueRunning = true;
+    Network.Instantiate( Player, Vector3.zero, Quaternion.identity, 0 );
+  }
+}</pre></div><p>This is placed on an empty game object in our game scene. We'll also need to save our networked object as a prefab and drag it onto the <code class="literal">Player</code> slot.</p><p>If you run the<a id="id286" class="indexterm"></a> game now, you should have an example with movable cubes for each player. As you can see, movement of other players appears very jittery. We're going to resolve this using interpolation.</p></div>

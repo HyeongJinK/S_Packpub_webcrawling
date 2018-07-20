@@ -1,0 +1,110 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec20"></a>Wrapping up</h2></div></div><hr /></div><p>The entire <a id="id98" class="indexterm"></a>
+<code class="literal">PlayerInput</code> class should look similar to the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System;
+
+public class PlayerInput : MonoBehaviour
+{
+  public struct SimpleTouch
+  {
+    public Vector2 StartTouchLocation;
+    public Vector2 CurrentTouchLocation;
+    public DateTime StartTime;
+    public TouchPhase Phase;
+  }
+
+  public float SwipeTime;
+  public float SwipeDistance;
+
+  private SimpleTouch ActiveTouch;
+  private Touch DeviceTouch;
+
+  private void CalculateTouchInput(SimpleTouch CurrentTouch)
+  {
+    Vector2 touchDirection  =
+    (CurrentTouch.CurrentTouchLocation - 
+    CurrentTouch.StartTouchLocation).normalized;
+
+    float touchDistance = 
+    (CurrentTouch.StartTouchLocation - 
+    CurrentTouch.CurrentTouchLocation).magnitude;
+
+    TimeSpan timeGap = 
+    System.DateTime.Now - CurrentTouch.StartTime;
+
+    double touchTimeSpan = 
+    timeGap.TotalSeconds;
+
+    string touchType =
+    ( touchDistance &gt; SwipeDistance 
+    &amp;&amp; touchTimeSpan &gt; SwipeTime ) ? "Swipe" : "Tap";
+
+    print(touchType);
+  }
+
+  /* Use this for initialization */
+  void Start ()
+  {
+    ActiveTouch.Phase = TouchPhase.Canceled;
+  }
+
+  /* Update is called once per frame */
+  void Update () 
+  {
+    if (Application.isEditor)
+    {
+      if (Input.GetMouseButton(0))
+      {
+        if (ActiveTouch.Phase == TouchPhase.Canceled)
+        {
+          ActiveTouch.CurrentTouchLocation = Input.mousePosition;
+          ActiveTouch.StartTouchLocation = Input.mousePosition;
+          ActiveTouch.StartTime = System.DateTime.Now;
+          ActiveTouch.Phase = TouchPhase.Began;
+        }
+        else
+        {
+          ActiveTouch.CurrentTouchLocation = Input.mousePosition;
+        }
+      }
+      else
+      {
+        if (ActiveTouch.Phase == TouchPhase.Began)
+        {
+          CalculateTouchInput( ActiveTouch );
+          ActiveTouch.Phase = TouchPhase.Canceled;
+        }
+      }
+    }
+    else
+    {
+      if (Input.touches.Length &gt; 0)
+      {
+        DeviceTouch = Input.GetTouch(0);
+        if (ActiveTouch.Phase == TouchPhase.Canceled)
+        {
+          ActiveTouch.Phase = DeviceTouch.phase;
+          ActiveTouch.StartTime = System.DateTime.Now;
+
+          ActiveTouch.StartTouchLocation =
+          DeviceTouch.position;
+          ActiveTouch.CurrentTouchLocation = 
+          DeviceTouch.position;
+        }
+        else
+        {
+          ActiveTouch.CurrentTouchLocation =
+          DeviceTouch.position;
+        }
+      }
+      else
+      {
+        if (ActiveTouch.Phase != TouchPhase.Canceled)
+        {
+          CalculateTouchInput( ActiveTouch );
+          ActiveTouch.Phase = TouchPhase.Canceled;
+        }
+      }
+    }
+  }
+}</pre></div><p>This is the input class. This class is made to be simple because it will cater to our game specifically. Some <a id="id99" class="indexterm"></a>games will require managing multiple inputs, input recognition for different types of swipe patters, and input that would register to in the world (such as tapping a box in the game world to have it explode).</p></div>

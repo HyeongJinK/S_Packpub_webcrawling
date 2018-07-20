@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec98"></a>Loading external resource files – by downloading files from the Internet</h2></div></div><hr /></div><p>One way to store and read a text file data is to store the text files on the Web. In this recipe, the<a id="id1037" class="indexterm"></a> contents of a text file for a given URL are downloaded, read, and then displayed.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec291"></a>Getting ready</h3></div></div></div><p>For this recipe, you need to have access to the files on a web server. If you run a local web server such as <a id="id1038" class="indexterm"></a><span class="strong"><strong>Apache</strong></span>, or have your own web hosting, then you can use the files in the <code class="literal">1362_10_01</code> folder and the corresponding URL.</p><p>Otherwise, you may find the following URLs useful; since they are the web locations of an image file (a Packt Publishing logo) and a text file (an ASCII-art badger picture):</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://www.packtpub.com/sites/default/files/packt_logo.png" target="_blank">www.packtpub.com/sites/default/files/packt_logo.png</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://www.ascii-art.de/ascii/ab/badger.txt" target="_blank">www.ascii-art.de/ascii/ab/badger.txt</a>
+</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec292"></a>How to do it...</h3></div></div></div><p>To load external resources by downloading them from the Internet, do the following:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In a 2D project, create a new <code class="literal">RawImage</code> UI GameObject.</p></li><li><p>Add the following C# script class as a component of your image object:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+
+public class ReadImageFromWeb : MonoBehaviour {
+  public string url = "http://www.packtpub.com/sites/default/files/packt_logo.png";
+
+  IEnumerator Start() {
+    WWW www = new WWW(url);
+    yield return www;
+    Texture2D texture = www.texture;
+    GetComponent&lt;RawImage&gt;().texture = texture;
+  }
+}</pre></div></li><li><p>Play the scene. Once downloaded, the contents of the image file will be displayed:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_10_05.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec293"></a>How it works...</h3></div></div></div><p>Note the need to use the <code class="literal">UnityEngine.UI</code> package for this recipe.</p><p>When the game starts, our <code class="literal">Start()</code> method starts the <a id="id1039" class="indexterm"></a><span class="strong"><strong>coroutine</strong></span> method called <code class="literal">LoadWWW()</code>. A coroutine is a method that can keep on running in the background without halting or slowing down the other parts of the game and the frame rate. The <code class="literal">yield</code> statement indicates that once a value can be returned for <code class="literal">imageFile</code>, the remainder of the method can be executed—that is, until the file has finished downloading, no attempt should be made to extract the texture property of the <code class="literal">WWW</code> object variable.</p><p>Once the image data has been loaded, execution will progress past the <code class="literal">yield</code> statement. Finally, the <code class="literal">texture</code> property of the <code class="literal">RawImage</code> GameObject, to which the script is attached, is<a id="id1040" class="indexterm"></a> changed to the image data that is downloaded from the Web (inside the <code class="literal">texture</code> variable of the <code class="literal">www</code> object).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec294"></a>There's more...</h3></div></div></div><p>There are some details that you don't want to miss.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec76"></a>Converting from Texture to Sprite</h4></div></div></div><p>While in the recipe we used a UI <span class="strong"><strong>RawImage</strong></span>, and so could use the downloaded <span class="strong"><strong>Texture</strong></span> directly, there<a id="id1041" class="indexterm"></a> may be times when we wish to work with a <span class="strong"><strong>Sprite</strong></span> rather than a <span class="strong"><strong>Texture</strong></span>. Use this method to create a <span class="strong"><strong>Sprite</strong></span> object from a <span class="strong"><strong>Texture</strong></span>:</p><div class="informalexample"><pre class="programlisting">  private Sprite TextureToSprite(Texture2D texture){
+    Rect rect = new Rect(0, 0, texture.width, texture.height);
+    Vector2 pivot = new Vector2(0.5f, 0.5f);
+    Sprite sprite = Sprite.Create(texture, rect, pivot);
+    return sprite;
+  }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec77"></a>Downloading a text file from the Web</h4></div></div></div><p>Use this technique<a id="id1042" class="indexterm"></a> to download a text file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+
+public class ReadTextFromWeb : MonoBehaviour {
+  public string url = "http://www.ascii-art.de/ascii/ab/badger.txt";
+
+  IEnumerator Start(){
+    Text textUI = GetComponent&lt;Text&gt;();
+    textUI.text = "(loading file ...)";
+
+    WWW www = new WWW(url);
+    yield return www;
+    string textFileContents = www.text;
+    Debug.Log(textFileContents);
+
+    textUI.text = textFileContents;
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec78"></a>The WWW class and the resource contents</h4></div></div></div><p>The <code class="literal">WWW</code> class<a id="id1043" class="indexterm"></a> defines several different properties and methods to allow the downloaded media resource file data to be extracted into appropriate variables<a id="id1044" class="indexterm"></a> for use in the game. The most useful of these include:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">.text</code>: A read-only property, returning the web data as string</p></li><li style="list-style-type: disc"><p>
+<code class="literal">.texture</code>: A read-only property, returning the web data as a Texture2D image</p></li><li style="list-style-type: disc"><p>
+<code class="literal">.GetAudioClip()</code>: A method that returns the web data as an AudioClip</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note47"></a>Note</h3><p>For more information about the Unity <a id="id1045" class="indexterm"></a>
+<code class="literal">WWW</code> class visit <a class="ulink" href="http://docs.unity3d.com/ScriptReference/WWW.html" target="_blank">http://docs.unity3d.com/ScriptReference/WWW.html</a>.</p></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec295"></a>See also</h3></div></div></div><p>Refer to the following recipes in this chapter for more information:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="emphasis"><em>Loading external resource files – by Unity Default Resources</em></span>
+</p></li><li style="list-style-type: disc"><p>
+<span class="emphasis"><em>Loading external resource files – by manually storing files in the Unity Resources folder</em></span>
+</p></li></ul></div></div></div>

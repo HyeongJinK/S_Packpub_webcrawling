@@ -1,0 +1,226 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec18"></a>Practicing in shader optimization</h2></div></div><hr /></div><p>Now, it is time to discuss<a id="id213" class="indexterm"></a> how we can optimize our shaders. Alternatively, it is time to consider the other methods, such as optimizing built-in data types, which can significantly reduce the overhead of the Unity shaders' memory. We consider Unity shaders optimization for all supported platforms without any exclusions.</p><p>Very often, you will need to optimize shaders to achieve the same visual effect, but with a smaller number of textures for example. Primarily, when optimizing shader code, we would like to direct your attention to the types of variables. If you are willing to sacrifice the accuracy of calculations in order to decrease the quality to improve performance, then you should use the <code class="literal">half</code> or <code class="literal">fixed</code> variable types instead of <code class="literal">float</code>. As an example, you can use a <code class="literal">half</code> type of variable everywhere in your shader code:</p><div class="informalexample"><pre class="programlisting">inline half4 LightingCarVehicle (SurfaceOutput surface, half3 lightDirection, half3 viewDirection, half attenuation)</pre></div><p>You can also replace <code class="literal">float</code> with <code class="literal">half</code> in the following statement:</p><div class="informalexample"><pre class="programlisting">inline float4 LightingCarVehicle (SurfaceOutput surface, float3 lightDirection, float3 viewDirection, float attenuation)</pre></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">float</code>: These variables have 32 bits precision</p></li><li style="list-style-type: disc"><p>
+<code class="literal">half</code>: These variables have 16 bits precision</p></li><li style="list-style-type: disc"><p>
+<code class="literal">fixed</code>: These variables have 11 bits precision</p></li></ul></div><p>For example, let's optimize our previous shader code <code class="literal">CarVehicle.shader</code> as follows:</p><div class="informalexample"><pre class="programlisting">Shader "PacktPub/OptimizedCarVehicle"
+{
+        Properties 
+        {
+                _DiffuseTint ("Diffuse Tint", Color) = (1,1,1,1)
+                _MainTex ("Base (RGB)", 2D) = "white" {}
+                _DiffuseIntensity ("Diffuse Intensity", Range(0.01, 17)) = 7.7
+                _SpecularColor ("Specular Color", Color) = (1,1,1,1)
+                _SpecularIntensity ("Specular Intensity", Range(0.01, 50)) = 17
+                _ReflectionCubeMap ("Reflection Cube Map", CUBE) = "" {}
+                _BRDFTexture ("BRDF Texture", 2D) = "white" {}
+                _ReflectionIntensity ("Reflection Intensity", Range(0.01, 11.0)) = 5.0
+                _ReflectionCount ("Reflection Count", Range(0.01, 1.0)) = 0.17
+                _FalloffSpread ("Falloff Spread", Range(0.01, 17)) = 5.3
+        }
+  
+        SubShader 
+        {
+                Tags {"RenderType"="Opaque"}
+                LOD 200
+    
+                CGPROGRAM
+                #pragma surface surf CarVehicle
+
+                samplerCUBE _ReflectionCubeMap;
+    
+                sampler2D _MainTex;
+                sampler2D _BRDFTexture;
+    
+                fixed _SpecularIntensity;
+                fixed _DiffuseIntensity;
+                fixed _FalloffSpread;
+                fixed _ReflectionCount;
+                fixed _ReflectionIntensity;
+    
+                fixed4 _DiffuseTint;
+                fixed4 _SpecularColor;
+    
+                fixed4 c;
+                fixed3 halfVec;
+                fixed falloff;
+                fixed delta;
+                fixed halfVecDotSurfaceNormal;
+                fixed s;
+    
+                inline fixed4 LightingCarVehicle (SurfaceOutput surface, fixed3 lightDirection, fixed3 viewDirection, fixed attenuation)
+                {
+                        halfVec = normalize (lightDirection + viewDirection);
+                        delta = max (0, dot (surface.Normal, lightDirection));
+      
+                        halfVecDotSurfaceNormal = 1 - dot(halfVec, normalize(surface.Normal));
+                        halfVecDotSurfaceNormal = pow(clamp(halfVecDotSurfaceNormal, 0.0, 1.0), _DiffuseIntensity);
+                        c = tex2D(_BRDFTexture, fixed2(delta, 1 - halfVecDotSurfaceNormal));
+      
+                        s = pow (max (0, dot (surface.Normal, halfVec)), surface.Specular * _SpecularIntensity) * surface.Gloss;
+      
+                        c.rgb = (surface.Albedo * _LightColor0.rgb * c.rgb + _LightColor0.rgb * _SpecularColor.rgb * s)* (attenuation * 2);
+                        c.a = surface.Alpha + _LightColor0.a * _SpecularColor.a * s * attenuation;
+      
+                        return c;
+                }
+
+                struct Input 
+                {
+                        fixed2 uv_MainTex;
+      
+                        fixed3 worldRefl;
+      
+                        fixed3 viewDir;
+                };
+
+                void surf (Input IN, inout SurfaceOutput surface) 
+                {
+                        c = tex2D (_MainTex, IN.uv_MainTex);
+      
+                        falloff = pow(saturate(1 - dot(normalize(IN.viewDir), surface.Normal)), _FalloffSpread);
+      
+                        surface.Albedo = c.rgb * _DiffuseTint;
+                        surface.Emission = pow((texCUBE(_ReflectionCubeMap, IN.worldRefl).rgb * falloff), _ReflectionIntensity) * _ReflectionCount;
+                        surface.Specular = c.r;
+                        surface.Gloss = 1.0;
+                        surface.Alpha = c.a;
+                }
+                ENDCG
+        }
+  
+        FallBack "Diffuse"
+}</pre></div><p>To understand how to <a id="id214" class="indexterm"></a>develop shaders faster and better, you must understand that this can only be achieved by full optimization, using a variety of techniques and approaches. Let's divide our shader optimization process into the following three categories:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Optimization of memory used for variables</p></li><li style="list-style-type: disc"><p>Optimization of the number and size of used textures</p></li><li style="list-style-type: disc"><p>Optimization of computational algorithms</p></li></ul></div><p>All the mentioned points have been already discussed. Some of the ideas of how to optimize your shaders have been already considered earlier in this chapter, and we will show some more interesting approaches and techniques. We hope that most of the methods, techniques, approaches, and ideas of this book will greatly help you in production to achieve the desired quality and performance at the same time.</p><p>Also, while optimizing shaders you need to remember and know that the code should be as small as possible. This means that nothing unnecessary should be in your code. Many of the ideas described in the previous chapters, especially in the preceding fourth chapter, which talked about code optimization in C# and JavaScript, are well suited to optimize your shader code. Also, we want you to note that the frequency of execution of your shader code greatly affects the performance. Very often, shader developers use very good techniques in order to optimize their shaders. They prefer using vertex shaders instead of pixel shaders; this will greatly improve your performance in most cases, as there are significantly more pixels than vertices. Hence, processing the pixel shader frequency of the execution code will be much greater than for vertices.</p><p>Let's also consider the <a id="id215" class="indexterm"></a>directives that may well optimize your shaders:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">approxview</code>: This <a id="id216" class="indexterm"></a>approximation is good enough in many cases. You should use this directive when you need to get the normalized view direction per vertex instead of per pixel.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">halfasview</code>: This will be<a id="id217" class="indexterm"></a> computed and normalized per vertex halfway between view and light directions (half vector), and the lighting function will receive a <code class="literal">half</code> vector as a parameter instead of view vector.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">noforwardadd</code>: In the event<a id="id218" class="indexterm"></a> of rendering shaders in one pass, even with multiple lights, and in the event of making your shader smaller, this directive is the best choice for you. The shader will support only one directional light in forward rendering. The rest of the lights can still have an effect like vertex lights or spherical harmonics. The rest of the lights can be used for spherical harmonics or for vertex light effects.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">exclude_path:prepass</code>: The <a id="id219" class="indexterm"></a>shader that uses this directive will not accept any custom lighting from the deferred renderer.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">noambient</code>: This <a id="id220" class="indexterm"></a>directive should be used in the event of deactivating spherical harmonics and ambient lights on your shader. This can slightly enhance your performance.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">nolightmap</code>: This <a id="id221" class="indexterm"></a>directive disables Unity's internal light mapping system. In other words, it does not perform a light mapping check.</p></li></ul></div><p>
+<span class="strong"><strong>Alpha testing</strong></span> on mobile <a id="id222" class="indexterm"></a>devices is <a id="id223" class="indexterm"></a>very expensive, so you should use transparent shaders on mobile devices very accurately. You must use the alpha testing only when necessary. For example, let's cover optimized shader as follows:</p><div class="informalexample"><pre class="programlisting">Shader "PacktPub/OptimizedShaderExample"
+{
+        Properties 
+        {
+                _MainTex ("Base (RGB)", 2D) = "white" {}
+                _SpecularWidth ("Specular Width", Range(0.01, 1)) = 0.5
+                _NormalMapTexture ("Normal Map Texture", 2D) = "bump"{}
+        }
+  
+        SubShader 
+        {
+                Tags {"RenderType"="Opaque"}
+                LOD 200
+    
+                CGPROGRAM
+                #pragma surface surf OptimizedBlinnPhong exclude_path:prepass nolightmap noforwardadd halfasview
+
+                sampler2D _MainTex;
+                sampler2D _NormalMapTexture;
+                half _SpecularWidth;
+    
+                half4 c;
+                half d;
+                half s;
+
+                struct Input 
+                {
+                        half2 uv_MainTex;
+                };
+    
+                inline half4 LightingOptimizedBlinnPhong (SurfaceOutput surface, half3 lightDir, half3 halfDir, half atten)
+                {
+                        d = max(0, dot(surface.Normal, lightDir));
+                        s = pow(max(0, dot(surface.Normal, halfDir)), surface.Specular * 128) * surface.Gloss;
+      
+                        c.rgb = (surface.Albedo * _LightColor0.rgb * d + _LightColor0.rgb * s) * (atten * 2);
+                        c.a = 0.0;
+      
+                        return c;
+                }
+
+                void surf (Input IN, inout SurfaceOutput surface) 
+                {
+                        c = tex2D(_MainTex, IN.uv_MainTex);
+      
+                        surface.Albedo = c.rgb;
+                        surface.Gloss = c.a;
+                        surface.Alpha = 0.0;
+                        surface.Specular = _SpecularWidth;
+                        surface.Normal = UnpackNormal(tex2D(_NormalMapTexture, IN.uv_MainTex)).rgb;
+                }
+                ENDCG
+        }
+  
+        FallBack "Diffuse"
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec48"></a>Best case practice</h3></div></div></div><p>After our journey into the <a id="id224" class="indexterm"></a>world of diverse ideas, approaches, and techniques in the field of lighting calculations, let's look at the best practice in order to maintain many different shaders easily. Let's consider the possibility of reusability of our shader code; for example, various lighting functions in Unity. In order to avoid writing the same code for the same lighting function each time for a new shader, it's best to write the code lighting function once and then just use this in any shader if necessary, as programmers use different frameworks and libraries. This practice will help you create a framework for your shaders, which will greatly facilitate easy development and effortless shader maintenance. In the previous examples, we used built-in <code class="literal">CgIncludes</code> files such as <code class="literal">Lambert</code> and <code class="literal">BlinnPhong</code> lighting functions. Unity created these lighting models for us. Unity helps us reduce our efforts while writing performance-friendly and nice quality shaders.</p><p>You can view the code embedded in Unity built-in <code class="literal">CgIncludes</code> files, which are located inside a directory called <code class="literal">CgIncludes</code>. Without these files, it will be much harder to write shaders in Unity. That's why Unity surface shaders are so efficient. Let's create our own <code class="literal">CgInclude</code> file as follows:</p><div class="informalexample"><pre class="programlisting">#ifndef YOUR_NAME_INCLUDE
+#define YOUR_NAME_INCLUDE
+
+half4 _YourColorVariable;
+
+inline half4 LightingOptimizedLambert (SurfaceOutput surface, half3 lightDirection, half attenuation)
+{
+        half diffuseValue = max(0, dot(surface.Normal, lightDirection));
+        diffuseValue = (diffuseValue + 0.5) * 0.5;
+
+        half4 tmpColor;
+        tmpColor.rgb = surface.Albedo * _LightColor0.rgb * ((diffuseValue * _YourColorVariable.rgb) * attenuation * 2);
+        tmpColor.a = surface.Alpha;
+
+        return tmpColor;
+}
+
+#endif</pre></div><p>Now let's consider the code for the next shader as follows, where you can see how to use your <code class="literal">CgInclude</code> file with <a id="id225" class="indexterm"></a>your lighting function, and how you can declare your variable <code class="literal">_YourColorVariable</code>:</p><div class="informalexample"><pre class="programlisting">Shader "PacktPub/UsingCgIncludeOptimzedLambert"
+{
+        Properties 
+        {
+                _YourColorVariable ("Your Color Variable", Color) = (1,1,1,1)
+
+                _DiffuseTint ("Diffuse Tint", Color) = (1,1,1,1)
+                _MainTex ("Base (RGB)", 2D) = "white" {}
+                _NormalMapTexture ("Normal Map Texture", 2D) = "bump" {}
+                _CubeMapTexture ("Cube Map Texture", CUBE) = ""{}
+                _ReflectionCount ("Reflection Count", Range(0,1)) = 0.17
+        }
+  
+        SubShader
+        {
+                Tags {"RenderType"="Opaque"}
+                LOD 200
+    
+                CGPROGRAM
+                #include "YourCgIncludeOptimizedLambert.cginc"
+                #pragma surface surf OptimizedLambert
+
+                samplerCUBE _CubeMapTexture;
+    
+                sampler2D _MainTex;
+                sampler2D _NormalMapTexture;
+    
+                float4 _DiffuseTint;
+                float _ReflectionCount;
+    
+                float4 c;
+
+                struct Input 
+                {
+                        float2 uv_MainTex;
+      
+                        float2 uv_NormalMapTexture;
+      
+                        float3 worldRefl;
+      
+                        INTERNAL_DATA
+                };
+
+                void surf (Input IN, inout SurfaceOutput surface) 
+                {
+                        c = tex2D (_MainTex, IN.uv_MainTex);
+      
+                        surface.Normal = UnpackNormal(tex2D(_NormalMapTexture, IN.uv_NormalMapTexture)).rgb;
+                        surface.Emission = texCUBE (_CubeMapTexture, WorldReflectionVector(IN, surface.Normal)).rgb * _ReflectionCount;
+                        surface.Albedo = c.rgb * _DiffuseTint;
+                        surface.Alpha = c.a;
+                }
+                ENDCG
+        }
+
+        FallBack "Diffuse"
+}</pre></div><p>Thus, you can create a proper <a id="id226" class="indexterm"></a>framework of your own shaders. Also, you can use examples from this chapter and place all your code in the form of <code class="literal">CgIncludes</code> files. This will greatly help you avoid repetitions in the code, which will greatly simplify the development of shaders and also facilitate their optimization.</p></div></div>

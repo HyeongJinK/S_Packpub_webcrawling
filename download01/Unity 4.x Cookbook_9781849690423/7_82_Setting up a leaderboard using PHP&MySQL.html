@@ -1,0 +1,115 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec82"></a>Setting up a leaderboard using PHP/MySQL</h2></div></div><hr /></div><p>Games are more fun when there <a id="id568" class="indexterm"></a>is a leaderboard of high scores <a id="id569" class="indexterm"></a>that players have achieved. Even single-player games can communicate to a shared web-based leaderboard. This recipe includes both the client-side (Unity) code, as well as the web server-side PHP scripts to set and get player scores from a MySQL database, as seen in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_07_06.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec289"></a>Getting ready</h3></div></div></div><p>This recipe<a id="id570" class="indexterm"></a> assumes you either have your own web hosting, or are running a local web server and database server<a id="id571" class="indexterm"></a> such as XAMPP or MAMP. Your web server needs to support PHP, and you also need to be able to create MySQL databases.</p><p>All the SQL, PHP, and C# scripts for this recipe can be found in the <code class="literal">0423_07_10</code> folder.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note31"></a>Note</h3><p>If you are hosting your leaderboard on a public website, you should change the names of the database, database user, and password for security reasons. You should also implement some form of secret game code, as described in the <span class="emphasis"><em>There's more…</em></span> section.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec290"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>On your server, create a new MySQL database named <code class="literal">cookbook_highscores</code>.</p></li><li><p>On your server, create a new database user (<code class="literal">username</code>=<code class="literal">cookbook</code>. <code class="literal">password</code>=<code class="literal">cookbook</code>), with full rights to the database you just created.</p></li><li><p>On your server, execute the following SQL to create the <code class="literal">score_list</code> database table:</p><div class="informalexample"><pre class="programlisting">CREATE TABLE 'score_list' (
+  'id' int(11) NOT NULL AUTO_INCREMENT,
+  'player' varchar(25) NOT NULL,
+  'score' int(11) NOT NULL,
+  PRIMARY KEY ('id')
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;</pre></div></li><li><p>On your<a id="id572" class="indexterm"></a> server, <a id="id573" class="indexterm"></a>copy these provided PHP script files to your web server:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">index.php</code></p></li><li style="list-style-type: disc"><p><code class="literal">scoreFunctions.php</code></p></li><li style="list-style-type: disc"><p><code class="literal">htmlDefault.php</code></p></li></ul></div></li><li><p>Add the following script class to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: WebLeaderBoard.cs
+using UnityEngine;
+using System.Collections;
+using System;
+
+public class WebLeaderBoard : MonoBehaviour {
+  private string url;
+  private string action;
+  private string parameters;
+  private string textFileContents = "(still loading file ...)";
+
+  private void OnGUI() {
+    // hide closing tag
+    string prettyText = textFileContents.Replace("&lt;/", "?@?"); 
+    
+    // prefix opening tag with newline
+    prettyText = prettyText.Replace("&lt;", "\n&lt;"); 
+    
+    // return closing tag 
+    prettyText = prettyText.Replace("?@?", "&lt;/"); 
+
+    GUILayout.Label ( "last url = " + url );
+    GUILayout.Label ( StringToInt(textFileContents) );
+    GUILayout.Label ( "results from last url = " + prettyText );
+    
+    WebButtons();
+  }
+  
+  private void WebButtons() {
+    bool getButtonWasClicked = GUILayout.Button("Get score for player 'matt'");
+    bool setButtonWasClicked = GUILayout.Button("Set score for player 'matt' to random integer 500-510");
+    bool htmlButtonWasClicked = GUILayout.Button("Get html for all players");
+    bool xmlButtonWasClicked = GUILayout.Button("Get xml for all players");
+    bool resetButtonWasClicked = GUILayout.Button("Reset all scores");
+    
+    if( getButtonWasClicked )
+      GetAction();
+    if( setButtonWasClicked )
+      SetAction();
+    if( htmlButtonWasClicked )
+      HTMLAction();
+    if( xmlButtonWasClicked )
+      XMLAction();
+    if( resetButtonWasClicked )
+      ResetAction();
+  }
+  
+  private string StringToInt(string s) {
+    string intMessage = "integer received = ";
+    try{
+      int integerReturned = Int32.Parse(s);
+      intMessage += integerReturned;
+    }
+    catch(System.Exception e){
+      intMessage += "(not an integer) ";
+      print (e);
+    }
+    return intMessage;
+  }
+  
+  private void GetAction() {
+    action = "get";
+    parameters = "&amp;player=matt";
+    StartCoroutine( LoadWWW() );
+  }
+
+  private void SetAction() {
+    int randomScore = UnityEngine.Random.Range(500, 510);
+    parameters = "&amp;player=matt&amp;score=" + randomScore;
+    action = "set";
+    StartCoroutine( LoadWWW() );
+  }
+
+  private void HTMLAction() {
+    action = "html";
+    parameters = "";
+    StartCoroutine( LoadWWW() );
+  }
+
+  private void XMLAction() {
+    action = "xml";
+    parameters = "";
+    StartCoroutine( LoadWWW() );
+  }
+
+  private void ResetAction() {
+    action = "reset";
+    parameters = "";
+    StartCoroutine( LoadWWW() );
+  }
+
+  private IEnumerator LoadWWW(){
+    string baseUrl = "http://localhost/leaderboard/index.php?action=";
+    url = baseUrl + action + parameters;
+    WWW www = new WWW (url);
+    yield return www;
+      textFileContents = www.text;
+  }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec291"></a>How it works...</h3></div></div></div><p>The player's scores<a id="id574" class="indexterm"></a> are stored in a MySQL database. Access to the basis is facilitated through the PHP scripts provided. In our example, all the PHP scripts<a id="id575" class="indexterm"></a> were placed into a folder named <code class="literal">leaderboard</code> in the web server root folder. The scripts are accessed via the <code class="literal">http://localhost/leaderboard/</code> URL. All access is through the <code class="literal">index.php</code> PHP file. There are five actions implemented, and each is indicated by adding the action name at the end of the URL (this is the GET HTTP method, sometimes used for web forms—take a look at the address bar of your browser next time you search Google, for example). The actions and their parameters (if any) are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">action</code> = <code class="literal">get</code>, parameters: <code class="literal">player</code> = <code class="literal">matt</code>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>This action asks for the integer score of the named player to be found</p></li><li style="list-style-type: disc"><p>Returns: score integer</p></li></ul></div></li><li style="list-style-type: disc"><p><code class="literal">action</code> = <code class="literal">set</code>, parameters: <code class="literal">player</code> = <code class="literal">matt</code>, <code class="literal">score</code> = <code class="literal">101</code>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>This action asks for the provided score of the named player to be stored in the database (but only if this new score is greater than the currently stored score)</p></li><li style="list-style-type: disc"><p>Returns: score integer (if database update was successful), otherwise a negative value (to indicate no update took place)</p></li></ul></div></li><li style="list-style-type: disc"><p><code class="literal">action</code> = <code class="literal">html</code>, no parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>This action asks for HTML text listing all player scores to be returned</p></li><li style="list-style-type: disc"><p>Returns: HTML text</p></li></ul></div></li><li style="list-style-type: disc"><p><code class="literal">action</code> = <code class="literal">xml</code>, no parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>This action asks for XML text listing all player scores to be returned</p></li><li style="list-style-type: disc"><p>Returns: XML text</p></li></ul></div></li><li style="list-style-type: disc"><p><code class="literal">action</code> = <code class="literal">reset</code>, no parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>This action asks for a set of default player name and score values to replace the current contents of the database table</p></li><li style="list-style-type: disc"><p>Returns: the <code class="literal">reset</code> string</p></li></ul></div></li></ul></div><p>The <code class="literal">OnGUI()</code> method first displays the current URL string, any integer value that was extracted from the response <a id="id576" class="indexterm"></a>message received from the server, and the full text string received from the server. Also, five buttons are offered to the user, which set up the corresponding action and parameters to be added to the URL for the next call to the web server via the <code class="literal">LoadWWW()</code> method.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec292"></a>There's more...</h3></div></div></div><p>Here is some information on how to fine-tune and customize this recipe.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec66"></a>Extract the full leaderboard data as XML for display within Unity</h4></div></div></div><p>The XML text that<a id="id577" class="indexterm"></a> can be retrieved from the PHP web server provides a useful method of allowing a Unity game to retrieve the full set of leaderboard data from the database. This allows the leaderboard to be displayed to the user in the Unity game (perhaps in some nice 3D fashion, or through a game-consistent GUI). See the next chapter for several recipes that illustrate ways to work with XML data in Unity.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec67"></a>Using secret game codes to secure your leaderboard scripts</h4></div></div></div><p>The Unity and PHP code <a id="id578" class="indexterm"></a>presented illustrates a simple, unsecured web-based leaderboard. To prevent players "hacking" into the board with false scores, it is common to encode some form of secret game code (or "key") into the communications. Only update requests that include the correct code will actually cause a change to the database.</p><p>The Unity code would combine the secret key (in this example, the <code class="literal">harrypotter</code> string), with something related to the communication. For example, the same MySQL/PHP leaderboard may have different database records for different games, identified with a game ID:</p><div class="informalexample"><pre class="programlisting">// Unity Csharp code
+string key = "harrypotter"
+string gameId = 21;
+string gameCode = Utility.Md5Sum(key + gameId);</pre></div><p>The server-side PHP code would receive both the encrypted game code, and also the piece of game data used to create that encrypted code (in this example, the game ID, and the MD5 hashing function, which is available both in Unity and in PHP). The secret key (<code class="literal">harrypotter</code>) is used with the game ID to create an encrypted code that can be compared with the code received from the Unity game (or whatever user agent or browser is attempting to communicate with the leaderboard server scripts). Database actions will only be executed if the game code created on the server matches that sent along with the request for a database action:</p><div class="informalexample"><pre class="programlisting">// PHP – security code
+$key = "harrypotter"
+$game_id =  $_GET['game_id'];
+$provided_game_code =  $_GET['game_code'];
+$server_game_code = md5($key.$game_id);
+
+if( $server_game_code == $provided_game_code ) {
+  // codes match - do processing here
+}</pre></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec293"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="emphasis"><em>Loading and parsing external XML files</em></span> in <a class="link" href="#" linkend="ch08">Chapter 8</a>, <span class="emphasis"><em>Working with External Text Files and XML Data</em></span>.</p></li><li style="list-style-type: disc"><p><span class="emphasis"><em>Preventing your game from running on unknown servers</em></span> in <a class="link" href="#" linkend="ch10">Chapter 10</a>, <span class="emphasis"><em>Improving Games with Extra Features and Optimization</em></span>.</p></li></ul></div></div></div>

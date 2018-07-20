@@ -1,0 +1,281 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec59"></a>Creating a rockslide and trigger area</h2></div></div><hr /></div><p>In the previous section, we created the destructible wall object, which contains four cubes. Each one has the <span class="strong"><strong>Rigidbody</strong></span> and <span class="strong"><strong>Box Collider</strong></span> components attached, which will make the wall such that we are able to shoot and break it. In this section, we will create a rockslide that will be triggered when the player hits the trigger area, which will have the script attached later in the next step.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec129"></a>Prepare for lift off</h3></div></div></div><p>We will begin with creating an<a id="id1172" class="indexterm"></a> empty object for our rockslide:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> to create the empty game object and name it <code class="literal">Rockslide</code>. Reset its position to <span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>.</p></li><li><p>Then, we will create another empty game object by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> and name it <code class="literal">Break</code>. Drag this inside the <span class="strong"><strong>Rockslide</strong></span> game object, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_22.jpg" /></div></li><li><p>Next, reset<span class="strong"><strong> Transform</strong></span> of the <span class="strong"><strong>Break</strong></span> game object to default by clicking on the little gear on the right-hand side of the screen and then choose <span class="strong"><strong>Reset</strong></span>.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec130"></a>Engage thrusters</h3></div></div></div><p>Here, we will create six cube objects<a id="id1173" class="indexterm"></a> that will slide down the hill and two cube objects, which will be static objects, to make it look like part of the rock is still stuck to the terrain. Then, we will <a id="id1174" class="indexterm"></a>create the trigger area to make the rock fall down when the player hits it. Let's get started:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>Cube</strong></span>, name it <code class="literal">Cube1</code>, and drag it to the <span class="strong"><strong>Break</strong></span> game object in <span class="strong"><strong>Rockslide</strong></span>, which we just created, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_23.jpg" /></div></li><li><p>Next, we will go to the <span class="strong"><strong>Inspector</strong></span> view of <span class="strong"><strong>Break</strong></span> and set its <span class="strong"><strong>Transform</strong></span> position to <span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-1.32</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">5.97</code>.</p></li><li><p>Then, we will add the <span class="strong"><strong>Rigidbody</strong></span> component to the <span class="strong"><strong>Cube1</strong></span> object by going to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Rigidbody</strong></span>.</p></li><li><p>Next, we will go to the cube's <span class="strong"><strong>Inspector</strong></span> view to set up the parameters as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-1.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">-4.1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Rotation</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Scale:</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">3</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">3</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">5</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Box Collider</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Material</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rock </strong></span>(drag the <span class="strong"><strong>Rock</strong></span> physics material from the <code class="literal">Resources/Physics Materials</code> folder to the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Mesh Renderer</strong></span>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Materials</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" rowspan="3" align="left" valign="top"> 
+<p>
+<code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rock</strong></span> (drag the <span class="strong"><strong>Rock</strong></span> material in the <code class="literal">Resources/Materials</code> folder in the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rigidbody</strong></span>
+</p>
+</td><td class="auto-generated" style=""> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Mass</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">10</code>
+</p>
+</td><td class="auto-generated" style=""> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Is Kinematic</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Check</p>
+</td><td class="auto-generated" style=""> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Tags</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Terrain</strong></span>
+</p>
+</td><td class="auto-generated" style=""> </td></tr></tbody></table></div></li><li><p>Now, we have finished setting up the first cube. Let's duplicate five more cubes by using the shortcut <span class="emphasis"><em>Command</em></span> + <span class="emphasis"><em>D</em></span> (for Mac) or <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span> (for Windows), and <a id="id1175" class="indexterm"></a>naming all five cubes to <code class="literal">Cube2</code>, <code class="literal">Cube3</code>, <code class="literal">Cube4</code>, <code class="literal">Cube5</code>, and <code class="literal">Cube6</code>, which is similar to what we did for the <span class="strong"><strong>Wall</strong></span> game object in<a id="id1176" class="indexterm"></a> the previous section, <span class="emphasis"><em>Creating a destructible wall</em></span>. Then, we go to each new cube's <span class="strong"><strong>Inspector</strong></span> view and set up its position as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform (Cube2)</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">-4.1</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform (Cube3)</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-1.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0.92</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span> (<span class="strong"><strong>Cube4</strong></span>)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0.92</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform (Cube5)</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-1.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">5.92</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform (Cube6)</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">5.92</code>
+</p>
+</td></tr></tbody></table></div><p>The six cubes will form the following structure:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_24.jpg" /></div></li><li><p>Now, we need two <a id="id1177" class="indexterm"></a>static rocks that won't fall down. Let's duplicate the <span class="strong"><strong>Cube1</strong></span> object that we just created by using <span class="emphasis"><em>Command</em></span> + <span class="emphasis"><em>D</em></span> (for Mac) or <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span> (for Windows). Name it <code class="literal">CubeBase1</code>, and drag it <a id="id1178" class="indexterm"></a>outside the <span class="strong"><strong>Break</strong></span> game object but inside the <span class="strong"><strong>Rockslide</strong></span> game object, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_25.jpg" /></div></li><li><p>Go to the <span class="strong"><strong>Inspector</strong></span> view of <span class="strong"><strong>CubeBase1</strong></span> and set <a id="id1179" class="indexterm"></a>the parameters as<a id="id1180" class="indexterm"></a> follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-1.32</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">-3.15</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">3</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">5</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rigidbody</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Right-click and choose <span class="strong"><strong>Remove Component</strong></span>
+</p>
+</td></tr></tbody></table></div></li><li><p>Duplicate this object to another side using <span class="emphasis"><em>Command</em></span> + <span class="emphasis"><em>D</em></span> (for Mac) or <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span> (for Windows), name it <code class="literal">CubeBase2</code>, and set <span class="strong"><strong>Transform</strong></span> as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-1.32</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">16.9</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">3</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">5</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>We are almost done creating this object. The last thing to create the trigger area to<a id="id1181" class="indexterm"></a> make the rock fall down when the player hits this area. So, we go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span>, name it <code class="literal">TriggerArea</code>, and drag it in the <span class="strong"><strong>Rockslide</strong></span> game object.</p></li><li><p>Add the <span class="strong"><strong>Box Collider</strong></span> component to<a id="id1182" class="indexterm"></a> this by going to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Box Collider</strong></span>. Then, set the parameters as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="3" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-35</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-7</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">-3</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">335</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">1</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" colspan="3" align="left" valign="top">
+<p>
+<span class="strong"><strong>Box Collider</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Is Trigger</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>Check</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">12</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">36</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">24</code>
+</p>
+</td></tr></tbody></table></div><p>You will see that the object will look something similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_26.jpg" /></div></li><li><p>Finally, we will click on the <span class="strong"><strong>Rockslide</strong></span> game<a id="id1183" class="indexterm"></a> object, go to its <span class="strong"><strong>Inspector</strong></span> view, and <a id="id1184" class="indexterm"></a>set its <span class="strong"><strong>Transform</strong></span> component as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1068</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">24</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">677</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">140</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">1</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">1</code>
+</p>
+</td></tr></tbody></table></div><p>Now, we have finished this step. In the next section, we will add a script to make our rocks slide down the hill when the player hits the trigger area. The following screenshot shows the <span class="strong"><strong>Rockslide</strong></span> game object and trigger area:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_27.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec131"></a>Objective complete – mini debriefing</h3></div></div></div><p>In this section, we set up the rock slider, which will be used in the next step. We've set up rocks from multiple cubes similar to the way we set up the destructible wall. However, in this step, we also created the trigger area, which will be used to trigger the rock to slide down when the character hits this area.</p></div></div>

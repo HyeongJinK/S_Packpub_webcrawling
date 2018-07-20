@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec44"></a>Switching between materials</h2></div></div><hr /></div><p>An interesting interactive option you can provide to clients is choosing between different material finishes. A good example of such a system can be found in <span class="emphasis"><em>Autodesk Showcase</em></span> at <a class="ulink" href="http://www.autodesk.com/products/showcase/overview" target="_blank">http://www.autodesk.com/products/showcase/overview</a>, which displays a popup list <a id="id435" class="indexterm"></a>of material thumbnails in a very <a id="id436" class="indexterm"></a>realistic real-time view of a design.</p><p>We follow a similar approach as the camera switcher, by setting up a list of alternative textures and using the <code class="literal">OnGUI()</code> method<a id="id437" class="indexterm"></a> to display a button to switch between alternative materials. It is important to prepare the list of textures on beforehand. This is shown in the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class switchMaterials : MonoBehaviour {
+  public Material[] materialList;
+  public GameObject target;
+  private int index = 0;
+  void OnGUI(){
+    if (GUI.Button(new Rect(5,5,100,24), "Next Material")){
+      index = (index + 1) % materialList.Length;
+        target.renderer.material = materialList[index];
+    }
+  }
+}</pre></div><p>Similar to the <span class="emphasis"><em>Showcase</em></span> application, the <code class="literal">GUI.Button()</code> method<a id="id438" class="indexterm"></a> supports textures instead of text. To retrieve the basic texture of a material, use the <code class="literal">mainTexture</code> variable, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">void OnGUI(){
+  int counter = 0;
+  foreach (Material mat in materialList){
+    int posY = 5 + 36*counter;
+    if (GUI.Button(new Rect (5,posY,100,24),mat.mainTexture)){
+      target.renderer.material = mat;
+    }
+    counter++;
+  }
+}</pre></div><p>An alternative is to use the <code class="literal">GUI.DrawTexture()</code> method<a id="id439" class="indexterm"></a>, which is not a button, but has more control over texture placement and scaling according to aspect ratio. This is done in the following statement:</p><div class="informalexample"><pre class="programlisting">GUI.DrawTexture(new Rect(5, posY, 100, 24), mat.mainTexture, ScaleMode.ScaleToFit, true, 100.0f/24.0f);
+</pre></div><p>You can<a id="id440" class="indexterm"></a> place the texture thumbnail alongside <a id="id441" class="indexterm"></a>or even behind the button. Best results are found when using textures of the same size and aspect ratio, so they also map correctly onto the object. Otherwise you also have to adjust UV-tiling of the affected material.</p></div>

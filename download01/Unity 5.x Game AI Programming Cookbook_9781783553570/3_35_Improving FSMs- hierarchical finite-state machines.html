@@ -1,0 +1,22 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec40"></a>Improving FSMs: hierarchical finite-state machines</h2></div></div><hr /></div><p>Finite-state machines <a id="id150" class="indexterm"></a>can be improved in terms of having <a id="id151" class="indexterm"></a>different layers or hierarchies. The principles are the same, but states are able to have their own internal finite-state machine, making them more flexible and scalable.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec131"></a>Getting ready</h3></div></div></div><p>This recipe is based on top of the previous recipe, so it is important that we grasp and understand how the finite-state machine recipe works.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec132"></a>How to do it...</h3></div></div></div><p>We will create a <a id="id152" class="indexterm"></a>state that is capable of holding internal states, in order to develop multi-level hierarchical state machines:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">StateHighLevel</code> class deriving from <code class="literal">State</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class StateHighLevel : State
+{
+}</pre></div></li><li><p>Add the new member variables to control the internal states:</p><div class="informalexample"><pre class="programlisting">public List&lt;State&gt; states;
+public State stateInitial;
+protected State stateCurrent;</pre></div></li><li><p>Override the initialization function:</p><div class="informalexample"><pre class="programlisting">public override void OnEnable()
+{
+    if (stateCurrent == null)
+        stateCurrent = stateInitial;
+    stateCurrent.enabled = true;
+}</pre></div></li><li><p>Override the finalization function:</p><div class="informalexample"><pre class="programlisting">public override void OnDisable()
+{
+    base.OnDisable();
+    stateCurrent.enabled = false;
+    foreach (State s in states)
+    {
+        s.enabled = false;
+    }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec133"></a>How it works...</h3></div></div></div><p>The high-level state class lets us activate the internal FSMs when it is enabled and recursively disables its internal states when disabled. The working principle stays the same thanks to the <a id="id153" class="indexterm"></a>list of states and the way the parent class resolves the transitioning process.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec134"></a>See also</h3></div></div></div><p>Kindly refer to the recipe, <span class="emphasis"><em>Working a finite-state machine.</em></span></p></div></div>

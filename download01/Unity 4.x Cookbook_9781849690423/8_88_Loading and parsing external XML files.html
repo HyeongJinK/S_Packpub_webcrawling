@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec87"></a>Loading and parsing external XML files</h2></div></div><hr /></div><p>XML is a common data exchange format; it is useful to be able to parse (process the contents of) text files<a id="id599" class="indexterm"></a> and strings containing data in this format. C# offers a range of classes<a id="id600" class="indexterm"></a> and methods to make such processing straightforward.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec304"></a>Getting ready</h3></div></div></div><p>You'll find player name and score data in XML format in the <code class="literal">playerScoreData.xml</code> file in the <code class="literal">0423_08_04</code> folder. The contents of this file are as follows:</p><div class="informalexample"><pre class="programlisting">&lt;scoreRecordList&gt;
+    &lt;scoreRecord&gt;
+        &lt;player&gt;matt&lt;/player&gt;
+        &lt;score&gt;2200&lt;/score&gt;
+        &lt;date&gt;
+            &lt;day&gt;1&lt;/day&gt;
+            &lt;month&gt;Sep&lt;/month&gt;
+            &lt;year&gt;2012&lt;/year&gt;
+        &lt;/date&gt;
+    &lt;/scoreRecord&gt;
+
+    &lt;scoreRecord&gt;
+        &lt;player&gt;jane&lt;/player&gt;
+        &lt;score&gt;500&lt;/score&gt;
+        &lt;date&gt;
+            &lt;day&gt;12&lt;/day&gt;
+            &lt;month&gt;May&lt;/month&gt;
+            &lt;year&gt;2012&lt;/year&gt;
+        &lt;/date&gt;
+    &lt;/scoreRecord&gt;
+&lt;/scoreRecordList&gt;</pre></div><p>The data is structured by a root element named <code class="literal">scoreRecordList</code>, which contains a sequence of <code class="literal">scoreRecord</code> elements. Each <code class="literal">scoreRecord</code> element contains a <code class="literal">player</code> element (which contains a player's name), a <code class="literal">score</code> element (which has the integer content of the player's score), and a <code class="literal">date</code> element, which itself contains three child elements, <code class="literal">day</code>, <code class="literal">month</code>, and <code class="literal">year</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec305"></a>How to do it...</h3></div></div></div><p>To load and <a id="id601" class="indexterm"></a>parse external XML files, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the<a id="id602" class="indexterm"></a> following C# script to <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: ParseXML.cs
+using UnityEngine;
+using System.Collections;
+
+using System.Xml;
+using System.IO;
+
+public class ParseXML : MonoBehaviour {
+    public TextAsset scoreDataTextFile;
+
+    private void Start() {
+        string textData = scoreDataTextFile.text;
+        ParseScoreXML( textData );
+    }
+
+    private void ParseScoreXML(string xmlData) {
+        XmlDocument xmlDoc = new XmlDocument();
+        xmlDoc.Load( new StringReader(xmlData) );
+
+        string xmlPathPattern = "//scoreRecordList/scoreRecord";
+        XmlNodeList myNodeList = xmlDoc.SelectNodes( xmlPathPattern );
+
+        foreach(XmlNode node in myNodeList)
+            print ( ScoreRecordString( node ) );
+
+    }
+
+    private string ScoreRecordString(XmlNode node) {
+        XmlNode playerNode = node.FirstChild;
+        XmlNode scoreNode = playerNode.NextSibling;
+        XmlNode dateNode = scoreNode.NextSibling;
+
+        return "Player = " + playerNode.InnerXml + ", score = " + scoreNode.InnerXml + ", date = " + DateString( dateNode );
+    }
+
+    private string DateString(XmlNode dateNode) {
+        XmlNode dayNode = dateNode.FirstChild;
+        XmlNode monthNode = dayNode.NextSibling;
+        XmlNode yearNode = monthNode.NextSibling;
+
+        return dayNode.InnerXml + "/" + monthNode.InnerXml + "/" + yearNode.InnerXml;
+    }
+}</pre></div></li><li><p>Import the playerScoreData.xml file into your project.</p></li><li><p>Select the Main Camera and set playerScoreData.xml as the Score Data Text File variable for the Parse XML component.</p></li><li><p>The output of the <code class="literal">print()</code> statements should be visible in the <span class="strong"><strong>Console</strong></span> window:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_08_01.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec306"></a>How it works...</h3></div></div></div><p>Note the need to <a id="id603" class="indexterm"></a>use <a id="id604" class="indexterm"></a>the <code class="literal">System.Xml</code> and <code class="literal">System.IO</code> packages for this recipe.</p><p>The <code class="literal">text</code> property of the <code class="literal">TextAsset</code> variable <code class="literal">scoreDataTextFile</code> provides the contents of the XML file as a string, which is passed to the <code class="literal">ParseScoreXML()</code>method<a id="id605" class="indexterm"></a>. This method creates a new <code class="literal">XmlDocument</code> variable with the contents of this string. The <code class="literal">XmlDocument</code> class provides the <code class="literal">SelectNodes()</code> method<a id="id606" class="indexterm"></a>, which returns a list of node objects for a given element path. In this example, a list of <code class="literal">scoreRecord</code> nodes is requested. A <code class="literal">for-each</code> statement prints out the string returned by the <code class="literal">ScoreRecordString()</code> method<a id="id607" class="indexterm"></a> when each node object is passed to it.</p><p>The <code class="literal">ScoreRecordString()</code> method relies on the ordering of the XML elements to retrieve the player's name and score, and it gets the date as a slash-separated string by passing the node containing the three date components to the <code class="literal">DateString()</code> method<a id="id608" class="indexterm"></a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec307"></a>There's more...</h3></div></div></div><p>Some details you don't want to miss:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch08lvl3sec69"></a>Retrieving XML data files from the web</h4></div></div></div><p>You can<a id="id609" class="indexterm"></a> use the <code class="literal">WWW</code> Unity class if the XML file is located on the Web rather than in your Unity project.</p></div></div></div>

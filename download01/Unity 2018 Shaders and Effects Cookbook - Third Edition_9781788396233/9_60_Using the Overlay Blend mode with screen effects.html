@@ -1,0 +1,43 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec61"></a>Using the Overlay Blend mode with screen effects</h2></div></div><hr /></div><p>For our final recipe, we are <span>going</span><a id="id325209370" class="indexterm"></a> to take a look at another type of blend mode, the Overlay Blend mode. This blend mode actually makes use of some conditional statements that <span>determine</span><a id="id325209389" class="indexterm"></a> the final color of each pixel in each channel. So, the process of using this type of blend mode requires a bit more coding to work. Let's take a look at how this is done in the next few recipes.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec155"></a>How to do it...</h3></div></div></div><p>To begin our Overlay Screen effect, we will need to get the code of our shader up and running without errors. We can then modify our script file to feed the correct data to the shader:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create a new shader by duplicating the <code class="literal">ScreenGreyscale</code> code and selecting it from the <strong class="userinput"><code>Project</code></strong> tab under the <code class="literal">Chapter 9 </code>| <code class="literal">Shaders</code> folder and pressing <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span>. Once duplicated, rename the script to <code class="literal">ScreenOverlay</code>. Then, double-click on this shader to open it in your script editor.</li><li>We first need to set up the properties in our <code class="literal">Properties</code> block. We will use the same properties from the previous few recipes in this chapter:</li></ol></div><pre class="programlisting">Properties 
+{
+  _MainTex ("Base (RGB)", 2D) = "white" {}
+  _BlendTex ("Blend Texture", 2D) = "white"{}
+  _Opacity ("Blend Opacity", Range(0,1)) = 1
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>We then need to create the corresponding variables in our <code class="literal">CGPROGRAM</code>, removing the previously created ones:</li></ol></div><pre class="programlisting">Pass
+{
+  CGPROGRAM
+  #pragma vertex vert_img
+  #pragma fragment frag
+  #pragma fragmentoption ARB_precision_hint_fastest
+  #include "UnityCG.cginc"
+
+  uniform sampler2D _MainTex;
+  uniform sampler2D _BlendTex;
+  fixed _Opacity;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>In order for the Overlay Blend effect to work, we will have to process each pixel from each channel individually. To do this in a shader, we have to write a custom function that will take in a single channel, for instance, the red channel, and perform the overlay operation. Enter the <span>following</span><a id="id325209469" class="indexterm"></a> code in the <span>shader</span><a id="id325209478" class="indexterm"></a> just below the variable declarations:</li></ol></div><pre class="programlisting">fixed OverlayBlendMode(fixed basePixel, fixed blendPixel)
+{
+  if(basePixel &lt; 0.5)
+  {
+    return (2.0 * basePixel * blendPixel);
+  }
+  else
+  {
+    return (1.0 - 2.0 * (1.0 - basePixel) * (1.0 - blendPixel));
+  }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>We need to update our <code class="literal">frag()</code> function to process each channel of our textures in order to perform the blending:</li></ol></div><pre class="programlisting">fixed4 frag(v2f_img i) : COLOR
+{
+  //Get the colors from the RenderTexture and the uv's
+  //from the v2f_img struct
+  fixed4 renderTex = tex2D(_MainTex, i.uv);
+  fixed4 blendTex = tex2D(_BlendTex, i.uv);
+
+  fixed4 blendedImage = renderTex;
+
+  blendedImage.r = OverlayBlendMode(renderTex.r, blendTex.r);
+  blendedImage.g = OverlayBlendMode(renderTex.g, blendTex.g);
+  blendedImage.b = OverlayBlendMode(renderTex.b, blendTex.b);
+
+  //Adjust amount of Blend Mode with a lerp
+  renderTex = lerp(renderTex, blendedImage, _Opacity);
+
+  return renderTex;
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>With the code completed in the shader, our effect should be working. Save the shader and return to the Unity editor to let the shader compile. Our script is already set up; select the <strong class="userinput"><code>Main Camera</code></strong> object. From the <strong class="userinput"><code>Project</code></strong> tab, drag and drop the <strong class="userinput"><code>ScreenOverlay</code></strong> shader onto the <code class="literal">Cur Shader</code> property from the <strong class="userinput"><code>Render Blend Mode</code></strong> component in the <strong class="userinput"><code>Inspector</code></strong> tab. Once the shader compiles, you should see a result similar to the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/7b0bacc9-c36d-410b-8439-aec3b2fcd96c.png" /></div><p>Here's a screenshot using a <strong class="userinput"><code>Blend Opacity</code></strong> of <code class="literal">0.5</code>:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/f936f4f1-9c9c-468e-8017-c20ce07550c5.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec156"></a>How it works...</h3></div></div></div><p>Our overlay blend mode is <span>definitely</span><a id="id325445076" class="indexterm"></a> a lot more involved, but if you <span>really</span><a id="id325445084" class="indexterm"></a> break down the function, you will notice that it is simply a multiply blend mode and screen blend mode. In this case, we are doing a conditional check to apply one or the other blend mode to a pixel.</p><p>With this particular screen effect, when the overlay function receives a pixel, it checks to see whether it is less than <code class="literal">0.5</code>. If it is, then we apply a modified multiply blend mode to that pixel; if it's not, then we apply a modified screen blend mode to the pixel. We do this for each pixel for each channel, giving us the final RGB pixel values for our screen effect.</p><p>As you can see, there are many things that can be done with screen effects. It really just depends on the platform and amount of memory you have allocated for screen effects. Usually, this is determined throughout the course of a game project, so have fun and get creative with your screen effects.</p></div></div>

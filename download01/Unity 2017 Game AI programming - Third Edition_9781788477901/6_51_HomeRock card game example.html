@@ -1,0 +1,224 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec54"></a>HomeRock card game example</h2></div></div><hr /></div><p>To further illustrate potential uses for BTs, let's <span>take</span><a id="id288183624" class="indexterm"></a> a look at the second example for this chapter included in the sample code. In the <code class="literal">CardGame</code> Unity scene, you'll find an implementation of a turn-based card game, where the player and the AI opponent have three different abilities: attack, heal, and defend. The user gets to pick which ability to use on their turn, and the AI will use a BT to decide which course of action to take. The game ends when a player reaches 0 hit points. The following image illustrates our game view:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/7b1bf498-9d5c-4d5d-a254-f2f1521e6481.png" /></div><p>Game screen for HomeRock—Heroes of Unity</p><p>As you can see here, the player can select their attack by clicking on one of the cards, which have been spruced up with some flavor text. The player's hit points are displayed in the lower-left corner, and the AI enemy's hit points are displayed in the top-right corner of the screen. The premise is simple, even if the example is a bit silly. Let's take a look at the scene setup before we dive into the code.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec52"></a>The scene setup</h3></div></div></div><p>There are quite a few things <span>going</span><a id="id288566704" class="indexterm"></a> on in this scene, as this example is a bit more complex than previous ones in this book. We'll touch on each element, but will keep our focus on the topic at hand: behavior trees. Let's take a look at the scene hierarchy, which looks like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/726f589e-cc88-45a4-b576-1839ef8ac17b.png" /></div><p>The scene hierarchy</p><p>In the hierarchy depicted in this screenshot, we'll find a few game-related elements, and you may also notice that the canvas has quite a few elements nested under it.</p><p>The <strong class="userinput"><code>Game</code></strong> game object has two <span>components</span><a id="id288570089" class="indexterm"></a> on it—the Animator, which controls the game states, and the <code class="literal">Game.cs</code> component, which controls the game flow and rules. First, let's take a look at the game states. The Animator has a reference to the <code class="literal">GameFlowStateMachine</code><span class="strong"><strong>, </strong></span>which looks like this screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/e974c65c-3fcf-48c1-b5a4-f6e297024a60.png" /></div><p>The state machine depicted has a few boilerplate states, such as <span class="strong"><strong>MainMenu</strong></span> and <span class="strong"><strong>GameEnd</strong></span>. You'll notice that <span class="strong"><strong>MainMenu</strong></span> is our entry point. While our sample doesn't have a main menu, you could use this state to implement your own. In the sample, the state just automatically transitions to the <span class="strong"><strong>GameIntro</strong></span> state. Again, <span class="strong"><strong>GameIntro</strong></span> is provided as a staging area for you to implement any intro sequences or animations, but defaults to transitioning to the next stage, <span class="strong"><strong>MainGame</strong></span>. Finally, we have <span class="strong"><strong>GameEnd</strong></span>, which you can transition to from any state, so long as you hit the <code class="literal">EndGame</code> trigger. You may have noticed that <span class="strong"><strong>MainGame</strong></span> is a <span>nested</span><a id="id288573166" class="indexterm"></a> tree, and if we double-click on it to dive into its contents, we'll find a tree that looks like this screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/96f8cde8-ef32-4f7e-9e40-51c9dee81df2.png" /></div><p>The setup shown in the previous screenshot is simple enough—there is a player turn and an enemy turn. These simply bounce back and forth whenever we set the <code class="literal">EndTurn</code> trigger. Next, we have our <code class="literal">Game.cs</code> component, which looks like this in the inspector:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/eed1217d-1f61-40c0-960a-b76c3384a258.png" /></div><p>In the previous screenshot, we can see that the <strong class="userinput"><code>Game</code></strong> component has some references to other scripts in our scene. We'll get to those in a minute, but do notice that there is a <span>reference</span><a id="id288566350" class="indexterm"></a> to our state machine. Let's dive into the <code class="literal">Game.cs</code> code to see what's going on under the hood:</p><pre class="programlisting">using UnityEngine;
+
+public class Game : MonoBehaviour {
+    [SerializeField]
+    private Animator stateMachine;
+    [SerializeField]
+    private PlayerController playerController;
+    [SerializeField]
+    private EnemyBehaviorTree enemyBehaviorTree;
+    [SerializeField]
+    private Player humanPlayer;
+    [SerializeField]
+    private Player aiPlayer;
+    [SerializeField]
+    private UIController uiController;
+    private int turn = 0;
+
+    private void Awake() {
+        enemyBehaviorTree.SetPlayerData(humanPlayer, aiPlayer);
+        enemyBehaviorTree.onTreeExecuted += EndTurn;
+        playerController.onActionExecuted += EndTurn;
+    }
+
+    public void EvaluateAITree() {
+        enemyBehaviorTree.Evaluate(); 
+    }
+
+    private void EndTurn() {
+        if(humanPlayer.CurrentHealth &lt;= 0 || aiPlayer.CurrentHealth &lt;= 0) {
+            stateMachine.SetTrigger("EndGame");
+            uiController.EndGame();
+            return;
+        }
+        stateMachine.SetTrigger("EndTurn");
+        turn ^= 1;
+        uiController.SetTurn(turn);
+    }
+}</pre><p>First, we have all the serialized values we saw in the inspector just a moment ago, along with a private, non-serialized value, the <code class="literal">turn</code> value. This value flips between 0 and 1 for the player's turn and the AI's turn, respectively. Our <code class="literal">Awake</code> method does some setup, it initializes values in the <code class="literal">EnemyBehaviorTree.cs</code> script, and it adds some callbacks to the enemy AI controller and our player controller.</p><p>The <code class="literal">EvaluateAITree()</code> method simply wraps the enemy's BT's <code class="literal">Evaluate()</code> method. We do this for some pseudo-decoupling. Lastly, the <code class="literal">EndTurn()</code> method does a few things: it checks whether either of the players' health is below 0, and ends the game if so; it also toggles the turn value, sets the appropriate trigger on the state machine, and updates the turn message on the <code class="literal">UIController</code>.</p><p>Next in our scene's hierarchy, nested under the <strong class="userinput"><code>Game</code></strong> game object, we have a <strong class="userinput"><code><span>HumanPlayer</span></code></strong> game object, and an <strong class="userinput"><code>EnemyAI</code></strong> game object. Both have a <code class="literal">Player.cs</code> script, which simply contains data and methods that control that player's values. The screenshot here shows the values for the <strong class="userinput"><code>HumanPlayer</code></strong> game object's <strong class="userinput"><code>Player</code></strong> component:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/32d1995c-bec9-4898-989b-1435eded91c6.png" /></div><p>In order to get a better idea of what the values <span>shown</span><a id="id288320261" class="indexterm"></a> in the preceding screenshot do, let's take a look at the <code class="literal">Player.cs</code> script and break it down:</p><pre class="programlisting">using UnityEngine;
+
+public class Player : MonoBehaviour {
+    [SerializeField]
+    private int maxHealth = 20;
+
+    [SerializeField]
+    private int currentHealth;
+
+    [SerializeField]
+    private int lowHealthThreshold = 7;
+
+    [Header("Ability Parameters")]
+    private int minHealAmount = 2;
+    private int maxHealAmount = 5;
+
+    private int minDamage = 2;
+    private int maxDamage = 5;
+
+    private bool isBuffed = false;
+
+    public int CurrentHealth {
+        get { return currentHealth; }
+    }
+
+    public bool IsBuffed {
+        get { return isBuffed; }
+    }
+
+    public bool HasLowHealth {
+        get { return currentHealth &lt; lowHealthThreshold; }
+    }
+
+    private void Awake() {
+        currentHealth = maxHealth;
+    }
+
+    public bool Buff() {
+        isBuffed = true;
+        return isBuffed;
+    }
+
+    public int Heal() {
+        int healAmount = Random.Range(minHealAmount, maxHealAmount);
+        currentHealth += healAmount;
+        return currentHealth;
+    }
+
+    public int Damage() {
+        int damageAmount = Random.Range(minDamage, maxDamage);
+        if(isBuffed) {
+            damageAmount /= 2;
+            isBuffed = false;
+        } 
+        currentHealth -= damageAmount;
+        return currentHealth;
+    }
+}</pre><p>The first few values are fairly simple. We have the player's max health represented by <code class="literal">maxHealth</code> and their current health represented by <code class="literal">currentHealth</code>. We use a value called <code class="literal">lowHealthThreshold</code> for the AI to make some decisions. It gives us the ability to modify the AI's behavior based on its or its opponent's health. </p><p>We then list out some ability parameters. The <code class="literal">minHealAmount</code> and <code class="literal">maxHealAmount</code> represent the healing ability's lower and upper limits, respectively. The same goes for the <code class="literal">minDamage</code> and <code class="literal">maxDamage</code> fields for the attack ability. In the case of <code class="literal">isBuffed</code>, we use a bool to represent whether or not the player is "buffed," which is a generic term in some game genres to denote that a character or player has a beneficial gameplay status. There are some properties and initialization in our <code class="literal">Awake</code> method, and then a series of ability methods. </p><p>The <code class="literal">Buff()</code> method simply sets the <code class="literal">isBuffed</code> value to true. We use this in our damage calculation later on. The <code class="literal">Heal()</code> method picks a random number between the range specified by <code class="literal">minHealAmount</code> and <code class="literal">maxHealAmount</code>, and restores that much health to the player's <code class="literal">currentHealth</code> value. Lastly, the <code class="literal">Damage()</code> method applies a random amount of damage to the player (by subtracting from its current health), which is halved when the player's <code class="literal">isBuffed</code> flag is set to true.</p><p>We can now take a look at the next <span>component</span><a id="id288320341" class="indexterm"></a> of the <strong class="userinput"><code>HumanPlayer</code></strong> game object, the <code class="literal">PlayerController.cs</code> script. The component's inspector values can be seen in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/e33a8d24-04dd-4dd1-994c-e79406b9efc3.png" /></div><p>The inspector showing all the assigned values for the player controller</p><p>You'll notice some references to its own <code class="literal">Player.cs</code> component as well as the enemy AI's component. The <strong class="userinput"><code>Buttons</code></strong> section contains references to the ability card's UI buttons. The code for the class looks like this:</p><pre class="programlisting">using UnityEngine;
+using UnityEngine.UI;
+
+public class PlayerController : MonoBehaviour {
+    [SerializeField]
+    private Player ownData;
+    [SerializeField]
+    private Player enemyData;
+
+    [Header("Buttons")]
+    [SerializeField]
+    private Button defendButton;
+    [SerializeField]
+    private Button healButton;
+    [SerializeField]
+    private Button attackButton;
+
+    public delegate void ActionExecuted();
+    public event ActionExecuted onActionExecuted;
+
+  void Awake () {
+        defendButton.onClick.AddListener(Defend);
+        healButton.onClick.AddListener(Heal);
+        attackButton.onClick.AddListener(Attack);
+  }
+
+    private void Attack() {
+        enemyData.Damage();
+        EndTurn();
+    }
+
+    private void Heal() {
+        ownData.Heal();
+        EndTurn();
+    }
+
+    private void Defend() {
+        ownData.Buff();
+        EndTurn();
+    }
+
+    private void EndTurn() {
+        if(onActionExecuted != null) {
+            onActionExecuted();
+        }
+    }
+}</pre><p>The variables up top are fairly straightforward, and they are the very values we just saw in the inspector. You'll also find an <code class="literal">onActionExecuted</code> event here, which, if you remember, gets assigned from the <code class="literal">Game.cs</code> script's <code class="literal">Awake()</code> function. In this class's <code class="literal">Awake()</code>, we assign an <code class="literal">onClick</code> handler for each of the buttons: <span class="strong"><strong>Defend</strong></span>, <span class="strong"><strong>Heal</strong></span>, and <span class="strong"><strong>Attack</strong></span>. Each of the methods calls the appropriate ability method on the <code class="literal">Player.cs</code> script, and then calls <code class="literal">EndTurn()</code>, which, in turn, calls the <code class="literal">onActionExecuted</code> callback. Refer back to the <code class="literal">Game.cs</code> script for what that does.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec53"></a>The enemy state machine</h3></div></div></div><p>The <code class="literal">EnemyAI</code> game object has its own <code class="literal">Player.cs</code> script, as we saw earlier, but it also has the script we're most interested in: the <code class="literal">EnemyBehaviorTree.cs</code> component. This <span>component</span><a id="id288320441" class="indexterm"></a> contains the BT for our enemy agent, along with some helper functionality. Let's take a look at that code now:</p><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class EnemyBehaviorTree : MonoBehaviour {
+
+    private Player playerData; 
+    private Player ownData;
+
+    public RandomBinaryNode buffCheckRandomNode;
+    public ActionNode buffCheckNode;
+    public ActionNode healthCheckNode;
+    public ActionNode attackCheckNode;
+    public Sequence buffCheckSequence;
+    public Selector rootNode;</pre><p>We start off with some declarations as usual. Most notably, we declare our nodes here. We have some familiar nodes, the <code class="literal">ActionNode</code>, the <code class="literal">Sequence</code>, and the <code class="literal">Selector</code>, which you should be familiar with by now. But you may have also noticed an unfamiliar node as well—the <code class="literal">RandomBinaryNode</code>.  Before digging deeper into the <code class="literal">EnemyBehaviorTree.cs</code> code, let's take a look at the <code class="literal">RandomBinaryNode.cs</code> file to see what this node type does:</p><pre class="programlisting">using UnityEngine;
+
+public class RandomBinaryNode : Node {
+    public override NodeStates Evaluate() {
+        var roll = Random.Range(0, 2);
+        return (roll == 0 ? NodeStates.SUCCESS : NodeStates.FAILURE);
+    }
+}</pre><p>As you can see, the node is very simple. We "roll" a random value between 0 and 1 (keeping in mind that <code class="literal">Random.Range(int, int)</code> has an exclusive upper range, meaning it can <span>return</span><a id="id288566486" class="indexterm"></a> up to that value, but not including it), and return a <code class="literal">SUCCESS</code> state when the <code class="literal">roll</code> is <code class="literal">0</code>, and <code class="literal">FAILURE</code> otherwise.</p><p>Going back to the <code class="literal">EnemyBehaviorTree.cs</code> class, we have another delegate/event declaration:</p><pre class="programlisting">public delegate void TreeExecuted();
+public event TreeExecuted onTreeExecuted;</pre><p>Similar to the <code class="literal">onActionExecuted</code> event on the <code class="literal">PlayerController.cs</code> class, this one will be called after the AI executes its action and triggers the end-of-turn checks. Up next, we have the <code class="literal">Start()</code> method, which is important as it sets up our node structure, starting from the lowest-level nodes:</p><pre class="programlisting">void Start () { 
+    healthCheckNode = new ActionNode(CriticalHealthCheck);
+
+    attackCheckNode = new ActionNode(CheckPlayerHealth);
+
+    buffCheckRandomNode = new RandomBinaryNode();
+    buffCheckNode = new ActionNode(BuffCheck);
+    buffCheckSequence = new Sequence(new List&lt;Node&gt; {
+        buffCheckRandomNode,
+        buffCheckNode,
+    });
+
+    rootNode = new Selector(new List&lt;Node&gt; {
+        healthCheckNode,
+        attackCheckNode,
+        buffCheckSequence,
+    });
+}</pre><p>To better understand what's going on in this section of the code, let's take a look at the following diagram:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/ff7c88fe-eb6b-461d-9079-7eb049fe38c6.png" /></div><p>Enemy turn behavior tree
+</p><p>As you can see, the enemy turn is broken up into three steps—health check, attack check, and buff check. The health check node is a simple <code class="literal">ActionNode</code>. In this case, we're modeling a fairly conservative agent, so it prioritizes its own health versus being aggressive. The node invokes the following method:</p><pre class="programlisting">private NodeStates CriticalHealthCheck() {
+    if(ownData.HasLowHealth) {
+        return NodeStates.SUCCESS;
+    } else {
+        return NodeStates.FAILURE;
+    }
+}</pre><p>We then have the attack <span>check</span><a id="id288566562" class="indexterm"></a> node, which is also an <code class="literal">ActionNode</code>. This one then checks if the human player's health is low, and attacks if so, in an attempt to go for the kill. This is the function it invokes:</p><pre class="programlisting">private NodeStates CheckPlayerHealth() {
+    if(playerData.HasLowHealth) {
+        return NodeStates.SUCCESS;
+    } else {
+        return NodeStates.FAILURE;
+    }
+}</pre><p>We then have a buff check node, that is actually a sequence, with two children nodes. The idea here is that if it did not heal, and it did not attack, the agent will attempt to buff itself. However, because this would lead to a loop where it buffs itself, the player attacks (thus removing the buff), and it buffs itself over and over until its health is low, we add a randomization factor via the <code class="literal">RandomBinaryNode</code> node. The actual buff check calls the following method:</p><pre class="programlisting">private NodeStates BuffCheck() {
+    if(!ownData.IsBuffed) {
+        return NodeStates.SUCCESS;
+    } else {
+        return NodeStates.FAILURE;
+    }
+}</pre><p>The root node itself is a <code class="literal">Selector</code>, so that it only requires one child to return <code class="literal">SUCCESS</code> for it to return <code class="literal">SUCCESS</code> itself. However, we do not use the root node's state value in this example. The last part of our AI code is the <code class="literal">Execute()</code> method, which as you may notice, is a coroutine. We do this to give the illusion that the AI is "thinking" about its move. The code looks like this:</p><pre class="programlisting">private IEnumerator Execute() {
+    Debug.Log("The AI is thinking...");
+    yield return new WaitForSeconds(2.5f);
+
+    if(healthCheckNode.nodeState == NodeStates.SUCCESS) {
+        Debug.Log("The AI decided to heal itself");
+        ownData.Heal();
+    } else if(attackCheckNode.nodeState == NodeStates.SUCCESS) {
+        Debug.Log("The AI decided to attack the player!");
+        playerData.Damage();
+    } else if (buffCheckSequence.nodeState == NodeStates.SUCCESS) {
+        Debug.Log("The AI decided to defend itself");
+        ownData.Buff();
+    } else {
+        Debug.Log("The AI finally decided to attack the player");
+        playerData.Damage();
+    }
+    if(onTreeExecuted != null) {
+        onTreeExecuted();
+    }
+}</pre><p>We evaluate the state of each node, and act accordingly. In the case that all nodes report a <code class="literal">FAILURE</code>, we fall back to an <code class="literal">else</code> clause that attacks the enemy. At each stage we debug the AI's "process" via debug logs. After all the <code class="literal">if</code> checks, we simply fire off our callback, which in turn calls the <code class="literal">EndTurn()</code> method we passed in earlier via the <code class="literal">Game.cs</code> script.</p><p>The last bit of code to look at for this example is the <code class="literal">EnemyTurnState.cs</code><code class="literal">StateMachineBehaviour</code> script. It's attached to the <strong class="userinput"><code>Enemy Turn</code></strong> state in the state machine. In it, we only implement the following two methods: </p><pre class="programlisting">override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
+    Debug.Log("********************* \n Strating the enemy's turn!");
+    animator.gameObject.GetComponent&lt;Game&gt;().EvaluateAITree();
+}</pre><p>As you can see, <code class="literal">OnStateEnter</code> logs some information to the console, then calls the <code class="literal">EvaluteAITree()</code> method on the <code class="literal">Game.cs</code> script, which in turn calls the <code class="literal">Evaluate()</code> method on the <code class="literal">EnemyBehaviorTree.cs</code> script:</p><pre class="programlisting">override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
+    Debug.Log("Ending the enemy's turn. \n *********************");
+}</pre><p>The <code class="literal">OnStateExit</code> method simply logs out some information to the console, so that when we enter play mode in the editor, we'll see an output that looks like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/4c6df5e8-d01c-4ef6-9a8f-740ad6eb9f9b.png" /></div><p>The preceding screenshot shows the console after the AI's first turn, where neither the AI agent nor the player have sustained enough damage for them to heal or attack, and the AI opted to defend itself instead, using the <span class="strong"><strong>Buff</strong></span> ability. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec54"></a>Testing the game</h3></div></div></div><p>All you have to do is hit play, and play along. Each <span>game</span><a id="id288319806" class="indexterm"></a> should play differently depending on how the randomness of the abilities and the <code class="literal">RandomBinaryNode</code> play out. As you can see, even with the simple three-branch behavior tree used here, we're able to create a huge number of possible outcomes for the game. Adding more branches to suit your game design can give your game added challenge, replay value, and unpredictability. </p></div></div>

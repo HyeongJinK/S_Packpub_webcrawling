@@ -1,0 +1,18 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec163"></a>Time for action – preparing to build the deck</h2></div></div><hr /></div><p>Let's set up a<a id="id456" class="indexterm"></a> deck-building function <a id="id457" class="indexterm"></a>called <code class="literal">BuildDeck</code>. </p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the GameScript, create a new function called <code class="literal">BuildDeck</code>. Write this function outside of and apart from your other functions—make sure it's not trapped inside the curly brackets of one of your other functions.</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>  function BuildDeck()</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>  }</strong></span>
+</pre></div></li><li><p>Call the <code class="literal">BuildDeck</code> function in the <code class="literal">Start</code> function, just after you define the three card-related collections:</p><div class="informalexample"><pre class="programlisting">    function Start()
+    {
+      playerCanClick = true; // We should let the player play, 
+          don't you think?
+    
+      // Initialize some empty Collections:
+      aCards = new List.&lt;Card&gt;(); // this Generic List is our deck of cards. It can only ever hold instances ofthe Card class.
+      aGrid = new Card[rows,cols]; // The rows and colsvariables help us define the dimensions of this 2Darray
+      aCardsFlipped = new List.&lt;Card&gt;(); // This List willstore the two cards the player flips over. 
+  
+      <span class="strong"><strong>BuildDeck();</strong></span>
+    
+      // (the rest of this function has been omitted)
+    }</pre></div></li></ol></div><p>The very first function that gets called in our script is the <code class="literal">Start</code> function. After we set our <code class="literal">playerCanClick</code> flag and create a few empty arrays, <code class="literal">BuildDeck()</code> is the very first thing the script will do. (If you've been reading the C# addenda, you'll know from the previous chapter the special <code class="literal">Awake</code> function is called even earlier than the <code class="literal">Start</code> function.)</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec65"></a>Let's break some robots</h3></div></div></div><p>The way our <a id="id458" class="indexterm"></a>game works, we have four different robots—a yellow one, a blue one, a red one, and a green one. Each robot will be missing a body part. The player has to match each robot to its missing body part. That accounts for eight cards—four robots and four missing body parts. Because there are sixteen cards in our 4 x 4 grid, we need to use each robot twice—two yellow robots with two missing yellow body parts, two blue robots with two blue missing body parts, and so on: <span class="strong"><strong>2*8=16</strong></span>.</p><p>Each robot has three body parts that we can knock off: its head, its arm, or its leg. We have to be careful when we build our deck that we don't repeat a robot and body part combination of the same color. For example, our two green robots can't both be missing a head. Our player won't know which head goes with which robot! It's also possible that the player might flip over two green heads, and wonder why they aren't considered a match. Let's do whatever we can to avoid that.</p></div></div>

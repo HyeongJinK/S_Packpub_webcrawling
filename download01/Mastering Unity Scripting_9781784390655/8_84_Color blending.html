@@ -1,0 +1,72 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec86"></a>Color blending</h2></div></div><hr /></div><p>The <code class="literal">Range</code> attribute explored previously may be attached to integer and floating-point variables, by way of their declarations, to limit the accepted values for them between a minimum and maximum in<a id="id628" class="indexterm"></a> the Unity Editor. In the Unity Editor, a slider control is substituted for an editable field that controls the accepted values for the variable. This does not, of course, affect the values assigned to the same variables in the code. In the code, at runtime, the <code class="literal">Range</code> attribute has no effect itself. Rather, the <code class="literal">Range</code> attribute simply<a id="id629" class="indexterm"></a> controls how numerical public variables are presented in the Object Inspector, and how they are entered there via user input. Behind the scenes, an <code class="literal">Editor</code> class is querying object <code class="literal">Attribute</code> data through reflection to control how the data type is rendered in the Object Inspector.</p><p>The <code class="literal">Range</code> attribute works well for numbers. But it'd be great to deploy similar behavior for other data types besides just numbers. For example, it's common to fade between different colors, such as fading from black to transparency to create fade-in and fade-out effects for scene transitions. This is known as Color Lerping (linear interpolation). That is, an intermediary color is generated between two extremes using a normalized float (between <code class="literal">0</code> and <code class="literal">1</code>).</p><p>An appropriate <code class="literal">Inspector</code> property for this data type would be a slider control as with the <code class="literal">Range</code> attribute, which controls the interpolated color between <code class="literal">0</code> and <code class="literal">1</code>, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_08_07.jpg" /><div class="caption"><p>Lerping between two colors</p></div></div><p>In essence then, we need to customize the editor such that whenever an object is selected in the scene, which has a public member of a custom type we specify, we'll want to customize how the member is rendered inside the Object Inspector. This lets us present custom controls and inputs in the Object Inspector, which validates data entry for that member as opposed to simply <a id="id630" class="indexterm"></a>accepting its defaults. To begin this process, let's create a custom class and define all data for a total color blend. A color blend requires four variables, namely the <code class="literal">SourceColor</code> and <code class="literal">DestColor</code> marking the limits of the blend. Next, the <code class="literal">BlendFactor</code> is a normalized float between <code class="literal">0</code> and <code class="literal">1</code> (start and end) which determines which intermediary color should be generated through Lerping. And then, finally, the output color itself (<code class="literal">BlendedColor</code>). The complete class definition for this process is included in the following code sample 8-5:</p><div class="informalexample"><pre class="programlisting">[System.Serializable]
+ public class ColorBlend : System.Object
+ {
+    public Color SourceColor = Color.white;
+    public Color DestColor = Color.white;
+    public Color BlendedColor = Color.white;
+    public float BlendFactor = 0f;
+ }</pre></div><p>As the <code class="literal">ColorBlend</code> class<a id="id631" class="indexterm"></a> uses the <code class="literal">[System.Serializable]</code> attribute, Unity will automatically render the class and its members inside the Object Inspector when it's added as a public member of a class. By default, all public members of <code class="literal">ColorBlend</code> will be rendered, and the <code class="literal">BlendFactor</code> field will be rendered as an editable field inside which numbers can be directly entered, including numbers outside <code class="literal">0</code> and <code class="literal">1</code>, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_08_08.jpg" /><div class="caption"><p>Exposing the Color Adjuster class by its defaults and by changing its properties</p></div></div><p>Let's now start customizing how Unity should render this class inside the Object Inspector. Begin by <a id="id632" class="indexterm"></a>creating a new attribute class called <code class="literal">ColorRangeAttribute</code>, as shown in the following code sample 8-6:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>01 public class ColorRangeAttribute : PropertyAttribute</strong></span>
+<span class="strong"><strong>02 {</strong></span>
+03 //------------------------------------------------------------
+04 public Color Min;
+05 public Color Max;
+06 //------------------------------------------------------------
+<span class="strong"><strong>07 public ColorRangeAttribute(float r1, float g1, float b1, float a1,</strong></span>
+<span class="strong"><strong>08                            float r2, float g2, float b2, float a2)</strong></span>
+09 {
+10       this.Min = new Color(r1, g1, b1, a1);
+11       this.Max = new Color(r2, g2, b2, a2);
+12 }
+13 //------------------------------------------------------------
+14 }</pre></div><p>The following are the comments for code sample 8-6:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 01</strong></span>: The <a id="id633" class="indexterm"></a>
+<code class="literal">ColorRangeAttribute</code> class defines a metadata structure that we can tag to other data types. Notice that it derives from <code class="literal">PropertyAttribute</code>. This signifies, above everything else, that <code class="literal">ColorRangeAttribute</code> is an attribute and metadata structure but not a regular class. It's not supposed to be instantiated as a standard class is.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 07</strong></span>: The attribute has a constructor function that accepts eight floating-point values defining the RGBA channels for the source and destination colors of the Lerp. These will be used soon when attaching the attribute to a variable.</p></li></ul></div><p>Now, we'll write a class<a id="id634" class="indexterm"></a> declaring an instance of <code class="literal">ColorBlend</code> with the <code class="literal">ColorRangeAttribute</code> attribute attached. Even now, however, the addition of <code class="literal">ColorRangeAttribute</code> will do nothing per se because no <code class="literal">Editor</code> class has yet been written to handle it. We can see this in the following code:</p><div class="informalexample"><pre class="programlisting">public class ColorAdjuster : MonoBehaviour 
+{
+   [ColorRangeAttribute(1f,0f,0f,0f,   0f,1f,0f,1f)]
+   public ColorBlend MyColorBlend;
+}</pre></div><p>Creating an <code class="literal">Editor</code> class for rendering <code class="literal">ColorBlend</code> in the Object Inspector with a slider control involves handling the <code class="literal">ColorRangeAttribute</code> class. Specifically, Unity offers us the extension <code class="literal">PropertyDrawer</code> base class from which we can derive new classes to override the Object Inspector rendering for any specific attribute we add to our variables. In short, the <code class="literal">PropertyDrawer</code> class lets us customize inspector drawing for any and all variables tagged with a common attribute. Therefore, inside the <code class="literal">Editor</code> folder of your project, create a new <code class="literal">ColorRangeDrawer</code> class, as shown in the following code sample 8-7:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using UnityEditor; //Be sure to include UnityEditor for all extension classes
+03 using System.Collections;
+04 //------------------------------------------------------------
+05 //CustomPropertyDrawer attribute for overriding drawing of all ColorRangeAttribute members
+
+06 [CustomPropertyDrawer(typeof(ColorRangeAttribute))]
+07 public class ColorRangeDrawer : PropertyDrawer
+08 {
+09 //------------------------------------------------------------
+10 //Event called by Unity Editor for updating GUI drawing of controls
+
+<span class="strong"><strong>11 public override void OnGUI (Rect position, SerializedProperty property, GUIContent label)</strong></span>
+
+12 {
+13        //Get color range attribute meta data
+<span class="strong"><strong>14 ColorRangeAttribute range  = attribute as ColorRangeAttribute;</strong></span>
+15 
+16        //Add label to inspector
+17 position = EditorGUI.PrefixLabel (position, new GUIContent ("Color Lerp"));
+18 
+19        //Define sizes for color rect and slider controls
+20 Rect ColorSamplerRect = new Rect(position.x, position.y, 100, position.height);
+
+21 Rect SliderRect = new Rect(position.x+105, position.y, 200, position.height);
+22 
+23       //Show color rect control
+24 EditorGUI.ColorField(ColorSamplerRect, property.FindPropertyRelative("BlendedColor").colorValue);
+25 
+26      //Show slider control
+27 property.FindPropertyRelative("BlendFactor").floatValue = EditorGUI.Slider(SliderRect, property.FindPropertyRelative("BlendFactor").floatValue, 0f, 1f);
+28 
+29      //Update blended color based on slider
+30 property.FindPropertyRelative("BlendedColor").colorValue = Color.Lerp(range.Min, range.Max, property.FindPropertyRelative("BlendFactor").floatValue);
+31 }
+32 //------------------------------------------------------------
+33 }
+34 //------------------------------------------------------------</pre></div><p>The following are the comments for code sample 8-7:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 01</strong></span>: The <a id="id635" class="indexterm"></a>
+<code class="literal">CustomPropertyDrawer</code> attribute is used here to associate the <code class="literal">PropertyDrawer</code> class with the <code class="literal">ColorRangeAttribute</code> attribute. The Unity Editor uses this metadata internally to determine which types require custom rendering in the Object Inspector. In this case, all members with <code class="literal">ColorRangeAttribute</code> will be drawn manually by the <code class="literal">OnGUI</code> function of the <code class="literal">PropertyDrawer</code> class.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 11</strong></span>: The<a id="id636" class="indexterm"></a> <code class="literal">OnGUI</code> function is overridden<a id="id637" class="indexterm"></a> from the base class to define how all fields with <code class="literal">ColorRangeAttribute</code> should be rendered in the Object Inspector. <code class="literal">EditorGUI</code> is a native Unity Editor utility class for drawing GUI elements, such as buttons, textboxes, and sliders. For more information on<a id="id638" class="indexterm"></a> <code class="literal">EditorGUI</code>, see the online documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/EditorGUI.html" target="_blank">http://docs.unity3d.com/ScriptReference/EditorGUI.html</a>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 14</strong></span>: The <code class="literal">OnGUI</code> function is called once, perhaps many times per second, for each unique member to render manually in the Object Inspector. The attribute data for <code class="literal">ColorRangeAttribute</code> is retrieved here with typecasting, and this gives us access directly to all its members for the current object being rendered. To access the member variables of the object itself (for read/write access), as opposed to its attribute, the <code class="literal">SerializedProperty</code> argument should be used, such as the <a id="id639" class="indexterm"></a>
+<code class="literal">FindPropertyRelative</code> method. For<a id="id640" class="indexterm"></a> more information, see the online Unity documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/SerializedProperty.html" target="_blank">http://docs.unity3d.com/ScriptReference/SerializedProperty.html</a>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 24</strong></span>: From here onwards, the <code class="literal">FindPropertyRelative</code> function is called to retrieve public<a id="id641" class="indexterm"></a> member variables, such as the <code class="literal">SourceColor</code>, <code class="literal">DestColor</code>, and <code class="literal">BlendedColor</code> in the selected object. This is where the values are actually set by moving the slider component.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip57"></a>Tip</h3><p>More information on the<a id="id642" class="indexterm"></a> <code class="literal">PropertyDrawer</code> class can be found in the online Unity documentation at <a class="ulink" href="http://docs.unity3d.com/Manual/editor-PropertyDrawers.html" target="_blank">http://docs.unity3d.com/Manual/editor-PropertyDrawers.html</a>.</p></div></li></ul></div><p>The code sample 8-7 overrides the Object Inspector drawing for any <code class="literal">ColorBlend</code> instances when tagged with the <code class="literal">ColorRangeAttribute</code> attribute. This offers an accessible and easy-to-use way of creating blended colors. Remember, you can make your source and destination colors public, in order to be accessible from the <span class="strong"><strong>Inspector</strong></span> tab, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_08_09.jpg" /><div class="caption"><p>Creating a ColorBlender display for the ColorBlend class</p></div></div></div>

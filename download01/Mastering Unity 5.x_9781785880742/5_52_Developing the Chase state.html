@@ -1,0 +1,33 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec52"></a>Developing the Chase state</h2></div></div><hr /></div><p>The Chase state occurs when the NPC is following and moving towards the player. In <span class="emphasis"><em>Dead Keys</em></span>, this happens whenever the scene camera moves into a trigger volume or area where zombies are waiting:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_022.jpg" /></div><p>
+</p><p>Chase state</p><p>The following is the <code class="literal">Chase</code> coroutine (for the Chase state). It contains some interesting features, considered further in the comments section:</p><pre class="programlisting">    //------------------------------------ &#13;
+    public IEnumerator StateChase() &#13;
+    { &#13;
+         &#13;
+ &#13;
+        //Run chase animation &#13;
+        ThisAnimator.SetInteger("AnimState", (int) ActiveState); &#13;
+ &#13;
+        //Set destination &#13;
+        ThisAgent.SetDestination (PlayerTransform.position); &#13;
+ &#13;
+        //Wait until path is calculated &#13;
+        while (!ThisAgent.hasPath) &#13;
+            yield return null; &#13;
+ &#13;
+        //While in chase state &#13;
+        while(ActiveState == AISTATE.CHASE) &#13;
+        { &#13;
+            if (ThisAgent.remainingDistance &lt;= ThisAgent.stoppingDistance) &#13;
+            { &#13;
+                ThisAgent.Stop (); &#13;
+                yield return null; &#13;
+                ActiveState = AISTATE.ATTACK; &#13;
+                yield break; &#13;
+            } &#13;
+ &#13;
+            yield return null; &#13;
+        } &#13;
+    } &#13;
+    //------------------------------------  &#13;
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec57"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">StateChase</code> corotuine begins by setting the <code class="literal">AnimState</code> integer parameter in Mecanim, for playing the walk/chase animation. This is configured to play on a loop.</p></li><li style="list-style-type: disc"><p>Next, the <span class="strong"><strong>Nav Mesh Agent</strong></span> component is used to set the destination for the zombie. This will be the player location. This causes the zombie to move, walking towards the player, using the navigation mesh.</p></li><li style="list-style-type: disc"><p>After setting the navmesh destination, the coroutine waits for the <code class="literal">NavMeshAgent</code> to fully calculate the zombie's path. The calculation often happens quickly, but it runs asynchronously and can take more than one frame. That is, the path is not necessarily fully calculated immediately after calling <code class="literal">SetDestination</code>.</p></li><li style="list-style-type: disc"><p>Next, the couroutine loops continuously, frame by frame, until the <code class="literal">remainingDistance </code>(the distance left to travel) is less than the <code class="literal">stoppingDistance</code> (the distance for stopping). In other words, the zombie should continue travelling in Chase mode until it reaches the destination.</p></li><li style="list-style-type: disc"><p>On reaching the player, the state changes to Attack.</p></li></ul></div></div></div>

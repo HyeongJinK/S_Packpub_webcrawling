@@ -1,0 +1,22 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec19"></a>Input for the Touch device</h2></div></div><hr /></div><p>To calculate <a id="id96" class="indexterm"></a>the type of touch from the touch input, we will follow the same logic. We will only use the touch location to calculate <code class="literal">StartTouchLocation</code> and <code class="literal">CurrentTouchLocation</code>.</p><p>Add the following code in the <code class="literal">else</code> block of the <code class="literal">Update</code> function, after <code class="literal">Application.isEditor</code> and in <code class="literal">if Input.touches.Length &gt; 0</code>:</p><div class="informalexample"><pre class="programlisting">  if (Input.touches.Length &gt; 0)
+  {
+    DeviceTouch = Input.GetTouch(0);
+    if (ActiveTouch.Phase == TouchPhase.Canceled)
+    {
+      ActiveTouch.Phase = DeviceTouch.phase;
+      ActiveTouch.StartTime = System.DateTime.Now;
+      ActiveTouch.StartTouchLocation = DeviceTouch.position;
+      ActiveTouch.CurrentTouchLocation = DeviceTouch.position;
+    }
+    else
+    {
+      ActiveTouch.CurrentTouchLocation = DeviceTouch.position;
+    }
+  }</pre></div><p>As you can see, this follows the same concept as what we do for when the game is running in the editor. The <a id="id97" class="indexterm"></a>big difference being that we will now assign <code class="literal">DeviceTouch</code> to <code class="literal">Input.GetTouch(0)</code> when there is more than <span class="emphasis"><em>one</em></span> touch active. From this, we can view the position of the touch on screen and update this position for however long the touch exists.</p><p>Just as with the mouse input, we need to manage the touch when the user stops clicking on the screen.</p><p>Add an <code class="literal">else</code> block after <code class="literal">if Input.touches.Length &gt; 0</code>:</p><div class="informalexample"><pre class="programlisting">  else
+  {
+    if (ActiveTouch.Phase != TouchPhase.Canceled)
+    {
+      CalculateTouchInput( ActiveTouch );
+      ActiveTouch.Phase = TouchPhase.Canceled;
+    }
+  }</pre></div></div>

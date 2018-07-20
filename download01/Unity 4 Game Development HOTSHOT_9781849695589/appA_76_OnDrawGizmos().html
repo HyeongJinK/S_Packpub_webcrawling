@@ -1,0 +1,44 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec78"></a>OnDrawGizmos()</h2></div></div><hr /></div><p>Implement the <code class="literal">OnDrawGizmos()</code> function if you want to draw gizmos that are also pickable <a id="id1309" class="indexterm"></a>and always drawn. This <a id="id1310" class="indexterm"></a>allows you to quickly pick important objects in your scene. You can also use <code class="literal">OnDrawGizmos()</code> to draw a line or different type of gizmos, such as <code class="literal">Gizmos.DrawRay</code>, <code class="literal">Gizmos.DrawLine</code>, and <code class="literal">Gizmos.DrawWireSphere</code>, which will make it easier for you to debug the code.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip42"></a>Tip</h3><p>
+<code class="literal">OnDrawGizmos()</code> will use a mouse position that is relative to the <span class="strong"><strong>Scene</strong></span> view. This function only works for debugging in the editor.</p></div><p>An example <a id="id1311" class="indexterm"></a>of <code class="literal">OnDrawGizmos()</code> is as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+var target : Transform;
+// Draw the blue line from this object to the target
+function OnDrawGizmos () {
+    if (target != null) {
+      Gizmos.color = Color.Blue;
+       Gizmos.DrawLine(transform.position, target.position);
+    }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+Transform target;
+// Draw the blue line from this object to the target
+void OnDrawGizmos () {
+    if (target != null) {
+       Gizmos.color = Color.Blue;
+       Gizmos.DrawLine(transform.position, target.position);
+  }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec152"></a>References</h3></div></div></div><p>For more<a id="id1312" class="indexterm"></a> details and references, check out the following Unity scripting document links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.Awake.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.Awake.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.Start.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.Start.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.Update.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.Update.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.FixedUpdate.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.FixedUpdate.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.LateUpdate.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.LateUpdate.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnGUI.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnGUI.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnDrawGizmos.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnDrawGizmos.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Gizmos.DrawLine.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Gizmos.DrawLine.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnEnable.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnEnable.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnDisable.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnDisable.html</a>
+</p></li></ul></div></div></div>

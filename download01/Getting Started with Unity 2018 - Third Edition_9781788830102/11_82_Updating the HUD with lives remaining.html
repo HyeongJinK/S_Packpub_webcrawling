@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec80"></a>Updating the HUD with lives remaining</h2></div></div><hr /></div><p>In the previous section, we modified the <code class="literal">CucumberManManager</code> script to track the number of lives our player has remaining and, when <span>none</span><a id="id288601234" class="indexterm"></a> were left, the appropriate animation was played. In this section, we will continue modifying the <code class="literal">CucumberManManager</code> script to update the HUD with the number of lives remaining.</p><p>We only need to modify the <code class="literal">CucumberManManager</code> script's <code class="literal">Update()</code> method. The completed <code class="literal">Update()</code> method is provided here with an explanation of the changes made:</p><pre class="programlisting">voidUpdate(){
+
+if(collectingCherries){
+if(tempCurrentCherryCount&gt;&lt;/span&gt;=60){
+currentCherryCount=currentCherryCount+1;
+tempCurrentCherryCount=0;
+
+_ptsManager=GameObject.Find
+                 ("Score_Value").GetComponent&amp;lt;PointsManager&gt;();
+PointsManager.currentScore=
+                 PointsManager.currentScore+5;
+
+}else{
+tempCurrentCherryCount=tempCurrentCherryCount+1;
+}
+}
+
+if(livesRemaining==2){
+Destroy(GameObject.Find("Life3"));
+}
+if(livesRemaining==1){
+Destroy(GameObject.Find("Life2"));
+}
+if(livesRemaining==0){
+Destroy(GameObject.Find("Life1"));
+            anim = GetComponent&amp;lt;Animator&gt; ();
+             anim.Play ("CM_Die");
+}
+}</pre><p>We added conditional statements to check for the number of lives remaining. When two are left, we destroy the third life image. We destroy the second one when only one life remains, and destroy the first life image when no life remains. We used the <code class="literal">Destroy()</code> method to accomplish this. </p></div>

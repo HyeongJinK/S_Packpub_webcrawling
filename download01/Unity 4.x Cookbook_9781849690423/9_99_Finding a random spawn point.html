@@ -1,0 +1,33 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec97"></a>Finding a random spawn point</h2></div></div><hr /></div><p>Many games make use of<a id="id706" class="indexterm"></a> spawn points and waypoints. This recipe demonstrates a very common example of spawning: choosing a random spawn point and instantiating an object at that point.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_09_11.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec338"></a>Getting ready</h3></div></div></div><p>This recipe builds <a id="id707" class="indexterm"></a>upon the player-controlled cube Unity project you created in the first recipe. So make a copy of that project, open it, and then follow the steps of this recipe.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec339"></a>How to do it...</h3></div></div></div><p>To choose a random spawn point, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following C# script class to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: SpawnBall
+using UnityEngine;
+using System.Collections;
+
+public class SpawnBall : MonoBehaviour {
+  public GameObject prefabBall;
+  public GameObject[] respawns;
+  public const float FIRE_DELAY = 0.25f;
+  private float nextFireTime = 0f;
+
+  private void Start(){
+    respawns = GameObject.FindGameObjectsWithTag("Respawn");
+  }
+
+  void Update() {
+    if( Time.time &gt; nextFireTime )
+      CheckFireKey();
+  }
+
+  void CheckFireKey() {
+    if( Input.GetButton("Fire1")) {
+      CreateSphere();
+      nextFireTime = Time.time + FIRE_DELAY;
+    }
+  }
+
+  private void CreateSphere(){
+    int r = Random.Range(0, respawns.Length);
+    GameObject spawnPoint = respawns[r];
+    if( spawnPoint )
+      Instantiate( prefab_ball, spawnPoint.transform.position, spawnPoint.transform.rotation);
+  }
+}</pre></div></li><li><p>Create a sphere sized (1, 1, 1) at position (2, 2, 2).</p></li><li><p>Create a new Prefab named <code class="literal">Prefab-ball</code>, and drag your sphere into it (and then delete the sphere from the <span class="strong"><strong>Hierarchy</strong></span> panel).</p></li><li><p>Ensuring <span class="strong"><strong>Main Camera</strong></span> is selected, in the Inspector for the <code class="literal">SpawnBall</code> scripted component, drag <span class="strong"><strong>Prefab-ball</strong></span> over the public variable Projectile <span class="strong"><strong>Prefab-ball</strong></span>.</p></li><li><p>Create a new<a id="id708" class="indexterm"></a> capsule object named <code class="literal">Capsule-spawnPoint</code> at (3, 0.5, 3), give it the tag <code class="literal">Respawn</code> (this is one of the default tags Unity provides) and uncheck its <span class="strong"><strong>Mesh Renderer</strong></span> (so it is invisible).</p></li><li><p>Copy your <code class="literal">Capsule-spawnPoint</code> and move the copy to (-3, 0.5, -3).</p></li><li><p>Now run your game. When you click on the mouse (fire) button, a sphere should be instantiated randomly to one of the capsule locations.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec340"></a>How it works...</h3></div></div></div><p>The two <code class="literal">Capsule-spawnPoint</code> objects<a id="id709" class="indexterm"></a> <a id="id710" class="indexterm"></a>represent candidate locations where we might wish to create an instance of our ball Prefab. When the <code class="literal">Start()</code> message is received, GameObject array <code class="literal">respawns</code> is set to the array returned from the call to <code class="literal">FindGameObjectsWithTag("Respawn")</code>. This creates an array of all objects in the scene with the tag <code class="literal">Respawn</code>, that is, the two <code class="literal">Capsule-spawnPoint</code> objects.</p><p>Variable <code class="literal">nextFireTime</code> stores the time a projectile may be fired next, and for each frame the current time is<a id="id711" class="indexterm"></a> tested to see if that time has been reached. If it has, the <code class="literal">CheckFireKey()</code> method is<a id="id712" class="indexterm"></a> called. This variable is initialized to zero, so the user doesn't have to wait at all to fire the first time.</p><p>The <code class="literal">CheckFireKey()</code> method tests whether at that instant the user is pressing the Fire button. If the Fire button is pressed, the <code class="literal">CreateSphere()</code> method<a id="id713" class="indexterm"></a> is called. Also, the next time the player can fire is set to <code class="literal">FIRE_DELAY</code> seconds in the future.</p><p>The <code class="literal">CreateSphere()</code> method chooses a random index (<code class="literal">r</code>) in the <code class="literal">respawns</code> array and assigns the <code class="literal">spawnPoint</code> variable<a id="id714" class="indexterm"></a> to the GameObject at that location in the array. It then creates a new instance of <code class="literal">prefab_Ball</code> (via the public variable) at the same position and rotation of the <code class="literal">spawnPoint</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec341"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Finding the nearest spawn point</em></span> recipe</p></li><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Following waypoints in a sequence</em></span> recipe</p></li></ul></div></div></div>

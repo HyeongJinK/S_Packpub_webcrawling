@@ -1,0 +1,96 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec88"></a>Moving the panda</h2></div></div><hr /></div><p>The controls in RETROformer are quite straightforward. We have just three actions:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Move left</li><li style="list-style-type: disc">Move right</li><li style="list-style-type: disc">Jump</li></ul></div><p>However, we need to sync these actions with the animation state machine created in the previous section. Moreover, in <a class="link" href="#" linkend="ch09">Chapter 9</a>, <span class="emphasis"><em>Look, It Moves</em></span>, we extended this controller so that it can be used by mobile devices as well.  As a result, we need to build the controller in a modular way—we need a control scheme.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec107"></a>The control scheme</h3></div></div></div><p>It's important to define a control scheme that allows us to control the character in different ways. Suppose that you want to ship the game both for (desktop) computers and mobile devices. One has a keyboard, the other one has a touchscreen. As a result, you need to write twice how the character should move based on the input. Now, imagine that you add also AI enemies; they need a script that not only makes them think but also move. However, all this repetition of the code can be avoided with a simple control scheme. We abstract the movement in a separate class, which doesn't care how the input arrives, but once it arrives, this class will make the character move. We can call this Movement Component, which we are going to implement in this section.</p><p>Have a look at the following figure of the control scheme:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/6a1ef8f1-1bba-4307-9743-d8fbf718542b.png" /></div><p>As you can see, the <span class="strong"><strong>Movement Component</strong></span> can receive input from different sources. These sources don't have to worry about movement since the <span class="strong"><strong>Movement Component</strong></span> will take care of that. The output of the <span class="strong"><strong>Movement Component</strong></span> is to tell the physics engine which forces are applied to the character to make it move. Later, we will implement both the <code class="literal">Player Controller</code> (for input based on a keyboard) in <a class="link" href="#" linkend="ch11">Chapter 11</a>, <span class="emphasis"><em>Don't Forget to Save</em></span>, and the <span class="strong"><strong>UI</strong></span><strong class="userinput"><code>Controllers</code></strong> (for input based on the touchscreen) in <a class="link" href="#" linkend="ch12">Chapter 12</a>, <span class="emphasis"><em>The Nature of Export</em></span>. Here, in this chapter, we will focus only on the Movement Component.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec46"></a>The Movement Component</h4></div></div></div><p>Let's start by creating a new C# Script and naming it <code class="literal">MovementComponent</code>. This class will contain all the logic that will allow our character to move (and to animate). In fact, it is a component that is attached to the panda character. In particular, it implements three functions, one for each action. Also, this component has to keep in consideration the animator, to show the right animation for the character.</p><p>Let's start by adding three private variables, one to store the <code class="literal">Animator</code> component, another one for the <code class="literal">Rigidbody2D</code>, and the last one for the <code class="literal">SpriteRenderer</code>:</p><pre class="programlisting">private Animator anim;
+private Rigidbody2D rb2d;
+private SpriteRenderer spriteRenderer;</pre><p>We can retrieve these three inside the <code class="literal">Awake()</code> function, by calling the <code class="literal">GetComponent()</code> function:</p><pre class="programlisting">   void Awake () {
+        anim = GetComponent&lt;Animator&gt;();
+        rb2d = GetComponent&lt;Rigidbody2D&gt;();
+        spriteRenderer = GetComponent&lt;SpriteRenderer&gt;();
+    }</pre><p>Since we want to avoid the case in which one of these three components is not found, we can force adding those every time we attach this script to a game object. We can achieve this using the <code class="literal">RequireComponent</code> before the class declaration, one for each of the components we want to enforce (for more information regarding this, you can check the official documentation here: <a class="ulink" href="https://docs.unity3d.com/ScriptReference/RequireComponent.html" target="_blank">https://docs.unity3d.com/ScriptReference/RequireComponent.html</a>):</p><pre class="programlisting"><span class="strong"><strong>[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(SpriteRenderer))]
+</strong></span>public class MovementComponent : MonoBehaviour {
+            //[...]
+}</pre><p>Next, we still need some variables that define the settings of the <code class="literal">MovementComponent</code>. In particular, we need three variables. The first one is <code class="literal">moveForce</code>, which indicates with how much force the character is pushed when the player moves the character. The second is <code class="literal">maxSpeed</code>, which is the maximum speed along the x-axis at which the character can go, any force on the character that breaks this limit is ignored. Finally, the last one is <code class="literal">jumpForce</code>, which indicates the force applied to the character when the player jumps. Since all of them should be private (in the sense that they cannot be modified by external scripts) but at the same time tweakable from the <strong class="userinput"><code>Inspector</code></strong>, we need to insert the <code class="literal">SerializableField</code> attribute, as shown in the following code:  </p><pre class="programlisting">    [SerializeField]
+    private float moveForce = 360f;
+    [SerializeField]
+    private float maxSpeed = 5f;
+    [SerializeField]
+    private float jumpForce = 1000f;</pre><p>In a similar manner, we need to have another private variable, which needs to be set in the <strong class="userinput"><code>Inspector</code></strong>. The <code class="literal">groundCheck</code> is a variable storing the <strong class="userinput"><code>Transform</code></strong> of the <code class="literal">Ground Checker</code> game object we created before. This will allow us to correctly perform the jump:</p><pre class="programlisting">    [SerializeField]
+    private Transform groundCheck;</pre><p>Also, we need to check in the <code class="literal">Awake()</code> function that the <code class="literal">groundCheck</code> variable has been correctly initialized, otherwise we launch a warning into the console and remove the <code class="literal">MovementComponent</code> from the character:</p><pre class="programlisting">   void Awake () {
+        anim = GetComponent&lt;Animator&gt;();
+        rb2d = GetComponent&lt;Rigidbody2D&gt;();
+        spriteRenderer = GetComponent&lt;SpriteRenderer&gt;();
+
+<span class="strong"><strong>        //Check if the groundCheck variable is set
+</strong></span><span class="strong"><strong>        if(groundCheck == null) 
+        {
+           Debug.LogError("Ground Check missing from the MovementComponent, 
+           please set one.");
+           Destroy(this);
+        }
+</strong></span>    }</pre><p>Now, we are ready to implement the two main functions to move our character.</p><p>The first one is <code class="literal">MoveCharacter()</code>, which takes as a parameter a normalized speed (a value between -1 and +1, where the sign indicates the direction, positive is right and negative is left). The function checks if the character isn't going faster than the maximum velocity specified in the <code class="literal">maxSpeed</code> variable, and if so, a force is applied to the <span class="strong"><strong>rigidbody</strong></span> equal to the <code class="literal">moveForce</code>, scaled by the normalized speed facing the right direction:</p><pre class="programlisting">   public void MoveCharacter(float normalisedSpeed) {
+
+        //If the max velocity is not reached, then...
+        if(rb2d.velocity.x * normalisedSpeed &lt; maxSpeed) {
+            //... apply a force to the character
+            rb2d.AddForce(Vector2.right * normalisedSpeed * moveForce);
+        }
+    }</pre><p>After having applied the force, the velocity is clamped to the maximum that the character can go, but only on the x-axis, while leaving invariant the y-axis:</p><pre class="programlisting">   public void MoveCharacter(float normalisedSpeed) {
+
+        //If the max velocity is not reached, then...
+        if(rb2d.velocity.x * normalisedSpeed &lt; maxSpeed) {
+            //... apply a force to the character
+            rb2d.AddForce(Vector2.right * normalisedSpeed * moveForce);
+        }
+
+<span class="strong"><strong>       //Set the velocity such as the x component is clamped, 
+          whereas the y component is the same
+          float clampVelocityX = Mathf.Clamp(rb2d.velocity.x, -maxSpeed, 
+          maxSpeed);
+          rb2d.velocity = new Vector2(clampVelocityX, rb2d.velocity.y);</strong></span>
+    }</pre><p>As with jumping in any sense, jumping within a game is greatly affected by the strength of gravity. The less gravity, the more it is like you're walking on the moon, which can make things easier or more difficult, depending on what you're trying to do. Thus, the <code class="literal">Jump()</code> function, instead, is a little bit tricker, because, in order to perform a jump, we need to check whether the character is actually grounded (is touching the ground) or not. There are many ways in which we can do this. In this project, we are going to use a more classical approach. The character has a point attached to his base. Using a <code class="literal">Linecast</code>, we check whether there is terrain between the center of the character and this <code class="literal">groundCheck</code> point. If there is terrain, then the panda can jump and we can add a force toward the up direction:</p><pre class="programlisting">   public void Jump() {
+        //Check if the character can jump
+        if (Physics2D.Linecast(transform.position, groundCheck.position, 1 
+        &lt;&lt;LayerMask.NameToLayer("Ground"))) {
+            if (rb2d.velocity.y &lt;= 0) {
+                //Perform the jump
+                rb2d.AddForce(new Vector2(0f, jumpForce));
+            }
+        }
+    }</pre><p>If the preceding code seems a bit complicated at first because of the <code class="literal">LineCast()</code> function within the <span class="emphasis"><em>if-statement</em></span>, you may want to have a look to the following code, which does exactly the same, but the comments guide you step by step:</p><pre class="programlisting">public void Jump() {
+    // Get the index for the Ground layer mask.
+    int layerMaskIndex = LayerMask.NameToLayer(“Ground”);
+
+    // Calculate the layer mask value that can be used in the following
+    // Physics2D.Linecast() method call. We use a bitwise left shift
+    // operation to find the correct value which is 256 because we
+    // use the 8th User Layer in our example: 1 &lt;&lt; 8 = 256.
+    int groundCheckLayerMask = 1 &lt;&lt; layerMaskIndex;
+
+    //Check if the character can jump
+    if (Physics2D.Linecast(transform.position,
+        groundCheck.position,
+        groundCheckLayerMask))
+        {
+        if (rb2d.velocity.y &lt;= 0) {
+            //Perform the jump
+            rb2d.AddForce(new Vector2(0f, jumpForce));
+        }
+    }
+}</pre><p>This is enough for the logic; however, we still  need to animate the character. Thus, let's fill the <code class="literal">Update()</code> function so we can have control over the animation frame after frame. In particular, we need to set the <code class="literal">Speed</code> parameter of the animation state machine as the velocity along the x-axis. Likewise, we can use the velocity along the y-axis to set whether the character is grounded or not in the state machine, by setting the <code class="literal">Jump</code> parameter:</p><pre class="programlisting"> void Update () {
+        //Set the Speed parameter in the Animation State Machine
+        anim.SetFloat("Speed", Mathf.Abs(rb2d.velocity.x));
+
+        //Set the Jump parameter in the Animation State Machine
+        anim.SetBool("Jump", rb2d.velocity.y != 0);
+    }</pre><p>Finally, depending on the sign of the velocity along the x-axis, we can flip the character through the <strong class="userinput"><code>Sprite Renderer</code></strong> to make the character face the correct direction:</p><pre class="programlisting"> void Update () {
+        //Set the Speed parameter in the Animation State Machine
+        anim.SetFloat("Speed", Mathf.Abs(rb2d.velocity.x));
+
+        //Set the Jump parameter in the Animation State Machine
+        anim.SetBool("Jump", rb2d.velocity.y != 0);
+
+<span class="strong"><strong>        //Check in which direction the sprite should face and flip 
+           accordingly
+        if (rb2d.velocity.x != 0)
+            spriteRenderer.flipX = rb2d.velocity.x &lt; 0;</strong></span>
+    }</pre><p>Save the script because it's ready to be added to the character.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec47"></a>Setting up the Movement Component</h4></div></div></div><p>Now that we have finished creating the Movement Component, we need to attach it to the <strong class="userinput"><code>Panda Hero Object</code></strong>. The required components won't add anything new because we already have all the components that we need.</p><p>Besides tweaking the values for your game, the important setting is the <code class="literal">groundCheck</code> transform variable, which needs to be properly initialized. As such, take the <strong class="userinput"><code>Ground Check</code></strong> (which is attached to the <strong class="userinput"><code>Panda Hero</code></strong>), and drag it into the <code class="literal">groundCheck</code> variable. As a result, the component should appear in the <strong class="userinput"><code>Inspector</code></strong> as this:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/189eaa70-d96d-4fc8-99b8-3a4880bdc543.png" /></div></div></div></div>

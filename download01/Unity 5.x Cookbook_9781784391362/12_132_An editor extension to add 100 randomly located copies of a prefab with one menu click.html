@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec128"></a>An editor extension to add 100 randomly located copies of a prefab with one menu click</h2></div></div><hr /></div><p>Sometimes we<a id="id1348" class="indexterm"></a> want to create "lots" of pickups, randomly in our scene. Rather than doing this by hand, it is possible to add a custom menu and item to the Unity editor, which, when selected, will execute a script. In this recipe, we create a menu item that calls a script to create 100 randomly positioned star pickup prefabs in the Scene.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_43.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec404"></a>Getting ready</h3></div></div></div><p>This recipe assumes you are starting with the project <code class="literal">Simple2Dgame_SpaceGirl</code> setup from the<a id="id1349" class="indexterm"></a> first recipe in this chapter.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec405"></a>How to do it...</h3></div></div></div><p>To create an editor extension to add 100 randomly located copies of a prefab with one menu click, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Start with a new copy of mini-game <code class="literal">Simple2Dgame_SpaceGirl</code>.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> panel, create a new folder named <code class="literal">Prefabs</code>. Inside this new folder, create a new empty prefab named <code class="literal">prefab</code>_<code class="literal">star</code>. Populate this prefab by dragging GameObject <code class="literal">star</code> from the <span class="strong"><strong>Hierarchy</strong></span> panel over <code class="literal">prefab</code>_<code class="literal">star</code> in the <span class="strong"><strong>Project</strong></span> panel. The prefab should now turn blue and have a copy of all of GameObject star's properties and components.</p></li><li><p>Delete GameObject <code class="literal">star</code> from the <span class="strong"><strong>Hierarchy</strong></span>.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> panel, create a new folder named <code class="literal">Editor</code>. Inside this new folder, create a new C# script class named <code class="literal">MyGreatGameEditor</code>, with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+using System.Collections;
+using System;
+public class MyGreatGameEditor : MonoBehaviour {
+  const float X_MAX = 10f;
+  const float Y_MAX = 10f;
+
+  static GameObject starPrefab;
+
+  [MenuItem("My-Great-Game/Make 100 stars")]
+  static void PlacePrefabs(){
+    string assetPath = "Assets/Prefabs/prefab_star.prefab";
+    starPrefab = (GameObject)AssetDatabase.LoadMainAssetAtPath(assetPath);
+
+    int total = 100;
+    for(int i = 0; i &lt; total; i++){
+      CreateRandomInstance();
+    }
+  }
+
+  static void CreateRandomInstance(){
+    float x = UnityEngine.Random.Range(-X_MAX, X_MAX);
+    float y = UnityEngine.Random.Range(-Y_MAX, Y_MAX);
+    float z = 0;
+    Vector3 randomPosition = new Vector3(x,y,z);
+
+    Instantiate(starPrefab, randomPosition, Quaternion.identity);
+  }
+}</pre></div></li><li><p>After 20 to 30 seconds, depending on the speed of your computer, you should now see a new menu appear, <span class="strong"><strong>My Great Game</strong></span>, with a single menu item, <span class="strong"><strong>Make 100 stars</strong></span>. Chose this menu item and, as if by <a id="id1350" class="indexterm"></a>magic, you should now see 100 new <span class="strong"><strong>prefab_star(Clone)</strong></span> GameObjects appear in the scene!</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_44.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec406"></a>How it works...</h3></div></div></div><p>The core aim of this recipe is to add a new menu, containing a single menu item that will execute the action we desire. C# attribute <code class="literal">[MenuItem("&lt;menuName&gt;/&lt;menuItemName&gt;")]</code> declares the menu name and the menu item name, and Unity will execute the static method that follows in the code listing, each time the menu item is selected by the user.</p><p>In this recipe, the <code class="literal">[MenuItem("My-Great-Game/Make 100 stars")]</code> statement declares the menu name as <code class="literal">My-Great-Game</code> and the menu item as <code class="literal">Make 100 stars</code>. The method immediately following this attribute is the <code class="literal">PlacePrefabs()</code> method. When this method is executed, it makes the <code class="literal">starPrefab</code> variable become a reference to the prefab found via the <code class="literal">Assets/Prefabs/prefab_star.prefab</code> path. Then, a <code class="literal">for</code> loop is executed 100 times, each time calling the <code class="literal">CreateRandomInstance()</code> method.</p><p>The <code class="literal">CreateRandomInstance()</code> method<a id="id1351" class="indexterm"></a> creates a Vector3 <code class="literal">randomPosition</code> variable, making use of <code class="literal">X_MAX</code> and <code class="literal">Y_MAX</code> constants. The <code class="literal">Instantiate(...)</code> built-in method is then used to create a new GameObject in the scene, making a clone of the prefab and locating<a id="id1352" class="indexterm"></a> it at the position defined by <code class="literal">randomPosition</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec407"></a>There's more...</h3></div></div></div><p>Some details you don't want to miss:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec121"></a>Child each new GameObject to a single parent, to avoid filling up the Hierarchy with 100s of new objects</h4></div></div></div><p>Rather than<a id="id1353" class="indexterm"></a> having hundreds of new object clones fill up our <span class="strong"><strong>Hierarchy</strong></span> panel, a good way to keep things tidy is to have an empty "parent" GameObject and child a collection of related GameObjects to it. Let's have a GameObject in the <span class="strong"><strong>Hierarchy</strong></span> named <span class="strong"><strong>Star-container</strong></span> and child all the new stars to this object.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_46.jpg" /></div><p>We need a variable that will be a reference to our container object, <code class="literal">starContainerGO</code>. We also need a new method, <code class="literal">CreateStarContainerGO()</code>, which will find a reference to GameObject <span class="strong"><strong>star-container</strong></span>, if such an object already exists it is deleted, and then the method will create a new empty GameObject and give it this name. Add the following variable and method to our script class:</p><div class="informalexample"><pre class="programlisting">static GameObject starContainerGO;
+
+static void CreateStarContainerGO() {
+  string containerName = "Star-container";
+  starContainerGO = GameObject.Find(containerName);
+  if (null != starContainerGO) 
+    DestroyImmediate(starContainerGO);
+  starContainerGO = new GameObject(containerName);
+}</pre></div><p>Before we create the prefab clones, we need to first ensure we have created our star container GameObject. So we need to call our new method as the first thing we do when the <code class="literal">PlacePrefabs()</code> method is executed, so add a statement to call this method at the beginning of the <code class="literal">PlacePrefabs()</code> method:</p><div class="informalexample"><pre class="programlisting">static void PlacePrefabs(){
+  CreateStarContainerGO();
+
+  // rest of method as before ...
+}</pre></div><p>Now we<a id="id1354" class="indexterm"></a> need to modify the <code class="literal">CreateRandomInstance()</code> method so that it gets a reference to the new GameObject it has just created and can then child this new object to our <span class="strong"><strong>star-container</strong></span> GameObject variable <code class="literal">starContainerGO</code>. Modify the <code class="literal">CreateRandomInstance()</code> method so that it looks as follows:</p><div class="informalexample"><pre class="programlisting">static void CreateRandomInstance() {
+  float x = UnityEngine.Random.Range(-X_MAX, X_MAX);
+  float y = UnityEngine.Random.Range(-Y_MAX, Y_MAX);
+  float z = 0;
+  Vector3 randomPosition = new Vector3(x,y,z);
+
+  GameObject newStarGO = (GameObject)Instantiate(starPrefab, randomPosition, Quaternion.identity);
+  newStarGO.transform.parent = starContainerGO.transform;
+}</pre></div></div></div></div>

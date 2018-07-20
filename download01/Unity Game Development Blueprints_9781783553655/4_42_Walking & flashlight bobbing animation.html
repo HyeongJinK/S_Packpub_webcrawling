@@ -1,0 +1,81 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec45"></a>Walking / flashlight bobbing animation</h2></div></div><hr /></div><p>Now the flashlight<a id="id333" class="indexterm"></a> looks fine in <a id="id334" class="indexterm"></a>a screenshot, but if you walk throughout the world, it will feel very static and unnatural. If a person is actually walking through the forest, there will be a slight bob as you walk, and if someone is actually holding a flash light, it won't be stable the entire time because your hand would move. We can solve both of these problems by writing yet<a id="id335" class="indexterm"></a> another script. We<a id="id336" class="indexterm"></a> perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new folder called <code class="literal">Scripts</code>. Inside this folder, create a new C# script called <code class="literal">BobbingAnimation</code>.</p></li><li><p>Open the newly created script and use the following code inside it:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+/// &lt;summary&gt;
+/// Allows the attached object to bob up and down through /// movement or
+/// by default.
+/// &lt;/summary&gt;
+public class BobbingAnimation : MonoBehaviour 
+{
+  /// &lt;summary&gt;
+  /// The elapsed time.
+  /// &lt;/summary&gt;
+  private float elapsedTime;
+
+  /// &lt;summary&gt;
+  /// The starting y offset from the parent.
+  /// &lt;/summary&gt;
+  private float startingY;
+
+  /// &lt;summary&gt;
+  /// The controller.
+  /// &lt;/summary&gt;
+  private CharacterController controller;
+
+  /// &lt;summary&gt;
+  /// How far up and down the object will travel
+  /// &lt;/summary&gt;
+  public float magnitude = .2f;
+
+  /// &lt;summary&gt;
+  /// How often the object will move up and down
+  /// &lt;/summary&gt;
+  public float frequency = 10;
+
+  /// &lt;summary&gt;
+  /// Do you always want the object to bob up and down or /// with movement?
+  /// &lt;/summary&gt;
+  public bool alwaysBob = false;
+  
+  /// &lt;summary&gt;
+  /// Start this instance.
+  /// &lt;/summary&gt;
+  void Start ()
+  {
+    startingY = transform.localPosition.y;
+    controller = GetComponent&lt;CharacterController&gt; ();
+  }
+
+  /// &lt;summary&gt;
+  /// Update this instance.
+  /// &lt;/summary&gt;
+  void Update () 
+  {	
+    // Only increment elapsedTime if you want the player to // bob, keeping it the same will keep it still
+    if(alwaysBob)
+    {
+      elapsedTime += Time.deltaTime;
+    }
+    else
+    {
+      if((Input.GetAxis("Horizontal") != 0.0f) || (Input.GetAxis("Vertical")  != 0.0f) )
+        elapsedTime += Time.deltaTime;
+    }
+    
+    float yOffset = Mathf.Sin(elapsedTime * frequency) * magnitude;
+
+    //If we can't find the player controller or we're // jumping, we shouldn't be bobbing
+    if(controller &amp;&amp; !controller.isGrounded)
+    {
+      return;
+    }
+
+    //Set our position
+    Vector3 pos = transform.position;
+    
+    pos.y = transform.parent.transform.position.y + startingY + yOffset;
+    
+    transform.position = pos;
+    
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note57"></a>Note</h3><p>The preceding code was prepared in the XML Comments style that I discussed earlier. For more information on that, check out <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>2D Twin-stick Shooter</em></span>.</p></div><p>The <a id="id337" class="indexterm"></a>preceding <a id="id338" class="indexterm"></a>code will tweak the object it's attached to so that it will bob up and down whenever the player is moving along the <span class="emphasis"><em>x</em></span> or <span class="emphasis"><em>y</em></span> axis. I've also added a variable called <code class="literal">alwaysBob</code>, which, when true, will make the object always bob.</p><p>Math is a game developer's best friend, and here we are using sin (pronounced sine). Taking the sin of an angle number gives you the ratio of the length of the opposite side of the angle to the length of the hypotenuse of a right-angled triangle.</p><p>If that didn't make any sense to you, don't worry. The neat feature of sin is that as the number it takes gets larger, it will continuously give us a value between 0 and 1 that will go up and down forever, giving us a smooth repetitive oscillation.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note58"></a>Note</h3><p>For more information on<a id="id339" class="indexterm"></a> sine waves, visit <a class="ulink" href="http://en.wikipedia.org/wiki/Sine_wave" target="_blank">http://en.wikipedia.org/wiki/Sine_wave</a>.</p></div><p>While we're using the sin just for the player's movement and the flashlight, this could be used in a lot of effects, such as having save points/portals bob up and down, or any kind of object you would want to have slight movement or some special FX.</p></li><li><p>Next, attach the <code class="literal">BobbingAnimation</code> component to the <span class="strong"><strong>Main Camera</strong></span> object, leaving all the values with the defaults.</p></li><li><p>After this, attach the <code class="literal">BobbingAnimation</code> component to the spotlight as well. With the spotlight selected, turn the <span class="strong"><strong>Always Bob</strong></span> option on and change the <span class="strong"><strong>Magnitude</strong></span> value to <code class="literal">.05</code> and the <span class="strong"><strong>Frequency</strong></span> value to <code class="literal">3</code>. The effects are shown in the<a id="id340" class="indexterm"></a> following <a id="id341" class="indexterm"></a>screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_04_26.jpg" /></div></li></ol></div></div>

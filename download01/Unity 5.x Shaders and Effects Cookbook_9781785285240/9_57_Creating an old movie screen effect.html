@@ -1,0 +1,159 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec56"></a>Creating an old movie screen effect</h2></div></div><hr /></div><p>Many games are <a id="id446" class="indexterm"></a>set in different times. Some take place in fantasy worlds or future sci-fi worlds, and some even take place in the old west, where film cameras were just being developed and the movies that people watched were black and white or sometimes tinted with what is called a sepia effect. The look is very distinct, and we are going to replicate this look using a screen effect in Unity.</p><p>There are a few steps to achieve this look, and just to make the whole screen black and white or grayscale, we need to break down this effect into its component parts. If we analyze some reference footage of an old movie, we can begin to do this. Let's take a look at the following image and break down the elements that make up the old movie look:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_01.jpg" /></div><p>We constructed this image using a few reference images found online. It is always a good idea to try and utilize Photoshop to construct images like this to aid you in creating a plan for your new screen effect. Performing this process not only tells us the elements we will have to code in, but it also gives us a quick way to see which blending modes work and how we will construct the layers of our screen effect. The Photoshop file we created for this recipe is included in this book's support page at <a class="ulink" href="http://www.packtpub.com/support" target="_blank">www.packtpub.com/support</a> and is called <code class="literal">OldFilmEffect_Research_Layout.psd</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec151"></a>Getting ready</h3></div></div></div><p>Now that we know what we <a id="id447" class="indexterm"></a>have to make, let's take a look at how each of the layers is combined to create the final effect and gather some resources for our shader and screen effect script.</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Sepia tone</strong></span>: This <a id="id448" class="indexterm"></a>is a relatively simple effect to achieve, as we just need to bring all the pixel colors of the original render texture to a single color range. This is easily achieved using the luminance of the original image and adding a constant color. Our first layer will look like the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_02.jpg" /></div></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Vignette effect</strong></span>: We can always see some sort of soft border around old films when <a id="id449" class="indexterm"></a>they are being projected with an old movie projector. This is caused because the bulb being used for the movie projector has more brightness in the middle than it does at the edges of the film. This effect is generally called the vignette effect and is our second layer in our screen effect. We can achieve this with an overlaid texture over the whole screen. The following image demonstrates what this layer looks like, isolated as a texture:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_03.jpg" /></div></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Dust and scratches</strong></span>: The third and final layer in our old movie screen effect is <a id="id450" class="indexterm"></a>dust and scratches. This layer will utilize two different tiled textures, one for scratches and one for dust. The reason is that we will want to animate these two textures over time at different tiling rates. This will give the effect that the film is moving along and there are small scratches and dust on each frame of the old film. The following image demonstrates this effect isolated to its own texture:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_10.jpg" /></div></li></ul></div><p>Let's get our screen effect system ready with the preceding textures. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Gather up a vignette texture and dust and scratches texture, like the ones we just saw.</p></li><li><p>Create a new script called <code class="literal">OldFilmEffect.cs</code> and a new shader called <code class="literal">OldFilmEffectShader.shader</code>.</p></li><li><p>With our new files created, fill in the code necessary to get the screen effect system up and running. For references on how to do this, see <a class="link" href="#" linkend="ch08">Chapter 8</a>, <span class="emphasis"><em>Screen Effects with Unity Render Textures</em></span>.</p></li></ol></div><p>Finally, with our screen effect system up and running and our textures gathered, we can begin the process of recreating this old film effect.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec152"></a>How to do it…</h3></div></div></div><p>Our individual layers for our old film screen effect are quite simple, but when combined, we get some very visually stunning effects. Let's run through how to construct the code for our script and shader, then we can step through each line of code and learn why things are working the way they are. At this point, you should have the screen effects system up and running, as we will not be covering how to set this up in this recipe.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We will begin by entering the code in our script. Our first block of code that we will enter will define our variable that we want to expose to <span class="strong"><strong>Inspector</strong></span> in order to let the user of this effect adjust it as they see fit. We can also use our mocked-up Photoshop <a id="id451" class="indexterm"></a>file as a reference when deciding what we will need to expose to the <span class="strong"><strong>Inspector</strong></span> of this effect. Enter the following code in your effect script:</p><div class="informalexample"><pre class="programlisting">    #region Variables
+    public Shader oldFilmShader;
+    
+    public float OldFilmEffectAmount = 1.0f;
+    
+    public Color sepiaColor = Color.white;
+    public Texture2D vignetteTexture;
+    public float vignetteAmount = 1.0f;
+    
+    public Texture2D scratchesTexture;
+    public float scratchesYSpeed = 10.0f;
+    public float scratchesXSpeed = 10.0f;
+    
+    public  Texture2D dustTexture;
+    public float dustYSpeed = 10.0f;
+    public float dustXSpeed = 10.0f;
+    
+    private Material curMaterial;
+    private float randomValue;
+    #endregion</pre></div></li><li><p>Next, we need to fill in the contents of our <code class="literal">OnRenderImage()</code> function. Here, we will be passing the data from our variables to our shader so that the shader can then use this data in the processing of the render texture:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> OnRenderImage(RenderTexture sourceTexture, RenderTexture destTexture)
+    {
+        if(oldFilmShader != null)
+        {    
+            material.SetColor("_SepiaColor", sepiaColor);
+            material.SetFloat("_VignetteAmount", vignetteAmount);
+            material.SetFloat("_EffectAmount", OldFilmEffectAmount);
+            
+            if(vignetteTexture)
+            {
+                material.SetTexture("_VignetteTex", vignetteTexture);
+            }
+            
+            if(scratchesTexture)
+            {
+                material.SetTexture("_ScratchesTex", scratchesTexture);
+                material.SetFloat("_ScratchesYSpeed", scratchesYSpeed);
+                material.SetFloat("_ScratchesXSpeed", scratchesXSpeed);
+            }
+            
+            if(dustTexture)
+            {
+                material.SetTexture("_DustTex", dustTexture);
+                material.SetFloat("_dustYSpeed", dustYSpeed);
+                material.SetFloat("_dustXSpeed", dustXSpeed);
+                material.SetFloat("_RandomValue", randomValue);
+            }
+            
+            Graphics.Blit(sourceTexture, destTexture, material);
+        }
+        else
+        {
+            Graphics.Blit(sourceTexture, destTexture);
+        }
+    }</pre></div></li><li><p>To complete the script portion of this effect, we simply need to make sure that we clamp the <a id="id452" class="indexterm"></a>values of the variables that need to have a clamped range instead of being any value:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> Update()
+    {
+        vignetteAmount = Mathf.Clamp01(vignetteAmount);
+        OldFilmEffectAmount = Mathf.Clamp(OldFilmEffectAmount, 0f, 1.5f);
+        randomValue = Random.Range(-1f,1f);
+    }</pre></div></li><li><p>With our script complete, let's turn our attention to our shader file. We need to create the corresponding variables, which we created in our script in our shader. This will allow the script and shader to communicate with one another. Enter the following <a id="id453" class="indexterm"></a>code in the <code class="literal">Properties</code> block of the shader:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>Properties </strong></span>
+    {
+        _MainTex ("Base (RGB)", 2D) = "white" {}
+        _VignetteTex ("Vignette Texture", 2D) = "white"{}
+        _ScratchesTex ("Scartches Texture", 2D) = "white"{}
+        _DustTex ("Dust Texture", 2D) = "white"{}
+        _SepiaColor ("Sepia Color", Color) = (1,1,1,1)
+        _EffectAmount ("Old Film Effect Amount", Range(0,1)) = 1.0
+        _VignetteAmount ("Vignette Opacity", Range(0,1)) = 1.0
+        _ScratchesYSpeed ("Scratches Y Speed", Float) = 10.0
+        _ScratchesXSpeed ("Scratches X Speed", Float) = 10.0
+        _dustXSpeed ("Dust X Speed", Float) = 10.0
+        _dustYSpeed ("Dust Y Speed", Float) = 10.0
+        _RandomValue ("Random Value", Float) = 1.0
+        _Contrast ("Contrast", Float) = 3.0
+    }</pre></div></li><li><p>Then, as usual, we need to add these same variable names to our <code class="literal">CGPROGRAM</code> block so that the <code class="literal">Properties</code> block can communicate with the <code class="literal">CGPROGRAM</code> block:</p><div class="informalexample"><pre class="programlisting">CGPROGRAM
+<span class="strong"><strong>#pragma</strong></span> vertex vert_img
+<span class="strong"><strong>#pragma</strong></span> fragment frag
+<span class="strong"><strong>#pragma</strong></span> fragmentoption ARB_precision_hint_fastest
+#include "UnityCG.cginc"
+            
+uniform sampler2D _MainTex;
+uniform sampler2D _VignetteTex;
+uniform sampler2D _ScratchesTex;
+uniform sampler2D _DustTex;
+fixed4 _SepiaColor;
+fixed _VignetteAmount;
+fixed _ScratchesYSpeed;
+fixed _ScratchesXSpeed;
+fixed _dustXSpeed;
+fixed _dustYSpeed;
+fixed _EffectAmount;
+fixed _RandomValue;
+fixed _Contrast;</pre></div></li><li><p>Now, we simply fill in the guts of our <code class="literal">frag()</code> function so that we process the pixels for our screen effect. To start with, let's get the render texture and vignette texture passed to us by the script:</p><div class="informalexample"><pre class="programlisting">fixed4 frag(v2f_img i) : COLOR
+{
+    //Get the colors from the RenderTexture and the uv's
+    //from the v2f_img struct
+    half2 distortedUV = barrelDistortion(i.uv);
+    distortedUV = half2(i.uv.x, i.uv.y + (_RandomValue * _SinTime.z * 0.005));
+    fixed4 renderTex = tex2D(_MainTex, i.uv);
+                
+    //Get the pixels from the Vignette Texture
+    fixed4 vignetteTex = tex2D(_VignetteTex, i.uv);</pre></div></li><li><p>We then need to <a id="id454" class="indexterm"></a>add the process for the dust and scratches by entering the following code:</p><div class="informalexample"><pre class="programlisting">//Process the Scratches UV and pixels
+half2 scratchesUV = half2(i.uv.x + (_RandomValue * _SinTime.z * _ScratchesXSpeed), i.uv.y + (_Time.x * _ScratchesYSpeed));
+fixed4 scratchesTex = tex2D(_ScratchesTex, scratchesUV);
+        
+//Process the Dust UV and pixels
+half2 dustUV = half2(i.uv.x + (_RandomValue * (_SinTime.z * _dustXSpeed)), i.uv.y + (_RandomValue * (_SinTime.z * _dustYSpeed)));
+fixed4 dustTex = tex2D(_DustTex, dustUV);</pre></div></li><li><p>The sepia tone process is next on our list:</p><div class="informalexample"><pre class="programlisting">// get the luminosity values from the render texture using the YIQ values.
+fixed lum = dot (fixed3(0.299, 0.587, 0.114), renderTex.rgb);
+                
+//Add the constant color to the lum values
+fixed4 finalColor = lum + lerp(_SepiaColor, _SepiaColor +
+ fixed4(0.1f,0.1f,0.1f,1.0f), _RandomValue);
+finalColor = pow(finalColor, _Contrast);</pre></div></li><li><p>Finally, we combine all of our layers and colors and return the final screen effect texture:</p><div class="informalexample"><pre class="programlisting">//Create a constant white color we can use to adjust opacity of effects
+fixed3 constantWhite = fixed3(1,1,1);
+                
+//Composite together the different layers to create finsl Screen Effect
+finalColor = lerp(finalColor, finalColor * vignetteTex, _VignetteAmount);
+finalColor.rgb *= lerp(scratchesTex, constantWhite, (_RandomValue));
+finalColor.rgb *= lerp(dustTex.rgb, constantWhite, (_RandomValue * _SinTime.z));
+finalColor = lerp(renderTex, finalColor, _EffectAmount);
+                
+return finalColor;</pre></div></li><li><p>With all of our code entered and no errors, you should have a result very similar to the <a id="id455" class="indexterm"></a>following image. Hit play in the Unity editor to see the effects of the dust and scratches and the slight image shift that we gave the screen effect:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_04.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec153"></a>How it works…</h3></div></div></div><p>Now, let's walk through each of the layers in this screen effect, break down why each of the lines of code is working the way it is, and get more insight as to how we can add more to this screen effect.</p><p>Now that our old film screen effect is working, let's step through the lines of code in our <code class="literal">frag()</code> function as all the other code should be pretty self-explanatory at this point in the book.</p><p>Just like our Photoshop layers, our shader is processing each layer and then compositing them together, so while we <a id="id456" class="indexterm"></a>go through each layer, try to imagine how the layers in Photoshop work. Keeping this concept in mind always helps when developing new screen effects.</p><p>Here, we have the first set of lines of code in our <code class="literal">frag()</code> function:</p><div class="informalexample"><pre class="programlisting">fixed4 frag(v2f_img i) : COLOR
+{
+    //Get the colors from the RenderTexture and the uv's
+    //from the v2f_img struct
+    half2 distortedUV = barrelDistortion(i.uv);
+    fixed4 renderTex = tex2D(_MainTex, i.uv);
+    fixed4 vignetteTex = tex2D(_VignetteTex, i.uv);</pre></div><p>The first line of code, just after the <code class="literal">frag()</code> function declaration, is the definition of how the UVs should work for our main render texture or the actual rendered frame of our game. As we are looking to fake the effect of an old film style, we want to adjust the UVs of our render texture, every frame, such that they flicker. This flickering simulates how the winding of the film's projector is just a bit off. This tells us that we need to animate the UVs and this is what this first line of code is doing.</p><p>We used the built-in <code class="literal">_SinTime</code> variable, which Unity provides, to get a value between -1 and 1. We then multiply this by a very small number, in this case, <code class="literal">0.005</code>, to reduce the intensity of the effect. The final value is then multiplied again by the <code class="literal">_RandomValue</code> variable, which we generated in the effect script. This value bounces back and forth between -1 and 1 to basically flip the direction of the motion back and forth.</p><p>Once our UVs are built and stored in the <code class="literal">renderTexUV</code> variable, we can sample the render texture using a <code class="literal">tex2D()</code> function. This operation then gives us our final render texture, which we can use to process further in the rest of the shader.</p><p>Moving on to the last line in the previous image, we simply do a straight sample of the vignette texture using the <code class="literal">tex2D()</code> function. We don't need to use the animated UVs we already created, as the vignette texture will be tied to the motion of the camera itself and not to the flickering of the camera film.</p><p>The following code snippet illustrates the second set of lines of code in our <code class="literal">frag()</code> function:</p><div class="informalexample"><pre class="programlisting">//Process the Scratches UV and pixels
+half2 scratchesUV = half2(i.uv.x + (_RandomValue * _SinTime.z * _ScratchesXSpeed),
+        i.uv.y + (_Time.x * _ScratchesYSpeed));
+fixed4 scratchesTex = tex2D(_ScratchesTex, scratchesUV);
+                
+//Process the Dust UV and pixels
+half2 dustUV = half2(i.uv.x + (_RandomValue * (_SinTime.z * _dustXSpeed)), 
+        i.uv.y + (_RandomValue * (_SinTime.z * _dustYSpeed)));
+fixed4 dustTex = tex2D(_DustTex, dustUV);</pre></div><p>These lines of code are almost exactly like the previous lines of code in which we need to generate unique animated UV values to modify the position of our screen effect layers. We simply use the built-in <code class="literal">_SinTime</code> value to get a value between -1 and 1, multiply it by our random value, and then by another multiplier to adjust the overall speed of the animation. Once these UV values <a id="id457" class="indexterm"></a>are generated, we can then sample our dust and scratches texture using these new animated values.</p><p>Our next set of code handles the creation of the colorizing effect for our old film screen effect. The following code snippet demonstrates these lines:</p><div class="informalexample"><pre class="programlisting">// get the luminosity values from the render texture using the YIQ values.
+fixed lum = dot (fixed3(0.299, 0.587, 0.114), renderTex.rgb);
+                
+//Add the constant color to the lum values
+fixed4 finalColor = lum + lerp(_SepiaColor, _SepiaColor +fixed4(0.1f,0.1f,0.1f,1.0f), _RandomValue);</pre></div><p>With this set of code, we are creating the actual color tinting of the entire render texture. To accomplish this, we first need to turn the render texture into the grayscale version of itself. To do this, we can use the luminosity values given to us by the <code class="literal">YIQ</code> values. <code class="literal">YIQ</code> values are the color space used by the NTSC color TV system. Each letter in <code class="literal">YIQ</code> actually stores color constants that are used by TVs to adjust the color for readability.</p><p>While it is not necessary to actually know the reasons for this color scale, it should be known that the <code class="literal">Y</code> value in <code class="literal">YIQ</code> is the constant luminance value for any image. So, we can generate a grayscale image of our render texture by taking each pixel of the render texture and dotting it with our luminance values. This is what the first line in this set is doing.</p><p>Once we have the luminance values, we can simply add the color we want to tint the image with. This color is passed from our script to our shader, then to our <code class="literal">CGPROGRAM</code> block, where we can add it to our grayscale render texture. Once completed, we will have a perfectly tinted image.</p><p>Finally, we create the blending between each of our layers in our screen effect. The following code snippet shows the set of code we are looking at:</p><div class="informalexample"><pre class="programlisting">//Create a constant white color we can use to adjust opacity of effects
+fixed3 constantWhite = fixed3(1,1,1);
+                
+//Composite together the different layers to create finsl Screen Effect
+finalColor = lerp(finalColor, finalColor * vignetteTex, _VignetteAmount);
+finalColor.rgb *= lerp(scratchesTex, constantWhite, (_RandomValue));
+finalColor.rgb *= lerp(dustTex.rgb, constantWhite, (_RandomValue * _SinTime.z));
+finalColor = lerp(renderTex, finalColor, _EffectAmount);
+                
+return finalColor</pre></div><p>Our last set of code is relatively simple and doesn't really need a ton of explanation. In short, it is simply multiplying all the layers together to reach our final result. Just like we multiplied our layers together in Photoshop, we multiply them together in our shader. Each layer is processed <a id="id458" class="indexterm"></a>through a <code class="literal">lerp()</code> function so that we can adjust the opacity of each layer, which gives more artistic control over the final effect. The more tweaks one can offer, the better when it comes to screen effects.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec154"></a>See also</h3></div></div></div><p>For more information on the <a id="id459" class="indexterm"></a>YIQ values, refer to the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://en.wikipedia.org/wiki/YIQ" target="_blank">http://en.wikipedia.org/wiki/YIQ</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://www.blackice.com/colorspaceYIQ.htm" target="_blank">http://www.blackice.com/colorspaceYIQ.htm</a>
+</p></li></ul></div></div></div>

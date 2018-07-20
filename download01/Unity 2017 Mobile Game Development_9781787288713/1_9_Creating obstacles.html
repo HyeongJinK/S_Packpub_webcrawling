@@ -1,0 +1,131 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec9"></a>Creating obstacles</h2></div></div><hr /></div><p>It's great that we have some basic tiles, but it's a good idea to give the player something to do or, in our case, something to avoid. In this section, you'll learn how to customize your tiles to add obstacles for your player to avoid:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>So, just like we created a prefab for our basic tile, we will create a single obstacle through code. I want to make it easy to see what the obstacle will look like in the world and make sure that it's not too large, so I'll drag and drop a <code class="literal">Basic Tile</code> prefab back into the world.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Next, we will create a cube by going to <strong class="userinput"><code>GameObject</code></strong> | <strong class="userinput"><code>3D Object</code></strong> | <strong class="userinput"><code>Cube</code></strong>. We will then name this object <code class="literal">Obstacle</code>. Change the <strong class="userinput"><code>Y Scale</code></strong> to <code class="literal">2</code> and position it above the platform at <code class="literal">(0, 1, .025)</code>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/a1871c5c-6c2d-43f6-8576-40071b629622.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>We can then play the game to see how this'll work:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/e37c661e-bb8d-4f11-a799-c4943efd4a8d.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>As you can see in the preceding screenshot, the player gets stopped, but nothing really happens. In this instance, we want the player to lose when he hits this and then restart the game; so, to do that, we'll need to write a script. From the <strong class="userinput"><code>Project</code></strong> window, go to the <code class="literal">Scripts</code> folder and create a new script called <code class="literal">ObstacleBehaviour</code>. We'll use the following code:</li></ol></div><pre class="programlisting">using UnityEngine; 
+using UnityEngine.SceneManagement; // LoadScene 
+
+public class ObstacleBehaviour : MonoBehaviour { 
+
+    [Tooltip("How long to wait before restarting the game")] 
+    public float waitTime = 2.0f; 
+
+    void OnCollisionEnter(Collision collision) 
+    { 
+        // First check if we collided with the player 
+        if (collision.gameObject.GetComponent&lt;PlayerBehaviour&gt;()) 
+        { 
+            // Destroy the player 
+            Destroy(collision.gameObject); 
+
+            // Call the function ResetGame after waitTime has passed 
+            Invoke("ResetGame", waitTime); 
+        } 
+    } 
+
+    /// &lt;summary&gt; 
+    /// Will restart the currently loaded level 
+    /// &lt;/summary&gt; 
+    void ResetGame() 
+    { 
+        // Restarts the current level 
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name); 
+    } 
+} </pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Save the script and return to the editor, attaching the script to the <strong class="userinput"><code>Obstacle</code></strong> property we just created.</li><li>Save your scene and try the game:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/58b1c6e7-5d4c-4ea1-a277-4088b48e10de.png" /></div><p>As you can see in the preceding screenshot, once we hit the obstacle, the player gets destroyed, and then after a few seconds, the game starts up again. You'll learn to use particle systems and other things to polish this up, but at this point, it's functional, which is what we want.</p><p>You may note that when the level is reloaded, there are some lighting issues in the editor. The game will still work correctly when exported, but this may be a minor annoyance.</p><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>(Optional) To fix this, go to <strong class="userinput"><code>Window</code></strong> | <strong class="userinput"><code>Lighting</code></strong> | <strong class="userinput"><code>Settings</code></strong>. Uncheck the <strong class="userinput"><code>Auto Generate option from there, and click on <strong class="userinput"><code>Generate Lighting</code></strong></code></strong>--once it is finished, our issue should be solved.</li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note13"></a>Note</h3><p>It isn't an issue with our game, but if you employ the fix above in your own titles, you must remember to go here every time you alter a game level and rebuild the lightmap for it to be updated correctly.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Now that we know it works correctly, we can make it a prefab. Just as we did with the original tile, go ahead and drag and drop it from the <strong class="userinput"><code>Hierarchy</code></strong> into the <strong class="userinput"><code>Project</code></strong> tab and into the <code class="literal">Prefabs</code> folder:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/68cb2891-baf5-437b-90b0-4fe87220bc95.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Next, we will remove the <code class="literal">Obstacle</code>, as we'll spawn it upon creating the tile.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>We will make markers to indicate where we would possibly like to spawn our obstacles. Duplicate the <code class="literal">Next Spawn Object</code> object and move the new one to <code class="literal">(0, 1, 4)</code>. We will then rename the object as <code class="literal">Center</code>. Afterwards, click on the icon on the top left of the blue box and then select the blue color. Upon doing this, you'll see that we can see the text inside the editor, if we are close to the object (but it won't show up in the <strong class="userinput"><code>Game</code></strong> tab by default):</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/43bf0b45-5cd6-4989-a255-ea17a323dac6.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>We want a way to get all of the potential spawn points we will want in case we decide to extend the project in the future, so we will assign a <span class="strong"><strong>tag</strong></span> as a reference to make those objects easier to find. To do that at the top of the <strong class="userinput"><code>Inspector</code></strong> window, click on the tag dropdown and select <strong class="userinput"><code>Add Tag</code></strong>. From the menu that pops up, press the + button and then name it <code class="literal">ObstacleSpawn</code>.</li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>For more information on tags and why we'd want to use them, check out <a class="ulink" href="https://docs.unity3d.com/Manual/Tags.html" target="_blank"><span>https://docs.unity3d.com/Manual/Tags.html</span></a>.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="12" type="1"><li>Go ahead and duplicate this twice and name the others <code class="literal">Left</code> and <code class="literal">Right</code>, respectively, moving them 2 units to the left and right of the center to become other possible obstacle points:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/6e61dfb0-b9ee-47a7-83ed-e1605800801a.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="13" type="1"><li>Note that these changes don't affect the original prefab, by default; that's why the objects are currently black text. To make this happen, select <code class="literal">Basic Tile</code>, and then in the <strong class="userinput"><code>Inspector</code></strong> window under the <strong class="userinput"><code>Prefab</code></strong> section, click on <strong class="userinput"><code>Apply</code></strong>.</li><li>Now that the prefab is set up correctly, we can go ahead and remove it by selecting it and pressing <span class="emphasis"><em><span class="strong"><strong>Delete</strong></span></em></span>.</li><li>We then need to go into the <code class="literal">GameController</code> script and modify it to have the following code:</li></ol></div><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic; // List 
+
+/// &lt;summary&gt; 
+/// Controls the main gameplay 
+/// &lt;/summary&gt; 
+
+public class GameController : MonoBehaviour
+{
+    [Tooltip("A reference to the tile we want to spawn")]
+    public Transform tile;
+
+    [Tooltip("A reference to the obstacle we want to spawn")]
+    public Transform obstacle;
+
+    [Tooltip("Where the first tile should be placed at")]
+    public Vector3 startPoint = new Vector3(0, 0, -5);
+
+    [Tooltip("How many tiles should we create in advance")]
+    [Range(1, 15)]
+    public int initSpawnNum = 10;
+
+    [Tooltip("How many tiles to spawn initially with no obstacles")]
+    public int initNoObstacles = 4;
+
+    /// &lt;summary&gt; 
+    /// Where the next tile should be spawned at. 
+    /// &lt;/summary&gt; 
+    private Vector3 nextTileLocation;
+
+    /// &lt;summary&gt; 
+    /// How should the next tile be rotated? 
+    /// &lt;/summary&gt; 
+    private Quaternion nextTileRotation;
+
+    /// &lt;summary&gt; 
+    /// Used for initialization 
+    /// &lt;/summary&gt; 
+    void Start()
+    {
+        // Set our starting point 
+        nextTileLocation = startPoint;
+        nextTileRotation = Quaternion.identity;
+
+        for (int i = 0; i &lt; initSpawnNum; ++i)
+        {
+            SpawnNextTile(i &gt;= initNoObstacles);
+        }
+    }
+
+    /// &lt;summary&gt; 
+    /// Will spawn a tile at a certain location and setup the next 
+    position 
+    /// &lt;/summary&gt; 
+    public void SpawnNextTile(bool spawnObstacles = true)
+    {
+        var newTile = Instantiate(tile, nextTileLocation, 
+                                  nextTileRotation);
+
+        // Figure out where and at what rotation we should spawn 
+        // the next item 
+        var nextTile = newTile.Find("Next Spawn Point");
+        nextTileLocation = nextTile.position;
+        nextTileRotation = nextTile.rotation;
+
+        if (!spawnObstacles)
+            return;
+
+        // Now we need to get all of the possible places to spawn the 
+        // obstacle 
+        var obstacleSpawnPoints = new List&lt;GameObject&gt;();
+
+        // Go through each of the child game objects in our tile 
+        foreach (Transform child in newTile)
+        {
+            // If it has the ObstacleSpawn tag 
+            if (child.CompareTag("ObstacleSpawn"))
+            {
+                // We add it as a possibilty 
+                obstacleSpawnPoints.Add(child.gameObject);
+            }
+        }
+
+        // Make sure there is at least one 
+        if (obstacleSpawnPoints.Count &gt; 0)
+        {
+            // Get a random object from the ones we have 
+            var spawnPoint = obstacleSpawnPoints[Random.Range(0, 
+                                          obstacleSpawnPoints.Count)];
+
+            // Store its position for us to use 
+            var spawnPos = spawnPoint.transform.position;
+
+            // Create our obstacle 
+            var newObstacle = Instantiate(obstacle, spawnPos, 
+                                          Quaternion.identity);
+
+            // Have it parented to the tile
+            newObstacle.SetParent(spawnPoint.transform);
+        }
+    }
+}</pre><p>Note that we modified the <code class="literal">SpawnNextTile</code> function to now have a default parameter set to <code class="literal">true</code>, which will tell us if we want to spawn obstacles or not. At the beginning of the game, we may not want the player to have to start dodging immediately, but we can tweak the value to increase or decrease the number we are using.</p><div class="orderedlist"><ol class="orderedlist arabic" start="16" type="1"><li>Save the script and go back to the Unity editor. Then, assign the <strong class="userinput"><code>Obstacle</code></strong> variable in the <strong class="userinput"><code>Inspector</code></strong> with the obstacle prefab we created previously.</li><li>It's a bit hard to see things currently due to the default light settings, so let's go to the <strong class="userinput"><code>Hierarchy</code></strong> window and select the <code class="literal">Directional Light</code> object.</li></ol></div><p>A directional light acts similarly to how the sun works on earth, shining everywhere from a certain rotation.</p><div class="orderedlist"><ol class="orderedlist arabic" start="18" type="1"><li>With the default settings the light is too bright, making it difficult to see, so we can just change the <code class="literal">Color</code> to be darker. I used the following:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/b14d30a0-d1d3-48b4-a1ba-11ba3feba5b1.png" /></div><p></p><div class="orderedlist"><ol class="orderedlist arabic" start="19" type="1"><li>Save your scene and play the game:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/507e215b-b026-4a5b-8e5d-8ee5457709ca.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note15"></a>Note</h3><p>For more information on directional lights and the other lighting types that Unity has, check out: <a class="ulink" href="https://unity3d.com/learn/tutorials/topics/graphics/light-types?playlist=17102" target="_blank"><span>https://unity3d.com/learn/tutorials/topics/graphics/light-types?playlist=17102</span></a>.</p></div><p>As you can see in the preceding screenshot, we now have a number of obstacles for our player to avoid, and due to how the player works, he will gradually get faster and faster, causing the game to increase in difficulty over time.</p></div>

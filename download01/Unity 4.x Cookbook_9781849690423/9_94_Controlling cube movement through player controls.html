@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec92"></a>Controlling cube movement through player controls</h2></div></div><hr /></div><p>Many of the <a id="id645" class="indexterm"></a>recipes in this chapter are built on this basic project, which constructs a scene with a textured terrain, a downward facing <span class="strong"><strong>Main Camera</strong></span>, and a red cube (as shown in the following screenshot) that can be moved around by the user using the four directional arrow keys.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_09_01.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec317"></a>How to do it...</h3></div></div></div><p>To create a player-controlled cube, <a id="id646" class="indexterm"></a>perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Start a new project by navigating to <span class="strong"><strong>Terrain Textures</strong></span> | <span class="strong"><strong>GoodDirt.psd</strong></span> from the <span class="strong"><strong>Terrain Assets</strong></span> Unity package (uncheck all of the other contents of this package as we don't need them and they'll just bloat the size of the project).</p></li><li><p>Create a terrain, positioned at (-15, 0, -10) and sized 30 by 20.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note41"></a>Note</h3><p><span class="strong"><strong>Transform position for terrains relates to their corner not their center</strong></span></p><p>Since the <code class="literal">Transform</code> position of terrains relates to the corner of the object, we center such objects at (0, 0, 0) by setting the X-coordinate equal to (-1 x width/2) and the Z-coordinate to (-1 x length/2). In other words, we slide the object by half its width and half its height to ensure its center is just where we want it.</p><p>In this case, width is 30 and length is 20, hence we get -15 for X (-1 x 30/2), and -10 for Z (-1 x 20/2).</p></div></li><li><p>Set the material for this terrain to be <span class="strong"><strong>GoodDirt</strong></span>.</p></li><li><p>Create <a id="id647" class="indexterm"></a>a directional light (it should face downwards onto the terrain with default settings. If it doesn't for some reason,<a id="id648" class="indexterm"></a> rotate it so the terrain is well lit).</p></li><li><p>Make the following changes to <span class="strong"><strong>Main Camera</strong></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="strong"><strong>Position</strong></span>: (0, 20, 0)</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Rotation</strong></span>: (90, 0, 0)</p></li></ul></div></li><li><p>Change the <span class="strong"><strong>Aspect Ratio</strong></span> of the <span class="strong"><strong>Game Panel</strong></span> from <span class="strong"><strong>Free Aspect</strong></span> to <span class="strong"><strong>4:3</strong></span>. You should now see the whole of the terrain in the <span class="strong"><strong>Game Panel</strong></span>.</p></li><li><p>Create a new cube GameObject named <code class="literal">Cube-player</code>, at position (0, 0.5, 0) and sized (1, 1, 1).</p></li><li><p>Create a new red material named <code class="literal">m_red</code>, and apply this material to <code class="literal">Cube-player</code>.</p></li><li><p>Add the following C# script class to <code class="literal">Cube-player</code>:</p><div class="informalexample"><pre class="programlisting">// file: PlayerControl
+using UnityEngine;
+using System.Collections;
+
+public class PlayerControl : MonoBehaviour {
+  public float y;
+  public const float MIN_X = -15;
+  public const float MAX_X = 15;
+  public const float MIN_Z = -10;
+  public const float MAX_Z = 10;
+  
+  private float speed = 20;
+  
+  private void Awake(){
+    y = transform.position.y;
+  }
+
+  private void Update () {
+    KeyboardMovement();
+    CheckBounds();
+  }
+  
+  private void KeyboardMovement(){
+    float dx = Input.GetAxis("Horizontal") * speed * Time.deltaTime;
+    float dz = Input.GetAxis("Vertical") * speed * Time.deltaTime;
+    transform.Translate( new Vector3(dx,y,dz) );
+  }
+  
+  private void CheckBounds(){
+    float x = transform.position.x;
+    float z = transform.position.z;
+    x = Mathf.Clamp(x, MIN_X, MAX_X);
+    z = Mathf.Clamp(z, MIN_Z, MAX_Z);
+    transform.position = new Vector3(x, y, z);
+  }
+}</pre></div></li><li><p>Add the <a id="id649" class="indexterm"></a>following C# script class to your project:</p><div class="informalexample"><pre class="programlisting">// file: UsefulFunctions.cs
+using UnityEngine;
+
+public class UsefulFunctions {
+  public static void DebugRay(Vector3 origin, Vector3 v, Color c) {
+    Debug.DrawRay(origin, v * v.magnitude, c);
+  }
+
+  public static Vector3 ClampMagnitude(Vector3 v, float max) {
+    if (v.magnitude &gt; max)
+      return v.normalized * max;
+    else
+      return v;
+  }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec318"></a>How it works...</h3></div></div></div><p>The scene <a id="id650" class="indexterm"></a>contains a terrain, positioned so its center is (0, 0, 0). The red cube is controlled by the user's arrow keys through the <code class="literal">PlayerControl</code> script. When the <code class="literal">Awake()</code> method is called, the starting Y-coordinate is stored, so that any changes to the position of the cube will always keep the object to the same Y-position. For each frame, the <code class="literal">Update()</code> method first calls <code class="literal">KeyboardMovement()</code> and then <code class="literal">CheckBounds()</code>.</p><p>The <code class="literal">KeyboardMovement()</code> method reads the horizontal and vertical input values (which the Unity default settings read from the four directional arrow keys). Based on these left-right and up-down values, the position of the player's cube is moved (translated). The amount it is moved depends on the speed variable. Since our camera is looking down, the Y-coordinate is fixed, and it is the X and Z values that are used to determine how to move the red cube.</p><p>The <code class="literal">CheckBounds()</code> method simply checks the X and Z positions against the four constants for the maximum and minimum values. If values are outside the range, they are set to the maximum or minimum as appropriate.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note42"></a>Note</h3><p><span class="strong"><strong>Mathf.Clamp() is a very handy function</strong></span></p><p>This function is very useful as it allows us to restrict a value between a minimum and maximum value. The first parameter is the value, the second is the minimum, and the third is the maximum. If the value is smaller than the minimum, then the minimum is returned. If the value is larger than the maximum, the maximum is returned. Otherwise the value (which must then be somewhere within these limits) is returned.</p></div><p>Although not used in this project, the class <code class="literal">UsefulFunctions</code> is used by several of the recipes in this chapter. It offers two useful functions to our project:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">DebugRay()</code>: This takes two <code class="literal">Vector3</code> objects and a color as input, and draws a line of the given color from the start point (first argument) in the direction (and length) of the vector, which is the second argument</p></li><li style="list-style-type: disc"><p><code class="literal">ClampVector()</code>: This takes a <code class="literal">Vector3</code> object and a maximum size as input, and returns a vector with a maximum length (magnitude) of the input maximum size, that is, if the length of the given vector is greater than the maximum, then a vector of maximum length in the same direction is returned</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec319"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The Controlling object look-at behavior recipeThe Controlling object-to-object movements (seek, flee, follow at a distance) recipe</p></li><li style="list-style-type: disc"><p>The Controlling object group movement through flocking recipe</p></li><li style="list-style-type: disc"><p>The Finding a random spawn point recipe</p></li><li style="list-style-type: disc"><p>The Finding the nearest spawn point recipe</p></li><li style="list-style-type: disc"><p>The Following waypoints in a sequence recipe</p></li></ul></div></div></div>

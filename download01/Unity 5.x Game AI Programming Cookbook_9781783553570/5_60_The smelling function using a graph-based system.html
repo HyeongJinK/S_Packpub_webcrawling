@@ -1,0 +1,35 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec63"></a>The smelling function using a graph-based system</h2></div></div><hr /></div><p>In this <a id="id273" class="indexterm"></a>recipe, we take a mixed approach to tag <a id="id274" class="indexterm"></a>vertices with a given odor particle that collides with it.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec216"></a>Getting ready</h3></div></div></div><p>The vertices should have a broad collider attached so that they catch the odor particles nearby.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec217"></a>How to do it…</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following member variable to the odor-particle script to store its parent ID:</p><div class="informalexample"><pre class="programlisting">public int parent;</pre></div></li><li><p>Create the new odor-enabled class, deriving from the original vertex:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class VertexOdour : Vertex
+{
+    private Dictionary&lt;int, OdourParticle&gt; odourDic;
+}</pre></div></li><li><p>Initialize <a id="id275" class="indexterm"></a>the odor dictionary in the proper function:</p><div class="informalexample"><pre class="programlisting">public void Start()
+{
+    odourDic = new Dictionary&lt;int, OdourParticle&gt;();
+}</pre></div></li><li><p>Add the odor to the vertex's dictionary:</p><div class="informalexample"><pre class="programlisting">public void OnCollisionEnter(Collision coll)
+{
+    OdourOdourParticle op;
+    op = coll.gameObject.GetComponent&lt;OdourParticle&gt;();
+    if (op == null)
+        return;
+    int id = op.parent;
+    odourDic.Add(id, op);
+}</pre></div></li><li><p>Remove the odor from the vertex's dictionary:</p><div class="informalexample"><pre class="programlisting">public void OnCollisionExit(Collision coll)
+{
+    OdourParticle op;
+    op = coll.gameObject.GetComponent&lt;OdourParticle&gt;();
+    if (op == null)
+        return;
+    int id = op.parent;
+    odourDic.Remove(id);
+}</pre></div></li><li><p>Implement the function for checking if there is any odor tagged:</p><div class="informalexample"><pre class="programlisting">public bool HasOdour()
+{
+    if (odourDic.Values.Count == 0)
+        return false;
+    return true;
+}</pre></div></li><li><p>Implement <a id="id276" class="indexterm"></a>the function for checking <a id="id277" class="indexterm"></a>if a given type of odor is indexed in the vertex:</p><div class="informalexample"><pre class="programlisting">public bool OdourExists(int id)
+{
+    return odourDic.ContainsKey(id);
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec218"></a>How it works…</h3></div></div></div><p>The odor particles collide with the vertices, being indexed in their odor dictionary. From that point on, our agents can check whether a given odor is registered in a vertex nearby.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec219"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Navigation</em></span> recipe, <span class="emphasis"><em>BFS and graph construction</em></span></p></li></ul></div></div></div>

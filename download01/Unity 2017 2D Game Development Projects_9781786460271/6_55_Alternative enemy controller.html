@@ -1,0 +1,21 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec58"></a>Alternative enemy controller</h2></div></div><hr /></div><p>In order to give variety to our game, this section explores an alternative to the previous enemy controller. Once again, this shows how to create challenging enemies with just a few lines of code, without complex AI algorithms that can be confusing for beginners.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec87"></a>Creating the second enemy controller</h3></div></div></div><p>To create the second enemy controller, we can start by duplicating the enemy controller; just select it and press <span class="emphasis"><em>Ctrl</em></span> +<span class="strong"><strong> </strong></span><span class="emphasis"><em>D</em></span> (if you are a Mac user, you need to press <span class="emphasis"><em>Command</em></span> + <span class="emphasis"><em>D</em></span>). The new script should be renamed  <code class="literal">EnemyControllerSmartAttacker</code>.</p><p>Double-click to open it, and change the class name to <code class="literal">EnemyControllerSmartAttacker</code>, like the following:</p><pre class="programlisting">// [...] 
+public class EnemyControllerSmartAttacker : MonoBehaviour { 
+   // [...] 
+} </pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec88"></a>Changing the aiming system</h3></div></div></div><p>The previous enemy was shooting every time it had a chance after a random number of seconds. This other one, instead, shoots when it is above the player.</p><p>To implement this behavior, let's remove the <code class="literal">minShootingTime</code> and <code class="literal">maxShootingTime</code> variables. However, we need two new variables; the first to store the shooting sensitivity, meaning how close the enemy is to the straight line above the player before shooting, and the other variable stores the player transform, so it's easier to retrieve the player's position:</p><pre class="programlisting">    private Transform playerTransform; 
+    public float shootSensitivity; </pre><p>As we did for the rigidbody, we need to retrieve the <code class="literal">playerTransform</code> at the <code class="literal">Start()</code> function. To do so, we can find the player controller, since we assume there is only one in the scene, and from there retrieve the player's transform:</p><pre class="programlisting">    void Start() { 
+        rigidBody = GetComponent&lt;Rigidbody2D&gt;(); 
+<span class="strong"><strong>        playerTransform = FindObjectOfType&lt;PlayerController&gt;().transform;</strong></span> 
+    } </pre><p>Now, inside the if statement in which we check if the reload time has expired, we need to place another nested check. In fact, we need to check if the enemy is close enough to shoot. By taking the absolute value of the difference between the x-axis of the enemy and the x-axis of the player, we get the distance between them along <code class="literal">x</code>. We can compare this value with <code class="literal">shootSensitivity</code>, and if it is smaller, we can proceed with the rest of the code to shoot the bullet. This time we also need to remove that the reload time is random.</p><p>In the end, the code will look like the following:</p><pre class="programlisting">    void FixedUpdate() { 
+        // [...]  
+        // Fire as soon as the reload time is expired 
+        if(Time.time - lastTimeShot &gt; reloadTime) { 
+<span class="strong"><strong>            //Check if the enemy is "close" on the x-axis to the player 
+            if (Mathf.Abs(playerTransform.position.x - transform.position.x) &lt; shootSensitivity) { 
+                //Set the current time as the last time the spaceship has fired 
+                lastTimeShot = Time.time;</strong></span> 
+ 
+                //Create the bullet 
+                Instantiate(bulletPrefab, transform.position, Quaternion.identity); 
+            } 
+        } 
+    } </pre><p>Now, we get not one, but two different enemies we can use. However, we talked a lot about shooting bullets, but we still don't have bullets! Let's create them in the next section.</p></div></div>

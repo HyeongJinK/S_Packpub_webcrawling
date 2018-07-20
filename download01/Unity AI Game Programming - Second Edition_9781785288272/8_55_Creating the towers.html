@@ -1,0 +1,112 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec54"></a>Creating the towers</h2></div></div><hr /></div><p>In the sample <a id="id321" class="indexterm"></a>project for this chapter, you'll find a <code class="literal">Tower</code> prefab in the <code class="literal">Prefabs</code> folder. The tower itself is quite simple; it's just a group of primitives arranged to look like a cannon, as you can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_08_01.jpg" /><div class="caption"><p>Our beautiful primitive shape tower</p></div></div><p>The barrel of the gun is affixed to the spherical part of the tower. The gun can rotate freely on its axis when tracking the player so that it can fire in the direction of its target, but it is immobile in any other way. Once the tank gets far enough away, the tower cannot chase it or reposition itself.</p><p>In the sample scene, there <a id="id322" class="indexterm"></a>are several towers placed throughout the level. As they are prefabbed, it's very easy to duplicate towers, move them around, and reuse them between the levels. Their setup is not terribly complicated either. Their hierarchy looks similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_08_02.jpg" /><div class="caption"><p>The Tower hierarchy in the inspector</p></div></div><p>The breakdown of the hierarchy is as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">Tower</code>: Technically, this is the base of the tower—the cylinder that holds the rest of it up. This serves no function but to hold the rest of the parts.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Gun</code>: The gun is where most of the magic happens. It is the sphere mounted on the tower with the barrel on it. This is the part of the tower that moves and tracks the player.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Barrel</code> and <code class="literal">Muzzle</code>: The muzzle is located at the tip of the barrel. This is used as the spawn point for the bullets that come out of the gun.</p></li></ul></div><p>We mentioned that the gun is where the business happens for the tower, so let's dig in a bit deeper. The inspector with the gun selected looks similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_08_03.jpg" /><div class="caption"><p>The inspector for the gun</p></div></div><p>There is quite a bit going <a id="id323" class="indexterm"></a>on in the inspector here. Let's look at each of the components that affect the logic:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Sphere Collider</strong></span>: This is essentially the tower's range. When the tank enters this sphere, the <a id="id324" class="indexterm"></a>tower can detect it and will lock on to it to begin shooting at it. This is our implementation of perception for the tower. Notice that the radius is set to <code class="literal">7</code>. The value can be changed to whatever you liked, but 7 seems to be a fair value. Also, note that we set the <span class="strong"><strong>Is Trigger</strong></span> checkbox to true. We don't want this sphere to actually cause collisions, just to fire trigger events.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Rigidbody</strong></span>: This <a id="id325" class="indexterm"></a>component is required for the collider to actually work properly whether objects are moving or not. This is because Unity does not send collision or trigger events to game objects that are not moving, unless they have a rigid body component.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Tower</strong></span>: This is the <a id="id326" class="indexterm"></a>logic script for the tower. It works in tandem with the state machine and the state machine behavior, but we'll look at these components more in depth shortly.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Animator</strong></span>: This is <a id="id327" class="indexterm"></a>our tower's state machine. It doesn't actually handle animation.</p></li></ul></div><p>Before we look at the code that <a id="id328" class="indexterm"></a>drives the tower, let's take a brief look at the state machine. It's not terribly complicated, as you can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_08_04.jpg" /><div class="caption"><p>The state machine for the tower</p></div></div><p>There are two states that we care about: <code class="literal">Idle</code> (the default state) and <code class="literal">LockedOn</code>. The transition from <code class="literal">Idle</code> to <code class="literal">LockedOn</code> happens when the <code class="literal">TankInRange</code> bool is set to <code class="literal">true</code>, and the reverse transition happens when the bool is set to <code class="literal">false</code>.</p><p>The <code class="literal">LockedOn</code> state has a <code class="literal">StateMachineBehaviour</code> class attached to it, which we'll look at next:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class LockedOnState : StateMachineBehaviour {
+
+    GameObject player;
+    Tower tower;
+
+   // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
+    override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
+        player = GameObject.FindWithTag("Player");
+        tower = animator.gameObject.GetComponent&lt;Tower&gt;();
+        tower.LockedOn = true;
+    }
+
+     //OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
+  override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
+        animator.gameObject.transform.LookAt(player.transform);
+  }
+
+  // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
+    override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
+        animator.gameObject.transform.rotation = Quaternion.identity;
+        tower.LockedOn = false;
+    }
+}</pre></div><p>When we enter the state and <code class="literal">OnStateEnter</code> is called, we find a reference to our player. In the provided example, the player is tagged as <code class="literal">"Player"</code> so that we are able to get a reference to it using <code class="literal">GameObject.FindWithTag</code>. Next, we fetch a reference to the <code class="literal">Tower</code> component attached to our tower prefab and set its <code class="literal">LockedOn</code> bool to <code class="literal">true</code>.</p><p>As long as we're in the <a id="id329" class="indexterm"></a>state, <code class="literal">OnStateUpdate</code> gets called on each frame. Inside this method, we get a reference to the <code class="literal">Gun</code>
+<code class="literal"> GameObject</code> (which the <code class="literal">Tower</code> component is attached to) via the provided <code class="literal">Animator</code> reference. We use this reference to the gun to have it track the tank using <code class="literal">Transform.LookAt</code>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip07"></a>Tip</h3><p>Alternatively, as the <code class="literal">LockedOn</code> bool of the <code class="literal">Tower</code> is set to <code class="literal">true</code>, this logic could be handled in the <code class="literal">Tower.cs</code> script, instead.</p></div><p>Lastly, as we exit the state, <code class="literal">OnStateExit</code> gets called. We use this method to do a little cleanup. We reset the rotation of our gun to indicate that it is no longer tracking the player, and we set the Tower's <code class="literal">LockedOn</code> bool back to <code class="literal">false</code>.</p><p>As we can see, this <code class="literal">StateMachineBehaviour</code> interacts with the <code class="literal">Tower.cs</code> script, so let's look at <code class="literal">Tower.cs</code> next <a id="id330" class="indexterm"></a>for a bit more context as to what's happening:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Tower : MonoBehaviour {
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private float fireSpeed = 3f;
+    private float fireCounter = 0f;
+    private bool canFire = true;
+
+    [SerializeField]
+    private Transform muzzle;
+    [SerializeField]
+    private GameObject projectile;
+
+    private bool isLockedOn = false;
+
+    public bool LockedOn {
+        get { return isLockedOn; }
+        set { isLockedOn = value; }
+    }</pre></div><p>First up, we declare our variables and properties.</p><p>We need a reference to our state machine; this is where the <code class="literal">Animator</code> variable comes in. The next three variables, <code class="literal">fireSpeed</code>, <code class="literal">fireCounter</code>, and <code class="literal">canFire</code> all relate to our tower's shooting logic. We'll see how that works up later.</p><p>As we mentioned earlier, the muzzle is the location the bullets will spawn from when shooting. The projectile is the prefab we're going to instantiate.</p><p>Lastly, <code class="literal">isLockedOn</code> is get and set via <code class="literal">LockedOn</code>. While this book, in general, strays away from enforcing any particular coding convention, it's generally a good idea to keep values private unless explicitly required to be public, so instead of making <code class="literal">isLockedOn</code> public, we provide a property for it to <a id="id331" class="indexterm"></a>access it remotely (in this case, from the <code class="literal">LockedOnSate</code> behavior):</p><div class="informalexample"><pre class="programlisting">private void Update() {
+        if (LockedOn &amp;&amp; canFire) {
+            StartCoroutine(Fire());
+        }
+    }
+
+    private void OnTriggerEnter(Collider other) {
+        if (other.tag == "Player") {
+            animator.SetBool("TankInRange", true);
+        }
+    }
+
+    private void OnTriggerExit(Collider other) {
+        if (other.tag == "Player") {
+            animator.SetBool("TankInRange", false);
+        }
+    }
+
+    private void FireProjectile() {
+        GameObject bullet = Instantiate(projectile, muzzle.position, muzzle.rotation) as GameObject;
+        bullet.GetComponent&lt;Rigidbody&gt;().AddForce(muzzle.forward * 300);
+    }
+
+    private IEnumerator Fire() {
+        canFire = false;
+        FireProjectile();
+        while (fireCounter &lt; fireSpeed) {
+            fireCounter += Time.deltaTime;
+            yield return null;
+        }
+        canFire = true;
+        fireCounter = 0f;
+    }
+}</pre></div><p>Next up, we have all our methods, and the meat and potatoes of the tower logic. Inside the <code class="literal">Update</code> loop, we check for two things: are we locked on and can we fire? If both are true, we fire off our <code class="literal">Fire()</code> coroutine. We'll look at why <code class="literal">Fire()</code> is a coroutine before coming back to the <code class="literal">OnTrigger</code> messages.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip08"></a>Tip</h3><p>Coroutines can be a tricky concept to grasp if you're not already familiar with them. For more information on how to use them, check out Unity's documentation at <a class="ulink" href="http://docs.unity3d.com/Manual/Coroutines.html" target="_blank">http://docs.unity3d.com/Manual/Coroutines.html</a>.</p></div><p>As we don't want our tower to be able to constantly shoot projectiles at the tank like a projectile-crazy death machine, we use the variables that we defined earlier to create a cushion between each shot. After we call <code class="literal">FireProjectile()</code> and set <code class="literal">canFire</code> to <code class="literal">false</code>, we start a counter from 0 up to <code class="literal">fireSpeed</code>, before we set <code class="literal">canFire</code> to <code class="literal">true</code> again. The <code class="literal">FireProjectile()</code> method handles the instantiation of the projectile and shoots it out toward the direction the gun is pointing to using <code class="literal">Rigidbody.AddForce</code>. The actual bullet logic is handled elsewhere, but we'll look at that later.</p><p>Lastly, we have our two <a id="id332" class="indexterm"></a>
+<code class="literal">OnTrigger</code> events—one for when something enters the trigger attached to this component and another for when an object leaves said trigger. Remember the <code class="literal">TankInRange</code> bool that drives the transitions for our state machine? This variable gets set to <code class="literal">true</code> here when we enter the trigger and back to <code class="literal">false</code> as we exit. Essentially, when the tank enters the gun's sphere of "vision", it instantly locks on to the tank, and the lock is released when the tank leaves the sphere.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec65"></a>Making the towers shoot</h3></div></div></div><p>If we look back at <a id="id333" class="indexterm"></a>our <code class="literal">Tower</code> component in the inspector, you'll notice that a prefab named <code class="literal">bullet</code> is assigned to the <code class="literal">projectile</code> variable. This prefab can be found in the <code class="literal">Prefabs</code> folder of the sample project. The prefab looks similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_08_05.jpg" /><div class="caption"><p>The bullet prefab</p></div></div><p>The <code class="literal">bullet</code> game object is nothing fancy; it's just a bright yellow orb. There is a sphere collider attached to it, and <a id="id334" class="indexterm"></a>once again, we must make sure that <code class="literal">IsTrigger</code> is set to <code class="literal">true</code> and it has a <code class="literal">Rigidbody</code> (with <code class="literal">gravity</code> turned <code class="literal">off</code>) attached to it. We also have a <code class="literal">Projectile</code> component attached to the <code class="literal">bullet</code> prefab. This handles the collision logic. Let's take a look at the code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Projectile : MonoBehaviour {
+
+    [SerializeField]
+    private GameObject explosionPrefab;
+
+  void Start () {  }
+
+    private void OnTriggerEnter(Collider other) {
+        if (other.tag == "Player" || other.tag == "Environment") {
+            if (explosionPrefab == null) {
+                return;
+            }
+            GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity) as GameObject;
+            Destroy(this.gameObject);            
+        }
+    }
+}</pre></div><p>We have a fairly straightforward script here. In our level, we have all of the floor and walls tagged as <code class="literal">"Environment"</code>, so in our <code class="literal">OnTriggerEnter</code> method, we check that the trigger this projectile is <a id="id335" class="indexterm"></a>colliding with is either the player or the environment. If it is, we instantiate an <code class="literal">explosion</code> prefab and destroy the projectile. Let's take a look at the <code class="literal">explosion</code> prefab, which looks similar to this:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_08_06.jpg" /><div class="caption"><p>Inspector with the explosion prefab selected</p></div></div><p>As we can see, there is a very similar game object here; we have a sphere collider with <code class="literal">IsTrigger</code> set to <code class="literal">true</code>. The main difference is an <code class="literal">animator</code> component. When this <code class="literal">explosion</code> is instantiated, it <a id="id336" class="indexterm"></a>expands as an explosion would, then we use the state machine to destroy the instance when it transitions out of its explosion state. The <code class="literal">animation</code> controller looks similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_08_07.jpg" /><div class="caption"><p>The animation controller driving the explosion prefab</p></div></div><p>You'll notice the <code class="literal">explode</code> <a id="id337" class="indexterm"></a>state has a behavior attached to it. The code inside this behavior is fairly simple:</p><div class="informalexample"><pre class="programlisting">// OnStateExit is called when a transition ends and the state machine finishes evaluating this state
+    override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
+        Destroy(animator.gameObject, 0.1f);
+    }</pre></div><p>All we're doing here is destroying the instance of the object when we exit the state, which occurs when the animation ends.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip09"></a>Tip</h3><p>If you want to flesh out the game with your own game logic, this may be a good place to trigger any secondary effects such as damage, environment particles, or anything you can think of!</p></div></div></div>

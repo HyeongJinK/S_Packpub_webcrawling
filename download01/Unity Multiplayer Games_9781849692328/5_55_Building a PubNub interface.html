@@ -1,0 +1,156 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec58"></a>Building a PubNub interface</h2></div></div><hr /></div><p>Our system<a id="id259" class="indexterm"></a> will make use of the built-in WWW class of Unity to make requests, and a very useful Unity script feature known as <span class="strong"><strong>coroutines</strong></span>
+<a id="id260" class="indexterm"></a> to asynchronously wait until the request is finished—since a web request can take a while to complete, we do not want our game loop to be paused while waiting for the server to respond.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip03"></a>Tip</h3><p>In Unity, a coroutine is a way to semi-asynchronously execute some code by dividing the function into steps which can be performed across multiple frames. Coroutines "yield" values during execution. This value is interpreted by Unity and used to determine when to resume the coroutine. For instance, yielding null will cause Unity to pause our function and resume it on the next frame. In this case, we can yield a WWW object, which will cause Unity to pause our function and resume it once the WWW request has finished (the WWW request itself is handled asynchronously in the background).</p></div><p>First, we'll create a <code class="literal">MonoBehaviour</code> class to accomplish this. It will store the necessary keys, and make the needed requests, as well as keep a static reference to the current instance:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class PubNubWrapper : MonoBehaviour
+{
+  public static PubNubWrapper instance;
+
+  public string PublishKey = "";
+  public string SubscribeKey = "";
+
+  private Dictionary&lt;string, System.Action&lt;string&gt;&gt; channelMessageHandlers = new Dictionary&lt;string, System.Action&lt;string&gt;&gt;();
+
+  private string timeToken = "0";
+
+  void Awake(){
+    instance = this;
+  }
+
+  // publish a message to the given channel
+  public void Publish( string message, string channel )
+  {
+  }
+
+  // subscribe to receive messages from the given channel
+  public void Subscribe( string channel, System.Action&lt;string&gt; messageHandler )
+  {
+  }
+
+  // unsubscribe to stop receiving messages from the given channel
+  public void Unsubscribe( string channel )
+  {
+  }
+}</pre></div><p>Right now it does <a id="id261" class="indexterm"></a>nothing, but we'll begin filling in the functions. First, we'll create the publish function:</p><div class="informalexample"><pre class="programlisting">// publish a message to the given channel
+public void Publish( string message, string channel )
+{
+<span class="strong"><strong>  // escape the message so we can put it in a URL</strong></span>
+<span class="strong"><strong>  string escapedMessage = WWW.EscapeURL( message ).Replace( "+", "%20" ); // Unity's URL escaping function replaces space with '+'. It's better on some platforms to use %20</strong></span>
+<span class="strong"><strong>  // form the URL</strong></span>
+<span class="strong"><strong>  // http://pubsub.pubnub.com</strong></span>
+<span class="strong"><strong>  // /publish</strong></span>
+<span class="strong"><strong>  // /[publish key]</strong></span>
+<span class="strong"><strong>  // /[subscribe key]</strong></span>
+<span class="strong"><strong>  // /0</strong></span>
+<span class="strong"><strong>  // /[channel name]</strong></span>
+<span class="strong"><strong>  // /0</strong></span>
+<span class="strong"><strong>  // /[JSON message data]</strong></span>
+<span class="strong"><strong>  string url =</strong></span>
+<span class="strong"><strong>    "http://pubsub.pubnub.com" +</strong></span>
+<span class="strong"><strong>    "/publish" +</strong></span>
+<span class="strong"><strong>    "/" + PublishKey +</strong></span>
+<span class="strong"><strong>    "/" + SubscribeKey +</strong></span>
+<span class="strong"><strong>    "/0" +</strong></span>
+<span class="strong"><strong>    "/" + channel +</strong></span>
+<span class="strong"><strong>    "/0" +</strong></span>
+<span class="strong"><strong>    "/\"" + escapedMessage + "\"";</strong></span>
+
+<span class="strong"><strong>  // make the request</strong></span>
+<span class="strong"><strong>  WWW www = new WWW( url );</strong></span>
+}</pre></div><p>This is fairly straightforward. The data for the publish call is formatted as a URL, containing among<a id="id262" class="indexterm"></a> other things the Publish key, the channel to publish on, and the message to publish. Note that the message is wrapped in quotes—remember that the message we post is actually a JSON object, not simply a string. In this case, we are simply formatting it as a JSON string. We create a new WWW object with the URL to actually make the request, which publishes the message.</p><p>Next, the subscribe function. This one will actually kick off a coroutine, this coroutine will run in a loop making subscribe requests to PubNub. If when one of these requests is finished, the callback is not present in the dictionary, that must mean Unsubscribe was called, so we simply break out of the coroutine.</p><div class="informalexample"><pre class="programlisting">// subscribe to receive messages from the given channel
+public void Subscribe( string channel, System.Action&lt;string&gt; messageHandler )
+{
+<span class="strong"><strong>  channelMessageHandlers.Add( channel, messageHandler );</strong></span>
+<span class="strong"><strong>  StartCoroutine( doSubscribe( channel ) );</strong></span>
+}
+
+<span class="strong"><strong>IEnumerator doSubscribe( string channel )</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  // as long as we have a message handler for the given channel (we're subscribed), keep making requests</strong></span>
+<span class="strong"><strong>  while( channelMessageHandlers.ContainsKey( channel ) )</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    // form the URL</strong></span>
+<span class="strong"><strong>    // http://pubsub.pubnub.com</strong></span>
+<span class="strong"><strong>    // /subscribe</strong></span>
+<span class="strong"><strong>    // /[subscribe key here]</strong></span>
+<span class="strong"><strong>    // /[channel name here]</strong></span>
+<span class="strong"><strong>    // /0</strong></span>
+<span class="strong"><strong>    // /[time token here]</strong></span>
+<span class="strong"><strong>    string url =</strong></span>
+<span class="strong"><strong>      "http://pubsub.pubnub.com" +</strong></span>
+<span class="strong"><strong>      "/subscribe" +</strong></span>
+<span class="strong"><strong>      "/" + SubscribeKey +</strong></span>
+<span class="strong"><strong>      "/" + channel +</strong></span>
+<span class="strong"><strong>      "/0" +</strong></span>
+<span class="strong"><strong>      "/" + timeToken;</strong></span>
+
+<span class="strong"><strong>    // make the request</strong></span>
+<span class="strong"><strong>    WWW www = new WWW( url );</strong></span>
+
+<span class="strong"><strong>    // in Unity, we can yield a WWW object,</strong></span>
+<span class="strong"><strong>    // which makes Unity "pause" this coroutine</strong></span>
+<span class="strong"><strong>    // until the request has either encountered an error</strong></span>
+<span class="strong"><strong>    // or finished.</strong></span>
+<span class="strong"><strong>    yield return www;</strong></span>
+
+<span class="strong"><strong>    // www.error is a string</strong></span>
+<span class="strong"><strong>    // it will either be null/empty if there is no error, or it</strong></span>
+<span class="strong"><strong>    // will contain the error message if there was one.</strong></span>
+<span class="strong"><strong>    if( !string.IsNullOrEmpty( www.error ) )</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      // log the error to the console</strong></span>
+<span class="strong"><strong>      Debug.LogWarning( "Subscribe failed: " + www.error );</strong></span>
+
+<span class="strong"><strong>      // unsubscribe from the channel,</strong></span>
+<span class="strong"><strong>      // we don't want error messages spamming the console.</strong></span>
+<span class="strong"><strong>      Unsubscribe( channel );</strong></span>
+
+<span class="strong"><strong>      // yield break causes Unity to stop exiting this</strong></span>
+<span class="strong"><strong>      // coroutine. It is equivalent to "return;" in</strong></span>
+<span class="strong"><strong>      // a regular method.</strong></span>
+<span class="strong"><strong>      yield break;</strong></span>
+<span class="strong"><strong>    }</strong></span>
+
+<span class="strong"><strong>    // parse the response</strong></span>
+<span class="strong"><strong>    string newToken;</strong></span>
+<span class="strong"><strong>    // parse the response from the server</strong></span>
+<span class="strong"><strong>    // returned is an array of new messages posted since we</strong></span>
+<span class="strong"><strong>    // last made a request</strong></span>
+<span class="strong"><strong>    string[] newMessages = PubNubUtils.ParseSubscribeResponse( www.text, out newToken );</strong></span>
+
+<span class="strong"><strong>    // store the returned time token</strong></span>
+<span class="strong"><strong>    // this is important to ensure we only get new messages</strong></span>
+<span class="strong"><strong>    timeToken = newToken;</strong></span>
+
+<span class="strong"><strong>    // make sure we're still subscribed to this channel</strong></span>
+<span class="strong"><strong>    if( channelMessageHandlers.ContainsKey( channel ) )</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      // handle each message separately</strong></span>
+<span class="strong"><strong>      for( int i = 0; i &lt; newMessages.Length; i++ )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        channelMessageHandlers[ channel ]( newMessages[ i ] );</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>And finally, the <a id="id263" class="indexterm"></a>unsubscribe method. This will simply remove the callback associated with a given channel, which will break out of the doSubscribe coroutine loop.</p><div class="informalexample"><pre class="programlisting">// unsubscribe to stop receiving messages from the given channel
+public void Unsubscribe( string channel )
+{
+<span class="strong"><strong>  channelMessageHandlers.Remove( channel );</strong></span>
+}</pre></div><p>We now have a functional wrapper around PubNub. To test this, we'll do a simple script that posts a message to a channel, and listens on the same channel logging received messages to the console.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PubNubTest : MonoBehaviour
+{
+  void Start()
+  {
+    PubNubWrapper.instance.Subscribe( "HelloWorld",
+      delegate( string message )
+      {
+        Debug.Log( "Received message: " + message );
+      } );
+
+    PubNubWrapper.instance.Publish( "Hello, world!", "HelloWorld" );
+  }
+}</pre></div><p>If you place this script, as well as PubNubWrapper, in a scene and click on <span class="strong"><strong>Play</strong></span> you'll see after a short delay <span class="strong"><strong>Received message: Hello, world!</strong></span> printed to the console. Note that you'll need to paste your <a id="id264" class="indexterm"></a>Publish and Subscribe keys into the fields in the PubNubWrapper inspector, like this:</p><div class="mediaobject"><img src="/graphics/9781849692328/graphics/2328OT_05_03.jpg" /></div><p>Now that we have a framework built around PubNub, let's get started creating a global chatbox application.</p></div>

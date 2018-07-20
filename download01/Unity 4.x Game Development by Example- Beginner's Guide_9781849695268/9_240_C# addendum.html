@@ -1,0 +1,85 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec240"></a>C# addendum</h2></div></div><hr /></div><p>Here are the C# translations you so richly deserve. Among the very few changes here is the fact that you can't individually change the x/y/z transform.position values in C# as you can in JavaScript—you have to change all three values at the same time by creating a new instance of the <code class="literal">Vector3</code> class.</p><p>
+<span class="strong"><strong>BombCSharp</strong></span>
+</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>using UnityEngine;</strong></span>
+<span class="strong"><strong>using System.Collections;</strong></span>
+
+<span class="strong"><strong>public class BombCSharp : MonoBehaviour {</strong></span>
+
+<span class="strong"><strong>  public GameObject prefab;</strong></span>
+
+<span class="strong"><strong>  void Update ()</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    transform.position = new Vector3(transform.position.x, transform.position.y - 50 * Time.deltaTime, transform.position.z);</strong></span>
+<span class="strong"><strong>    if(transform.position.y &lt; 0)</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      Instantiate(prefab, transform.position, Quaternion.identity);</strong></span>
+<span class="strong"><strong>      transform.position = new Vector3(Random.Range(0,60), 50, -16);</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>
+<span class="strong"><strong>DestroyParticleSystemCSharp</strong></span>
+</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>using UnityEngine;</strong></span>
+<span class="strong"><strong>using System.Collections;</strong></span>
+
+<span class="strong"><strong>public class DestroyParticleSystemCSharp : MonoBehaviour</strong></span>
+<span class="strong"><strong>{</strong></span>
+
+<span class="strong"><strong>  void LateUpdate ()</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    if (!particleSystem.IsAlive())</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      Destroy (this.gameObject);</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>
+<span class="strong"><strong>CharacterCSharp</strong></span>
+</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>using UnityEngine;</strong></span>
+<span class="strong"><strong>using System.Collections;</strong></span>
+
+<span class="strong"><strong>public class CharacterCSharp : MonoBehaviour {</strong></span>
+
+<span class="strong"><strong>  private float lastX; // this will store the last position of the character</strong></span>
+<span class="strong"><strong>  private bool isMoving = false; //flags whether or not the player is in motion</strong></span>
+
+<span class="strong"><strong>  void Start()</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    animation.Stop();  // this stops Unity from playing the character's default animation.</strong></span>
+<span class="strong"><strong>  }</strong></span>
+
+<span class="strong"><strong>  void Update()</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    </strong></span>
+<span class="strong"><strong>    transform.position = new Vector3((Input.mousePosition.x)/20, transform.position.y, transform.position.z);</strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>    if(lastX != transform.position.x)</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      // x values between this Update cycle and the last one</strong></span>
+<span class="strong"><strong>      // aren't the same! That means the player is moving the mouse.</strong></span>
+<span class="strong"><strong>      if(!isMoving)</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        // the player was standing still.</strong></span>
+<span class="strong"><strong>        // Let's flag him to "isMoving"</strong></span>
+<span class="strong"><strong>        isMoving = true;</strong></span>
+<span class="strong"><strong>        animation.CrossFade("step");</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    } else {</strong></span>
+<span class="strong"><strong>      // The player's x position is the same this Update cycle</strong></span>
+<span class="strong"><strong>      // as it was the last! The player has stopped moving the mouse.   </strong></span>
+<span class="strong"><strong>      if(isMoving)</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        // The player has stopped moving, so let's update the flag</strong></span>
+<span class="strong"><strong>        isMoving = false;</strong></span>
+<span class="strong"><strong>        animation.CrossFade("idle");</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>    lastX = transform.position.x;</strong></span>
+<span class="strong"><strong>    </strong></span>
+<span class="strong"><strong>  }</strong></span>
+
+<span class="strong"><strong>}</strong></span>
+</pre></div></div>

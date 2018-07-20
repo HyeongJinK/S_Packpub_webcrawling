@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec53"></a>Mobile controls</h2></div></div><hr /></div><p>We're going to keep our controls really simple for this demo, there won't be a virtual joystick or button in sight. As we only need three functions, namely <code class="literal">left</code>, <code class="literal">forward</code>, and <code class="literal">right</code>, we'll be<a id="id304" class="indexterm"></a> breaking the screen up in to three sections and using the left section for turning left, the center section for forward, and the right section for turning right. The following is a screenshot of the game with the control areas overlaid for illustration purposes:</p><div class="mediaobject"><img src="/graphics/9781783559701/graphics/9701OS_07_01.jpg" /></div><p>We already have our control script for the game, <code class="literal">Sokoban</code>, so go ahead and double-click on it to edit it in MonoDevelop.</p><p>We're going to create a new method that will return <code class="literal">true</code> or <code class="literal">false</code> when we pass it in a string for the control direction we want to check. It should only return <code class="literal">true</code> if the tap has just happened, and not keep returning <code class="literal">true</code> if the user holds his finger on the screen. The method is as follows:</p><div class="informalexample"><pre class="programlisting">  // Check if an area of the screen has been
+  // touched for the very first time
+  bool FirstTouchForControlType(string controlType) {
+    
+    // Is there only one press?
+    if (Input.touchCount == 1) {
+      
+      // Get the touch out of the touches
+      // array as a touch object
+      Touch touch = Input.touches[0];
+      
+      // Has the touch just started?
+      if (touch.phase == TouchPhase.Began) {
+        
+        // Get the screen sections
+        float screenSectionLeft = Screen.width / 3;
+        float screenSectionCenter = screenSectionLeft + Screen.width / 3;
+        float screenSectionRight = Screen.width;
+        
+        // Check the passed control type
+        if (controlType == "left") {
+          
+          // Have we hit the left section?
+          if (touch.position.x &lt;= screenSectionLeft) {
+            return true;
+          } else {
+            return false;
+          }
+        } else if (controlType == "forward") {
+        
+        // Have we hit the forward section?
+        if (touch.position.x &gt;= screenSectionLeft &amp;&amp; touch.position.x &lt;= screenSectionCenter) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (controlType == "right") {
+        
+        // Have we hit the right section?
+        if (touch.position.x &gt;= screenSectionCenter &amp;&amp; touch.position.x &lt;= screenSectionRight) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+  }
+  
+  return false;
+}</pre></div><p>Let's break that code down as there's quite a large amount. Firstly, we check that there is only one finger on the screen, we then get the touch at index <code class="literal">0</code> and store it in to a variable named <code class="literal">touch</code>. As we only want the method to return <code class="literal">true</code> when the finger is first placed, we have to<a id="id305" class="indexterm"></a> check the <code class="literal">touch.phase</code> value and make sure it's the same as <code class="literal">TouchPhase.Began</code>. After that we break the screen down into three sections, on Android the screen sizes can be variable, so it's best that this is done in code to allow for the variation. We pass in the methods to check whether <code class="literal">left</code>, <code class="literal">forward</code>, or <code class="literal">right</code> have been clicked, so the next check is the value of that string, from there on the code is self-explanatory.</p><p>Now that we have the method in place, we need to modify our movement code, it's in the same file so find the method named <code class="literal">CheckIfPlayerIsAttempingToMove</code> and find the following code line:</p><div class="informalexample"><pre class="programlisting">if (Input.GetKeyDown (KeyCode.UpArrow) || OuyaInput.GetButtonDown(OuyaButton.DU, playerNumber)) {</pre></div><p>We're going to modify it to be the following code:</p><div class="informalexample"><pre class="programlisting">if (Input.GetKeyDown (KeyCode.UpArrow) || OuyaInput.GetButtonDown(OuyaButton.DU, playerNumber) || FirstTouchForControlType("forward")) { </pre></div><p>You see we've just added another check to the conditional with the OR operator, we call our method and pass in a string of <code class="literal">"forward"</code>. Do the same for <code class="literal">left</code> and <code class="literal">right</code>.</p><p>That's it! Give the game a test and try out the new <code class="literal">control</code> method. It is pretty impressive that the game now works in the editor, on the Ouya and on Android!</p></div>

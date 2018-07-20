@@ -1,0 +1,34 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec49"></a>Coding a scrolling background</h2></div></div><hr /></div><p>We will keep going with the same<a id="id296" class="indexterm"></a> game scene we left at the end of the previous recipe, so just stick with the instructions!</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec122"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <span class="strong"><strong>Scripts</strong></span> folder of your <span class="strong"><strong>Project</strong></span> panel create a new C# script and name it <code class="literal">Back_Manager</code>.</p></li><li><p>Double-click on the script to open it in <span class="strong"><strong>Monodevelop</strong></span>.</p></li><li><p>Let's begin by creating the required variables: we need one public Transform variable to store the reference to the prefab to be used as the background panels and a few private vars to define things like the scale of the panels, the distance from the character, and a reference to the game character.</p><p>From a game logic perspective, the most important variable we are adding to the script is an <code class="literal">Array[]</code> variable type that we use to manage the three panels that repeat endlessly in the background. To achieve that, add the following lines at the beginning of the script:</p><div class="informalexample"><pre class="programlisting">public Transform backBrick;
+
+private Transform[] backArray=new Transform[3]; 
+private Transform thisChar;
+private float distance;
+private float farDistance;
+private Vector3 brickScale;</pre></div></li><li><p>In the <code class="literal">Start()</code> function we put the instructions to initialize the variables and create a service <code class="literal">float</code> variable to help us make longer lines of code more readable. These instructions could be added to an <code class="literal">Awake()</code> function instead of <code class="literal">Start()</code>, but to keep things easy, we prefer to use the <code class="literal">Start()</code> function.</p></li><li><p>Add the following lines to the <code class="literal">Start()</code> function of the script:</p><div class="informalexample"><pre class="programlisting">thisChar = GameObject.Find ("Constructor").GetComponent&lt;Transform&gt;();
+farDistance = 30.0f;
+brickScale=new Vector3(60,60,1);
+float xPosition;</pre></div></li><li><p>Now we add a <code class="literal">for()</code> cycle to instantiate the panels in the scene; add them to the array and set their scale. The following code goes into the <code class="literal">Start()</code> function too:</p><div class="informalexample"><pre class="programlisting">for (int i=0; i&lt;3; i++) {
+    
+  xPosition=(brickScale.x*i);
+  backArray[i]=(Transform)Instantiate(backBrick,new Vector3(xPosition,0,farDistance),Quaternion.identity); 
+  backArray[i].localScale=brickScale;
+}</pre></div></li><li><p>In the <code class="literal">Update()</code> function<a id="id297" class="indexterm"></a> we plan to run a routine that keeps repeating and checks the horizontal distance between the character and the background panels. For this reason, instead of coding the routine into the <code class="literal">Update()</code> function itself, we make a custom function and then call that function in <code class="literal">Update()</code>. The custom function name is <code class="literal">CheckDistance()</code> and this is the code to be added to it:</p><div class="informalexample"><pre class="programlisting">void CheckDistance(){
+
+  for (int i=0; i&lt;3; i++) {
+    
+    distance=thisChar.transform.position.xbackArray[i].transform.position.x;
+
+    if(Mathf.Abs (distance) &gt; (brickScale.x * 1.5) &amp;&amp;distance &gt; 0){
+      backArray[i].Translate( 3* brickScale.x,0,0); 
+      break;
+    }
+
+    if(Mathf.Abs (distance) &gt; (brickScale.x * 1.5) &amp;&amp;distance &lt; 0){ 
+      backArray[i].Translate(-3*brickScale.x,0,0);
+      break;
+    }
+  }
+}</pre></div></li><li><p>Access the <code class="literal">Update()</code> function and add a call to <code class="literal">CheckDistance()</code> there using the following lines:</p><div class="informalexample"><pre class="programlisting">void Update () {
+  CheckDistance ();
+}</pre></div><p>In case you are missing something, the following screenshot shows the complete <code class="literal">BackgroundManager</code> script:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_05_02.jpg" /></div></li><li><p>Go back to <a id="id298" class="indexterm"></a>Unity, create an empty <span class="strong"><strong>GameObject</strong></span> in the scene and name it <code class="literal">back_manager</code>. You can refer to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_05_03.jpg" /></div></li><li><p>Now drag <a id="id299" class="indexterm"></a>
+<span class="strong"><strong>Back_Manager</strong></span> onto the <span class="strong"><strong>back_manager</strong></span> game object in the scene. The attached script, called Back Brick, should appear in <span class="strong"><strong>Inspector</strong></span> as it's one public variable.</p></li><li><p>Drag <span class="strong"><strong>back_prefab</strong></span> from the <span class="strong"><strong>Project</strong></span> panel onto the <span class="strong"><strong>Back Brick</strong></span> slot of the <span class="strong"><strong>BackgroundManager</strong></span> script in the <span class="strong"><strong>Inspector</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_05_04.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec123"></a>How it works...</h3></div></div></div><p>The scripts<a id="id300" class="indexterm"></a> attached to <code class="literal">back_manager</code> in the scene take care of instantiating the panels with the right position and scale. As the character moves left or right, the scripts check their position and decide how to translate the background panels so one is always behind the player. It just needs us to manually create a reference to the prefab to be used for the background panels, which is what we did with the last step of the recipe.</p></div></div>

@@ -1,0 +1,133 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec71"></a>Level editor – toggling editor, GUI, and selecting additional tiles</h2></div></div><hr /></div><p>Now that we have the basic<a id="id585" class="indexterm"></a> functionality in, it wouldn't be that <a id="id586" class="indexterm"></a>enjoyable if all we could do was add <a id="id587" class="indexterm"></a>and remove walls. We also want to be able to spawn collectibles and change the player's starting location. Let's work on that next:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Back in <code class="literal">MonoDevelop</code> in the <code class="literal">LevelEditor</code> class, we're going to want to first add in an <code class="literal">OnGUI</code> function to display the types of things we can create:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  GUILayout.BeginArea(new Rect(Screen.width - 110, 20, 100, 800));
+  foreach(Transform item in tiles)
+  {
+    if (GUILayout.Button (item.name))
+    {
+      toCreate = item;
+      
+    }
+  }
+  GUILayout.EndArea();
+}</pre></div></li><li><p>Next, inside <a id="id588" class="indexterm"></a>our <code class="literal">GameController</code> class, add the<a id="id589" class="indexterm"></a> following code to our <code class="literal">Update</code> function (create the function as well if it doesn't exist in your current<a id="id590" class="indexterm"></a> implementation, such as the example code):</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  if(Input.GetKeyDown("f2"))
+  {
+    this.gameObject.GetComponent&lt;LevelEditor&gt;().enabled = true;
+  }
+}</pre></div><p>Now, if we move back to the game, and press the <span class="emphasis"><em>F2</em></span> key, you'll see that a menu pops up, which we can then select items from. This works fine for the walls and the collectibles, but there's a bit of an issue with the player and the collectibles. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_07_06.jpg" /></div><p>As you can<a id="id591" class="indexterm"></a> see, we are spawning <a id="id592" class="indexterm"></a>more players that all respond<a id="id593" class="indexterm"></a> to player input, and the number of collectibles on our screen are not reflected properly in our text. We will solve both of these issues now. We will first create a new object called <code class="literal">PlayerSpawner</code>, which will act as the place where the player will start when the game starts, and make it such that we can only have one of them.</p></li><li><p>In <span class="strong"><strong>Project Browser</strong></span>, select <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>New Material</strong></span>. Rename it to <code class="literal">PlayerSpawn</code> by clicking on the name of the material in the project browser, typing in the new name, and then pressing <span class="emphasis"><em>Enter</em></span>.</p></li><li><p>With the PlayerSpawn object selected, set the <span class="strong"><strong>Shader</strong></span> as <span class="strong"><strong>Transparent</strong></span> | <span class="strong"><strong>Diffuse</strong></span> so that we can make the material semitransparent. Then, change the <span class="strong"><strong>Main Color</strong></span> property to a red color with a slight alpha. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_07_07.jpg" /></div><p>If all goes well, it<a id="id594" class="indexterm"></a> should look like <a id="id595" class="indexterm"></a>the the following<a id="id596" class="indexterm"></a> screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_07_08.jpg" /></div></li><li><p>Now, let's <a id="id597" class="indexterm"></a>create a cube to act as the<a id="id598" class="indexterm"></a> visual representation of<a id="id599" class="indexterm"></a> our level by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>Cube</strong></span>. Once the object is created, give it a name, <code class="literal">PlayerSpawn</code>. Switch to the <span class="strong"><strong>Scene</strong></span> view if you haven't so that you can see the newly created object.</p></li><li><p>Under the <span class="strong"><strong>Mesh Renderer</strong></span> component, set the <span class="strong"><strong>Materials</strong></span> | <span class="strong"><strong>Element 0</strong></span> property to our newly created <code class="literal">PlayerSpawn</code> material. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_07_09.jpg" /></div></li><li><p>Next, go to<a id="id600" class="indexterm"></a> the <code class="literal">Scripts</code> folder, and<a id="id601" class="indexterm"></a> create a new C# script <a id="id602" class="indexterm"></a>called <code class="literal">PlayerStart</code>. Once that's finished, open <code class="literal">MonoDevelop</code>, and use the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerStart : MonoBehaviour 
+{
+  //A reference to our player prefab
+  public Transform player;
+
+  //Have we spawned yet?
+  public static bool spawned = false;
+  
+  public static PlayerStart _instance;
+  
+  // Use this for initialization
+  void Start () 
+  {
+    // If another PlayerStart exists, this will replace it
+    if(_instance != null)
+      Destroy(_instance.gameObject);
+    
+    _instance = this;
+
+    // Have we spawned yet? If not, spawn the player
+    if(!spawned)
+    {
+      SpawnPlayer();
+      spawned = true;
+    }
+  }
+  
+  void SpawnPlayer()
+  {
+    Transform newObject = Instantiate(player, 
+                                this.transform.position,
+                                Quaternion.identity) as Transform;
+    
+    newObject.name = "Player";
+  }
+
+}</pre></div></li><li><p>Back in the<a id="id603" class="indexterm"></a> editor, attach our new<a id="id604" class="indexterm"></a> component to the <span class="strong"><strong>PlayerStart</strong></span> <a id="id605" class="indexterm"></a>object in <span class="strong"><strong>Hierarchy</strong></span>. Then, back in <span class="strong"><strong>Inspector</strong></span>, set the <span class="strong"><strong>Player</strong></span> variable to our <code class="literal">Player</code> prefab.</p></li><li><p>Lastly, in the <span class="strong"><strong>Box Collider</strong></span> component, check the <span class="strong"><strong>Is Trigger</strong></span> property.</p></li><li><p>Now, drag the <code class="literal">PlayerStart</code> object from <span class="strong"><strong>Hierarchy</strong></span> to the <code class="literal">Prefabs</code> folder to make it a prefab. Then, delete the object from <span class="strong"><strong>Hierarchy</strong></span>.</p></li><li><p>Next, select the <code class="literal">_GameController</code> object, and assign the <code class="literal">PlayerStart</code> prefab where you used to see the player in <span class="strong"><strong>Tiles</strong></span> | <span class="strong"><strong>Element 1</strong></span>. Save your scene, and play the game. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_07_10.jpg" /></div><p>We can <a id="id606" class="indexterm"></a>now select the<a id="id607" class="indexterm"></a> <span class="strong"><strong>PlayerStart</strong></span> object from the <a id="id608" class="indexterm"></a>button and place it wherever we want, and there will always just be one. Also, once we have levels saving/loading, the code will properly spawn the player wherever the <span class="strong"><strong>PlayerStart</strong></span> object is placed!</p></li><li><p>Now, to update the number of orbs we have in the level, we need to open <span class="strong"><strong>GameController</strong></span> and add in a new function, as follows:</p><div class="informalexample"><pre class="programlisting">public void UpdateOrbTotals(bool reset = false)
+{
+  if (reset)
+    orbsCollected = 0;
+
+  GameObject[] orbs;
+  orbs = GameObject.FindGameObjectsWithTag("Orb");
+
+  orbsTotal = orbs.Length;
+  
+  scoreText.text = "Orbs: " + orbsCollected + "/" + orbsTotal;
+}</pre></div></li><li><p>Now that we have this function written, we need to call it every time we do something to modify our level. Go to the <code class="literal">LevelEditor</code> class, and add the following line to the end of our <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">GameController._instance.UpdateOrbTotals(true);</pre></div></li><li><p>Then, inside<a id="id609" class="indexterm"></a> the <code class="literal">Update</code> function, we'll <a id="id610" class="indexterm"></a>need to add the following <a id="id611" class="indexterm"></a>lines in bold:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  // Left click - Create object
+  if (Input.GetMouseButton(0) &amp;&amp; GUIUtility.hotControl==0)
+  {
+    Vector3 mousePos = Input.mousePosition;
+
+    //Set my position in the z axis to the opposite of mine.
+    mousePos.z = Camera.main.transform.position.z * -1;
+
+    Vector3 pos = Camera.main.ScreenToWorldPoint(mousePos);
+
+    // Deal with the mouse being not exactly on a block
+    int posX = Mathf.FloorToInt(pos.x +.5f);
+    int posY = Mathf.FloorToInt(pos.y + .5f);
+    
+    // Convert from screenspace to worldspace using a Ray
+    Ray ray = Camera.main.ScreenPointToRay(mousePos);
+
+    // We need to check if there is an object already at 
+    //the position we're trying to create at
+    RaycastHit hit = new RaycastHit();
+
+    // If something within a distance of 100 in the 
+    //direction 
+    // hits something hit will get the data of the hit object.
+    Physics.Raycast(ray, out hit, 100);
+    
+    if((hit.collider != null) &amp;&amp; (hit.collider.name != "Player"))
+    {
+      //If it's the same, just keep the previous one
+      if(toCreate.name != hit.collider.gameObject.name)
+      {
+        CreateBlock(tiles.IndexOf(toCreate) + 1, Mathf.FloorToInt(hit.collider.gameObject.transform.position.x), 
+        Mathf.FloorToInt(hit.collider.gameObject.transform.position.y));
+
+        DestroyImmediate(hit.collider.gameObject);
+      }
+    }
+    else
+    {
+      CreateBlock(tiles.IndexOf(toCreate) + 1, posX, posY);
+    }
+<span class="strong"><strong>    GameController._instance.UpdateOrbTotals();</strong></span>
+  }
+
+  // Right clicking - Delete object
+  if (Input.GetMouseButton(1) &amp;&amp; GUIUtility.hotControl==0)
+  {
+    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+    RaycastHit hit = new RaycastHit();
+    
+    Physics.Raycast(ray, out hit, 100);
+
+    // If we hit something other than the player, we 
+    // want to destroy it!
+    if((hit.collider != null) &amp;&amp; (hit.collider.name != "Player"))
+    {
+      Destroy(hit.collider.gameObject);
+    }
+<span class="strong"><strong>    GameController._instance.UpdateOrbTotals();</strong></span>
+  }
+
+}</pre></div></li><li><p>Save the file, save your project, and start the game. Press <span class="emphasis"><em>F2</em></span> to open our menu and then draw. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_07_11.jpg" /></div></li></ol></div><p>As you can see, we're<a id="id612" class="indexterm"></a> now able to draw over the other<a id="id613" class="indexterm"></a> object and place everything that we<a id="id614" class="indexterm"></a> want for our level!</p></div>

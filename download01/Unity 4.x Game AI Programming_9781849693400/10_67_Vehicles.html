@@ -1,0 +1,245 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec64"></a>Vehicles</h2></div></div><hr /></div><p>As mentioned earlier the car model and <a id="id452" class="indexterm"></a>behavior scripts are based on the Unity3D car tutorial. Some of the scripts written in JavaScript were converted to C# just to make them consistent.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_05.jpg" /><div class="caption"><p>Our car outfitted with weapons</p></div></div><p>We added three additional components to our base car model. They are missile launchers on each side of the car body and a normal gun model with a rotatable turret on the top. Also, take note that the player car uses the <a id="id453" class="indexterm"></a>
+<span class="strong"><strong>Player</strong></span> tag and enemy cars use the <span class="strong"><strong>AICar</strong></span> tag that we defined earlier.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_06.jpg" /><div class="caption"><p>Modifications added to our car</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec56"></a>Player car controller</h3></div></div></div><p>Player car has a few different scripts <a id="id454" class="indexterm"></a>attached to it. Basically <code class="literal">Car.cs</code> and <code class="literal">PlayerCarController.cs</code> take care of the car movement in a realistic way. Since realistic car physics is a huge subject, and as you can also learn from the Unity3D car tutorial, we'll be looking more into our project specific scripts and controllers in this chapter. The following is our <code class="literal">PlayerWeaponController</code> class that controls the aiming and shooting of our two different weapons:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerWeaponController : MonoBehaviour{
+  public WeaponGun gun;
+  public WeaponMissile[] missile; //Left and Right missile pod
+  public Transform Turret;
+
+  //The Recticle object, the mouse cursor graphic
+  private Transform recticle;
+
+  // Use this for initialization
+  void Start () {
+    if (!recticle)
+      recticle = GameObject.Find("Recticle_Player").transform;
+  }
+
+  // Update is called once per frame
+  void Update () {
+    //Shoot laser from the turret
+    if (Input.GetMouseButtonDown(0)) {
+      gun.Shoot();
+    }
+    else if (Input.GetMouseButtonUp(0)) {
+      gun.StopShoot();
+    }
+
+    //Shoot missile from the turret
+    if (Input.GetMouseButtonDown(1)) {
+      missile[1].Shoot();
+    }
+    else if (Input.GetMouseButtonUp(1)) {
+      missile[1].StopShoot();
+    }
+
+    //Rotate the turret
+    //AIMING WITH THE MOUSE
+    //Generate a plane that intersects the transform's
+      //position with an upwards normal.
+    Plane playerPlane = new Plane(Vector3.up, transform.position);
+
+    // Generate a ray from the cursor position
+    Ray RayCast = 
+        Camera.main.ScreenPointToRay(Input.mousePosition);
+
+    // Determine the point where the cursor ray intersects the
+      //plane.
+    float HitDist = 0;
+
+    if (playerPlane.Raycast(RayCast, out HitDist)) {
+      // Get the point along the ray that hits the calculated
+        //distance.
+      Vector3 targetPoint = RayCast.GetPoint(HitDist);
+
+      //Set the position of the Recticle to be the same as the
+      //position of the mouse on the created plane
+
+      recticle.position = targetPoint; 
+      Turret.LookAt(recticle.position);
+    }
+  }
+}</pre></div><p>We begin with taking reference entities for missile weapons and the rotatable turret. We have yet to create the <code class="literal">WeaponGun</code> <a id="id455" class="indexterm"></a>class or the <code class="literal">WeaponMissle</code> class, but we will, later on in the chapter. The <code class="literal">recticle</code> is <a id="id456" class="indexterm"></a>a separate empty game object in our scene. In the <code class="literal">start</code> method, we try to find that object in the <a id="id457" class="indexterm"></a>scene, and store a reference in our local <code class="literal">recticle</code>. Then in our <a id="id458" class="indexterm"></a>
+<code class="literal">Update</code> method, we use the left mouse button click event to trigger normal bullet shooting and the right mouse button to shoot missiles. We then pick the current position of the mouse pointer in 2D space and convert it into 3D space by raycasting. This has been explained in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Finite State Machines</em></span>, in the section titled <span class="emphasis"><em>Controlling the tank</em></span>. Then the turret object attached to the car is rotated to look at that direction, and also the <code class="literal">recticle position</code> is updated. This position of the <code class="literal">recticle</code> image is updated in real-time as well.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec57"></a>AI Car Controller</h3></div></div></div><p>We will apply the <code class="literal">AdvancedFSM</code> <a id="id459" class="indexterm"></a>framework that we built in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Finite State Machines</em></span>, to implement the enemy car's <a id="id460" class="indexterm"></a>AI. The <code class="literal">AICarController</code> class is extended from the <code class="literal">AdvancedFSM</code> class and set ups the FSM framework.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class AICarController : AdvancedFSM {
+  protected override void Initialise() {
+    //Start Doing the Finite State Machine
+    ConstructFSM();
+
+    //Get the target enemy(Player)
+    GameObject objPlayer = 
+        GameObject.FindGameObjectWithTag("Player");
+    playerTransform = objPlayer.transform;
+
+    if (!playerTransform)
+      print("Player doesn't exist.. Please add one with " + 
+          "Tag named 'Player'");
+  }</pre></div><p>We have to make sure that there's a player object with the tag <code class="literal">Player</code> in the scene. If found, we'll store this object reference <a id="id461" class="indexterm"></a>in the <code class="literal">playerTransform</code> variable. Then we <a id="id462" class="indexterm"></a>set up our transitions and states in the <code class="literal">ConstructFSM</code> method.</p><div class="informalexample"><pre class="programlisting">  //Construct the Finite State Machine for the AI Car behavior
+  private void ConstructFSM() {
+    //Get the list of points
+    pointList = GameObject.FindGameObjectsWithTag("WandarPoints");
+    Transform[] waypoints = new Transform[pointList.Length];
+    int i = 0;
+    foreach (GameObject obj in pointList) {
+      waypoints[i] = obj.transform;
+      i++;
+    }
+
+    PatrolState patrol = new PatrolState(waypoints);
+    patrol.AddTransition(Transition.SawPlayer, 
+        FSMStateID.Chasing);
+    patrol.AddTransition(Transition.NoHealth, FSMStateID.Dead);
+
+    ChaseState chase = new ChaseState(waypoints);
+    chase.AddTransition(Transition.LostPlayer, 
+        FSMStateID.Patrolling);
+    chase.AddTransition(Transition.ReachPlayer, 
+        FSMStateID.Attacking);
+    chase.AddTransition(Transition.NoHealth, FSMStateID.Dead);
+
+    AttackState attack = new AttackState(waypoints);
+    attack.AddTransition(Transition.LostPlayer,
+        FSMStateID.Patrolling);
+    attack.AddTransition(Transition.SawPlayer, 
+        FSMStateID.Chasing);
+    attack.AddTransition(Transition.NoHealth, FSMStateID.Dead);
+
+    DeadState dead = new DeadState();
+    dead.AddTransition(Transition.NoHealth, FSMStateID.Dead);
+
+    AddFSMState(patrol);
+    AddFSMState(chase);
+    AddFSMState(attack);
+    AddFSMState(dead);
+  }</pre></div><p>We set up a couple of points in our scene to use as waypoints for our AI cars to navigate in the scene.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_07.jpg" /><div class="caption"><p>Our scene needs a lot of points</p></div></div><p>These waypoints use the tag <span class="strong"><strong>WandarPoints</strong></span>. So the first thing we have to do, while constructing our FSM, is to find all those points tagged as <a id="id463" class="indexterm"></a>
+<span class="strong"><strong>WandarPoints</strong></span> and pass them to our AI states so that they are aware of their environment.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_08.jpg" /><div class="caption"><p>Patrol Points tagged as WandarPoints</p></div></div><p>After that, we create states and transition <a id="id464" class="indexterm"></a>triggers and adding into our FSM framework.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec58"></a>Finite State Machines (FSMs)</h3></div></div></div><p>We need to set up an update loop that <a id="id465" class="indexterm"></a>will call the <code class="literal">Reason</code> and <code class="literal">Act</code> methods from our various <code class="literal">State</code> classes. We'll look at the implementation of these states in a while.</p><div class="informalexample"><pre class="programlisting">  protected override void CarFixedUpdate() {
+    CurrentState.Reason(playerTransform, transform);
+    CurrentState.Act(playerTransform, transform);
+  }</pre></div><p>Since we separate the different states of our AI car into different classes, our <code class="literal">update</code> method is much simpler. We only need to call the reason and act methods of the current state of the AI. To represent the FSM model of our AI cars in a state transition diagram, it would look something like this.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_09.jpg" /><div class="caption"><p>FSM for the AI enemy car</p></div></div><p>And the last part is taking damage based on collision with either bullets or missiles. Once the health reaches less than or equal to zero, <a id="id466" class="indexterm"></a>we'll play a nice physics-based explosion effect, destroy the object, and finally remove it from the scene.</p><div class="informalexample"><pre class="programlisting">  //Hit with Missile or Bullet
+  void OnCollisionEnter(Collision collision) {
+    if (bDead)
+      return;
+
+    if (collision.gameObject.tag == "Bullet") {
+      print("AICar Hit with Bullet");
+      health -= 30;
+    }
+    else if (collision.gameObject.tag == "Missile") {
+      print("AICar Hit with Missile");
+      health -= 50;
+    }
+
+    if (health &lt;= 0) {
+       bDead = true;
+       Explode();
+       Destroy(gameObject, 4.0f);
+    }
+  }</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec11"></a>Patrol state</h4></div></div></div><p>Each state in our FSM has two main methods, <code class="literal">Reason</code> and <code class="literal">Act</code>. Basically, the <code class="literal">Reason</code> method checks the condition, and takes <a id="id467" class="indexterm"></a>care of transition to other states. In our patrol state, the <code class="literal">Reason</code> method checks the distance between the player and current AI car position. If it's close enough, <a id="id468" class="indexterm"></a>it'll set the transition to <code class="literal">SawPlayer</code>. We've already set up mapping between transitions and states for each of our AI car objects.</p><div class="informalexample"><pre class="programlisting">public override void Reason(Transform player, Transform npc) {
+  if (Vector3.Distance(npc.position, player.position) &lt;= 100.0f) {
+    Debug.Log("Switch to Chase State");
+    npc.GetComponent&lt;AICarController&gt;().SetTransition(
+        Transition.SawPlayer);
+    npc.GetComponent&lt;AICarController&gt;().throttle = 0.0f;
+    npc.GetComponent&lt;AICarController&gt;().DoHandbrake();
+  }
+}</pre></div><p>So, later in our <code class="literal">AdvancedFSM</code> class, this new transition is used to retrieve the current state correctly. The following is the <a id="id469" class="indexterm"></a>
+<code class="literal">PerformTransition</code> method of the <a id="id470" class="indexterm"></a>
+<code class="literal">AdvancedFSM</code> class that handles this state transition.</p><div class="informalexample"><pre class="programlisting">  public void PerformTransition(Transition trans) {
+    // Check if the currentState has the transition passed as
+      //argument
+    FSMStateID id = currentState.GetOutputState(trans);
+    if (id == FSMStateID.None) {
+      Debug.LogError("FSM ERROR: Current State does not have a " + 
+          "target state for this transition");
+      return;
+    }
+
+    // Update the currentStateID and currentState
+    currentStateID = id;
+    foreach (FSMState state in fsmStates) {
+      if (state.ID == currentStateID) {
+        currentState = state;
+        break;
+      }
+    }
+  }</pre></div><p>And the <code class="literal">Act</code> method of our Patrol states will find the next waypoint, if the AI car is already near the current destination point, <a id="id471" class="indexterm"></a>and will update the direction and speed accordingly.</p><div class="informalexample"><pre class="programlisting">public override void Act(Transform player, Transform npc) {
+  //Find another random patrol point if the current point is
+  //reached
+  if (Vector3.Distance(npc.position, destPos) &lt;= 5.0f) {
+    FindNextPoint();
+    curPathIndex = 0;
+    //Brake it first before moving to the next point
+    npc.GetComponent&lt;AICarController&gt;().DoHandbrake();
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec12"></a>Chase state</h4></div></div></div><p>The <code class="literal">Reason</code> method checks and <a id="id472" class="indexterm"></a>transitions to <code class="literal">ReachPlayer</code>, if the distance between the player and the <a id="id473" class="indexterm"></a>AI car is close enough. Otherwise, it'll update the transition to <code class="literal">LostPlayer</code>. So the <code class="literal">ReachPlayer</code> transition will update the AI state to the <code class="literal">Attack state</code> while <code class="literal">LostPlayer</code> will make the AI car go back to <code class="literal">Patrol state</code>.</p><div class="informalexample"><pre class="programlisting">  //Check the new reason to change state
+    public override void Reason(Transform player, Transform npc) {
+    //Set the target position as the player position
+      destPos = player.position;
+
+    //Check the distance with player tank
+    //When the distance is near, transition to attack state
+    float dist = Vector3.Distance(npc.position, destPos);
+    if (dist &lt;= 60.0f) {
+      Debug.Log("Switch to Attack state");
+      npc.GetComponent&lt;AICarController&gt;().SetTransition(
+          Transition.ReachPlayer);
+    }
+
+    //Go back to patrol is it become too far
+    if (dist &gt;= 110.0f) {
+    Debug.Log("Switch to Patrol state");
+    npc.GetComponent&lt;AICarController&gt;().SetTransition(
+        Transition.LostPlayer);
+    }
+  }</pre></div><p>The Chase state's <code class="literal">Act</code> method is short but requires some background on linear algebra and trigonometry.</p><div class="informalexample"><pre class="programlisting">  //Action taken in the current state
+  public override void Act(Transform player, Transform npc) {
+    //Rotate to the target point
+    destPos = player.position;
+
+    npc.GetComponent&lt;AICarController&gt;().throttle = 1.0f;
+
+    Vector3 RelativeWaypointPosition = 
+        npc.InverseTransformPoint(new Vector3(destPos.x,
+          npc.position.y, destPos.z));
+
+    npc.GetComponent&lt;AICarController&gt;().steer = 
+        RelativeWaypointPosition.x / 
+        RelativeWaypointPosition.magnitude;
+  }</pre></div><p>Unity3D has a method called <code class="literal">InverseTransformPoint</code> that translates a position from world space to local space. Currently the <a id="id474" class="indexterm"></a>player position is in world space. So, we use this method to find the relative position of the target player car position from the AI car transform. <code class="literal">RelativeWaypointPosition</code> holds the new vector (x, y, z), which is also the direction vector to the player car from the AI car.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_10.jpg" /><div class="caption"><p>Finding the vector to the Player car</p></div></div><p>Once we get this vector we can determine by what degree we need to rotate, if any, towards the direction of player car by dividing the horizontal position by the vector magnitude or distance. We then apply this <a id="id475" class="indexterm"></a>angular value to steer the wheels toward the player car.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec13"></a>Attack state</h4></div></div></div><p>When the player is close enough to the <a id="id476" class="indexterm"></a>AI car, we can reach the <code class="literal">Attack state</code>. We'll rotate the gun <a id="id477" class="indexterm"></a>towards the player car and start shooting coroutine.</p><div class="informalexample"><pre class="programlisting">  public override void Act(Transform player, Transform npc) {
+    //Set the target position as the player position
+    destPos = player.position + new Vector3(0.0f, 1.0f, 0.0f);
+
+    Transform turret = weapon.Turret;
+    Quaternion turretRotation = Quaternion.LookRotation(
+        destPos - turret.position);
+
+    turret.rotation = Quaternion.Slerp(turret.rotation, 
+        turretRotation, Time.deltaTime * curRotSpeed);
+
+    //Shoot shouldn't call every frame
+    if (!bStartShooting) {
+      //Shoot bullet/Missiles towards the player
+      ShootShells();
+      bStartShooting = true;
+    }
+  }</pre></div><p>In our <code class="literal">Reason</code> method, we check the distance with the player and set the transition back to either <code class="literal">LostPlayer</code> or <code class="literal">SawPlayer</code>. These transitions will update the current state to patrol state or chase state.</p><div class="informalexample"><pre class="programlisting">  public override void Reason(Transform player, Transform npc) {
+    //Check the distance with the player car
+    float dist = Vector3.Distance(npc.position,player.position);
+    if (dist &gt;= 50.0f &amp;&amp; dist &lt; 100.0f) {
+      Debug.Log("Switch to Chase State");
+      npc.GetComponent&lt;AICarController&gt;().SetTransition(
+          Transition.SawPlayer);
+      StopShooting();
+    }
+
+    //Transition to patrol is the tank become too far
+    else if (dist &gt;= 100.0f) {
+      Debug.Log("Switch to Patrol State");
+      npc.GetComponent&lt;AICarController&gt;().SetTransition(
+          Transition.LostPlayer);
+      StopShooting();
+    }
+  }</pre></div></div></div></div>

@@ -1,0 +1,19 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec249"></a>Time for action – write the collision detection code</h2></div></div><hr /></div><p>Pop open<a id="id778" class="indexterm"></a> the <span class="strong"><strong>Character Script</strong></span> and let's get bizzay. <a id="id779" class="indexterm"></a>
+</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Type up the following function within the script. Be sure to follow the rules we've learned about where to properly write a new function (that is, "outside" of your other functions):</p><div class="informalexample"><pre class="programlisting">function OnCollisionEnter(col : Collision)
+{
+
+  if(col.gameObject.CompareTag("bomb"))
+  {
+    // I got hit by a bomb!
+  } else if (col.gameObject.CompareTag("stein"))
+
+  {
+    animation.CrossFade("catch"); // Ima catch that stein!
+  }
+  col.gameObject.transform.position.y = 50;
+  col.gameObject.transform.position.z = -16;
+  col.gameObject.transform.position.x = Random.Range(0,60);
+}</pre></div></li></ol></div><p>Once again, our prior knowledge of useful game code serves us well. This line should already look familiar:</p><div class="informalexample"><pre class="programlisting">function OnCollisionEnter(col : Collision) {</pre></div><p>We're declaring a function—in this case, a special built-in Unity function called <code class="literal">OnCollisionEnter</code>—and accepting a variable called <code class="literal">col</code> as an argument. The value of <code class="literal">col</code> is a collision that Unity's physics calculations detect whenever rigid bodies smack into each other.</p><div class="informalexample"><pre class="programlisting">if(col.gameObject.CompareTag("bomb"))</pre></div><p>
+<code class="literal">col.gameObject</code> refers to whatever thing hits the GameObject to which this script is attached (the <span class="strong"><strong>Character</strong></span>). <code class="literal">gameObject.CompareTag</code>, naturally, checks the argument against whatever tag that GameObject has stuck to it. We stuck <span class="strong"><strong>bomb</strong></span> and <span class="strong"><strong>stein</strong></span> tags on the <span class="strong"><strong>Bomb Prefab</strong></span> and <span class="strong"><strong>Stein Prefab</strong></span>, so that's what we should get when they hit. We use a branching conditional (<code class="literal">if</code>) statement to react to either the bomb or the stein.</p><div class="informalexample"><pre class="programlisting">animation.CrossFade("catch"); // Ima catch that stein!</pre></div><p>If the player gets hit by a beer stein, we'll play the <code class="literal">"catch"</code> animation stored in the <span class="strong"><strong>Character</strong></span> model.</p><div class="informalexample"><pre class="programlisting">col.gameObject.transform.position.y = 50;
+col.gameObject.transform.position.z = -16;
+col.gameObject.transform.position.x = Random.Range(0,60);</pre></div><p>No matter <a id="id780" class="indexterm"></a>what hits the player, we're going to throw the colliding object back up to the top of the screen at some random <span class="strong"><strong>X</strong></span> position and let it fall back down. This becomes problematic if we end up having other stuff hit the player that doesn't need to respawn at the top of the building, but let's get this script working simply for the time being.</p><p>But wait! Ees problem, señor. Save the script and try the game out. Then see if you can spot the problem.</p></div>

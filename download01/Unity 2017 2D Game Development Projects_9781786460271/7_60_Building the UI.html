@@ -1,0 +1,52 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec62"></a>Building the UI</h2></div></div><hr /></div><p>This time around, our UI is going to be counting a few more things than in our last game. If you remember, we used to increment a score every time a cake was collected. Here, we are going to implement the score, and we will use basically the same thing learned in the previous project. However, we are going to represent the lives of the player with a discrete number of heart icons. Although it's not a super complex UI, it still poses some challenges that we are going to face.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec91"></a>Setting up the UI</h3></div></div></div><p>The first thing to do is to prepare the UI elements so that they can be easily scripted. Thus, we need to decide where our UI will be shown. As per the design, we want to show both the score and the number of lives in the bottom-left part of the screen.</p><p>Let's start to create a panel by right-clicking on the <strong class="userinput"><code>Hierarchy</code></strong> panel, and then <strong class="userinput"><code>UI</code></strong> | <strong class="userinput"><code>Panel</code></strong>. Drag it to the bottom-left of the screen, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/96a504d0-5292-4354-9ca3-d1a30d53f81e.png" /></div><p>Of course, you are free to scale it, as well as change the image and the color to suit your game style. In our case, we are going to use the pre-made rectangle but change the color to suit your needs. As a result, our panel will look like the following:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/801e062a-1406-4875-8871-c87fb58f0422.png" /></div><p>The next step is to add the three UI elements—the number of the level, the lives represented as hearts, and the score represented with a star icon. In order to achieve this, we are going to use <strong class="userinput"><code>Century Gothic</code></strong> font for all the text. Before we move on, just create a text and write <code class="literal">Level 1</code>. As a result, we have already created one of the three functions of our UI (showing the level), like in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/193c0dfc-7e19-4e4a-840b-30fe5006ead2.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec92"></a>Creating the lives counter</h3></div></div></div><p>Now it's time to implement the lives counter of the player. As per the design, the player has up to a maximum of three lives, all represented by a heart sprite per life on the screen.</p><p>Let's start by creating a new UI image, and use the heart in our package as our icon. Then, duplicate it twice so we have three hearts, and name them <code class="literal">heart_0</code>, <code class="literal">heart_1</code>, and <code class="literal">heart_2</code>. Then, place them on our panel, just after the <strong class="userinput"><code>Level 1</code></strong> label, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/524ee3f1-0c7f-4bab-bcbe-32255430f525.png" /></div><p>Create an empty game object in your UI, just under the main panel, and place it in such a way that it covers up all the three hearts. Then, parent the hearts to this empty game object (by preserving the order), which we can rename <code class="literal">UIHearts</code>. Create a new C# script named <code class="literal">LivesCounter</code> and attach it to the <code class="literal">UIHearts</code> game object.</p><p>Inside the script, we need a variable to keep track of how many lives the player has left, which can be just an integer value. Also, another variable is important to keep track of the maximum number of lives the player can have. So, let's write:</p><pre class="programlisting">    public int lives; 
+    public int maxNumberOfLives = 3; </pre><p><span>Depending on the number of lives that we want to show (or not) we will display a heart. To do this, </span>we need to have an array to store all of them. The array can be private because we can get the references from the <code class="literal">Start()</code> functions, because the hearts are children of <code class="literal">UIHearts</code>, where this script is running:</p><pre class="programlisting">    private GameObject[] hearts; </pre><p>In the <code class="literal">Start()</code> function, we need to do two important things. Firstly, initialize the number of lives to the maximum, and secondly, get the references to the three hearts. Since this script can be adapted to as many hearts as we wish, we need to get the references to a heart for each life. We can do it by using a "for loop." Here is the <code class="literal">Start()</code> function:</p><pre class="programlisting">   void Start () { 
+        //Set the initial number of lives to its maximum 
+        lives = maxNumberOfLives; 
+ 
+        //Initialise the array of hearts 
+        hearts = new GameObject[maxNumberOfLives]; 
+ 
+        //Cycle among children and get the hearts we need 
+        for(int i = 0; i&lt;maxNumberOfLives; i++) { 
+            hearts[i] = transform.GetChild(i).gameObject; 
+        } 
+   } </pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note33"></a>Note</h3><p>Keep in mind that here there are no checks for whether <code class="literal">UIHearts</code> has enough children for each life. This is something that designers should take care in. In fact, the order of the <code class="literal">UIHeart</code> game objects in the hierarchy is important. The sorting in the hierarchy is top to bottom, while the location of the visual representation (sprites) is left to right. The index of the array corresponds to the order in the hierarchy.
+Alternatively, as an exercise, you can place this check.</p></div><p>Now, we need a function that can be called to increase the number of lives, and we will call it <code class="literal">AddLife()</code>. This function has to increment the number of lives, clamp the value to the maximum allowed, and finally call a function to update the graphics, which we will implement soon:</p><pre class="programlisting">    public void AddLife() { 
+        //Increment the number of lives 
+        lives++; 
+ 
+        //Clamp the number of lives to the maximum 
+        if(lives &gt; maxNumberOfLives) { 
+            lives = maxNumberOfLives; 
+        } 
+        //Update the Graphics 
+        UpdateGraphics(); 
+ 
+    } </pre><p>Similarly, we need a function called <code class="literal">RemoveLife()</code>, which removes one of the player's lives, checks whether the player has no lives, and in this case triggers the game over conditions (in our case, we reload <strong class="userinput"><code>L</code></strong><strong class="userinput"><code>evel 1</code></strong>, assuming you have called your level this and put it in the <strong class="userinput"><code>Scene Build</code></strong>, which we will cover in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>No One Is Alone Forever</em></span>, of this book for the third project). Finally, it updates the graphics (hearts), like before:</p><pre class="programlisting">    public void RemoveLife() { 
+        //Decrement the number of lives 
+        lives--; 
+ 
+        //Check if the number of lives is zero (or less) and trigger Game Over, such as reload the level 
+        if(lives &lt;= 0) { 
+            //Trigger Game Over, in this case reload current level 
+            UnityEngine.SceneManagement.SceneManager.LoadScene("level1"); 
+        } 
+ 
+        //Update the Graphics 
+        UpdateGraphics(); 
+    } </pre><p>Lastly, we need to implement the function that actually updates the graphics. Here, we cycle the hearts array and, depending on whether the number of lives is greater (or less) than the current index of the heart, we enable (or disable) that heart:</p><pre class="programlisting">   public void UpdateGraphics () { 
+        //For each heart, check if it should be shown or not, based on the number of lives 
+         for(int i= 0; i&lt;maxNumberOfLives; i++) { 
+            if(i &gt;= lives) { 
+                hearts[i].SetActive(false); 
+            } else { 
+                hearts[i].SetActive(true); 
+            } 
+        } 
+   } </pre><p>Save the script, but we haven't finished yet. Right now, the lives system works, but no lives are removed when the spaceship is hit. Therefore, let's open <code class="literal">PlayerController</code> and modify the <code class="literal">Hit()</code> function. Here, we need to place a call to <code class="literal">LivesCounter</code> (assuming that there is just one instance in the game) to remove the player's life:</p><pre class="programlisting">    public void Hit(Vector3 hitCoordinates) { 
+        //Create an explosion on the coordinates of the hit. 
+        Instantiate(explosionPrefab, hitCoordinates, Quaternion.identity); 
+ 
+        //Remove a life 
+        FindObjectOfType&lt;LivesCounter&gt;().RemoveLife(); 
+    } </pre><p>Save this script, and now you can pat yourself on the back because the lives system is working properly.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec93"></a>Creating the star score counter</h3></div></div></div><p>The creation of a scoring system should be well known to you by now. If not, you can always go back to the previous project and revise how the scoring system is done. Then, try to implement it by yourself for this project. You should end up with something similar to the following screenshot in the <strong class="userinput"><code>Game</code></strong> view:</p><div class="mediaobject"><img src="/graphics/9781786460271/graphics/22ee91b6-c01a-4fb9-80ed-199ee959a104.png" /></div></div></div>

@@ -1,0 +1,218 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec112"></a>The code in this chapter</h2></div></div><hr /></div><p>Let's take a look at the code again to make sure we are on the same page.</p><p>The code for <code class="literal">Collectable.cs</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Collectable : MonoBehaviour {
+  
+  bool isCollected = false;
+
+  void Show() {
+    this.GetComponent&lt;SpriteRenderer&gt;().enabled = true;
+    this.GetComponent&lt;CircleCollider2D&gt;().enabled = true;
+    isCollected = false;
+  }
+
+  void Hide() {
+    this.GetComponent&lt;SpriteRenderer&gt;().enabled = false;
+    this.GetComponent&lt;CircleCollider2D&gt;().enabled = false;
+  }
+
+
+  void Collect() {
+
+    isCollected = true;
+    Hide();
+    GameManager.instance.CollectedCoin();
+  }
+
+  void OnTriggerEnter2D(Collider2D other) {
+    
+    if (other.tag == "Player") {
+      Collect();
+    }
+  }  
+}</pre></div><p>The code for <code class="literal">playerController.cs</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerController : MonoBehaviour {
+
+  public static PlayerController instance;
+
+  public float jumpForce = 6f;
+  public float runningSpeed = 1.5f;
+  public Animator animator;
+
+  private Vector3 startingPosition;
+  private Rigidbody2D rigidBody;
+
+  void Awake() {
+    instance = this;
+    rigidBody = GetComponent&lt;Rigidbody2D&gt;();
+    startingPosition = this.transform.position;
+  }
+    
+  public void StartGame() {
+    animator.SetBool("isAlive", true);
+    this.transform.position = startingPosition;
+  }
+  
+  void Update () {
+
+    if (GameManager.instance.currentGameState == GameState.inGame) 
+    {
+      if (Input.GetMouseButtonDown(0)) {
+        Jump();
+      }
+      animator.SetBool("isGrounded", isGrounded());
+    }
+  }
+
+  void FixedUpdate() {
+
+    if (GameManager.instance.currentGameState == GameState.inGame) 
+    {
+      if (rigidBody.velocity.x &lt; runningSpeed) {
+        rigidBody.velocity = new Vector2(runningSpeed, rigidBody.velocity.y);
+      }
+    }
+  }
+
+  void Jump() {
+    if (isGrounded()) {
+      rigidBody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+    }
+  }
+
+  public LayerMask groundLayer;
+
+  bool isGrounded() {
+
+    if (Physics2D.Raycast(this.transform.position, Vector2.down, 0.2f, groundLayer.value)) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+    
+
+  public void Kill() {
+    GameManager.instance.GameOver();
+    animator.SetBool("isAlive", false);
+
+    //check if highscore save if it is
+    if (PlayerPrefs.GetFloat("highscore", 0) &lt; this.GetDistance()) {
+      //save new highscore
+      PlayerPrefs.SetFloat("highscore", this.GetDistance());
+    }
+  }
+
+
+  public float GetDistance() {
+    float traveledDistance = Vector2.Distance(new Vector2(startingPosition.x, 0),
+                                              new Vector2(this.transform.position.x, 0));
+    return traveledDistance;
+  }
+
+
+}</pre></div><p>The code for <code class="literal">ViewInGame.cs</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+
+public class ViewInGame : MonoBehaviour {
+
+  public Text scoreLabel;
+  public Text coinLabel;
+  public Text highscoreLabel;
+
+
+  void Update() {
+    if (GameManager.instance.currentGameState == GameState.inGame) {
+      scoreLabel.text = PlayerController.instance.GetDistance().ToString("f0");
+      coinLabel.text = GameManager.instance.collectedCoins.ToString();
+      highscoreLabel.text = PlayerPrefs.GetFloat("highscore", 0).ToString("f0");
+    }
+  }
+}
+The code for GameManager.cs:
+using UnityEngine;
+using System.Collections;
+
+public enum GameState {
+  menu,
+  inGame,
+  gameOver
+}
+
+public class GameManager : MonoBehaviour {
+
+  public static GameManager instance;
+  public GameState currentGameState = GameState.menu;
+
+  public Canvas menuCanvas;
+  public Canvas inGameCanvas;
+  public Canvas gameOverCanvas;
+
+  public int collectedCoins = 0;
+
+  void Awake() {
+    instance = this;
+  }
+
+  void Start() {
+    currentGameState = GameState.menu;
+  }
+  
+  //called to start the game
+  public void StartGame() {
+    PlayerController.instance.StartGame();
+    SetGameState(GameState.inGame);
+  }
+  
+  //called when player die
+  public void GameOver() {
+    SetGameState(GameState.gameOver);
+  }
+
+  //called when player decide to go back to the menu
+  public void BackToMenu() {
+    SetGameState(GameState.menu);
+  }
+
+  void SetGameState (GameState newGameState) {
+    
+    if (newGameState == GameState.menu) {
+      //setup Unity scene for menu state
+      menuCanvas.enabled = true;
+      inGameCanvas.enabled = false;
+      gameOverCanvas.enabled = false;
+    }
+    else if (newGameState == GameState.inGame) {
+      //setup Unity scene for inGame state
+      menuCanvas.enabled = false;
+      inGameCanvas.enabled = true;
+      gameOverCanvas.enabled = false;
+    }
+    else if (newGameState == GameState.gameOver) {
+      //setup Unity scene for gameOver state
+      menuCanvas.enabled = false;
+      inGameCanvas.enabled = false;
+      gameOverCanvas.enabled = true;
+    }
+    
+    currentGameState = newGameState;
+  }
+
+
+  void Update() {
+
+    if (Input.GetButtonDown("s")) {
+      StartGame();
+    }
+  }
+
+
+  public void CollectedCoin() {
+    collectedCoins ++;
+  }
+
+}</pre></div></div>

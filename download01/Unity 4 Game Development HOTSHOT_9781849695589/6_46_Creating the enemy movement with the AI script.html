@@ -1,0 +1,329 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec52"></a>Creating the enemy movement with the AI script</h2></div></div><hr /></div><p>In<a id="id1079" class="indexterm"></a> the previous section, we have<a id="id1080" class="indexterm"></a> the waypoint set up for our enemy to<a id="id1081" class="indexterm"></a> move, but we don't have the enemy yet. In this section, we will create the script to control it by using a concept that was used in <a class="link" href="#" linkend="ch05">Project 5</a>, <span class="emphasis"><em>Build a Rocket Launcher!</em></span>. This AI script will inherit from <span class="strong"><strong>CharacterClass</strong></span> that comes with the package.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note82"></a>Note</h3><p>If we open <span class="strong"><strong>CharacterClass</strong></span>, which is located at <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>Actor</strong></span> (for C# users) or <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>JavaScript</strong></span> | <span class="strong"><strong>Actor</strong></span> (for JavaScript users), we will see that there is a class that contains the methods and parameters that we have used in <a class="link" href="#" linkend="ch05">Project 5</a>, <span class="emphasis"><em>Build a Rocket Launcher!</em></span>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec111"></a>Prepare for lift off</h3></div></div></div><p>We will begin by adding the AI character to the <span class="strong"><strong>Hierarchy</strong></span> view. Let's go to <span class="strong"><strong>Resources</strong></span> | <span class="strong"><strong>Prefabs</strong></span> in the <span class="strong"><strong>Project</strong></span> view and drag <span class="strong"><strong>robotAI_C#</strong></span> (for C# users) or <span class="strong"><strong>robotAI_JS</strong></span> (for JavaScript users) inside the <span class="strong"><strong>Enemy</strong></span> game object in the <span class="strong"><strong>Hierarchy</strong></span> view, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_18.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec112"></a>Engage thrusters</h3></div></div></div><p>Now, we <a id="id1082" class="indexterm"></a>will create the AI <a id="id1083" class="indexterm"></a>script to control our character:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go<a id="id1084" class="indexterm"></a> to the folder (for C# users, <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>Actor</strong></span> or for JavaScript users, <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>JavaScript</strong></span> | <span class="strong"><strong>Actor</strong></span>) in the <span class="strong"><strong>Project</strong></span> view, right-click and choose (for C# user) <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span> or (for JavaScript users) <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>JavaScript</strong></span>, and then rename it to <code class="literal">AI</code>.</p></li><li><p>Double-click on the AI script to open it in MonoDevelop and start by creating the AI class that inherits from <code class="literal">CharacterClass</code> as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+
+public class AI extends CharacterClass {
+  var shotRange : float = 15.0f;
+  var playerRange : float = 5.0f;
+  var distanceToShot : float = 10.0f;
+  var walkingTime : float = 6.0f;
+  var thinkingTime : float = 3.0f;
+  var waypointsContainer : WaypointsContainer;
+
+  private var _lastTime : float = 0f;
+  private var _angle : float;
+  private var _angleVelocity : float;
+  private var _isThinking : boolean;
+
+  protected override function Start () {
+    super.Start();
+    if (laser != null) {
+      laser.gameObject.SetActive(false);
+      laser.SetPosition(1,new Vector3(0f,0f,GUN_LASER_DISTANCE));
+    }
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class AI : CharacterClass {
+  public float shotRange = 15.0f;
+  public float playerRange = 5.0f;
+  public float distanceToShot = 10.0f;
+  public float walkingTime = 6.0f;
+  public float thinkingTime = 3.0f;
+  public CSharp.WaypointsContainer waypointsContainer;
+
+  float _lastTime = 0f;
+  float _angle;
+  float _angleVelocity;
+  bool _isThinking;
+  
+  protected override void Start () {
+    base.Start();
+    if (laser != null) {
+      laser.gameObject.SetActive(false);
+      laser.SetPosition(1,new Vector3(0f,0f,GUN_LASER_DISTANCE));
+    }
+  }
+}</pre></div><p>With the preceding code, we basically created all the necessary parameters for the AI script. We also override the start function and set the laser length on the <span class="emphasis"><em>y</em></span>-axis, which is a bit different to our <code class="literal">CharacterControl</code> script in <a class="link" href="#" linkend="ch05">Chapter 5</a>, <span class="emphasis"><em>Build a Rocket Launcher!</em></span>.</p></li><li><p>Next, we <a id="id1085" class="indexterm"></a>will create four <a id="id1086" class="indexterm"></a>functions to <a id="id1087" class="indexterm"></a>give our enemy a personality and make it smarter:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The first<a id="id1088" class="indexterm"></a> function is the <code class="literal">CanShoot()</code> function, which will make the enemy shoot when the player is within their shooting range by checking the distance of the player and enemy. We will also use the <code class="literal">Physics.Raycast()</code> function to see if there is anything blocking<a id="id1089" class="indexterm"></a> the direction of the shot; if there isn't, we just make the enemy shoot by adding the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function CanShoot () : boolean {
+  var offset : Vector3 = targetLookat.position - transform.position;
+  var length : float = offset.sqrMagnitude;
+  var range : float = shotRange * shotRange;
+  var hit : RaycastHit;
+  if (length &lt;= range) {
+    if (Physics.Raycast(transform.position, offset.normalized, hit, shotRange)) {
+      if (hit.transform.CompareTag("Player")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public bool CanShoot () {
+  Vector3 offset = targetLookat.position - transform.position;
+  float length = offset.sqrMagnitude;
+  float range = shotRange * shotRange;
+  RaycastHit hit ;
+  if (length &lt;= range) {
+    if (Physics.Raycast(transform.position, offset.normalized, out hit, shotRange)) {
+      if (hit.transform.CompareTag("Player")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}</pre></div></li><li style="list-style-type: disc"><p>Secondly, we<a id="id1090" class="indexterm"></a> will create<a id="id1091" class="indexterm"></a> the <code class="literal">Jump()</code> function to<a id="id1092" class="indexterm"></a> make<a id="id1093" class="indexterm"></a> our enemy smarter by using the <code class="literal">Physics.Raycast()</code> function, but this time, we will also check the wall height. If the wall is higher than the limited height, our character will not jump. If not, it will jump over and continue walking towards its direction, as in the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Jump ( direction : Vector3 ) : boolean {
+  var hit : RaycastHit;
+  var up : Vector3 = Vector3.up * (-_characterController.height*0.5f);
+  var leg : Vector3 = transform.position + _characterController.center + up;
+  var distance : float = _characterController.radius * 2;
+  if (Physics.Raycast(leg, direction, hit, distance)) {
+    if (hit.transform.CompareTag("Wall")) {
+      var height : float = hit.collider.bounds.max.y - hit.point.y;
+      if (height &lt;= 2.5f) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public bool Jump ( Vector3 direction ) {
+  RaycastHit hit;
+  Vector3 up = Vector3.up * (-_characterController.height*0.5f);
+  Vector3 leg = transform.position + _characterController.center + up;
+  float distance = _characterController.radius * 2;
+  if (Physics.Raycast(leg, direction, out hit, distance)) {
+    if (hit.transform.CompareTag("Wall")) {
+      float height = hit.collider.bounds.max.y - hit.point.y;
+      if (height &lt;= 2.5f) {
+        return true;
+      }
+    }
+  }
+  return false;
+}</pre></div></li><li style="list-style-type: disc"><p>Then, we <a id="id1094" class="indexterm"></a>will check<a id="id1095" class="indexterm"></a> the distance<a id="id1096" class="indexterm"></a> between the player and the enemy to see if the distance is higher than <code class="literal">shotRange</code> and lower than <code class="literal">shotRange + playerRange</code>. So, let's add it as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Run () : boolean {
+  var distanceToPlayer : float = (targetLookat.position - transform.position).sqrMagnitude;
+  var runDistance : float = (playerRange+shotRange)*(playerRange+shotRange);
+  var shotDistance : float = shotRange*shotRange;
+  if ((distanceToPlayer &lt;= runDistance) &amp;&amp; (distanceToPlayer &gt; shotDistance)) {
+    return true;
+  }
+  return false;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public bool Run () {
+  float distanceToPlayer = (targetLookat.position - transform.position).sqrMagnitude;
+  float runDistance = (playerRange+shotRange)*(playerRange+shotRange);
+  float shotDistance = shotRange*shotRange;
+  if ((distanceToPlayer &lt;= runDistance) &amp;&amp; (distanceToPlayer &gt; shotDistance)) {
+    return true;
+  }
+  return false;
+}</pre></div></li><li style="list-style-type: disc"><p>In the last<a id="id1097" class="indexterm"></a> function, to <a id="id1098" class="indexterm"></a>control the enemy<a id="id1099" class="indexterm"></a> behavior, we will make our enemy walk and stop for a certain amount of time:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function IsThinking() : boolean {
+  if (IsAiming) { 
+    _lastTime = Time.time;
+    _isThinking = false;
+    return false;
+  }
+  var time : float;
+  if (_isThinking) { time = thinkingTime; } 
+  else { time = walkingTime; }
+  if (Time.time &gt;= (_lastTime + time)) {
+    _isThinking = !_isThinking;
+    _lastTime = Time.time;
+  }  
+  return _isThinking;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public bool IsThinking() {
+  if (IsAiming) { 
+    _lastTime = Time.time;
+    _isThinking = false;
+    return false;
+  }
+  float time;
+  if (_isThinking) { time = thinkingTime;} 
+  else { time = walkingTime; }
+  if (Time.time &gt;= (_lastTime + time)) {
+    _isThinking = !_isThinking;
+    _lastTime = Time.time;
+  }  
+  return _isThinking;
+}</pre></div></li></ul></div></li><li><p>The next step is<a id="id1100" class="indexterm"></a> the override <a id="id1101" class="indexterm"></a>function <code class="literal">GetTargetDirecion()</code>, which <a id="id1102" class="indexterm"></a>will control all the movement direction of our enemy when it isn't aiming or shooting. So, let's type it as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+protected override function GetTargetDirection () : Vector3 {
+  var targetDirection : Vector3;
+  if (IsRun) {
+    targetDirection = waypointsContainer.GetDirectionToPlayer(transform.position, targetLookat.position);
+  } else {
+    if ((thinkingTime &gt; 0) &amp;&amp; IsThinking()) {
+      targetDirection = Vector3.zero;
+    } else {
+      targetDirection = waypointsContainer.GetDirection(transform);
+    }
+  }
+  return targetDirection;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+protected override Vector3 GetTargetDirection () {
+  Vector3 targetDirection;
+  if (IsRun) {
+    targetDirection = waypointsContainer.GetDirectionToPlayer(transform.position, targetLookat.position);
+  } else {
+    if ((thinkingTime &gt; 0) &amp;&amp; IsThinking()) {
+      targetDirection = Vector3.zero;
+    } else {
+      targetDirection = waypointsContainer.GetDirection(transform);
+    }
+  }
+  return targetDirection;
+}</pre></div></li><li><p>Next, we will <a id="id1103" class="indexterm"></a>create the <code class="literal">Update()</code> function. In<a id="id1104" class="indexterm"></a> this<a id="id1105" class="indexterm"></a> function, we will calculate all the movement <a id="id1106" class="indexterm"></a>and behavior of our enemy. Let's add the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Update () {
+  if (!IS_GAMEOVER) {
+    ApplyGravity();
+    if (!IsJumping) {
+      if ((MotionState == MOTION_STATE.GROUND) || (MotionState == MOTION_STATE.AIM)) {
+        IsAiming = CanShoot();
+      } else {
+        IsAiming = false;
+      }
+      if (IsAiming) {
+        IsShowLaser(true);
+        if (_animator) {
+          var currentState : AnimatorStateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+          if (!IsWaitForAiming) {
+            var lookat : Vector3 = targetLookat.transform.position;
+            lookat.y = transform.position.y;
+            transform.LookAt(lookat);
+            _rocketLauncher.transform.LookAt(targetLookat.transform.position);
+            IsShot = true;
+            if (IsShot) {
+              if (currentState.IsName("Shooting.Aiming")) {
+                var playbackTime : float = currentState.length;
+                BroadcastMessage("Fire",playbackTime);
+                IsWaitForAiming = true;
+              }
+            }
+          } else {
+            if (IsShot) {
+              if (currentState.IsName("Shooting.Shoot")) {
+                IsShot = false;
+                playbackTime = currentState.length;
+                StartCoroutine(WaitForShot(playbackTime));
+              }
+            }
+          }
+        }
+      } else {
+        IsShowLaser(false);
+        IsRun = (waypointsContainer.AwayFromWaypoint(transform.position, distanceToShot)) ? false : Run();
+        ApplyMoveDirection();
+        ApplyMoveSpeed();
+        ApplyJumping(Jump(MoveDirection));
+      }
+    } else {
+      IsShowLaser(false);
+    }
+    if (!IsAiming) {
+      UpdateMovement();
+    }
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void Update () {
+  if (!IS_GAMEOVER) {
+    ApplyGravity();
+    if (!IsJumping) {
+      if ((MotionState == MOTION_STATE.GROUND) || (MotionState == MOTION_STATE.AIM)) {
+        IsAiming = CanShoot();
+      } else {
+        IsAiming = false;
+      }
+      if (IsAiming) {
+        IsShowLaser(true);
+        if (_animator) {
+          AnimatorStateInfo currentState = _animator.GetCurrentAnimatorStateInfo(0);
+          if (!IsWaitForAiming) {
+            Vector3 lookat = targetLookat.transform.position;
+            lookat.y = transform.position.y;
+            transform.LookAt(lookat);
+            _rocketLauncher.transform.LookAt(targetLookat.transform.position);
+            IsShot = true;
+            if (IsShot) {
+              if (currentState.IsName("Shooting.Aiming")) {
+                float playbackTime = currentState.length;
+                BroadcastMessage("Fire",playbackTime);
+                IsWaitForAiming = true;
+              }
+            }
+          } else {
+            if (IsShot) {
+              if (currentState.IsName("Shooting.Shoot")) {
+                IsShot = false;
+                float playbackTime = currentState.length;
+                StartCoroutine(WaitForShot(playbackTime));
+              }
+            }
+          }
+        }
+      } else {
+        IsShowLaser(false);
+        IsRun = (waypointsContainer.AwayFromWaypoint(transform.position, distanceToShot)) ? false : Run();
+        ApplyMoveDirection();
+        ApplyMoveSpeed();
+        ApplyJumping(Jump(MoveDirection));
+      }
+    } else {
+      IsShowLaser(false);
+    }
+    if (!IsAiming) {
+      UpdateMovement();
+    }
+  }
+}</pre></div></li><li><p>Now, we have<a id="id1107" class="indexterm"></a> finished our AI script. Go<a id="id1108" class="indexterm"></a> back to the Unity<a id="id1109" class="indexterm"></a> editor and drag the AI script on <span class="strong"><strong>robotAI_C#</strong></span> (for C# users) or <span class="strong"><strong>robotAI_JS</strong></span> (for JS users). Then, we will click on <span class="strong"><strong>robotAI_C#</strong></span> (for C# users) or <span class="strong"><strong>robotAI_JS</strong></span> (for JS users) to bring up its <span class="strong"><strong>Inspector</strong></span> view and drag the game object from the <span class="strong"><strong>Hierarchy</strong></span> view of the parameter, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_19.jpg" /></div></li><li><p>Finally, we will click on the <span class="strong"><strong>robot</strong></span> object in the <span class="strong"><strong>Hierarchy</strong></span> view to bring up its <span class="strong"><strong>Inspector</strong></span> view and drag <span class="strong"><strong>robotAI_C#</strong></span> (for C# user) or <span class="strong"><strong>robotAI_JS</strong></span> (for JS user) to the <span class="strong"><strong>Target Lookat</strong></span> slot under <span class="strong"><strong>Player (script)</strong></span>, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_20.jpg" /></div></li></ol></div><p>Now, we have finished this step. We can click on play to see the result. We can also change the parameter to make our enemy behave differently by changing the value in the AI inspector. In the next step, we will create the hit point for the player and enemy to make it more fun.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec113"></a>Objective complete – mini debriefing</h3></div></div></div><p>In this<a id="id1110" class="indexterm"></a> section, we just created<a id="id1111" class="indexterm"></a> our AI script, which is derived from<a id="id1112" class="indexterm"></a> <code class="literal">CharacterClass</code>. Most of the <code class="literal">CharacterClass</code> script is based on the <code class="literal">CharacterControl</code> script from <a class="link" href="#" linkend="ch05">Project 5</a>, <span class="emphasis"><em>Build a Rocket Launcher!</em></span>. If we take a look at <code class="literal">CharacterClass</code>, we will see that we have similar methods and parameters such as the <code class="literal">UpdateAnimator()</code> function, which get<a id="id1113" class="indexterm"></a> called in <code class="literal">OnAnimatorMove()</code> to control the animation state of our characters (<span class="strong"><strong>Player</strong></span> and <span class="strong"><strong>Enemy</strong></span>).</p><p>We also added the new code section to give our enemy some characteristics and make it smart enough to shoot the player, run towards the player, jump when it hits the wall, and to stop and walk after a certain time.</p><p>In the <code class="literal">Run()</code> function, we used the following code:</p><div class="informalexample"><pre class="programlisting">var distanceToPlayer : float = (targetLookat.position - transform.position).sqrMagnitude;
+var runDistance : float = (playerRange+shotRange)*(playerRange+shotRange);
+var shotDistance : float = shotRange*shotRange;
+if ((distanceToPlayer &lt;= runDistance) &amp;&amp; (distanceToPlayer &gt; shotDistance)) {
+  return true;
+}</pre></div><p>We used the following code to check for the distance between the enemy and the player: </p><div class="informalexample"><pre class="programlisting">if ((distanceToPlayer &lt;= runDistance) &amp;&amp; (distanceToPlayer &gt; shotDistance)) { return true; }</pre></div><p>Have a look at the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_21.jpg" /></div><p>As we <a id="id1114" class="indexterm"></a>can see from the preceding <a id="id1115" class="indexterm"></a>diagram, the enemy will run towards the<a id="id1116" class="indexterm"></a> player if the distance between the player and the enemy is higher than <code class="literal">shotRange</code> but lower than or equal to <code class="literal">playerRange</code>. Also, the enemy will shoot the player if the distance between him and the player is in <code class="literal">shotRange</code>. </p><p>We also use <code class="literal">Physics.Raycast()</code> to check if there is a wall in front of the enemy or not. If there<a id="id1117" class="indexterm"></a> is, we check the different height of the current object <span class="emphasis"><em>y</em></span> position to the maximum of wall height by using <code class="literal">hit.collider.bounds.max.y - hit.point.y;</code> and make sure that the height is lower than 2.5. Then, our enemy can jump over.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec114"></a>Classified intel</h3></div></div></div><p>In this step, we have used both the <code class="literal">Physics.Raycast()</code> functions to check if there is anything blocking the enemy movement direction or the rocket bullet direction. In the <code class="literal">CanShoot()</code> function, we <a id="id1118" class="indexterm"></a>basically cast the ray from the position of the enemy's rocket launcher to the player by checking to see if there is anything blocking it, as shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_22.jpg" /></div><p>Then, we <a id="id1119" class="indexterm"></a>also use the <code class="literal">Physics.Raycast()</code> function<a id="id1120" class="indexterm"></a> in the <code class="literal">Jump()</code> function to check if the enemy hits the wall or not. If it<a id="id1121" class="indexterm"></a> hits, we will check for the height <a id="id1122" class="indexterm"></a>for the <a id="id1123" class="indexterm"></a>enemy to jump over or not. By calculating from the raycast hitting position to the maximum <span class="emphasis"><em>y</em></span> position of the wall, we can check the height, as shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_23.jpg" /></div></div></div>

@@ -1,0 +1,114 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec72"></a>Managing game objects</h2></div></div><hr /></div><p>Whenever you have a script that <span>instantiates</span><a id="id325317294" class="indexterm"></a> objects, you must be aware of the life cycle of the object and possibly arrange to destroy it when it is no longer needed. You can destroy game objects, for example, after it is no longer visible in the scene, or after a specific life duration, or limit the scene to a maximum number of balls. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec109"></a>Destroying fallen objects</h3></div></div></div><p>In our scene, we have a limited <span>size</span><a id="id325560699" class="indexterm"></a> ground plane and as balls hit one another, some will fall off the plane into oblivion. At that point, we can remove the fallen ball from the scene. Watch the <strong class="userinput"><code>Hierarchy</code></strong> panel as new balls are instantiated. Note that some balls end up bouncing off the plane platform but remain in the <strong class="userinput"><code>Hierarchy</code></strong> panel. We need to clean this up by adding a script that destroys the balls that are out of play, as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Select the <code class="literal">BouncyBall</code> prefab in <code class="literal">Project Assets/Prefabs</code></li><li>Navigate to <strong class="userinput"><code>Add Component</code></strong> | <strong class="userinput"><code>New Script</code></strong> and name it <code class="literal">DestroyBall</code></li></ol></div><p>Here's a <code class="literal">DestroyBall.cs</code> script, which will destroy the object if its <strong class="userinput"><code>Y</code></strong> position is well below the ground plane (<strong class="userinput"><code>Y</code></strong> = <code class="literal">0</code>):</p><pre class="programlisting">using UnityEngine; 
+using System.Collections; 
+ 
+public class DestroyBall : MonoBehaviour 
+{ 
+  void Update () 
+  { 
+    if (transform.position.y &lt; -5f) 
+    {
+      Destroy (gameObject);  
+    }  
+  } 
+} </pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec110"></a>Setting a limited lifetime</h3></div></div></div><p>Another strategy for managing object <span>life</span><a id="id325567577" class="indexterm"></a> cycle is to limit their duration. This is especially effective for things like projectiles (bullets, arrows, bouncyballs) or other objects that the player cares about most when its instantiated and then isn't paying attention to as gameplay moves on.</p><p>To implement, you could put a timer on the object prefab itself to destroy itself when time runs out.</p><p>Modify the <code class="literal">DestroyBall.cs</code> script to destroy the object after <code class="literal">delay</code> seconds:</p><pre class="programlisting">  public float timer = 15f; 
+ 
+  void Start () 
+  { 
+    Destroy (gameObject, timer); 
+  } </pre><p>When you play, notice that the ground plane remains substantially less crowded than before. Each BouncyBall will be destroyed after 15 seconds or when it has fallen off the plane, whichever comes first. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec111"></a>Implementing an object pool</h3></div></div></div><p> If your <code class="literal">GameController</code> Interval is 0.5 seconds and <span>the</span><a id="id325567612" class="indexterm"></a> destroy timer is 15, then (do the math) there will be at most 30 balls in play at a time. Or less, if some have fallen over the edge. In that case, we do not need to make our app continuously allocate new memory for a new instance of BouncyBall, only to delete that object up to 15 seconds later. Too much instantiation and destroying of objects results in fragmented memory. Unity will periodically go through and clean this up, a computationally expensive <span>process</span><a id="id325567621" class="indexterm"></a> called <span class="strong"><strong>garbage collection</strong></span> (<span class="strong"><strong>GC</strong></span>) that is best to be avoided whenever possible.</p><p>Object pooling is when you create a list of reusable objects to be used in your game, rather than continuously instantiating new ones. You will activate/deactivate the objects instead of instantiate/destroy.</p><p>To implement this, we will write a generic object pooler and add it to the <code class="literal">GameController</code> in the scene.</p><p>For this, we are also introducing you to the concept of lists in C#. As the name indicates, a list is an ordered collection of objects, like an array. Lists can be searched, sorted, and otherwise manipulated (see the documentation here: <a class="ulink" href="https://msdn.microsoft.com/en-us/library/6sh2ey19.aspx" target="_blank">https://msdn.microsoft.com/en-us/library/6sh2ey19.aspx</a>). We will use them simply to hold our pre-instantiated objects. Let's name the script <code class="literal">ObjectPooler</code>:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Select the <code class="literal">GameController</code> in Hierarchy</li><li>Navigate to <strong class="userinput"><code>Add Component</code></strong> | <strong class="userinput"><code>New Script</code></strong> and name it <code class="literal">ObjectPooler</code></li></ol></div><p>Open for editing. Let's start by declaring several variables at the top:</p><pre class="programlisting">using System.Collections.Generic;
+using UnityEngine;
+
+public class ObjectPooler : MonoBehaviour 
+{
+    public GameObject prefab;
+    public int pooledAmount = 20;
+
+    private List&lt;GameObject&gt; pooledObjects;
+
+}</pre><p>The public <code class="literal">prefab</code> will get the prefab object we want to instantiate, namely <code class="literal">BouncyBall</code>. And <code class="literal">pooledAmount</code> says how many objects to initially instantiate. The actual list is held in <code class="literal">pooledObjects</code>.</p><p>Now, when the scene starts, we initialize the list as follows:</p><pre class="programlisting">    void Start () {
+        pooledObjects = new List&lt;GameObject&gt;();
+        for (int i = 0; i &lt; pooledAmount; i++)
+        {
+            GameObject obj = (GameObject)Instantiate(prefab);
+            obj.SetActive(false);
+            pooledObjects.Add(obj);
+        }
+  }</pre><p>We allocate a new list and populate it in the <code class="literal">for</code> loop, by instantiating our prefab, initially making it inactive, and adding it to the list.</p><p>Now when we want a new object, we'll call <code class="literal">GetPooledObject</code>, which looks for one in the list that is presently not active. If all of them are active and none is available for reuse, we return <code class="literal">null</code>:</p><pre class="programlisting">    public GameObject GetPooledObject()
+    {
+        for (int i = 0; i &lt; pooledObjects.Count; i++)
+        {
+            if (!pooledObjects[i].activeInHierarchy)
+            {
+                return pooledObjects[i];
+            }
+        }
+
+        return null;
+    }</pre><p>That's it.</p><p>We can also enhance the script to optionally grow the list so it never returns null. Add the option at the top:</p><pre class="programlisting">    public bool willGrow = true;</pre><p>And add the following statements to <code class="literal">GetPooledObject</code> after the <code class="literal">for</code> loop:</p><pre class="programlisting">        ...
+        if (willGrow)
+        {
+            GameObject obj = (GameObject)Instantiate(prefab);
+            pooledObjects.Add(obj);
+            return obj;
+        }
+
+        return null;
+    }</pre><p>Save the script, attach it to <code class="literal">GameController</code>, and drag the <code class="literal">BouncyBall</code> prefab onto the <strong class="userinput"><code>Prefab</code></strong> slot for the component.</p><p>Now we need to modify our <code class="literal">BallsFromHeaven</code> script to call <code class="literal">GetPooledObject</code> from <code class="literal">ObjectPooler</code> instead of <code class="literal">Instantiate</code>. The updated <code class="literal">BallsFromHeaven</code> script is as follows:</p><pre class="programlisting">using UnityEngine;
+
+[RequireComponent(typeof(ObjectPooler))]
+public class BallsFromHeaven : MonoBehaviour
+{
+    public float startHeight = 10f;
+    public float interval = 0.5f;
+
+    private float nextBallTime = 0f;
+    private ObjectPooler pool;
+
+    void Start()
+    {
+        pool = GetComponent&lt;ObjectPooler&gt;();
+        if (pool == null) 
+        {
+            Debug.LogError("BallsFromHeaven requires ObjectPooler component");
+        }
+    }
+
+    void Update()
+    {
+        if (Time.time &gt; nextBallTime)
+        {
+            nextBallTime = Time.time + interval;
+            Vector3 position = new Vector3(Random.Range(-4f, 4f), startHeight, Random.Range(-4f, 4f));
+            GameObject ball = pool.GetPooledObject();
+            ball.transform.position = position;
+            ball.transform.rotation = Quaternion.identity;
+            ball.GetComponent&lt;RigidBody&gt;().velocity = Vector3.zero;
+            ball.SetActive(true);
+        }
+    }
+}</pre><p>Note that we added a directive, <code class="literal">[RequireComponent(typeof(ObjectPooler)]</code>, to ensure the object has an <code class="literal">ObjectPooler</code> component (and we also double-check in the <code class="literal">Start</code> function).</p><p>It's important to note that since we're not instantiating new objects but reusing them, you may need to reset any object properties to their starting values. In this case, we reset not just the transform but the RigidBody's velocity to zero.</p><p>The last part is we modify <code class="literal">DestroyBall</code> to just disable (deactivate) the object rather than literally destroying it. Initially, handle the <span class="emphasis"><em>fallen off the ground plane</em></span> case as follows:</p><pre class="programlisting">using UnityEngine;
+
+public class DestroyBall : MonoBehaviour {
+
+    void Update () {
+        if (transform.position.y &lt; -5f)
+        {
+            DisableMe();
+        }
+    }
+
+    private void DisableMe()
+    {
+        gameObject.SetActive(false);
+    }
+}
+
+</pre><p>Instead of calling <code class="literal">Destroy</code>, we changed <code class="literal">Update</code> to call a new function, <code class="literal">DisableMe</code>, which simply deactivates the object, returning it to the pool of available objects.</p><p>For the timed destroy, there's a number of different ways to implement this. Earlier, we called <code class="literal">Destroy(gameObject, timer)</code> from <code class="literal">Start()</code>. We can do something similar, using <code class="literal">OnEnable</code> instead of <code class="literal">Start</code>, since that's when this instance starts. And it calls  <code class="literal">Invoke()</code>, instead of destroy directly:</p><pre class="programlisting">    void OnEnable()
+    {
+        Invoke("DisableMe", timer);
+    }
+
+    void OnDisable()
+    {
+        CancelInvoke();
+    }</pre><p>We also provide an <code class="literal">OnDisable</code> to cancel the <code class="literal">Invoke</code>, since the object could be disabled should the ball fall over the edge before the timer is done and potentially re-enabled, we <span>should</span><a id="id325581603" class="indexterm"></a> make sure it's not being invoked twice at the same time. </p><p>Now when you press <strong class="userinput"><code>Play</code></strong>, you can see in Inspector that new BouncyBalls are instantiated at the start to initialize the list, and then as it plays the objects are disabled and reactivated as they are returned to the pool and reused, as shown here (deactivated <strong class="userinput"><code>BouncyBall(Clone)</code></strong> objects are dimmer than the activated ones):</p><div class="mediaobject"><img src="/graphics/9781788478809/graphics/70139f16-424f-45a2-b4e1-32b6536859f6.png" /></div></div></div>

@@ -1,0 +1,147 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec53"></a>Waypoints for enemies</h2></div></div><hr /></div><p>Now, the first thing to finish is how the enemies move around the map. In <a class="link" href="#" linkend="ch07">
+<span class="emphasis"><em>Chapter 7</em></span></a>, <span class="emphasis"><em>Tower Defense Basics</em></span>, we saw how to script them in order to make them move from one waypoint to another. As a short recap, a waypoint is a special point on the map where the enemies change their direction to move towards another waypoint. They can contain logic to actually lead the character to specific places that change over time, such as next to the player. They can also perform part of the decision-making process. For example, imagine a Tower Defense game where the path of the enemies splits in two. In this case, the waypoints can be used to decide which direction a particular enemy should take. The advantage of waypoints is that, in some cases, they can be more efficient than implementing a complete Pathfinding algorithm.</p><p>Here, we don't need to implement a particular logic behind the waypoints. However, they are a useful tool since they allow us to move enemies around the map easily. In this section, we will learn how to create waypoints.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec39"></a>Getting the waypoint coordinates</h3></div></div></div><p>Before we start creating waypoints, we first need to decide where to place them on the map. Therefore, we need to find all the places where our enemies change their direction. In this simple case, they are located in all the corners of our path. In the following screenshot, they are indicated by the red dots:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_09_001.jpg" /></div><p>
+</p><p>As we can see, there are nine dots and we need one waypoint that is slightly outside the map. This final waypoint is the finishing spot, where the enemy succeeds in his mission - to damage the player. In fact, in the <code class="literal">EnemyScript</code>, when the enemy reaches the end, we just destroy it. For this reason, this spot must be outside the visible area.</p><p>Now that we have marked them with red dots, we need to take note of their coordinates on the map. A fast way to do it is to drag an enemy prefab around the map in the <span class="strong"><strong>Scene</strong></span> view and then to take note of the position of our waypoints. In this case, we could obtain the following data:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /><col /></colgroup><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>
+<span class="strong"><strong>Waypoint number:</strong></span>
+</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>
+<span class="strong"><strong>X-coordinate</strong></span>
+</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>
+<span class="strong"><strong>Y-coordinate</strong></span>
+</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>1</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-18</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>15</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>2</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-18</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-17</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>3</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-6</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-17</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>4</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-6</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-7</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>5</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>5</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-4</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>6</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>5</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>11</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>7</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>22</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>11</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>8</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>23</p><p>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>
+</p><p>-15</p><p>
+</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; ">
+<p>
+</p><p>9</p><p>
+</p>
+</td><td style="border-right: 0.5pt solid ; ">
+<p>
+</p><p>42</p><p>
+</p>
+</td><td style="">
+<p>
+</p><p>-15</p><p>
+</p>
+</td></tr></tbody></table></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec40"></a>Implementing waypoints in the Game Manager</h3></div></div></div><p>The next step is to actually add them into our Game Manager. Therefore, let's start by opening our <code class="literal">GameManagerScript</code> so we can create a new transform array variable to insert those values. Of course, we need to set this variable to public, so we can set the values in the <span class="strong"><strong>Inspector</strong></span>:</p><pre class="programlisting">public Vector3[] waypoints; &#13;
+</pre><p>Save the code, and you should see something like this in the <span class="strong"><strong>Inspector</strong></span>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_09_002.jpg" /></div><p>
+</p><p>We need to set the number of elements of our array with the number of waypoints that we have found, in this case, nine. Therefore, our <span class="strong"><strong>Inspector</strong></span> should now look as follows:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_09_003.jpg" /></div><p>
+</p><p>Finally, we can fill all those values with our waypoint positions. But what about the <span class="emphasis"><em>Z</em></span>-axis? Since we don't want the enemies to change their <span class="emphasis"><em>Z</em></span>-axis, we can just set its value to the same <span class="emphasis"><em>Z</em></span>-axis value of our <code class="literal">Enemy</code> prefab, which is <code class="literal">-1</code>. In the end, we should have something like this:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_09_004.jpg" /></div><p>
+</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec41"></a>Passing waypoints to the enemies</h3></div></div></div><p>One last step to complete in order to fully integrate the waypoints into our game is to actually give them to the enemies. If you remember from <span class="emphasis"><em>
+<a class="link" href="#" linkend="ch07">Chapter 7</a>
+</em></span>, <span class="emphasis"><em>Tower Defense Basics</em></span>, we created a variable called <code class="literal">waypoints</code>, but we never set its value. Also, for this reason, we got so many errors if we tried to press the play button. Let's fix this by finally assigning this variable to our enemies.</p><p>To begin, open the <code class="literal">EnemyScript</code>. Since the waypoints change with the map that we are playing, we don't want to set them all the time for each enemy. Therefore, we can get them from the Game Manager, which is specific for a particular level. The first thing to do is to get a reference to it. We can do this by adding the following variable type of <code class="literal">GameMangerScript</code>:</p><pre class="programlisting">private GameManagerScript gameManager; &#13;
+</pre><p>Then, in the <code class="literal">Start()</code> function, we can get a reference to it, by using the <code class="literal">Find()</code> and the <code class="literal">GetComponent()</code> functions together:</p><pre class="programlisting">  void Start () { &#13;
+        gameManager = GameObject.Find("GameManager").GetComponent&lt;GameManagerScript&gt;(); &#13;
+  } &#13;
+</pre><p>Now we can finally get all the waypoints by copying the array on the <code class="literal">GameManager</code> into the local variables of the enemy by using this line:</p><pre class="programlisting">  void Start () { &#13;
+        gameManager = GameObject.Find("GameManager").GetComponent&lt;GameManagerScript&gt;(); &#13;
+     waypoints = gameManager.waypoints; &#13;
+  } &#13;
+</pre><p>Let's save our script so that we can finish dealing with the waypoints.</p></div></div>

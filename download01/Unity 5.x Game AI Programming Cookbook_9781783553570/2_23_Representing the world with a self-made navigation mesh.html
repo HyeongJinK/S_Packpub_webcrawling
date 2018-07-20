@@ -1,0 +1,92 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec29"></a>Representing the world with a self-made navigation mesh</h2></div></div><hr /></div><p>Sometimes, a <a id="id101" class="indexterm"></a>custom navigation <a id="id102" class="indexterm"></a>mesh is necessary for dealing with difficult situations such as different types of graphs, but placing the graph's vertices manually is troublesome because it requires a lot of time to cover large areas.</p><p>We will learn how to use a model's mesh in order to generate a navigation mesh based on its triangles' centroids as vertices, and then leverage the heavy lifting from the previous recipe we learned.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec90"></a>Getting ready</h3></div></div></div><p>This recipe requires some knowledge of custom editor scripting and understanding and implementing the points of visibility in the graph representation. Also, it is worth mentioning that the script instantiates a <code class="literal">CustomNavMesh</code> game object automatically in the scene and requires a prefab assigned, just like any other graph representation.</p><p>Finally, it's important to create the following class, deriving from <code class="literal">GraphVisibility</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class CustomNavMesh : GraphVisibility
+{
+    public override void Start()
+    {
+        instIdToId = new Dictionary&lt;int, int&gt;();
+    }   
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec91"></a>How to do it...</h3></div></div></div><p>We will create an editor window for easily handling the automation process without weighing <a id="id103" class="indexterm"></a>down the graph's <code class="literal">Start</code> function, delaying the scene loading.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">CustomNavMeshWindow</code> class and place it in a directory called <code class="literal">Editor</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+using System.Collections;
+using System.Collections.Generic;
+
+public class CustomNavMeshWindow : EditorWindow
+{
+    // next steps here
+}</pre></div></li><li><p>Add the attributes to the editor window:</p><div class="informalexample"><pre class="programlisting">static bool isEnabled = false;
+static GameObject graphObj;
+static CustomNavMesh graph;
+static CustomNavMeshWindow window;
+static GameObject graphVertex;</pre></div></li><li><p>Implement the function for initializing and showing the window:</p><div class="informalexample"><pre class="programlisting">[MenuItem("UAIPC/Ch02/CustomNavMeshWindow")]
+static void Init()
+{
+    window = EditorWindow.GetWindow&lt;CustomNavMeshWindow&gt;();
+    window.title = "CustomNavMeshWindow";
+    SceneView.onSceneGUIDelegate += OnScene;
+    graphObj = GameObject.Find("CustomNavMesh");
+    if (graphObj == null)
+    {
+        graphObj = new GameObject("CustomNavMesh");
+        graphObj.AddComponent&lt;CustomNavMesh&gt;();
+        graph = graphObj.GetComponent&lt;CustomNavMesh&gt;();
+    }
+    else
+    {
+        graph = graphObj.GetComponent&lt;CustomNavMesh&gt;();
+        if (graph == null)
+            graphObj.AddComponent&lt;CustomNavMesh&gt;();
+        graph = graphObj.GetComponent&lt;CustomNavMesh&gt;();
+    }
+}</pre></div></li><li><p>Define the <code class="literal">OnDestroy</code> function:</p><div class="informalexample"><pre class="programlisting">void OnDestroy()
+{
+    SceneView.onSceneGUIDelegate -= OnScene;
+}</pre></div></li><li><p>Implement the <code class="literal">OnGUI</code> function for drawing the window's interior:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+    isEnabled = EditorGUILayout.Toggle("Enable Mesh Picking", isEnabled);
+    if (GUILayout.Button("Build Edges"))
+    {
+        if (graph != null)
+            graph.LoadGraph();
+    }
+}</pre></div></li><li><p>Implement the first half of the <code class="literal">OnScene</code> function for handling the left-click on the scene window:</p><div class="informalexample"><pre class="programlisting">private static void OnScene(SceneView sceneView)
+{
+    if (!isEnabled)
+        return;
+    if (Event.current.type == EventType.MouseDown)
+    {
+        graphVertex = graph.vertexPrefab;
+        if (graphVertex == null)
+        {
+            Debug.LogError("No Vertex Prefab assigned");
+            return;
+        }
+        Event e = Event.current;
+        Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+        RaycastHit hit;
+        GameObject newV;
+        // next step
+    }
+}</pre></div></li><li><p>Implement the second half for implementing the behavior when clicking on the mesh:</p><div class="informalexample"><pre class="programlisting">if (Physics.Raycast(ray, out hit))
+{
+    GameObject obj = hit.collider.gameObject;
+    Mesh mesh = obj.GetComponent&lt;MeshFilter&gt;().sharedMesh;
+    Vector3 pos;
+    int i;
+    for (i = 0; i &lt; mesh.triangles.Length; i += 3)
+    {
+        int i0 = mesh.triangles[i];
+        int i1 = mesh.triangles[i + 1];
+        int i2 = mesh.triangles[i + 2];
+        pos = mesh.vertices[i0];
+        pos += mesh.vertices[i1];
+        pos += mesh.vertices[i2];
+        pos /= 3;
+        newV = (GameObject)Instantiate(graphVertex, pos, Quaternion.identity);
+        newV.transform.Translate(obj.transform.position);
+        newV.transform.parent = graphObj.transform;
+        graphObj.transform.parent = obj.transform;
+    }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec92"></a>How it works...</h3></div></div></div><p>We create a custom editor window and set up the delegate function <code class="literal">OnScene</code> for handling events on the scene window. Also, we create the graph nodes by traversing the mesh vertex arrays, computing each triangle's centroid. Finally, we make use of the graph's <code class="literal">LoadGraph</code> function in order to compute neighbors.</p></div></div>

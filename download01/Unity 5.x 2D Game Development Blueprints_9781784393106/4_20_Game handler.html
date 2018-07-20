@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec22"></a>Game handler</h2></div></div><hr /></div><p>Now that we have all the elements in our game, we need a script that makes our character intractable with the other elements in the level, and that takes care of the level logic.</p><p>To do this, create a new C# script and name it <code class="literal">GameHandler</code> under the folder <code class="literal">Scripts</code>. Then, attach the script to our <code class="literal">Player</code> object. Double-click on the script in order to open it.</p><p>First, we need to define a lot of variables. Let's start with two to keep track of the player's score and health:</p><pre class="programlisting">    public float health = 2; &#13;
+    public float score = 0; &#13;
+</pre><p>Now we need a variable to check if the game is over:</p><pre class="programlisting">    public bool gameover = false; &#13;
+</pre><p>Finally, we need the reference to our UI elements:</p><pre class="programlisting">    public UnityEngine.UI.Text healthUI; &#13;
+    public UnityEngine.UI.Text ScoreUI; &#13;
+    public GameObject gameOverUI; &#13;
+    public GameObject youWinUI; &#13;
+</pre><p>The next step is to implement the logic behind the collision of the character with an object. This can be done by using a function called <code class="literal">OnTriggerEnter2D()</code>. Inside this function, we can check which kind of object the player has crossed. If it is a coin, then the score is updated and the coin is destroyed. If it is water, then the player dies. If it is the end of the level, we need to show the winning screen:</p><pre class="programlisting">    void OnTriggerEnter2D(Collider2D c) { &#13;
+        if (c.name == "Coin") { &#13;
+            AddScore(); &#13;
+            Destroy(c.gameObject); &#13;
+        } &#13;
+        else if (c.tag == "Water") { &#13;
+            health = 0; &#13;
+            healthUI.text = health.ToString(); &#13;
+            gameOverUI.SetActive(true); &#13;
+            StopGame(); &#13;
+        } &#13;
+        else if (c.tag == "Ending") { &#13;
+            youWinUI.SetActive(true); &#13;
+            StopGame(); &#13;
+        } &#13;
+    } &#13;
+</pre><p>Now we need a function to subtract the health of the player and update the UI as well:</p><pre class="programlisting">    public void SubtractHealth() { &#13;
+        health -= 1; &#13;
+        healthUI.text = health.ToString(); &#13;
+        if (health == 0) { &#13;
+            gameOverUI.SetActive(true); &#13;
+            StopGame(); &#13;
+        } &#13;
+    } &#13;
+</pre><p>Another function is needed to increase the score of the player:</p><pre class="programlisting">    public void AddScore() { &#13;
+        score += 10; &#13;
+        ScoreUI.text = score.ToString(); &#13;
+    } &#13;
+</pre><p>Finally, the following function is for when the game is over:</p><pre class="programlisting">    public void StopGame() { &#13;
+        gameover = true; &#13;
+        gameObject.SetActive(false); &#13;
+    } &#13;
+</pre><p>Save the changes and head back to the scene. Make sure that the object <code class="literal">Collision</code> in <span class="strong"><strong>Scene</strong></span> | <span class="strong"><strong>Platformer</strong></span> | <span class="strong"><strong>Water_01</strong></span> is tagged as <code class="literal">Water</code> and the <code class="literal">ladder</code> object is tagged as <code class="literal">Eding</code>. Finally, assign all the references in <code class="literal">GameHandler</code> with the respective objects, as shown in the following image:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_04_034.jpg" /></div><p>
+</p></div>

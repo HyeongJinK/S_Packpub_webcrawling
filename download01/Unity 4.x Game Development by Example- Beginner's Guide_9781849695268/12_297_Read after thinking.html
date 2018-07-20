@@ -1,0 +1,25 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec294"></a>Read after thinking</h2></div></div><hr /></div><p>One of the crucial pieces of information we're missing is which player's piece is inside each square. Thanks to the <code class="literal">isUsed</code> boolean, we know when a square has a piece in it, but we have no idea which piece it is. Keeping better track of which piece occupies which square is the first step to detecting a win condition.</p><p>
+<code class="literal">isUsed</code> isn't a very information-packed variable. By replacing it with an <code class="literal">int</code>, we can use it to store more valuable data.</p><p>In the Square script, replace this:</p><div class="informalexample"><pre class="programlisting">var isUsed:boolean;</pre></div><p>with this:</p><div class="informalexample"><pre class="programlisting">var player:int;</pre></div><p>In the logic check, change this:</p><div class="informalexample"><pre class="programlisting">if(!isUsed)</pre></div><p>to this:</p><div class="informalexample"><pre class="programlisting">if(player == 0)</pre></div><p>and remove this line from the <a id="id925" class="indexterm"></a>
+<code class="literal">OnMouseDown</code> function:</p><div class="informalexample"><pre class="programlisting">isUsed = true;</pre></div><p>Altogether, the <code class="literal">Square</code> script should look like this:</p><div class="informalexample"><pre class="programlisting">#pragma strict
+var x:int;
+var y:int;
+var player:int;
+
+var gameLogic:GameObject;
+
+function Start () 
+{
+  gameLogic = GameObject.Find("GameLogic");
+}
+
+function OnMouseDown()
+{
+  if(player == 0)
+  {
+    gameLogic.GetComponent(GameLogic).ClickSquare(gameObject);
+  }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec116"></a>
+<span class="emphasis"><em>What just happened – building a more complex lock</em></span>
+</h3></div></div></div><p>Read that code over one more time. Being an <code class="literal">int</code>, the player variable defaults to <code class="literal">0</code>. So an unused Square has a player value of <code class="literal">0</code>. If a<a id="id926" class="indexterm"></a> Square's player value is <code class="literal">0</code>, we know it's safe to place a piece there. But how does the value get changed to <code class="literal">1</code> or <code class="literal">2</code>?</p><p>In the game logic script, add this just after the <code class="literal">Instantiate</code> line:</p><div class="informalexample"><pre class="programlisting">Instantiate(piece, square.transform.position, Quaternion.identity);
+<span class="strong"><strong>square.GetComponent.&lt;Square&gt;().player = currentPlayer;</strong></span>
+</pre></div><p>We've used the familiar <code class="literal">GetComponent</code> command<a id="id927" class="indexterm"></a> to get a reference to the <code class="literal">Square</code> script attached to the <code class="literal">Square</code> GameObject that the player clicked on (a reference to which is passed into this function with the variable name lower-case s <code class="literal">square</code>). This line sets the player variable on the clicked square to the value of the <code class="literal">currentPlayer</code> variable, which toggles between <code class="literal">1</code> and <code class="literal">2</code>.</p><p>If it's player 1's turn, the clicked <code class="literal">square</code>'s player variable is set to <code class="literal">1</code>. If it's player 2's turn the clicked <code class="literal">square</code>'s player variable is set to <code class="literal">2</code>. A value of <code class="literal">0</code> indicates that the square is empty.</p><p>Test out the game again. There should be no outward change, but behind the scenes, there's a whole lot more knowledge flying around.</p></div></div>

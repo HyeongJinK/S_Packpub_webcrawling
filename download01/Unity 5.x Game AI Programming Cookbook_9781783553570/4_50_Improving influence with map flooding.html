@@ -1,0 +1,116 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec54"></a>Improving influence with map flooding</h2></div></div><hr /></div><p>The previous <a id="id212" class="indexterm"></a>influence computation is good when dealing with a simple influence that is based on individual units helping a faction. However, this could lead to holes in the map instead of covering a whole section. One technique to <a id="id213" class="indexterm"></a>resolve that problem is flooding, based on the Dijkstra algorithm.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec183"></a>Getting ready</h3></div></div></div><p>In this case, we will blend the faction capability for tagging a vertex, with the unit's logic for having a drop-off function, into a class called <code class="literal">Guild</code>. This is a component to include in the game <a id="id214" class="indexterm"></a>object; one for each desired guild:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System;
+using System.Collections;
+
+public class Guild : MonoBehaviour
+{
+    public string guildName;
+    public int maxStrength;
+    public GameObject baseObject;
+    [HideInInspector]
+    public int strenghth
+
+    public virtual void Awake()
+    {
+        strength = maxStrength;
+    }
+}</pre></div><p>It also needs a drop-off function. However, this time we wanted to create an example using Euclidean distance:</p><div class="informalexample"><pre class="programlisting">public virtual float GetDropOff(float distance)
+{
+    float d = Mathf.Pow(1 + distance, 2f);
+    return strength / d;
+}</pre></div><p>Finally, we will need a <code class="literal">GuildRecord</code> data type for the Dijkstra algorithm representation of a node:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">GuildRecord</code> struct, deriving from the <code class="literal">IComparable</code> interface:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System;
+
+public struct GuildRecord : IComparable&lt;GuildRecord&gt;
+{
+    public Vertex location;
+    public float strength;
+    public Guild guild;
+}</pre></div></li><li><p>Implement the <code class="literal">Equal</code> functions:</p><div class="informalexample"><pre class="programlisting">public override bool Equals(object obj)
+{
+    GuildRecord other = (GuildRecord)obj;
+    return location == other.location;
+}
+
+public bool Equals(GuildRecord o)
+{
+    return location == o.location;
+}</pre></div></li><li><p>Implement <a id="id215" class="indexterm"></a>the required <code class="literal">IComparable</code> <a id="id216" class="indexterm"></a>functions:</p><div class="informalexample"><pre class="programlisting">public override int GetHashCode()
+{
+    return base.GetHashCode();
+}
+
+public int CompareTo(GuildRecord other)
+{
+    if (location == other.location)
+        return 0;
+    // the substraction is inverse for
+    // having a descending binary heap
+    return (int)(other.strength - strength);
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec184"></a>How to do it…</h3></div></div></div><p>Now, we just need to modify some files and add functionalities:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Include the <code class="literal">guild</code> member in the <code class="literal">VertexInfluence</code> class:</p><div class="informalexample"><pre class="programlisting">public Guild guild;</pre></div></li><li><p>Include new members in the <code class="literal">InfluenceMap</code> class:</p><div class="informalexample"><pre class="programlisting">public float dropOffThreshold;
+private  Guild[] guildList;</pre></div></li><li><p>Also, in <code class="literal">InfluenceMap</code>, add the following line in the <code class="literal">Awake</code> function:</p><div class="informalexample"><pre class="programlisting">guildList = gameObject.GetComponents&lt;Guild&gt;();</pre></div></li><li><p>Create the map-flooding function:</p><div class="informalexample"><pre class="programlisting">public List&lt;GuildRecord&gt; ComputeMapFlooding()
+{
+}</pre></div></li><li><p>Declare the main necessary variables:</p><div class="informalexample"><pre class="programlisting">GPWiki.BinaryHeap&lt;GuildRecord&gt; open;
+open = new GPWiki.BinaryHeap&lt;GuildRecord&gt;();
+List&lt;GuildRecord&gt; closed;
+closed = new List&lt;GuildRecord&gt;();</pre></div></li><li><p>Add the <a id="id217" class="indexterm"></a>initial nodes for each <a id="id218" class="indexterm"></a>guild in the priority queue:</p><div class="informalexample"><pre class="programlisting">foreach (Guild g in guildList)
+{
+    GuildRecord gr = new GuildRecord();
+    gr.location = GetNearestVertex(g.baseObject);
+    gr.guild = g;
+    gr.strength = g.GetDropOff(0f);
+    open.Add(gr);
+}</pre></div></li><li><p>Create the main Dijkstra iteration and return the assignments:</p><div class="informalexample"><pre class="programlisting">while (open.Count != 0)
+{
+    // next steps here
+}
+return closed;</pre></div></li><li><p>Take the first node in the queue and get its neighbors:</p><div class="informalexample"><pre class="programlisting">GuildRecord current;
+current = open.Remove();
+GameObject currObj;
+currObj = GetVertexObj(current.location);
+Vector3 currPos;
+currPos = currObj.transform.position;
+List&lt;int&gt; neighbours;
+neighbours = GetNeighbors(current.location);</pre></div></li><li><p>Create the loop for computing each neighbor, and put the current node in the closed list:</p><div class="informalexample"><pre class="programlisting">foreach (int n in neighbours)
+{
+    // next steps here
+}
+closed.Add(current);</pre></div></li><li><p>Compute the drop off from the current vertex, and check whether it is worth trying to <a id="id219" class="indexterm"></a>change the guild assigned:</p><div class="informalexample"><pre class="programlisting">GameObject nObj = GetVertexObj(n);
+Vector3 nPos = nObj.transform.position;
+float dist = Vector3.Distance(currPos, nPos);
+float strength = current.guild.GetDropOff(dist);
+if (strength &lt; dropOffThreshold)
+    continue;</pre></div></li><li><p>Create <a id="id220" class="indexterm"></a>an auxiliary <code class="literal">GuildRecord</code> node with the current vertex's data:</p><div class="informalexample"><pre class="programlisting">GuildRecord neighGR = new GuildRecord();
+neighGR.location = n;
+neighGR.strength = strength;
+VertexInfluence vi;
+vi = nObj.GetComponent&lt;VertexInfluence&gt;();
+neighGR.guild = vi.guild;</pre></div></li><li><p>Check the closed list and validate the time when a new assignment must be avoided:</p><div class="informalexample"><pre class="programlisting">if (closed.Contains(neighGR))
+{
+    int location = neighGR.location;
+    int index = closed.FindIndex(x =&gt; x.location == location);
+    GuildRecord gr = closed[index];
+    if (gr.guild.name != current.guild.name
+            &amp;&amp; gr.strength &lt; strength)
+        continue;
+}</pre></div></li><li><p>Check the priority queue for the same reasons:</p><div class="informalexample"><pre class="programlisting">else if (open.Contains(neighGR))
+{
+    bool mustContinue = false;
+    foreach (GuildRecord gr in open)
+    {
+        if (gr.Equals(neighGR))
+        {
+            mustContinue = true;
+            break;
+        }
+    }
+    if (mustContinue)
+        continue;
+}</pre></div></li><li><p>Create a new <code class="literal">GuildRecord</code> assignment and add it to the priority queue when everything else fails:</p><div class="informalexample"><pre class="programlisting">else
+{
+    neighGR = new GuildRecord();
+    neighGR.location = n;
+}
+neighGR.guild = current.guild;
+neighGR.strength = strength;</pre></div></li><li><p>Add it to the priority queue if necessary:</p><div class="informalexample"><pre class="programlisting">open.Add(neighGR);</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec185"></a>How it works…</h3></div></div></div><p>The algorithm <a id="id221" class="indexterm"></a>returns the guild's assignment for every vertex. It traverses the whole graph starting from the guilds' bases and computes.</p><p>The algorithm <a id="id222" class="indexterm"></a>traverses the whole graph starting from the guilds' positions. Given our previous inverse subtraction, the priority queue always starts from the strongest node and computes the assignment until it reaches a value below <code class="literal">dropOffThreshold</code>. It also checks for ways to avoid a new assignment if the conditions are not met: if the vertex value is greater than the current strength, or if the guild assignment is the same.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec186"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Introducing influence maps</em></span> recipe</p></li><li style="list-style-type: disc"><p><a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Navigation</em></span>, the <span class="emphasis"><em>Finding the shortest path with Dijkstra</em></span> recipe</p></li></ul></div></div></div>

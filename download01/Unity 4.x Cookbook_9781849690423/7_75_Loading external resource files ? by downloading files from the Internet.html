@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec75"></a>Loading external resource files – by downloading files from the Internet</h2></div></div><hr /></div><p>One way to<a id="id504" class="indexterm"></a> store and read text file data is to store the text files on the Web. In this recipe, the contents of a text file for a given URL is downloaded, read, and then displayed.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec259"></a>Getting ready</h3></div></div></div><p>For this recipe you will need to have access to files on a web server. If you run a local web server such as Apache, or have your own web hosting, then you could use the files in the <code class="literal">0423_07_01</code> folder and the corresponding URL. Otherwise, you may find the following URLs useful since they are the web locations of an image file (a Packt logo) and a text file (an "ASCII-art" badger picture):</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="ulink" href="http://www.packtpub.com/sites/default/files/packt_logo.png" target="_blank">www.packtpub.com/sites/default/files/packt_logo.png</a></p></li><li style="list-style-type: disc"><p><a class="ulink" href="http://www.ascii-art.de/ascii/ab/badger.txt" target="_blank">www.ascii-art.de/ascii/ab/badger.txt</a></p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec260"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following C# script to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: ReadWebImageTexture.cs
+using UnityEngine;
+using System.Collections;
+
+public class ReadWebImageTexture : MonoBehaviour {
+  public string url = "http://www.packtpub.com/sites/default/files/packt_logo.png";
+  private Texture2D externalImage;
+
+  private void Start () {
+    StartCoroutine( LoadWWW() );
+  }
+  
+  private void OnGUI() {
+    GUILayout.Label ( "url = " + url );
+    GUILayout.Label ( externalImage );
+  }
+
+  private IEnumerator LoadWWW(){
+    yield return 0;
+    WWW imageFile = new WWW (url);
+    yield return imageFile;
+      externalImage = imageFile.texture;
+  }</pre></div></li><li><p>Play the scene. Once downloaded, the contents of the image file will be displayed.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec261"></a>How it works...</h3></div></div></div><p>When the game<a id="id505" class="indexterm"></a> starts, our <code class="literal">Start()</code> method<a id="id506" class="indexterm"></a> starts the <code class="literal">LoadWWW()</code> co-routine method. A co-routine<a id="id507" class="indexterm"></a> is a method that can keep on running in the background without halting or slowing down the other parts of the game and the frame rate. The <code class="literal">yield</code> statement indicates that once a value can be returned for <code class="literal">imageFile</code>, the remainder of the method can be executed, that is, until the file has finished downloading, no attempt should be made to extract the <code class="literal">texture</code> property of the <code class="literal">WWW</code> object variable.</p><p>For each frame our <code class="literal">OnGUI()</code> method<a id="id508" class="indexterm"></a> displays the contents of <code class="literal">url</code> string variable and attempts to display the <code class="literal">externalImage</code> texture image.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec262"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Loading external resource files – by Unity Default Resources</em></span> recipe.</p></li><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Loading external resource files – by manually storing files in Unity's Resources folder</em></span> recipe.</p></li></ul></div></div></div>

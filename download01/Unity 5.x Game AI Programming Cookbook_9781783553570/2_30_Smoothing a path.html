@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec36"></a>Smoothing a path</h2></div></div><hr /></div><p>When dealing with <a id="id138" class="indexterm"></a>regular-size vertices on graph, such as grids, it's pretty common to see some kind of <span class="emphasis"><em>robotic</em></span> movement from the agents in the game. Depending on the type of game we're developing, this could be avoided using path-smoothing techniques, such as the one we're about to learn.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3561_02_01.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec120"></a>Getting ready</h3></div></div></div><p>Let's define a new tag in the Unity editor called <code class="literal">Wall</code> and assign it to every object in the scene that is intended to work as a wall or obstacle in the navigation.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec121"></a>How to do it…</h3></div></div></div><p>This is an easy, yet powerful, function:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Define the <code class="literal">Smooth</code> function:</p><div class="informalexample"><pre class="programlisting">public List&lt;Vertex&gt; Smooth(List&lt;Vertex&gt; path)
+{
+    // next steps here
+}</pre></div></li><li><p>Check whether it is worth computing a new path:</p><div class="informalexample"><pre class="programlisting">List&lt;Vertex&gt; newPath = new List&lt;Vertex&gt;();
+if (path.Count == 0)
+    return newPath;
+if (path.Count &lt; 3)
+    return path;</pre></div></li><li><p>Implement the <a id="id139" class="indexterm"></a>loops for traversing the list and building the new path:</p><div class="informalexample"><pre class="programlisting">newPath.Add(path[0]);
+int i, j;
+for (i = 0; i &lt; path.Count - 1;)
+{
+    for (j = i + 1; j &lt; path.Count; j++)
+    {
+        // next steps here
+    }
+    i = j - 1;
+    newPath.Add(path[i]);
+}
+return newPath;</pre></div></li><li><p>Declare and compute the variables to be used by the ray casting function:</p><div class="informalexample"><pre class="programlisting">Vector3 origin = path[i].transform.position;
+Vector3 destination = path[j].transform.position;
+Vector3 direction = destination - origin;
+float distance = direction.magnitude;
+bool isWall = false;
+direction.Normalize();</pre></div></li><li><p>Cast a ray from the current starting node to the next one:</p><div class="informalexample"><pre class="programlisting">Ray ray = new Ray(origin, direction);
+RaycastHit[] hits;
+hits = Physics.RaycastAll(ray, distance);</pre></div></li><li><p>Check whether there is a wall and break the loop accordingly:</p><div class="informalexample"><pre class="programlisting">foreach (RaycastHit hit in hits)
+{
+    string tag = hit.collider.gameObject.tag;
+    if (tag.Equals("Wall"))
+    {
+        isWall = true;
+        break;
+    }
+}
+if (isWall)
+    break;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec122"></a>How it works…</h3></div></div></div><p>We create a new path, taking the initial node as a starting point, and apply ray casting to the following node <a id="id140" class="indexterm"></a>in the path, until we get a collision with a wall. When that happens, we take the previous node as the following node in the new path and the starting point for traversing the original one, until there are no nodes left to check. That way, we build a more intuitive path.</p></div></div>

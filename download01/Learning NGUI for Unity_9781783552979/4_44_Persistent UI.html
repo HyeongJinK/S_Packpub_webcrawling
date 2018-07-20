@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec47"></a>Persistent UI</h2></div></div><hr /></div><p>Since our<a id="id556" class="indexterm"></a> UI is composed of GameObjects, they are destroyed on a new scene load, thus we lose our menu as we enter the <code class="literal">Game</code> scene when the <code class="literal">Play</code> button is<a id="id557" class="indexterm"></a> clicked.</p><p>We'll use the <a id="id558" class="indexterm"></a>
+<span class="strong"><strong>singleton</strong></span> method to store data, which will be used regularly, like the score, lives, and so on, and to ensure important UI elements persist from one scene to another. The singleton will also help us to easily access these variables during runtime.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec89"></a>Singleton</h3></div></div></div><p>The singleton pattern restricts the instantiation of a class to one unique object. It is useful when one object is required to have some generic actions available throughout different scenes.</p><p>With Unity, a singleton is a <a id="id559" class="indexterm"></a>class that can only be instantiated once: it's <a id="id560" class="indexterm"></a>attached to a GameObject in the scene that isn't destroyed on scene changing using the <code class="literal">DontDestroyOnLoad()</code> property. This means that the GameObject and all its attached components or children, are persistent through scene changing. You might destroy it manually through code if required, but it's usually destroyed on application quit.</p><p>Also, the singleton has a static reference pointing to its instance, letting us easily access any of its variables or methods using <code class="literal">MySingleton.Instance.anyVariable</code>.</p><p>If we ever try to access a method or variable through <code class="literal">MySingleton.Instance</code> while the class isn't instantiated in the scene, it will be automatically created.</p><p>This is very useful and effective for global variables and common elements throughout the project; we'll see how to implement it in our <code class="literal">MenuManager</code> component.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec53"></a>The Singleton class</h4></div></div></div><p>We will create a <code class="literal">Singleton</code> class, from<a id="id561" class="indexterm"></a> which any element we need to be a singleton should inherit. Create a new C# script named <code class="literal">Singleton.cs</code>. Open it and change its class declaration to the following:</p><div class="informalexample"><pre class="programlisting">// Inherit from MonoBehavior and take another as T parameter
+<span class="strong"><strong>public class Singleton&lt;T&gt; : MonoBehaviour where T : MonoBehaviour</strong></span>
+</pre></div><p>We declare that our <code class="literal">Singleton</code> class<a id="id562" class="indexterm"></a> inherits from <code class="literal">MonoBehavior</code>—so that we still have access to neat functionalities such as <code class="literal">Coroutines</code>—and takes <code class="literal">MonoBehavior</code> as the <code class="literal">T</code> parameter that will be used to know which class should be a singleton.</p><p>Remove both its default <code class="literal">Start()</code> and <code class="literal">Awake()</code> methods—we won't need them here.</p><p>Now, let's declare these three necessary global variables for our new <code class="literal">Singleton</code> class:</p><div class="informalexample"><pre class="programlisting">// We'll need to store the current instance of the T class
+<span class="strong"><strong>private static T _instance;</strong></span>
+//We'll use this to know if the app is currently closing
+<span class="strong"><strong>private static bool appIsClosing = false;</strong></span>
+</pre></div><p>Now that we have our necessary variables, let's declare the static <code class="literal">Instance</code> of <code class="literal">T</code> with an overridden getter method <a id="id563" class="indexterm"></a>that will behave as follows each time it's accessed:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>If the app is closing right now, return <code class="literal">null</code>, don't do anything, and let the app close itself</p></li><li style="list-style-type: disc"><p>If the <code class="literal">T</code> component isn't in the scene, create it now and use it</p></li><li style="list-style-type: disc"><p>Otherwise, if it already exists in the scene, don't create a new one; use the existing one</p></li></ul></div><p>This means we will always <a id="id564" class="indexterm"></a>have only one instance of <code class="literal">T</code> on the scene, and it will always be instantiated as soon as it's required.</p><p>Add this <code class="literal">public</code> <code class="literal">static</code> global variable just below our <code class="literal">appIsClosing</code> bool:</p><div class="informalexample"><pre class="programlisting">// The public Instance of T, accessible from anywhere
+<span class="strong"><strong>public static T Instance</strong></span>
+{
+// With an overridden getter method
+get
+  {
+    // If the app is closing...
+<span class="strong"><strong>    if (appIsClosing)</strong></span>
+    {
+      //... Return null, don't go further
+      return null;
+    }
+    // If _instance is not assigned...
+<span class="strong"><strong>    if (_instance == null)</strong></span>
+    {
+      //... Find out if one already exists in the scene
+<span class="strong"><strong>      _instance = (T) FindObjectOfType(typeof(T));</strong></span>
+      // If it doesn't exist? Create it!
+<span class="strong"><strong>      if (_instance == null)</strong></span>
+      {
+        // Create a new GameObject...
+<span class="strong"><strong>        GameObject newSingleton = new GameObject();</strong></span>
+        //... Add the T component to it
+<span class="strong"><strong>        _instance = newSingleton.AddComponent&lt;T&gt;();</strong></span>
+        // Rename it with the T class's name
+<span class="strong"><strong>        newSingleton.name = typeof(T).ToString();</strong></span>
+      }
+// Mark it as DontDestroyOnLoad
+<span class="strong"><strong>      DontDestroyOnLoad(_instance);</strong></span>
+    }
+    // Return the final _instance
+<span class="strong"><strong>    return _instance;</strong></span>
+  }
+}</pre></div><p>From now on, if we try to access any script that inherits from the <code class="literal">Singleton</code> class using <code class="literal">AnyScript.Instance</code>, it will be created or retrieved and marked as <code class="literal">DontDestroyOnLoad</code>, thus it<a id="id565" class="indexterm"></a> will persist from one scene to another.</p><p>For security, we'll make sure it's marked as <code class="literal">DontDestroyOnLoad</code> at <code class="literal">Start()</code>, and if another instance of the <a id="id566" class="indexterm"></a>script is found in the scene, we'll destroy it since we should only have one. Add the following <code class="literal">Start()</code> method in our <code class="literal">Singleton.cs</code> script:</p><div class="informalexample"><pre class="programlisting">// At start, for all singletons
+<span class="strong"><strong>public void Start()</strong></span>
+{
+  // Retrieve all instances of the singleton in the scene
+<span class="strong"><strong>  T[] allInstances = FindObjectsOfType(typeof(T)) as T[];</strong></span>
+  
+  // If there's more than one of them
+<span class="strong"><strong>  if(allInstances.Length &gt; 1)</strong></span>
+  {
+    // For each of the found instances...
+    foreach(T instanceToCheck in allInstances)
+    {
+      // If the found instance is not the current one
+      if(instanceToCheck != Instance)
+      {
+        // Destroy it now
+<span class="strong"><strong>        Destroy(instanceToCheck.gameObject);</strong></span>
+      }
+    }
+  }
+
+  // Mark the existent instance as DontDestroyOnLoad
+<span class="strong"><strong>  DontDestroyOnLoad((T) FindObjectOfType(typeof(T)));</strong></span>
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note31"></a>Note</h3><p>Make sure you do not have a <code class="literal">Start()</code> method in your <code class="literal">MenuManager.cs</code> script; otherwise, it will override the <code class="literal">Start()</code> method of <code class="literal">Singleton.cs</code> and not apply the <code class="literal">DontDestroyOnLoad</code> property.</p><p>If you need a <code class="literal">Start()</code> method in <code class="literal">MenuManager</code>—or any other script inheriting from the <code class="literal">Singleton</code> class—its first <code class="literal">Start()</code> instruction must be:</p><div class="informalexample"><pre class="programlisting">base.Start();</pre></div><p>That way, the <code class="literal">Singleton</code> class's <code class="literal">Start()</code> method will always be executed before your custom class's <code class="literal">Start()</code> instructions.</p></div><p>Ok. From now on, even<a id="id567" class="indexterm"></a> if the script is never accessed externally through code, it will be persisted from one scene to another.</p><p>We have one last issue<a id="id568" class="indexterm"></a> to resolve with the <code class="literal">Singleton.cs</code> script: when Unity quits, it destroys objects in a random order. If a script calls <code class="literal">MenuManager.Instance</code> after it has been destroyed, it will create a weird ghost object that will stay on the editor scene that will still be there even after stopping the play mode!</p><p>Let's use our <code class="literal">appIsClosing</code> bool to prevent this ghost object from being created. Add this <code class="literal">OnApplicationQuit()</code> method to our <code class="literal">Singleton.cs</code> script:</p><div class="informalexample"><pre class="programlisting">// When the application quits
+<span class="strong"><strong>void OnApplicationQuit()</strong></span>
+{
+  //... Set the appIsClosing boolean to true
+<span class="strong"><strong>  appIsClosing = true;</strong></span>
+}</pre></div><p>When the application is quitting, our singleton will no longer be re-instantiated and will return <code class="literal">null</code>. We will thus have a clean exit of the application and avoid buggy ghosts.</p><p>Now that we have <code class="literal">Singleton.cs</code>, let's implement it in our <code class="literal">MenuManager.cs</code> script.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec54"></a>The MenuManager implementation</h4></div></div></div><p>We need our <code class="literal">MenuManager</code> class<a id="id569" class="indexterm"></a> to inherit from <a id="id570" class="indexterm"></a>our new <code class="literal">Singleton</code> class. Open the <code class="literal">MenuManger.cs</code> script:</p><div class="informalexample"><pre class="programlisting">public class MenuManager : MonoBehavior {</pre></div><p>Then, change its class declaration to this:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>public class MenuManager : Singleton&lt;MenuManager&gt; {</strong></span>
+</pre></div><p>Ok. That's it! Now, our <code class="literal">UI Root</code> and all its children will be persistent through scene changing. Hit Unity's <span class="strong"><strong>play</strong></span> button and press our menu's <code class="literal">Play</code> button. You'll notice that our <code class="literal">UI Root</code> is still present<a id="id571" class="indexterm"></a> in the <span class="strong"><strong>Hierarchy</strong></span> <a id="id572" class="indexterm"></a>view, and our welcome text is still displayed.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec90"></a>Removing the welcome text</h3></div></div></div><p>Now that our main menu isn't destroyed on scene changing, our welcome text is still displayed within the <code class="literal">Game</code> scene. Let's<a id="id573" class="indexterm"></a> make sure it disappears <a id="id574" class="indexterm"></a>using a second <code class="literal">DisappearOnClick</code> component on our <code class="literal">Play</code> button:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Select our <code class="literal">UI Root</code> | <code class="literal">Main</code> | <code class="literal">Buttons</code> | <code class="literal">Play</code> GameObject.</p></li><li><p>Click the <span class="strong"><strong>Add Component</strong></span> button in the Inspector view.</p></li><li><p>Type <code class="literal">dis</code> with your keyboard to search for components.</p></li><li><p>Select <span class="strong"><strong>Disappear On Click</strong></span> and hit <span class="emphasis"><em>Enter</em></span> or click on it with your mouse.</p></li><li><p>Drag our <code class="literal">UI Root</code> | <code class="literal">Welcome</code> GameObject in its <span class="strong"><strong>Target</strong></span> field.</p></li></ol></div><p>That's it—when the <code class="literal">Play</code> button is pressed, nothing is displayed on the <code class="literal">Game</code> scene, even though all our UI is still here. We will thus be able to access it and show our main menu or options page anytime.</p></div></div>

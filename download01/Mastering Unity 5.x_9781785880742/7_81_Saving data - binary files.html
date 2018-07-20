@@ -1,0 +1,113 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec79"></a>Saving data - binary files</h2></div></div><hr /></div><p>If <code class="literal">PlayerPrefs</code>, INI files, XML files, or JSON files don't meet your needs, then binary files might be exactly what you're looking for. If you don't want to save data that gamers can open, read, and change, then binary is the preferred option. Binary files typically produce the smallest file size and are non-readable. Their disadvantage is difficulty of debugging (because you cannot easily verify their contents), and other applications cannot import and parse them because they conform to no other, established, standard; they don't know how your data is structured. To get started with using binary files, add the <code class="literal">serializeTransformBinary.cs</code> script file to your project; comments that follow:</p><pre class="programlisting">using System.Collections; 
+using System.Collections.Generic; 
+using UnityEngine; 
+using System.Runtime.Serialization.Formatters.Binary; 
+using System.IO; 
+//------------------------------------------ 
+[System.Serializable] 
+public class TransformDataBinary 
+{ 
+   public float PosX,PosY,PosZ; 
+   public float EulerX,EulerY,EulerZ; 
+   public float ScaleX,ScaleY,ScaleZ; 
+   public string ObjectName = string.Empty; 
+} 
+//------------------------------------------ 
+[System.Serializable] 
+public class TransformCollectionBinary 
+{ 
+   public TransformDataBinary[] DataArray; 
+} 
+//------------------------------------------ 
+public class serializeTransformBinary : MonoBehaviour  
+{ 
+   public Transform[] TransformArray; 
+   public string FilePath = "MyTransformData.bin"; 
+   public TransformCollectionBinary MyData; 
+   //------------------------------------------ 
+   // Use this for initialization 
+   void Start () { 
+         //Get transform component 
+         TransformArray = Object.FindObjectsOfType&lt;Transform&gt;(); 
+         TransformCollectionBinary MyData = new TransformCollectionBinary (); 
+   } 
+   //------------------------------------------ 
+   public void SaveData() 
+   { 
+         //Create new array 
+         MyData.DataArray = new TransformDataBinary[TransformArray.Length]; 
+ 
+         for(int i=0; i&lt;MyData.DataArray.Length; i++) 
+         { 
+               MyData.DataArray[i] = new TransformDataBinary (); 
+               MyData.DataArray[i].PosX = TransformArray[i].position.x; 
+               MyData.DataArray[i].PosY = TransformArray[i].position.y; 
+               MyData.DataArray[i].PosZ = TransformArray[i].position.z; 
+ 
+               MyData.DataArray[i].EulerX = TransformArray[i].rotation.eulerAngles.x; 
+               MyData.DataArray[i].EulerY = TransformArray[i].rotation.eulerAngles.y; 
+               MyData.DataArray[i].EulerZ = TransformArray[i].rotation.eulerAngles.z; 
+ 
+               MyData.DataArray[i].ScaleX = TransformArray[i].localScale.x; 
+               MyData.DataArray[i].ScaleY = TransformArray[i].localScale.y; 
+               MyData.DataArray[i].ScaleZ = TransformArray[i].localScale.z; 
+ 
+               MyData.DataArray[i].ObjectName = TransformArray[i].name; 
+         } 
+ 
+         string SavePath = Application.persistentDataPath + "/" + FilePath; 
+ 
+         BinaryFormatter bf = new BinaryFormatter(); 
+         FileStream file = File.Create (SavePath); 
+         bf.Serialize(file, MyData); 
+         Debug.Log ("Saving Data To: " + SavePath); 
+   } 
+   //------------------------------------------ 
+   public void LoadData() 
+   { 
+         string LoadPath = Application.persistentDataPath + "/" + FilePath; 
+    
+         BinaryFormatter bf = new BinaryFormatter(); 
+         FileStream file = File.Open(LoadPath, FileMode.Open); 
+         MyData = bf.Deserialize(file) as TransformCollectionBinary; 
+         file.Close(); 
+ 
+         //Update objects 
+         for (int i = 0; i &lt; MyData.DataArray.Length; i++)  
+         { 
+               //Find object of matching name 
+               GameObject Selected = GameObject.Find(MyData.DataArray[i].ObjectName); 
+ 
+               //Get transform component 
+               Transform SelectedTransform = Selected.GetComponent&lt;Transform&gt;(); 
+ 
+               SelectedTransform.position = new Vector3 (MyData.DataArray [i].PosX, MyData.DataArray [i].PosY, MyData.DataArray [i].PosZ); 
+               SelectedTransform.localScale = new Vector3 (MyData.DataArray [i].ScaleX, MyData.DataArray [i].ScaleY, MyData.DataArray [i].ScaleZ); 
+               SelectedTransform.rotation = Quaternion.Euler (MyData.DataArray[i].EulerX, MyData.DataArray[i].EulerY, MyData.DataArray[i].EulerZ); 
+         } 
+         Debug.Log ("Loading Data From " + LoadPath); 
+   } 
+   //------------------------------------------ 
+   void Update() 
+   { 
+         if (Input.GetKeyDown (KeyCode.S))  
+         { 
+               SaveData(); 
+               return; 
+         } 
+ 
+         if (Input.GetKeyDown (KeyCode.L))  
+         { 
+               LoadData(); 
+               return; 
+         } 
+   } 
+   //------------------------------------------ 
+} 
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec73"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">TransformDataBinary</code> class is the serializable primitive object storing the raw transform data extracted from the transform component. This consists of float variables, used for storing position (<span class="emphasis"><em>X</em></span>, <span class="emphasis"><em>Y</em></span>, and <span class="emphasis"><em>Z</em></span>), as well as rotation (Euler angles) and scale.</p></li><li style="list-style-type: disc"><p>The two C# namespaces, <code class="literal">System.Runtime.Serialization.Formatters.Binary</code> and <code class="literal">System.IO</code> must be included to use binary files and Serialization.</p></li><li style="list-style-type: disc"><p>The <code class="literal">DataArray</code> member of the <code class="literal">TransformCollectionBinary</code> class represents a sequential list of <code class="literal">TransformDataBinary</code> structures, each defining the transform for a unique game object. As with the previous two methods, each object in the scene should have a unique name.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Awake</code> function retrieves a static list of all transform component in the scene at level start up.</p></li><li style="list-style-type: disc"><p>The <code class="literal">SaveData</code> function converts all scene transforms into binary data. To do this, the <code class="literal">BinaryFormatter</code> class is used.</p></li><li style="list-style-type: disc"><p>The <code class="literal">BinaryFormatter.Serialize</code> function accepts an object instance as an argument and writes it to a specified file stream (an open file).</p></li><li style="list-style-type: disc"><p>By default, the file is saved to a folder in <code class="literal">Application.persistentDataPath</code>.</p></li></ul></div><p>Excellent. Now let's give the binary code a try! Run the game by pressing play on the tool bar and then move scene objects around from the <span class="strong"><strong>Scene</strong></span> view.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_029.jpg" /></div><p>
+</p><p>Saving data to a binary file</p><p>By default, neither Windows or Mac are configured to open and display binary files. To open these, you'll need to right-click the file inside either Windows Explorer or Mac Finder to change the file extension associations. You can configure the binary file to open MonoDevelop. To change file extension associations in Windows, see: <a class="ulink" href="http://www.digitaltrends.com/computing/how-to-set-default-programs-and-file-types-in-windows-10/" target="_blank">http://www.digitaltrends.com/computing/how-to-set-default-programs-and-file-types-in-windows-10/</a>.</p><p>For Mac, see: <a class="ulink" href="http://osxdaily.com/2009/10/25/change-file-associations-in-mac-os-x/" target="_blank">http://osxdaily.com/2009/10/25/change-file-associations-in-mac-os-x/</a>.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_030.jpg" /></div><p>
+</p><p>Open a binary file in MonoDevelop</p><p>Now restore the scene back from binary data by replaying the game in the <span class="strong"><strong>Game</strong></span> tab, and press <span class="emphasis"><em>L</em></span> on the keyboard to load back the file.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_07_031.jpg" /></div><p>
+</p><p>Restoring a scene from a binary file</p><p>And voila! You can now save data in Unity through many different methods (XML, JSON, and binary), each with a unique advantage.</p></div></div>

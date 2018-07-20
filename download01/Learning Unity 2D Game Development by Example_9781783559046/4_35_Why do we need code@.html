@@ -1,0 +1,104 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec38"></a>Why do we need code?</h2></div></div><hr /></div><p>In order to create any<a id="id230" class="indexterm"></a> type of game, we need to understand code because the pieces of code are the instructions that tell the game engine (Unity) when and how you want something to occur at any given point.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec36"></a>Programming languages</h3></div></div></div><p>In order to create code, we use a <a id="id231" class="indexterm"></a>programming language, which is an intermediary language that represents the instructions that we tell the computer processor.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec37"></a>Levels of programming languages</h3></div></div></div><p>There are three<a id="id232" class="indexterm"></a> levels of programming languages:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Machine language</p></li><li style="list-style-type: disc"><p>Assembly language</p></li><li style="list-style-type: disc"><p>High-level languages</p></li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec26"></a>Machine language</h4></div></div></div><p>Computers do not understand <a id="id233" class="indexterm"></a>human language; therefore, we need to communicate with the<a id="id234" class="indexterm"></a> computer processor via machine language.</p><p>Machine language, also known as binary code, consists of a combination of 0s and 1s that represent high and low electrical voltages. These 0s and 1s are known as <a id="id235" class="indexterm"></a>
+<span class="strong"><strong>bits</strong></span> (<span class="strong"><strong>binary digits</strong></span>). We can then make use of data by representing the data using these bits.</p><p>All data has an area on the computer or device where it is stored (known as the memory address) as well as the actual data stored (known as memory content). The computer or device then uses the memory address to find where the data is stored so that it can access the memory content.</p><p>Binary code can also be represented in hexadecimal format, whereby each hexadecimal digit represents four binary digits. The hexadecimal format is shorthand and a more human-friendly representation of binary code.</p><p>All programs and thus games must be converted into machine language before they can be executed.</p><p>The <a id="id236" class="indexterm"></a>following table is a <a id="id237" class="indexterm"></a>visual representation of machine language, showing both the binary and hexadecimal representations:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="4" align="left" valign="bottom">
+<p>Machine Language</p>
+</th></tr></thead><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Memory Address</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Memory Content</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Binary</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>HEX</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Binary</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>HEX</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>0000000000000000</p>
+</td><td style="" align="left" valign="top">
+<p>0000</p>
+</td><td style="" align="left" valign="top">
+<p>11011011</p>
+</td><td style="" align="left" valign="top">
+<p>DB</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>0000000000000001</p>
+</td><td style="" align="left" valign="top">
+<p>0001</p>
+</td><td style="" align="left" valign="top">
+<p>00000100</p>
+</td><td style="" align="left" valign="top">
+<p>04</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>0000000000000010</p>
+</td><td style="" align="left" valign="top">
+<p>0002</p>
+</td><td style="" align="left" valign="top">
+<p>11000110</p>
+</td><td style="" align="left" valign="top">
+<p>C6</p>
+</td></tr></tbody></table></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec27"></a>Assembly language</h4></div></div></div><p>Assembly is a low-level language<a id="id238" class="indexterm"></a> that uses symbolic operation code that assigns <a id="id239" class="indexterm"></a>human-readable names to each instruction from machine language to represent machine language. It is extremely fast to run; however, it's much more difficult to learn, and it takes significantly longer to write with many more lines of code than high-level languages.</p><p>The following code is a representation<a id="id240" class="indexterm"></a> of assembly language:</p><div class="informalexample"><pre class="programlisting">;Example of Assembly language
+;Accepts a number in the register AX;
+;Subtracts 50 if it is in the range 100-150;
+;Else it remains as it is.
+
+SUB50  PROC
+    CMP AX,100
+    JL DONE
+    CMP AX,150
+    JG DONE
+    SUB AX,50
+DONE:  RET
+SUB50  ENDP</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec28"></a>High-level languages</h4></div></div></div><p>High-level languages<a id="id241" class="indexterm"></a> are programming languages that use statements that are <a id="id242" class="indexterm"></a>closer to the English language and are therefore easier to learn.</p><p>The following code<a id="id243" class="indexterm"></a> is a representation of Java—a high-level language:</p><div class="informalexample"><pre class="programlisting">/*Example of subtraction in Java
+*The resulting values are then displayed
+*/
+public class Subtraction
+{
+
+    public static void main(String[] args)
+    {
+        int number1 = 100;
+        int number2 = 50;
+
+        //calculating number1 - number2;
+        int difference = number1 - number2;
+
+
+        //Displaying the values
+        System.out.println("number1 : "+number1);
+        System.out.println("number2 : "+number2);
+        System.out.println("difference : "+difference);
+
+    }
+}</pre></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec38"></a>Scripting languages</h3></div></div></div><p>Scripting languages<a id="id244" class="indexterm"></a> are an alternative to programming languages, whereby we create lightweight, much more human-readable scripts that are interpreted by another program at runtime rather than compiled by the computer's processor directly as compiled languages are. Thus, scripting languages are normally slower than compiled languages.</p><p>Modern languages, such as<a id="id245" class="indexterm"></a> UnityScript, make use of both. UnityScript, although a scripting language providing flexibility, gets compiled, making it much faster.</p><p>The following<a id="id246" class="indexterm"></a> diagram shows the <a id="id247" class="indexterm"></a>layers/levels of programming languages:</p><div class="mediaobject"><img src="/graphics/9781783559046/graphics/9046_04_04.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec39"></a>UnityScript versus C# versus Boo</h3></div></div></div><p>When <a id="id248" class="indexterm"></a>programming <a id="id249" class="indexterm"></a>code<a id="id250" class="indexterm"></a> for<a id="id251" class="indexterm"></a> our game in Unity, there are three languages that we can choose from: UnityScript, C#, and<a id="id252" class="indexterm"></a> Boo.</p><p>All of them are <a id="id253" class="indexterm"></a>relatively equal, and the choice in language depends on which one you are more familiar with, for example:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>If you come from a background programming in C++ and Java, then you will find C# more familiar</p></li><li style="list-style-type: disc"><p>If you have experience in PHP, BASIC, or JavaScript, then you will prefer UnityScript. UnityScript is Unity's version of the widely used scripting language JavaScript with several differences.</p></li><li style="list-style-type: disc"><p>If you are completely new to programming, then UnityScript is the easiest to pick up and learn quickly. You do not need to worry about types and casting as UnityScript handles it automatically for you.</p></li></ul></div><p>The following script represents code <a id="id254" class="indexterm"></a>written in UnityScript:</p><div class="informalexample"><pre class="programlisting">// Message with a link to an object.
+Debug.Log ("Hello", gameObject);
+
+// Message using rich text.
+Debug.Log("&lt;color=red&gt;Fatal error:&lt;/color&gt; AssetBundle not found");</pre></div><p>Beginners may find<a id="id255" class="indexterm"></a> C# more daunting, but it is more powerful, <a id="id256" class="indexterm"></a>better suited for games requiring networking features, and<a id="id257" class="indexterm"></a> better for performance.</p><p>The following script represents the preceding code written in C#:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ExampleClass : MonoBehaviour {
+    void Example() {
+        Debug.Log("Hello", gameObject);
+        Debug.Log("&lt;color=red&gt;Fatal error:&lt;/color&gt; AssetBundle not found");
+    }
+}</pre></div><p>Boo is not widely used. However, if you are familiar with the Python language syntax, then you may prefer to use Boo.</p><p>The following<a id="id258" class="indexterm"></a> script<a id="id259" class="indexterm"></a> represents the same preceding code<a id="id260" class="indexterm"></a> written<a id="id261" class="indexterm"></a> in Boo:</p><div class="informalexample"><pre class="programlisting">import UnityEngine
+import System.Collections
+
+public class ExampleClass(MonoBehaviour):
+
+  def Example() as void:
+    Debug.Log('Hello', gameObject)
+    Debug.Log('&lt;color=red&gt;Fatal error:&lt;/color&gt; AssetBundle not found')</pre></div><p>As this book is aimed <a id="id262" class="indexterm"></a>at beginners, we will make use of UnityScript in all our code<a id="id263" class="indexterm"></a> throughout the book.</p></div></div>

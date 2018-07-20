@@ -1,0 +1,131 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec67"></a>Creating the settings menu</h2></div></div><hr /></div><p>The final <a id="id570" class="indexterm"></a>part of our optimizations will be to add a menu so that the player can access and change the settings we created. Create a new C# script and name it <code class="literal">Config_GUI</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec130"></a>Preparing the code</h3></div></div></div><p>Now, we'll <a id="id571" class="indexterm"></a>set up our code by adding variables, a <code class="literal">start</code> function, and <a id="id572" class="indexterm"></a>an <code class="literal">OnGUI</code> function. Add this code to your script:</p><div class="informalexample"><pre class="programlisting">float volBG, volSFX, volATM, fov;
+bool aa, shadows, sync, optionsGUI, full;
+int res;
+string settings, audiotype;
+public Rect optionsRect = new Rect(100, 100, 500, 500);
+
+void Start()
+{
+  volBG = 0;
+  volATM = 0.3f;
+  volSFX = 0.8f;
+  fov = 90.00f;
+  aa = true;
+  fullscreen = true;
+  shadows = true;
+  optionsGUI = true;
+  LoadAll();
+}
+
+void OnGUI()
+{
+  if(optionsGUI)
+  {
+    optionsRect = GUI.Window(0, optionsRect, OptionsGUI, "Options");
+  }
+}</pre></div><p>All of the <a id="id573" class="indexterm"></a>variables that we created are placeholders <a id="id574" class="indexterm"></a>so that we aren't directly modifying the saved values that are in <code class="literal">PlayerPrefs</code>. The last variable, <code class="literal">Rect</code>, will be used to place and size our <code class="literal">Options</code> menu. In the <code class="literal">Start</code> function, we set the placeholders to some default values and call a <code class="literal">LoadAll</code> function. The <code class="literal">LoadAll</code> function will be created later; its purpose is to load our saved data in the placeholders. Finally, the <code class="literal">OnGUI</code> function will run the GUI window that will hold our <code class="literal">Options</code> menu.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec131"></a>Creating the GUI</h3></div></div></div><p>Now, we<a id="id575" class="indexterm"></a> will create the function that runs the GUI. We will <a id="id576" class="indexterm"></a>create labels, buttons, horizontal sliders, and toggle buttons. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">void OptionsGUI(int gui)
+{
+  GUILayout.BeginArea(new Rect(0, 50, 800, 800));
+    
+  GUI.Label(new Rect(25, 0, 100, 30), "Quality Settings");
+    
+  if(GUI.Button(new Rect(25, 20, 75, 20), "High"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(0, 3);
+  if(GUI.Button(new Rect(100, 20, 75, 20), "Medium"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(1, 3);
+  if(GUI.Button(new Rect(175, 20, 75, 20), "Low"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(2, 3);
+  if(GUI.Button(new Rect(250, 20, 75, 20), "Custom"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(3, 3);
+
+  GUI.Label(new Rect(25, 40, 100, 30), "Field of View");
+  fov = GUI.HorizontalSlider(new Rect(115, 45, 100, 30), fov, 60.00f, 120.00f);
+
+  GUI.Label(new Rect(25, 60, 100, 30), "Antialiasing");
+  aa = GUI.Toggle(new Rect(115, 60, 100, 30), aa, " On/Off");
+
+  GUI.Label(new Rect(25, 75, 100, 30), "Resolution");
+
+  if(GUI.Button(new Rect(25, 95, 75, 20), "1920x1080"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(0, 3);
+  if(GUI.Button(new Rect(100, 95, 75, 20), "1600x900"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(1, 3);
+  if(GUI.Button(new Rect(175, 95, 75, 20), "1280x1024"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(2, 3);
+  if(GUI.Button(new Rect(250, 95, 75, 20), "1280x800"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(3, 3);
+  if(GUI.Button(new Rect(325, 95, 75, 20), "640x400"))
+    GetComponent&lt;Video_Config&gt;().SetResolution(4, 3);
+    
+  GUI.Label(new Rect(25, 125, 100, 30), "FullScreen");
+  full = GUI.Toggle(new Rect(95, 125, 100, 30), fullscreen, " On/Off");</pre></div><p>For each <a id="id577" class="indexterm"></a>option that we have, we make a block of code <a id="id578" class="indexterm"></a>creating its label and buttons for the player to see and adjust. The label is being used as a title for the option, so the player knows what they are editing. The buttons are made available to change the setting when they are clicked. Changing the fullscreen option is done with a toggle button, which is a single button that can be turned on and off like a Boolean.</p><p>To adjust the field of view, we use a slider so that the player can scroll through many options. Using the slider adds more customization as you don't need to create buttons. A slider isn't ideal for all options, but it fits perfectly to adjust the field of view. Now let's continue to create the other options:</p><div class="informalexample"><pre class="programlisting">  GUI.Label(new Rect(25, 140, 100, 30), "Shadows");
+  shadows = GUI.Toggle(new Rect(95, 140, 100, 30), shadows, " On/Off");
+    
+  GUI.Label(new Rect(25, 160, 150, 30), "Music Volume");
+  volBG = GUI.HorizontalSlider(new Rect(25, 180, 100, 30), volBG, 0.00f, 1.00f);
+  GUI.Label(new Rect(25, 200, 150, 30), "SFX Volume");
+  volSFX = GUI.HorizontalSlider(new Rect(25, 220, 100, 30), volSFX, 0.00f, 1.00f);
+  GUI.Label(new Rect(25, 240, 150, 30), "Atmospheric Volume");
+  volATM = GUI.HorizontalSlider(new Rect(25, 260, 100, 30), volATM, 0.00f, 1.00f);
+    
+  GUI.Label(new Rect(25, 270, 100, 30), "Speaker Type");
+    
+  if(GUI.Button(new Rect(25, 290, 75, 20), "Mono"))
+    GetComponent&lt;Audio_Config&gt;().SetAudioType("Mono");
+  if(GUI.Button(new Rect(100, 290, 75, 20), "Stereo"))
+    GetComponent&lt;Audio_Config&gt;().SetAudioType("Stereo");
+  if(GUI.Button(new Rect(175, 290, 75, 20), "Surround"))
+    GetComponent&lt;Audio_Config&gt;().SetAudioType("Surround");
+  if(GUI.Button(new Rect(250, 290, 100, 20), "Surround 5.1"))
+    GetComponent&lt;Audio_Config&gt;().SetAudioType("Surround 5.1");
+  if(GUI.Button(new Rect(350, 290, 100, 20), "Surround 7.1"))
+    GetComponent&lt;Audio_Config&gt;().SetAudioType("Surround 7.1");
+    
+  if(GUI.Button(new Rect(25, 350, 100, 20), "Save Settings"))
+    SaveAll();
+  GUI.Button(new Rect(150, 350, 100, 20), "Back");
+
+  GUILayout.EndArea();
+}</pre></div><p>There is <a id="id579" class="indexterm"></a>a lot going on in this function, but it's all GUI code. To <a id="id580" class="indexterm"></a>change the <code class="literal">Quality Settings</code>, <code class="literal">Resolution</code>, and <code class="literal">Speaker Type</code> parameters, we use buttons. When clicked, the buttons will call their associating functions for either the video or audio configuration scripts that we previously created.</p><p>To change the <code class="literal">Field of View</code>, <code class="literal">Background Music volume</code>, <code class="literal">Sound Effects volume</code>, and <code class="literal">Atmospheric volume</code> parameters, we use a horizontal slider to edit their values. For the <code class="literal">Anti-aliasing</code>, <code class="literal">Fullscreen</code>, and <code class="literal">Shadows</code> options, we use a toggle or radio button to switch them on or off.</p><p>Finally, we create a button that will save the settings, and another button to go back. The back button can be left open for now since it can be used to go back to the main menu or a pause menu.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec132"></a>Saving all the values</h3></div></div></div><p>To save<a id="id581" class="indexterm"></a> our settings, we need to create a function for it; let's do<a id="id582" class="indexterm"></a> that now. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">void SaveAll()
+{
+  PlayerPrefs.SetString("Custom_Settings", settings);
+
+  if(shadows)
+    PlayerPrefs.SetInt("Custom_Shadows", 1);
+  else
+    PlayerPrefs.SetInt("Custom_Shadows", 0);
+
+  PlayerPrefs.SetFloat("Custom_FOV", fov);
+
+  PlayerPrefs.SetInt("Custom_Resolution", res);
+
+  PlayerPrefs.SetInt("Custom_Full", Convert.ToInt32(fullscreen));
+
+  if(aa)
+    PlayerPrefs.SetInt("Custom_AA", 1);
+  else
+    PlayerPrefs.SetInt("Custom_AA", 0);
+
+  if(sync)
+    PlayerPrefs.SetInt("Custom_Sync", 1);
+  else
+    PlayerPrefs.SetInt("Custom_Sync", 0);
+
+  PlayerPrefs.SetFloat("atmVolume", volBG);
+  PlayerPrefs.SetFloat("sfxVolume", volSFX);
+  PlayerPrefs.SetFloat("bgVolume", volATM);
+  PlayerPrefs.SetString("audioType", audiotype);
+}</pre></div><p>What this function <a id="id583" class="indexterm"></a>will do is use the <code class="literal">PlayerPrefs</code> function to save all of our values. To save the settings, we use the placeholder variables that we created earlier.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec133"></a>Loading all the values</h3></div></div></div><p>The last <a id="id584" class="indexterm"></a>feature of the <code class="literal">Config_GUI</code> script will be to load <a id="id585" class="indexterm"></a>all of our saved data. Add this last function to your script:</p><div class="informalexample"><pre class="programlisting">void LoadAll()
+{
+  volBG = PlayerPrefs.GetFloat("bgVolume");
+  volSFX = PlayerPrefs.GetFloat("sfxVolume");
+  volATM = PlayerPrefs.GetFloat("atmVolume");
+  fov = PlayerPrefs.GetFloat("Custom_FOV");
+  aa = Convert.ToBoolean(PlayerPrefs.GetInt("Custom_AA"));
+  shadows = Convert.ToBoolean(PlayerPrefs.GetInt("Custom_Shadows"));
+  sync = Convert.ToBoolean(PlayerPrefs.GetInt("Custom_Sync"));
+  fullscreen = Convert.ToBoolean(PlayerPrefs.GetInt("Custom_Full"));
+  res = PlayerPrefs.GetInt("Custom_Resolution");
+  settings = PlayerPrefs.GetString("Custom_Settings");
+  audiotype = PlayerPrefs.GetString("audioType");
+}</pre></div><p>For each of the placeholder variables that we created, we load the saved data for it. To get the saved data, we use the PlayerPrefs get functionality to load the values.</p></div></div>

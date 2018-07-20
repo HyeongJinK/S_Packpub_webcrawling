@@ -1,0 +1,55 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec66"></a>Making audio configurations</h2></div></div><hr /></div><p>For <a id="id559" class="indexterm"></a>audio configurations, we'll set the volumes for background music, sound effects, and the atmospheric sounds. We will also be setting the speaker mode for the audio output. Let's start off by creating a new C# script and naming it <code class="literal">Audio_Config</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec127"></a>Setting the values</h3></div></div></div><p>The first <a id="id560" class="indexterm"></a>function that we'll be creating will be used to <a id="id561" class="indexterm"></a>set the default values for our configurations. Add this function to the script:</p><div class="informalexample"><pre class="programlisting">public void SetDefaults()
+{
+  SetBG(1.00f);
+  SetSFX(0.80f);
+  SetAtm(0.60f);
+  SetAudioType("Stereo");
+}</pre></div><p>In this function, we call the functions that we'll be creating next to set the default values. For the first three functions, we set the volumes for various values. The last function sets the speaker mode to a stereo default.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec128"></a>Configuring the volumes</h3></div></div></div><p>Now, we'll<a id="id562" class="indexterm"></a> be adding the functionality<a id="id563" class="indexterm"></a> to change the volumes. Add these functions to your script:</p><div class="informalexample"><pre class="programlisting">public void SetBG(float bgVolume)
+{
+  AudioSource[] audios = GameObject.FindObjectsOfType&lt;AudioSource&gt;();
+    
+  foreach(AudioSource source in audios)
+  {
+    source.volume = bgVolume;
+  }
+}
+  
+public void SetSFX(float sfxVolume)
+{
+  AudioSource[] audios = GameObject.FindObjectsOfType&lt;AudioSource&gt;();
+    
+  foreach(AudioSource source in audios)
+  {
+    source.volume = sfxVolume;
+  }
+}
+  
+public void SetAtm(float atmVolume)
+{
+  AudioSource[] audios = GameObject.FindObjectsOfType&lt;AudioSource&gt;();
+    
+  foreach(AudioSource source in audios)
+  {
+    source.volume = atmVolume;
+  }
+}</pre></div><p>In each <a id="id564" class="indexterm"></a>of the preceding functions, we <a id="id565" class="indexterm"></a>pass a <code class="literal">float</code> variable, which will be the new volume. Next, we create an array of audio sources, which we will grab from the scene. Finally, for each of the audio sources, we assign its volume to the new volume value of our passed variable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec129"></a>Setting the speaker mode</h3></div></div></div><p>Next, we'll <a id="id566" class="indexterm"></a>set the speaker mode for the audio <a id="id567" class="indexterm"></a>output. This will affect how the player will hear your audio. A player who uses headphones might want to use surround sound. A player who uses speakers to hear your game may want to use the stereo sound instead. Add this function to the script:</p><div class="informalexample"><pre class="programlisting">public void SetAudioType(string SpeakerMode)
+{
+  switch(SpeakerMode)
+  {
+  case "Mono":
+    AudioSettings.speakerMode = AudioSpeakerMode.Mono;
+    break;
+  case "Stereo":
+    AudioSettings.speakerMode = AudioSpeakerMode.Stereo;
+    break;
+  case "Surround":
+    AudioSettings.speakerMode = AudioSpeakerMode.Surround;
+    break;
+  case "Surround 5.1":
+    AudioSettings.speakerMode = AudioSpeakerMode.Mode5point1;
+    break;
+  case "Surround 7.1":
+    AudioSettings.speakerMode = AudioSpeakerMode.Mode7point1;
+    break;
+  }
+}</pre></div><p>For this<a id="id568" class="indexterm"></a> function, we pass a string, which will<a id="id569" class="indexterm"></a> be used in a <code class="literal">switch</code> statement to change the speaker mode. In this <code class="literal">switch</code> statement, we check for each of the speaker modes that we want to support for our game. To change the speaker mode, we assign the <code class="literal">speakerMode</code> variable from <code class="literal">AudioSettings</code> and assign it to the associating speaker mode.</p></div></div>

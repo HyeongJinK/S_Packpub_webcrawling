@@ -1,0 +1,172 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec74"></a>Entity rewinding</h2></div></div><hr /></div><p>In order to <a id="id316" class="indexterm"></a>solve this, we need to store the state of entities at every network update. When the entity needs to be rewound, we find the two states on either end of the target past time, and interpolate between them. This technique actually shares many similarities with the entity interpolation code we wrote in the last chapter, and in some places you could potentially reuse some of the same code.</p><p>So, in our network player class, we'll create a new struct to store the network state:</p><div class="informalexample"><pre class="programlisting">private struct networkState
+{
+  public Vector3 Position;
+  public Vector3 Rotation;
+  public Vector3 CamRotation;
+  public double Timestamp;
+}</pre></div><p>We'll keep a buffer of these states, using an array just as in the last chapter:</p><div class="informalexample"><pre class="programlisting">private networkState[] stateBuffer = new networkState[20];
+private int stateCount = 0;</pre></div><p>To store a state, we shift the states and insert the state at <code class="literal">0</code>, incrementing the state count:</p><div class="informalexample"><pre class="programlisting">void bufferState( networkState state )
+{
+  // shift states
+  // the state at index 0 moves to index 1, 1 moves to 2, etc
+  // the state at index 20 is deleted
+  for( int i = stateBuffer.Length – 1; i &gt; 0; i-- )
+  {
+    stateBuffer[i] = stateBuffer[i-1];
+  }
+
+  // insert newest state at 0
+  stateBuffer[0] = state;
+
+  // increment state count, up to a maximum of 20
+  stateCount = Mathf.Max( stateBuffer.Length, stateCount + 1 );
+}</pre></div><p>We'll store <a id="id317" class="indexterm"></a>one of these states whenever we receive a state update over the network:</p><div class="informalexample"><pre class="programlisting">void OnSerializeNetworkView( BitStream stream, NetworkMessageInfo info )
+  {
+    if( stream.isWriting )
+    {
+      // serialize position and rotation
+      Vector3 position = transform.position;
+      Quaternion rotation = transform.rotation;
+      Quaternion camRotation = camTransform.localRotation;
+      
+      stream.Serialize( ref position );
+      stream.Serialize( ref rotation );
+      stream.Serialize( ref camRotation );
+    }
+    else
+    {
+      // deserialize position and rotation
+      Vector3 position = Vector3.zero;
+      Quaternion rotation = Quaternion.identity;
+      Quaternion camRotation = Quaternion.identity;
+
+      stream.Serialize( ref position );
+      stream.Serialize( ref rotation );
+      stream.Serialize( ref camRotation );
+
+      // store values to be interpolated towards
+      lastReceivedPos = position;
+      lastReceivedRot = rotation;
+      lastReceivedCamRot = camRotation;
+
+<span class="strong"><strong>      // buffer network state</strong></span>
+<span class="strong"><strong>      networkState state = new networkState();</strong></span>
+<span class="strong"><strong>      state.Position = position;</strong></span>
+<span class="strong"><strong>      state.Rotation = rotation;</strong></span>
+<span class="strong"><strong>      state.CamRotation = camRotation;</strong></span>
+<span class="strong"><strong>      state.Timestamp = info.timestamp;</strong></span>
+
+<span class="strong"><strong>      bufferState( state );</strong></span>
+    }
+  }</pre></div><p>Next, we'll create a couple of utility functions: a <code class="literal">Rewind</code> function, which temporarily stores the current<a id="id318" class="indexterm"></a> state and then attempts to rewind to a past state, and a <code class="literal">Restore</code> function, which restores the state which was stored in Rewind:</p><div class="informalexample"><pre class="programlisting">private Vector3 lastPosition;
+private Quaternion lastRotation;
+private Quaternion lastCamRotation;
+public void Rewind( double timestamp )
+{
+  // we're going to rewind to a given position in time, in general this would be the timestamp value of a network message.
+
+  // first, temporarily store the current state. We need this for when we "undo" the rewind.
+  lastPosition = transform.position;
+  lastRotation = transform.rotation;
+  lastCamRotation = camTransform.localRotation;  
+
+  // check if we have enough states to perform a proper rewind
+  // if not, return
+  if( stateCount &lt;= 1 ) return;
+
+  // check if we have any packets older than the timestamp
+  // if not, clamp the timestamp to whatever range we have.
+  if( stateBuffer[stateCount-1].Timestamp &gt; timestamp ) timestamp = stateBuffer[stateCount-1].Timestamp;
+
+  // network states on either side of the target timestamp
+  networkState lhs = new networkState(), rhs = lhs;
+
+  // find the first state with timestamp &lt;= target rewind time, as well as the very next state
+  for( int i = 0; i &lt; stateCount; i++ )
+  {
+    // is this state older than the given timestamp?
+    if( stateBuffer[i].Timestamp &lt;= timestamp )
+    {
+      // if the newest state we have is already older than the target timestamp, we just don't have enough information to provide a proper rewind, we'll just return instead.
+      if( i == 0 )
+        return;
+
+
+      // store the state, and the next, which we will interpolate between
+      lhs = stateBuffer[i];
+      rhs = stateBuffer[i-1];
+      break;
+    }
+  }
+
+  // calculate the total time difference between each packet
+  // we'll use this to calculate a normalized time value between 0 and 1 for interpolation.
+  double interpLen = rhs.Timestamp – lhs.Timestamp;
+
+  // calculate the time difference between the first packet and the target timestamp;
+  double diff = timestamp – lhs.Timestamp;
+
+  // diff will range between 0 (if it is equal to the first packet's timestamp) and 'interpLen' (if it is equal to the second packet's timestamp). Dividing it by 'interpLen' will produce a value between 0 and 1
+  double t = diff / interpLen;
+
+  // interpolate between both packets
+  transform.position = Vector3.Lerp( lhs.Position, rhs.Position, t );
+  transform.rotation = Quaternion.Slerp( lhs.Rotation, rhs.Rotation, t );
+  camTransform.localRotation = Quaternion.Slerp( lhs.CamRotation, rhs.CamRotation, t );
+}
+
+void Restore()
+{
+  // restore the player to the state which was stored in Rewind.
+  transform.position = lastPosition;
+  transform.rotation = lastRotation;
+  camTransform.localRotation = lastCamRotation;
+}</pre></div><p>So now we can<a id="id319" class="indexterm"></a> rewind and restore a single entity. However, we need to perform this on all entities at once.</p><p>To do this, we'll create a static <code class="literal">List</code> that holds all spawned players:</p><div class="informalexample"><pre class="programlisting">//a list of all currently spawned players
+private static List&lt;NetworkPlayer&gt; players = new List&lt;NetworkPlayer&gt;();</pre></div><p>In <code class="literal">Awake</code>, we'll add the entity to the list, and in <code class="literal">OnDestroy</code> we'll remove it:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+  // register the player with the static list
+  players.Add( this );
+}
+
+void OnDestroy()
+{
+  // remove the player from the static list
+  players.Remove( this );
+}</pre></div><p>And now, we can create two static versions of our <code class="literal">Rewind</code> and <code class="literal">Restore</code> methods which perform this action on all players:</p><div class="informalexample"><pre class="programlisting">public static void RewindAll( double time )
+{
+  // iterate over each player, calling the Rewind function to rewind that player to a given point in time.
+  foreach( NetworkPlayer player in players )
+  {
+    player.Rewind( time );
+  }
+}
+
+public static void RestoreAll()
+{
+  // iterate over each player, calling the Restore function to restore that player to the current network state.
+  foreach( NetworkPlayer player in players )
+  {
+    player.Restore();
+  }
+}</pre></div><p>Now we can rewind and restore all network players at once.</p><p>Finally, we'll modify our weapon script to perform this rewind before firing a shot:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>[RPC]</strong></span>
+void Fire( NetworkMessageInfo info )
+{
+  <span class="strong"><strong>// this code should never execute on any machine other than the server/host</strong></span>
+<span class="strong"><strong>  if( !Network.isServer )</strong></span>
+<span class="strong"><strong>    return;</strong></span>
+
+<span class="strong"><strong>  // first, rewind all entities to where they were when this message was sent</strong></span>
+<span class="strong"><strong>  NetworkPlayer.RewindAll( info.timestamp );</strong></span>
+
+  // perform the hitscan
+  RaycastHit hit;
+  if( Physics.Raycast( transform.position, transform.forward, out hit, 100f, HitLayers ) )
+  {
+    // let a script on the object handle taking damage
+    hit.collider.SendMessage( "TakeDamage", Damage, SendMessageOptions.DontRequireReceiver );
+  }
+
+  <span class="strong"><strong>// restore all entities to their current state</strong></span>
+<span class="strong"><strong>  NetworkPlayer.RestoreAll();</strong></span>
+}</pre></div><p>At this point,<a id="id320" class="indexterm"></a> you should now have a fully functioning solution for server-side hit detection. This can be easily combined with the techniques discussed in the last chapter for reliable, hack-free multiplayer game.</p></div>

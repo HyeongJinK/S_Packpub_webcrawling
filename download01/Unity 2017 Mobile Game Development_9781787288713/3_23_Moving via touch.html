@@ -1,0 +1,91 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec21"></a>Moving via touch</h2></div></div><hr /></div><p>This works well enough for what we're doing right now, but I'm assuming that you'll want to know how to use the mobile device's own way of moving, so we will go ahead and learn how to replicate the same functionality using touch instead.</p><p>Unity's Input engine has a property called <code class="literal">Input.touches</code>, which is an array of <code class="literal">Touch</code> objects. The <code class="literal">Touch</code> struct contains information on the touch that occurred, having information such as the amount of pressure on the touch and how many times you tapped the screen. It also contains the position property--like <code class="literal">Input.mousePosition</code>--that will tell you what position the tap occurred at, in pixels.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note29"></a>Note</h3><p>For more info on the Touch struct, check out <span><a class="ulink" href="https://docs.unity3d.com/ScriptReference/Touch.html" target="_blank">https://docs.unity3d.com/ScriptReference/Touch.html</a>.</span></p></div><p>To adjust our preceding code to support touch instead of mouse inputs, our code could look something like the following:</p><pre class="programlisting">//Check if Input has registered more than zero touches
+if (Input.touchCount &gt; 0)
+{
+   //Store the first touch detected.
+   Touch myTouch = Input.touches[0];
+
+   // Converts to a 0 to 1 scale
+   var worldPos = Camera.main.ScreenToViewportPoint(myTouch.position);
+
+   float xMove = 0;
+
+   // If we press the right side of the screen
+   if (worldPos.x &lt; 0.5f)
+   {
+      xMove = -1;
+   }
+   else
+   {
+      // Otherwise we're on the left
+      xMove = 1;
+   }
+
+   // replace horizontalSpeed with our own value
+   horiztonalSpeed = xMove * dodgeSpeed;
+
+}</pre><p>Now, you may note that this code looks very similar to what we've written in the preceding section. With that in mind, instead of copying and pasting the appropriate code twice and making changes like a number of starting programmers would do, we can instead take the similarities and make a function. For the differences, we can use parameters to change the value instead; consider the following parameters:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><span>Keeping</span> that in mind, let's add the following function to the <code class="literal">PlayerBehaviour</code> class:</li></ol></div><pre class="programlisting">/// &lt;summary&gt; 
+/// Will figure out where to move the player horizontally 
+/// &lt;/summary&gt; 
+/// &lt;param name="pixelPos"&gt;The position the player has 
+/// touched/clicked on&lt;/param&gt; 
+/// &lt;returns&gt;The direction to move in the x axis&lt;/returns&gt; 
+float CalculateMovement(Vector3 pixelPos)
+{
+    // Converts to a 0 to 1 scale 
+    var worldPos = Camera.main.ScreenToViewportPoint(pixelPos);
+
+    float xMove = 0;
+
+    // If we press the right side of the screen 
+    if (worldPos.x &lt; 0.5f)
+    {
+        xMove = -1;
+    }
+    else
+    {
+        // Otherwise we're on the left 
+        xMove = 1;
+    }
+
+    // replace horizontalSpeed with our own value 
+    return xMove * dodgeSpeed;
+}</pre><p>Now, instead of using <code class="literal">Input.mousePosition</code> or the touch position, we instead use a parameter for the function. Also, unlike previous functions we've written, this one will actually use a return value; in this case, it will give us a floating point value. We will use this value in the <code class="literal">Update</code> to set <code class="literal">horiztonalSpeed</code> to a new value when this function is called. Now, we can call it appropriately.</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Now, update the <code class="literal">Update</code> function, as follows:</li></ol></div><pre class="programlisting">/// &lt;summary&gt; 
+/// Update is called once per frame 
+/// &lt;/summary&gt; 
+void Update () 
+{ 
+    // Movement in the x axis 
+    float horizontalSpeed = 0; 
+
+    //Check if we are running either in the Unity editor or in a   
+    //standalone build. 
+    #if UNITY_STANDALONE || UNITY_WEBPLAYER 
+
+    // Check if we're moving to the side 
+    horizontalSpeed = Input.GetAxis("Horizontal") *  
+                            dodgeSpeed; 
+
+    // If the mouse is held down (or the screen is tapped  
+    // on Mobile) 
+    if (Input.GetMouseButton(0)) 
+    { 
+        horizontalSpeed = CalculateMovement(Input.mousePosition); 
+    } 
+
+    //Check if we are running on a mobile device 
+    #elif UNITY_IOS || UNITY_ANDROID 
+
+    //Check if Input has registered more than zero touches 
+    if (Input.touchCount &gt; 0) 
+    { 
+        //Store the first touch detected. 
+        Touch myTouch = Input.touches[0]; 
+        horizontalSpeed = CalculateMovement(myTouch.position); 
+
+    } 
+
+    #endif 
+
+    // Apply our auto-moving and movement forces 
+    rb.AddForce(horizontalSpeed, 0, rollSpeed); 
+} </pre><p>In the preceding example, I am using a <code class="literal">#if</code> directive based on the platform selected. Unity will automatically create a <code class="literal">#define</code> depending on what has been selected as the platform we are deploying for. What this <code class="literal">#if</code> does, along with <code class="literal">#elif</code> and <code class="literal">#endif</code>, is allow us to include or exclude code from our project based on these symbols.</p><p>In Visual Studio, you may note that if you're building for iOS or Android, the code within the <code class="literal">UNITY_STANDALONE</code> section is grayed out, meaning that it won't be called currently. However, if we change our platform, the appropriate code will become used, depending on the platform that we would like to create for.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note30"></a>Note</h3><p>To take a look at all of the other platform-dependent <code class="literal">#defines</code>, check out <span><a class="ulink" href="https://docs.unity3d.com/Manual/PlatformDependentCompilation.html" target="_blank">https://docs.unity3d.com/Manual/PlatformDependentCompilation.html</a>.</span></p></div><p>This will allow us to specify code for different versions of our project, which is vital when dealing with multiplatform development.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip31"></a>Note</h3><p>In addition to Unity's built-in <code class="literal">#defines</code>, you can create your own by going to <strong class="userinput"><code>Edit</code></strong> | <strong class="userinput"><code>Project Settings</code></strong> | <strong class="userinput"><code>Player</code></strong>, scrolling down to <strong class="userinput"><code>Other Settings</code></strong> in the <strong class="userinput"><code>Inspector</code></strong> window, and changing the <strong class="userinput"><code>Scripting Define Symbols</code></strong>. This can be great for targeting specific devices or for showing certain pieces of debug information, in addition to a number of other things.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Save the script and dive back into Unity. Upon exporting your game to your Android device, you should note that the controls now work correctly using our newly created touch code.</li></ol></div></div>

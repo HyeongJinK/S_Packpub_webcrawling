@@ -1,0 +1,68 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec12"></a>Shooting behavior</h2></div></div><hr /></div><p>The next <a id="id35" class="indexterm"></a>thing we will do is give our player the ability to shoot:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open up the <code class="literal">PlayerBehaviour</code> script. In the top section where the other variables are present, we need to add some additional ones that we'll use:</p><div class="informalexample"><pre class="programlisting">// The laser we will be shooting
+public Transform laser;
+
+// How far from the center of the ship should the laser be
+public float laserDistance = .2f;
+
+// How much time (in seconds) we should wait before 
+// we can fire again
+public   float   timeBetweenFires = .3f;
+
+// If value is less than or equal 0, we can fire
+private float timeTilNextFire = 0.0f;
+
+// The buttons that we can use to shoot lasers
+public List&lt;KeyCode&gt; shootButton;</pre></div><p>One thing you may have noticed is that we have a <code class="literal">laser</code> variable that is of the type <code class="literal">Transform</code>. This is the laser we'll fire, which we will create shortly.</p></li><li><p>Inside our <code class="literal">Update</code> function, we will need to add some additional code, which is as follows:</p><div class="informalexample"><pre class="programlisting">// a foreach loop will go through each item inside of 
+// shootButton and do whatever we placed in {}s using the 
+// element variable to hold the item
+foreach (KeyCode element in shootButton)
+{
+  if(Input.GetKey(element) &amp;&amp; timeTilNextFire &lt; 0)
+  {
+    timeTilNextFire = timeBetweenFires;
+    ShootLaser();
+    break;
+  }
+}
+
+timeTilNextFire -= Time.deltaTime;</pre></div><p>In a manner very similar to what we did before with the player movement, we check each of the keys we allow the player to shoot with (such as the spacebar and <span class="emphasis"><em>Enter</em></span> keys). If they press any of these keys and can fire again, then we will reset our timer and shoot a laser. However, we haven't made the <code class="literal">ShootLaser</code> function. Let's do that now.</p></li><li><p>Underneath<a id="id36" class="indexterm"></a> the functions, add the following function:</p><div class="informalexample"><pre class="programlisting">// Creates a laser and gives it an initial position in front 
+// of the ship.    
+void ShootLaser()
+{
+  // calculate the position right in front of the ship's
+  // position lazerDistance units away
+  float posX = this.transform.position.x + 
+               (Mathf.Cos((transform.localEulerAngles.z - 90) * Mathf.Deg2Rad) * -laserDistance);
+  float posY = this.transform.position.y + (Mathf.Sin((transform.localEulerAngles.z - 90) * Mathf.Deg2Rad) * -laserDistance);
+  
+  Instantiate(laser, new Vector3 (posX, posY, 0), this.transform.rotation);
+}</pre></div></li><li><p>Save your file, and go back into Unity. You'll now see a number of additional variables that we can now set. Be sure to set the <span class="strong"><strong>Shoot Button</strong></span> variable in the same manner that we did the movement buttons, changing the <span class="strong"><strong>Size</strong></span> to <code class="literal">2</code> and setting <span class="strong"><strong>Element 0</strong></span> to <span class="strong"><strong>Mouse0</strong></span> and <span class="strong"><strong>Element 1</strong></span> to <span class="strong"><strong>Space</strong></span>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note12"></a>Note</h3><p>If, for some reason, your <span class="strong"><strong>Inspector</strong></span> window doesn't update, save your project, and restart Unity. Upon reset, it should be updated.</p></div></li><li><p>Next, we will need to create our laser. Go back into our <code class="literal">Assets</code> folder from the example code, and move the <code class="literal">laser.png</code> file into our <span class="strong"><strong>Project</strong></span> tab's <code class="literal">Sprites</code> folder.</p></li><li><p>Following that, drag-and-drop it into your scene from the <span class="strong"><strong>Scene</strong></span> tab to place it in the level.</p></li><li><p>Right-click the <code class="literal">Scripts</code> folder you created earlier, click on <span class="strong"><strong>Create</strong></span>, and select the <span class="strong"><strong>C# Script</strong></span> label. Call this new script <code class="literal">LaserBehaviour</code>. Go into <code class="literal">MonoDevelop</code>, and use the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class LaserBehaviour : MonoBehaviour 
+{
+  // How long the laser will live
+  public float lifetime = 2.0f;
+
+  // How fast will the laser move
+  public float speed = 5.0f;
+
+
+  // How much damage will this laser do if we hit an enemy
+  public int damage = 1;
+
+  // Use this for initialization
+  void Start () 
+  {
+    // The game object that contains this component will be
+    // destroyed after lifetime seconds have passed
+    Destroy(gameObject, lifetime);
+  }
+  
+  // Update is called once per frame
+  void Update () 
+  {
+    transform.Translate(Vector3.up * Time.deltaTime * speed);
+  }
+}</pre></div></li><li><p>Attach <code class="literal">LaserBehaviour</code> to the laser object. Finally, add a <span class="strong"><strong>Box Collider</strong></span> component <a id="id37" class="indexterm"></a>by first selecting the laser object and then going to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics 2D</strong></span> | <span class="strong"><strong>Box Collider 2D</strong></span>. The collision box, by default, will be the size of the image, but I want to shrink it to fit what is visually seen of it. To do that, we will change the <span class="strong"><strong>Size</strong></span> attribute's <span class="strong"><strong>X</strong></span> property to <code class="literal">.06</code> and <span class="strong"><strong>Y</strong></span> to <code class="literal">.5</code>.</p><p>Now, the laser will move in the direction that it's facing and die after a period of 2 seconds! Next, let's make it so that the player can shoot them.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> tab, go to the <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Prefabs</strong></span> folder, and drag-and-drop the laser object from our <span class="strong"><strong>Hierarchy</strong></span> tab into it. You'll notice that the object <span class="strong"><strong>Hierarchy</strong></span> will turn blue to<a id="id38" class="indexterm"></a> show that it is a prefab.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note13"></a>Note</h3><p>
+<span class="strong"><strong>Prefabs</strong></span><a id="id39" class="indexterm"></a> or prefabricated objects are the objects that we set aside to make copies during runtime, such as our bullets and eventually enemies that we'll spawn into the world, and we can create as many as we want. When you add a prefab to a scene, you create an instance of it. All of these instances are clones of the object located in our <code class="literal">Assets</code>. Whenever you change something in the prefab located in our <code class="literal">Prefab</code> folder, those changes are applied to all the objects that are already inside of your scene. For example, if you add a new component to <code class="literal">Prefab</code>, all the other objects we have in the scene will instantly contain the component as well. We can also apply any of the ones in our scene to be the blueprint for the others as well, which we will do later on. However, it is also possible to change the properties of a single instance while keeping the link intact. Simply change any property of a prefab instance inside your scene, and that particular value will become bolded to show that the value is overridden, and they will not be affected by changes in the source prefab. This allows you to modify prefab instances to make them different (unique) from their source prefabs without breaking the prefab link.</p></div><p>Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_01_15.jpg" /></div></li><li><p>Now, delete the <code class="literal">laser</code> object from our scene, and then go to the <code class="literal">playerShip</code> object. Drag-and-drop the <code class="literal">laser</code> prefab into the <span class="strong"><strong>Laser</strong></span> property of the <code class="literal">PlayerBehavior</code> component.</p></li><li><p>Finally, add a circle collider to our ship by going to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics 2D</strong></span> | <span class="strong"><strong>Circle Collider 2D.</strong></span> Change the <span class="strong"><strong>Radius</strong></span> property to <code class="literal">.3</code>.</p></li></ol></div><p>Generally, in <a id="id40" class="indexterm"></a>games, we want to be as efficient as possible toward calculations. Polygon collision is the most accurate collision, but it is much slower than using a box or a circle. In this case, I wanted to use a circle, because not only is it more efficient but it also allows the player some leeway in how close they can get to enemies without being hurt. Players will always think it's their skill if they get away, but if the collider is too big they will think the game is broken, which we want to avoid.</p><p>Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_01_16.jpg" /></div><p>Now, our ship can<a id="id41" class="indexterm"></a> shoot in the direction that the mouse is currently facing.</p></div>

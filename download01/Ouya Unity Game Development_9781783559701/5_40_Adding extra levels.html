@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec42"></a>Adding extra levels</h2></div></div><hr /></div><p>Now that the <a id="id225" class="indexterm"></a>game is looking better, we can add some more <a id="id226" class="indexterm"></a>content in to it. Luckily the jagged array we created earlier easily supports adding more levels. Levels can be any size, even with variable column heights per row. Double-click on the <code class="literal">Sokoban</code> script in the <span class="strong"><strong>Project</strong></span> panel and switch over to MonoDevelop. Find <code class="literal">levels array</code> and modify it to be as follows:</p><div class="informalexample"><pre class="programlisting">  // Create the top array, this will store the level arrays
+  int[][][] levels = 
+  {
+    // Create the level array, this will store the row array
+    new int [][] {
+    // Create all row array, these will store column data
+    new int[] {1,1,1,1,1,1,1,1},
+    new int[] {1,0,0,1,0,0,0,1},
+    new int[] {1,0,3,3,0,3,0,1},
+    new int[] {1,0,0,1,0,1,0,1},
+    new int[] {1,0,0,1,3,1,0,1},
+    new int[] {1,0,0,2,2,2,2,1},
+    new int[] {1,0,0,1,0,4,1,1},
+    new int[] {1,1,1,1,1,1,1,1}
+  },
+  // Create a new level
+  new int [][] {
+    new int[] {1,1,1,1,0,0,0,0},
+    new int[] {1,0,0,1,1,1,1,1},
+    new int[] {1,0,2,0,0,3,0,1},
+    new int[] {1,0,3,0,0,2,4,1},
+    new int[] {1,1,1,0,0,1,1,1},
+    new int[] {0,0,1,1,1,1,0,0}
+  },
+  // Create a new level
+    new int [][] {
+    new int[] {1,1,1,1,1,1,1,1},
+    new int[] {1,4,0,1,2,2,2,1},
+    new int[] {1,0,0,3,3,0,0,1},
+    new int[] {1,0,3,0,0,0,1,1},
+    new int[] {1,0,0,1,1,1,1},
+    new int[] {1,0,0,1},
+    new int[] {1,1,1,1}
+  }
+};</pre></div><p>The preceding<a id="id227" class="indexterm"></a> code has given us two extra levels, bringing <a id="id228" class="indexterm"></a>the total to three. The layout of the arrays is still very visual and you can easily see the level layout just by looking at the arrays.</p><p>Our <code class="literal">BuildLevel, CheckIfPlayerIsAttempingToMove and MovePlayer</code> methods only work on the first level at the moment, let's update them to always use the users current level. We'll have to store which level the player is currently on and use that level at all times, incrementing the value when a level is finished. As we'll want this value to persist between plays, we'll be using the <code class="literal">PlayerPrefs</code> object that Unity provides for saving player data. Before we get the value, we need to check that it is actually set and exists; otherwise we could see some odd results.</p><p>Start by declaring our variable for use at the top of the <code class="literal">Sokoban</code> script as follows:</p><div class="informalexample"><pre class="programlisting">int currentLevel;</pre></div><p>Next, we'll need to get the value of the current level from the <code class="literal">PlayerPrefs</code> object and store it in the <code class="literal">Awake</code> method. Add the following code to the top of your <code class="literal">Awake</code> method:</p><div class="informalexample"><pre class="programlisting">if (PlayerPrefs.HasKey("currentLevel")) {
+  currentLevel = PlayerPrefs.GetInt("currentLevel");
+} else {
+  currentLevel = 0;
+  PlayerPrefs.SetInt("currentLevel", currentLevel);
+}</pre></div><p>Here we are checking if we have a value already stored in the <code class="literal">PlayerPrefs</code> object, if we do then use it, if we don't then set <code class="literal">currentLevel</code> to <code class="literal">0</code>, and then save it to the <code class="literal">PlayerPrefs</code> object. To fix the methods mentioned earlier, click on <span class="strong"><strong>Search</strong></span> | <span class="strong"><strong>Replace</strong></span>. A new<a id="id229" class="indexterm"></a> window will appear. Type <code class="literal">levels[0]</code> in the top box <a id="id230" class="indexterm"></a>and <code class="literal">levels[currentLevel]</code> in the bottom one, and then click on <span class="strong"><strong>All</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781783559701/graphics/9701OS_05_03.jpg" /></div></div>

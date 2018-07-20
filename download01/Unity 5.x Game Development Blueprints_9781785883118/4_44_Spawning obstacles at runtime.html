@@ -1,0 +1,20 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec47"></a>Spawning obstacles at runtime</h2></div></div><hr /></div><p>Now that we have<a id="id237" class="indexterm"></a> a simple obstacle, we can now spawn a number of them through code using this object as a reference. To make this easier, let's make the obstacle a prefab:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to the <span class="strong"><strong>Project</strong></span> tab and open up the <code class="literal">Prefabs</code> folder. Then, from the <span class="strong"><strong>Hierarchy</strong></span> tab, drag and drop the <code class="literal">Obstacle</code> object into the <span class="strong"><strong>Project</strong></span> tab's <code class="literal">Prefabs</code> folder. The obstacle object should turn the object.</p></li><li><p>Once this is done, select the <code class="literal">Obstacle</code> objects from the <span class="strong"><strong>Hierarchy</strong></span> tab and delete it because we won't need it anymore.</p></li><li><p>Now that we have the obstacles, let's start spawning them. To do this, open up the <code class="literal">GameController</code> script and add the following variables:</p><div class="informalexample"><pre class="programlisting">    [Header("Obstacle Information")]
+
+    [Tooltip("The obstacle that we will spawn")]
+    public GameObject obstacleReference;
+
+    [Tooltip("Minimum Y value used for obstacle")]
+    public float obstacleMinY = -1.3f;
+
+    [Tooltip("Maximum Y value used for obstacle")]
+    public float obstacleMaxY = 1.3f;</pre></div></li><li><p>Next, add<a id="id238" class="indexterm"></a> in the following function:</p><div class="informalexample"><pre class="programlisting">/// &lt;summary&gt;
+/// Creates the obstacle an initializes its position.
+/// &lt;/summary&gt;
+void CreateObstacle()
+{
+// Spawn offscreen with a random Y
+Instantiate(obstacleReference,
+                new Vector3(RepeatingBackground.ScrollWidth, 
+                Random.Range(obstacleMinY, obstacleMaxY), 0.0f), 
+                Quaternion.identity);
+}</pre></div></li><li><p>Then, to have the function be called, add the following line to the end of the <span class="strong"><strong>Start</strong></span> function:</p><div class="informalexample"><pre class="programlisting">    InvokeRepeating("CreateObstacle", 1.5f, 1.0f);</pre></div></li><li><p>Save the script and move back into the Unity editor. From the <span class="strong"><strong>Hierarchy</strong></span> tab, select the <code class="literal">GameController</code> object and assign the <code class="literal">Obstacle</code> prefab to the <span class="strong"><strong>Obstacle Reference</strong></span> property.</p></li><li><p>Save your scene and start the game!</p><div class="mediaobject"><img src="/graphics/9781785883118/graphics/B05212_04_14.jpg" /></div></li></ol></div><p>As you can see, we <a id="id239" class="indexterm"></a>now have a number of different obstacles being created, each with their own different positions. Great!</p></div>

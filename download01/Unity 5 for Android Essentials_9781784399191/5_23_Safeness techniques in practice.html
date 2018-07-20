@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec25"></a>Safeness techniques in practice</h2></div></div><hr /></div><p>Next, the C# script example will cover <a id="id296" class="indexterm"></a>how to protect the content of your asset bundles (as shown here):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class AssetBundleSecurityFirst : MonoBehaviour {
+  string assetBundleUrl = 
+    "http://yourweb.com/path/to/yourAssetBundle.unity3d";
+
+  IEnumerator Start() {
+    WWW www = WWW.LoadFromCacheOrDownload(assetBundleUrl, 1);
+    yield return www;
+
+    TextAsset textAsset = www.assetBundle.Load(
+      "YourEncryptedAssetName", typeof(TextAsset)
+    ) as TextAsset;
+  
+    /*byte[] yourDecryptedBytes = AnyDecryptionFunction(
+      textAsset.bytes // your encrypted bytes
+    );*/
+  }
+}</pre></div><p>Another secure <a id="id297" class="indexterm"></a>way is to encrypt the whole asset bundle instead of just the <code class="literal">TextAsset</code> data as shown in the preceding code. Alternatively, in this approach, you cannot use the <code class="literal">WWW.LoadFromCacheOrDownload</code> method. You always need to import your bundles from <code class="literal">WWW</code> streaming as shown in the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class AssetBundleSecuritySecond : MonoBehaviour {
+  string assetBundleUrl = 
+    "http://yourweb.com/path/to/yourAssetBundle.unity3d";
+
+  IEnumerator Start () {
+    WWW www = new WWW(assetBundleUrl);
+    yield return www;
+  
+    /*byte[] yourEncryptedBytes = www.bytes;
+    byte[] yourDecryptedBytes = 
+      AnyDecryptionFunction(yourEncryptedBytes);
+
+    AssetBundleCreateRequest assetBundleCreateRequest = 
+      AssetBundle.CreateFromMemory(yourDecryptedBytes);
+
+    yield return assetBundleCreateRequest;
+
+    AssetBundle ab = assetBundleCreateRequest.assetBundle;*/
+
+    // Here you can use your AssetBundle. 
+    // The AssetBundle was not cached.
+  }
+}</pre></div><p>The last and the best protection<a id="id298" class="indexterm"></a> approach is to keep your encrypted <code class="literal">AssetBundle</code> as <code class="literal">TextAsset</code> inside another (not encrypted) <code class="literal">AssetBundle</code>. Thus, we can use Unity's caching system for our asset bundles as shown here:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class AssetBundleSecurityThird : MonoBehaviour {
+  string assetBundleUrl = 
+    "http://yourweb.com/path/to/yourAssetBundle.unity3d";
+
+  IEnumerator Start() {
+    WWW www = WWW.LoadFromCacheOrDownload(assetBundleUrl, 1);
+    yield return www;
+
+    TextAsset textAsset = www.assetBundle.Load(
+      "YourEncryptedAsset", typeof(TextAsset)
+    ) as TextAsset;
+  
+    /*byte[] yourEncryptedBytes = textAsset.bytes;
+    byte[] yourDecryptedBytes = 
+      AnyDecryptionFunction(yourEncryptedBytes);
+
+    AssetBundleCreateRequest assetBundleCreateRequest = 
+      AssetBundle.CreateFromMemory(yourDecryptedBytes);
+    yield return assetBundleCreateRequest;
+
+    AssetBundle ab = assetBundleCreateRequest.assetBundle;*/
+    // Here you can use your AssetBundle. The AssetBundle was cached.
+  }
+}</pre></div></div>

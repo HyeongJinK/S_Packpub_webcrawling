@@ -1,0 +1,96 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec47"></a>Getting a list of rooms</h2></div></div><hr /></div><p>Now that <a id="id195" class="indexterm"></a>we're <a id="id196" class="indexterm"></a>connected to Player.IO, and to our local server, we can get a list of rooms.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+using PlayerIOClient;
+
+public class ConnectToPlayerIO : MonoBehaviour
+{
+  public bool UseDevServer = true;
+
+  Client client;
+
+  void Start()
+  {
+    PlayerIO.UnityInit( this );
+
+    PlayerIO.Connect( "YourGameIDHere", "public", "YourUserIDHere", null, null,
+    delegate( Client c )
+    {
+      // connected successfully
+      client = c;
+      Debug.Log( "Connected" );
+
+      // if we're using the dev server, connect to the local IP
+      if( UseDevServer )
+      {
+        client.Multiplayer.DevelopmentServer = new ServerEndpoint( "127.0.0.1", 8184 );
+        <span class="strong"><strong>GetRoomList();</strong></span>
+      }
+    },
+    delegate( PlayerIOError error )
+    {
+      // did not connect successfully
+      Debug.Log( error.Message );
+    } );
+  }
+
+  <span class="strong"><strong>void GetRoomList()</strong></span>
+  <span class="strong"><strong>{</strong></span>
+    <span class="strong"><strong>// get a list of all rooms with the given room type and search criteria (null = all rooms)</strong></span>
+    <span class="strong"><strong>client.Multiplayer.ListRooms( "SomeRoomType", null, 0, 0,</strong></span>
+      <span class="strong"><strong>delegate( RoomInfo[] rooms )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        Debug.Log( "Found rooms: " + rooms.Length );</strong></span>
+<span class="strong"><strong>      },</strong></span>
+<span class="strong"><strong>      delegate( PlayerIOError error )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        Debug.Log( error.Message );</strong></span>
+<span class="strong"><strong>      } );</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div><p>This code <a id="id197" class="indexterm"></a>gets a list of all rooms, and displays the number of available rooms.</p><p>The first<a id="id198" class="indexterm"></a> parameter to ListRooms is the room type. On your Player.IO server, you create a class for each room type. For instance, an FPS might have classes for <code class="literal">Deathmatch</code>, <code class="literal">TeamDeathmatch</code>, <code class="literal">CaptureTheFlag</code>, and so on. Each of these has a room type name assigned to it, and from the client we can query for the type of room we want to join.</p><p>The second parameter is a dictionary of search criteria, where each property must match between the search and the room. When a room is created on the server, it can be assigned a dictionary of room properties. For instance, in the same hypothetical FPS you might have room properties for player limit, time limit, friendly fire, map, and so on. The client would allow players to search for rooms matching specific criteria (for instance, only rooms where friendly fire is disabled) by providing a dictionary to the ListRooms function. Passing null disables the search criteria (so all rooms are returned).</p><p>The next two parameters are room count and result offset. Some games might implement a paged lobby, so the lobby might display 10 games at a time, and players hit next and previous buttons to navigate the pages. In that case, room count would be 10 and page offset would be which page the player is on, 0 for the first page, incrementing by 10 for each page. We'll use 0 for room count (return as many rooms as possible), and 0 for offset.</p><p>Before you run this, you will need to ensure your development server<a id="id199" class="indexterm"></a> is running (open the solution and press <span class="emphasis"><em>F5</em></span>).</p><p>If you run this code, you'll see it connect, and then list the number of room open (currently none).</p><div class="mediaobject"><img src="/graphics/9781849692328/graphics/2328OT_04_02.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec36"></a>Connecting to rooms</h3></div></div></div><p>After you <a id="id200" class="indexterm"></a>have a list of rooms, you can connect to a room via the <code class="literal">JoinRoom</code> method. The <code class="literal">JoinRoom</code> method takes the name of the room, and can optionally take a dictionary of "join data", which is supplied to the room on connect. This join data can be used for a number of things (for example, supplying the username, if a room is password protected this might contain password, and so on).</p><p>Let's store the returned rooms and iterate them in OnGUI.</p><p>First, we'll add some variables, which are as follows:</p><div class="informalexample"><pre class="programlisting">Connection roomConnection;
+private RoomInfo[] rooms = null;</pre></div><p>Next, we'll modify our <code class="literal">GetRoomList</code> function:</p><div class="informalexample"><pre class="programlisting">void GetRoomList()
+{
+  // get a list of all rooms with the given room type and search criteria (null = all rooms)
+  client.Multiplayer.ListRooms( "SomeRoomType", null, 0, 0,
+    delegate( RoomInfo[] rooms )
+    {
+      Debug.Log( "Found rooms: " + rooms.Length );
+      <span class="strong"><strong>this.rooms = rooms;</strong></span>
+    },
+    delegate( PlayerIOError error )
+    {
+      Debug.Log( error.Message );
+    } );
+}</pre></div><p>And finally, <a id="id201" class="indexterm"></a>we'll iterate and display these in OnGUI. We can also take the opportunity to disconnect from whatever room we're in when the game client is closed. This is not strictly necessary, but good practice.</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  // no room list yet - abort
+  if( rooms == null )
+    return;
+
+  // iterate rooms in room list
+  foreach( RoomInfo room in rooms )
+  {
+    // click button to join room
+    if( GUILayout.Button( room.Id, GUILayout.Width( 200f ) ) )
+    {
+      client.Multiplayer.JoinRoom( room.Id, null,
+        delegate( Connection connection )
+        {
+          Debug.Log( "Connected to room!" );
+          // store room connection so we can send/receive messages
+          roomConnection = connection;
+        },
+        delegate( PlayerIOError error )
+        {
+          Debug.Log( error.Message );
+        } );
+    }
+  }
+}
+
+void OnApplicationQuit()
+{
+  // if the application quits, disconnect from whatever room we're connected to. Not strictly necessary, but good practice.
+  if( roomConnection != null )
+    roomConnection.Disconnect();
+}</pre></div><p>When you <a id="id202" class="indexterm"></a>connect to a room, you get a connection object. This object is used to interact with the room, by sending and receiving messages. You can call the <code class="literal">Send</code> method to send a message, and you can register message handlers to receive messages.</p></div></div>

@@ -1,0 +1,229 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec42"></a>Setting up a character animation and animator controller</h2></div></div><hr /></div><p>In <a class="link" href="#" linkend="ch04">Project 4</a>, <span class="emphasis"><em>Add Character Control and Animation to Our Hero/Heroine</em></span>, we imported the FBX<a id="id702" class="indexterm"></a> file with multiple <a id="id703" class="indexterm"></a>animation clips attached. However, in this project, we shall import the animation clips using another method. This <a id="id704" class="indexterm"></a>method entails using multiple <code class="literal">FBX</code> files, with each<a id="id705" class="indexterm"></a> file containing a separate animation clip. The concept behind this method is that you can create separate model files and name them using the convention <code class="literal">modelName@animationName.fbx</code>. For example, if you have the main model, <code class="literal">robot.fbx</code>, you will need to name this as <code class="literal">robot@idle.fbx</code> to create an <span class="strong"><strong>idle</strong></span> animation clip.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip22"></a>Tip</h3><p>The advantage of this method is that we can have multiple animators working on the same model with the different animation files, and we can put them all together in Unity. For more details, visit the following link:</p><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Manual/Splittinganimations.html" target="_blank">http://docs.unity3d.com/Documentation/Manual/Splittinganimations.html</a>
+</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec85"></a>Prepare for lift off</h3></div></div></div><p>In this section, we will begin by preparing an animation for our character, which will use the humanoid type to set up the animation; this can be done by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the assets package by going to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>Custom Package…</strong></span> and choosing <code class="literal">Chapter5.unityPackage</code>, which we downloaded earlier, and then clicking on the <span class="strong"><strong>Import</strong></span> button in the pop-up window, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_02.jpg" /></div></li><li><p>Wait until the package<a id="id706" class="indexterm"></a> is <a id="id707" class="indexterm"></a>completely imported and <a id="id708" class="indexterm"></a>you will see <a id="id709" class="indexterm"></a>the <code class="literal">Chapter5</code> and <code class="literal">Resources</code> folders in the <span class="strong"><strong>Window</strong></span> view. Then, go to the <code class="literal">Chapter5/Scene/RocketLaucher</code> scene and double-click on it to open the scene, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_03.jpg" /></div></li><li><p>Next, go to the <code class="literal">Resources/FBX/Robot Artwork</code> folder and click on <code class="literal">robot</code> to bring up the <span class="strong"><strong>Inspector</strong></span> view, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_04.jpg" /></div></li><li><p>Then, go to<a id="id710" class="indexterm"></a> its <span class="strong"><strong>Inspector</strong></span> view <a id="id711" class="indexterm"></a>and click on the <span class="strong"><strong>Rig</strong></span> tab and make sure that the <span class="strong"><strong>Inspector</strong></span> view<a id="id712" class="indexterm"></a> is set as per the following<a id="id713" class="indexterm"></a> screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_05.jpg" /></div><p>We can see that we have the extra bone on <span class="strong"><strong>Rig</strong></span> in the <span class="strong"><strong>Extra Transforms to Expose</strong></span> window because this robot has been set up with the extra bone, which is the <span class="strong"><strong>gun</strong></span> skin.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip23"></a>Tip</h3><p>For a humanoid character, the bone structure is similar to the human bone structure. Mecanim takes advantage of this similarity by automatically setting up the basic skeleton structure, such as body, head, and limbs. However, in our character, the <span class="strong"><strong>gun</strong></span> bone isn't usually in the human bones structure, so we need to set this as an extra bone.</p></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec86"></a>Engage thrusters</h3></div></div></div><p>Now, we<a id="id714" class="indexterm"></a> are<a id="id715" class="indexterm"></a> ready to start this section; perform <a id="id716" class="indexterm"></a>the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go<a id="id717" class="indexterm"></a> to the <code class="literal">Chapter5/Animation</code> folder in the <span class="strong"><strong>Project</strong></span> view and then double-click on <span class="strong"><strong>MyAnimatorController</strong></span> to bring up the <span class="strong"><strong>Animator</strong></span> view, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_06.jpg" /></div></li><li><p>Next, we will add the blend tree by right-clicking on the <span class="strong"><strong>Animator</strong></span> window and navigating to <span class="strong"><strong>Create State</strong></span> | <span class="strong"><strong>From New Blend Tree,</strong></span> and then we'll name it <code class="literal">Locomotion</code>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_07.jpg" /></div></li><li><p>Then, we <a id="id718" class="indexterm"></a>will <a id="id719" class="indexterm"></a>double-click on the <span class="strong"><strong>Locomotion</strong></span> state and click on the <span class="strong"><strong>Blend Tree</strong></span> state<a id="id720" class="indexterm"></a> and go to its <span class="strong"><strong>Inspector</strong></span> view. Set the <span class="strong"><strong>Blend Type</strong></span> parameter to <code class="literal">1D</code>, <span class="strong"><strong>Parameter</strong></span> to <span class="strong"><strong>Speed</strong></span>, and in the <span class="strong"><strong>Motion</strong></span> section, click on the <span class="strong"><strong>+</strong></span> button and choose <span class="strong"><strong>Add Motion Field</strong></span> twice.</p></li><li><p>After that, we<a id="id721" class="indexterm"></a> will click on the circle icon and choose the <span class="strong"><strong>walk</strong></span> clip as the first motion. Then, choose the <span class="strong"><strong>run</strong></span> clip as the second motion, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_08.jpg" /></div></li><li><p>Now we will set up the <span class="strong"><strong>Threshold</strong></span> and <span class="strong"><strong>Animation time</strong></span> values for each clip to <a id="id722" class="indexterm"></a>control the<a id="id723" class="indexterm"></a> blending between the <span class="strong"><strong>walk</strong></span> and <span class="strong"><strong>run</strong></span> clips by using<a id="id724" class="indexterm"></a> <span class="strong"><strong>Speed</strong></span> as <span class="strong"><strong>Parameter</strong></span>. This is <a id="id725" class="indexterm"></a>done by going to the graph under <span class="strong"><strong>Parameter</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_09.jpg" /></div></li><li><p>Next, we set up the transition from <span class="strong"><strong>fall</strong></span> to <span class="strong"><strong>Locomotion</strong></span>. So, let's right-click on the <span class="strong"><strong>fall</strong></span> clip, choose <span class="strong"><strong>Make Transition</strong></span>, and then click-and-drag on the <span class="strong"><strong>Locomotion</strong></span> clip. Then, click on the arrow line to go to the <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="3" align="left" valign="top">
+<p>Uncheck the box</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Speed</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Greater</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">0.1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top"> </td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>MotionState</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Equals</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">0</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>Also, we will create the transition back from <span class="strong"><strong>Locomotion</strong></span> to <span class="strong"><strong>fall</strong></span>. Go to the transition's <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="3" align="left" valign="top">
+<p>Leave this checked</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>MotionState</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Equals</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">2</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>Next, we will set the blending time to <code class="literal">0</code> from <span class="strong"><strong>fall</strong></span> to <span class="strong"><strong>idle</strong></span> and from back <span class="strong"><strong>idle</strong></span> to <span class="strong"><strong>fall</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_10.jpg" /></div></li><li><p>Now we <a id="id726" class="indexterm"></a>need to<a id="id727" class="indexterm"></a> add the transitions from <span class="strong"><strong>idle</strong></span> to <span class="strong"><strong>Locomotion</strong></span>. So, let's <a id="id728" class="indexterm"></a>right-click on the <span class="strong"><strong>idle</strong></span> clip, choose <span class="strong"><strong>Make Transition</strong></span>, and then click-and-drag this clip on<a id="id729" class="indexterm"></a> the <span class="strong"><strong>Locomotion</strong></span> clip. Then, we will click on the arrow line to go to the <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="3" align="left" valign="top">
+<p>Leave this checked</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Speed</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Greater</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">0.1</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>Also, we will create the transition from <span class="strong"><strong>Locomotion</strong></span> back to <span class="strong"><strong>idle</strong></span>. Go to the transition's <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="3" align="left" valign="top">
+<p>Leave this checked</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Speed</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Less</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>0.1</p>
+</td></tr></tbody></table></div></li><li><p>Next, we will create the substate machine, which will be used to control the shooting and aiming animations. Let's right-click on the <span class="strong"><strong>Animator</strong></span> window and choose the <span class="strong"><strong>Create Sub-State Machine</strong></span> option<a id="id730" class="indexterm"></a> and then name it <code class="literal">Shooting</code>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_11.jpg" /></div></li><li><p>Let's double-click <a id="id731" class="indexterm"></a>on <a id="id732" class="indexterm"></a>the <span class="strong"><strong>Shooting</strong></span> substate machine to open it and go <a id="id733" class="indexterm"></a>to the <code class="literal">Resources/FBX/Robot Artwork</code> folder in the <span class="strong"><strong>Project</strong></span> view; click on the arrow in front of <span class="strong"><strong>robot@shoot</strong></span>; then drag the <span class="strong"><strong>shoot</strong></span> and <span class="strong"><strong>aiming</strong></span> clips to the <span class="strong"><strong>Animator</strong></span> view, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_12.jpg" /></div></li><li><p>Now, we need to create the transition from the <span class="strong"><strong>aiming</strong></span> state to <span class="strong"><strong>shoot</strong></span>. Let's right-click on the <span class="strong"><strong>aiming</strong></span> clip, choose <span class="strong"><strong>Make Transition</strong></span>, and then click-and-drag this on the <span class="strong"><strong>shoot</strong></span> clip. Then, we will click on the arrow line again to go to the <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>Uncheck the box</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>IsShot</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>true</strong></span>
+</p>
+</td></tr></tbody></table></div></li><li><p>Also, we will <a id="id734" class="indexterm"></a>create the<a id="id735" class="indexterm"></a> transition <a id="id736" class="indexterm"></a>back from <span class="strong"><strong>shoot</strong></span> to <span class="strong"><strong>aiming</strong></span>. Go <a id="id737" class="indexterm"></a>to the transition's <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>Uncheck the box</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Exit Time</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>0.8</p>
+</td></tr></tbody></table></div></li><li><p>Before we go to the <span class="strong"><strong>Base Layer</strong></span> transition, we need to add the transition from <span class="strong"><strong>aiming</strong></span> to <span class="strong"><strong>(Up) Base</strong></span>. Then we will see the pop-up window; choose <span class="strong"><strong>idle</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_13.jpg" /></div></li><li><p>After that, we will click on the arrow line again to go to the <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="3" align="left" valign="top">
+<p>Uncheck the box</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>MotionState</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Equals</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">0</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>Now, we go to the <span class="strong"><strong>Base Layer</strong></span> transition and add the transition from <span class="strong"><strong>idle</strong></span> state to <span class="strong"><strong>Shooting</strong></span>. Let's right-click on the <span class="strong"><strong>idle</strong></span> clip, choose <span class="strong"><strong>Make Transition</strong></span>, and then click-and-drag the <span class="strong"><strong>idle</strong></span> clip on to the <span class="strong"><strong>Shooting</strong></span> clip. Then we <a id="id738" class="indexterm"></a>will see the pop-up window; choose <span class="strong"><strong>aiming</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_14.jpg" /></div></li><li><p>Click<a id="id739" class="indexterm"></a> on<a id="id740" class="indexterm"></a> the arrow line again to go to the <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="3" align="left" valign="top">
+<p>Uncheck the box</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>MotionState</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Equals</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top"> </td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>IsShot</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>false</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr></tbody></table></div></li><li><p>Finally, the last transition is from <span class="strong"><strong>Locomotion</strong></span> to <span class="strong"><strong>Shooting</strong></span>. Let's right-click on the <span class="strong"><strong>Locomotion</strong></span> clip, choose <span class="strong"><strong>Make Transition</strong></span>, and then move the cursor and click on the <span class="strong"><strong>Shooting</strong></span> clip. Then, we will see the <a id="id741" class="indexterm"></a>pop-up window, choose <span class="strong"><strong>aiming</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_15.jpg" /></div></li><li><p>Then, we will click on the arrow line again to go to the <span class="strong"><strong>Inspector</strong></span> view and set up the view as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Atomic</strong></span>
+</p>
+</td><td style="" colspan="3" align="left" valign="top">
+<p>Uncheck the box</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Conditions</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>MotionState</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Equals</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top"> </td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>IsShot</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>false</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr></tbody></table></div></li><li><p>Now, we will<a id="id742" class="indexterm"></a> get<a id="id743" class="indexterm"></a> all the <a id="id744" class="indexterm"></a>transitions, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_16.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec87"></a>Objective complete – mini debriefing</h3></div></div></div><p>Basically, what we have done here is set up the animator controller for our robot character, which is similar to the way we set up our character in <a class="link" href="#" linkend="ch04">Project 4</a>, <span class="emphasis"><em>Add Character Control and Animation to Our Hero/Heroine</em></span>. However, in this project, we've used the <span class="strong"><strong>Blend Tree</strong></span> settings to set up the <span class="strong"><strong>walk</strong></span> and <span class="strong"><strong>run</strong></span> animations.</p><p>In <span class="strong"><strong>Blend Tree</strong></span>, we <a id="id745" class="indexterm"></a>can add as many animations as we want. The<a id="id746" class="indexterm"></a> animation will change<a id="id747" class="indexterm"></a> the state depending on the<a id="id748" class="indexterm"></a> parameter we set up. In our case, we used <span class="strong"><strong>Speed</strong></span> as our <span class="strong"><strong>Parameter</strong></span> and set up <code class="literal">2</code> as the minimum value for the <span class="strong"><strong>walk</strong></span> animation and <code class="literal">5</code> as the maximum for the <span class="strong"><strong>run</strong></span> animation. We use the minimum value of <code class="literal">2</code> because we want our robot to change the animation state from <span class="strong"><strong>idle</strong></span> to <span class="strong"><strong>walk</strong></span> at the <span class="strong"><strong>Speed</strong></span> value of <code class="literal">2</code>, which will be created in the next step. Also, the value <code class="literal">5</code> is the maximum speed for our character to run. The settings for <span class="strong"><strong>Speed</strong></span> are shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_17.jpg" /></div><p>We <a id="id749" class="indexterm"></a>also added a new substate<a id="id750" class="indexterm"></a> machine for our <span class="strong"><strong>Shooting</strong></span> animation. This<a id="id751" class="indexterm"></a> substate machine contains two <a id="id752" class="indexterm"></a>animations, which are the <span class="strong"><strong>aiming</strong></span> and <span class="strong"><strong>shoot</strong></span> clips. The substate machine is used to identify the separate stages that consist of a number of states. In our case, we used this because we knew that the <span class="strong"><strong>shoot</strong></span> state only connects to the <span class="strong"><strong>aiming</strong></span> state, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_18.jpg" /></div><p>For more<a id="id753" class="indexterm"></a> information on <span class="strong"><strong>Sub-State Machine</strong></span>, visit the following link:</p><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Manual/NestedStateMachines.html" target="_blank">http://docs.unity3d.com/Documentation/Manual/NestedStateMachines.html</a>
+</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec88"></a>Classified intel</h3></div></div></div><p>From this project, we have learned many things about how to set up the animator controller including <span class="strong"><strong>Blend Tree</strong></span>. So, what is <span class="strong"><strong>Blend Tree</strong></span>?</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec08"></a>Blend Tree</h4></div></div></div><p>
+<span class="strong"><strong>Blend Tree</strong></span> is <a id="id754" class="indexterm"></a>a very powerful state that allows us to blend multiple animations smoothly by using the blending parameters. For example, we can blend the <span class="strong"><strong>walk straight</strong></span>, <span class="strong"><strong>walk left</strong></span>, and <span class="strong"><strong>walk right</strong></span> states by using the <span class="strong"><strong>Direction</strong></span> setting as a blending parameter, or we can get a bit crazy by having two <span class="strong"><strong>Blend Tree</strong></span> settings for the <span class="strong"><strong>run</strong></span> and <span class="strong"><strong>walk</strong></span> clips. Then, each clip will have its own <span class="strong"><strong>Blend Tree</strong></span> setting to control the direction of the animation, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_19.jpg" /></div><p>We can also <a id="id755" class="indexterm"></a>set the <span class="strong"><strong>Blend Type</strong></span> parameter in <span class="strong"><strong>Blend Tree</strong></span> from <span class="strong"><strong>1D</strong></span> to <span class="strong"><strong>2D</strong></span> for advanced setting by using two parameters to check for the blending of states, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_20.jpg" /></div><p>For more<a id="id756" class="indexterm"></a> information on <span class="strong"><strong>Blend Tree</strong></span>, visit the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Manual/class-BlendTree.html" target="_blank">http://docs.unity3d.com/Manual/class-BlendTree.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Manual/BlendTree-1DBlending.html" target="_blank">http://docs.unity3d.com/Manual/BlendTree-1DBlending.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Manual/BlendTree-2DBlending.html" target="_blank">http://docs.unity3d.com/Manual/BlendTree-2DBlending.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Manual/BlendTree-AdditionalOptions.html" target="_blank">http://docs.unity3d.com/Manual/BlendTree-AdditionalOptions.html</a>
+</p></li></ul></div><p>
+</p></div></div></div>

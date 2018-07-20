@@ -1,0 +1,58 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec31"></a>If looks could kill</h2></div></div><hr /></div><p>We got this far. We<a id="id234" class="indexterm"></a> might as well try to kill Ethan (haha!). Here are the specifications for this new feature:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Looking at Ethan hits him with our line-of-sight ray gun</p></li><li style="list-style-type: disc"><p>Sparks are emitted when the gun hits its target</p></li><li style="list-style-type: disc"><p>After 3 seconds of being hit, Ethan is killed</p></li><li style="list-style-type: disc"><p>When he's<a id="id235" class="indexterm"></a> killed, Ethan explodes (we get a point) and then he respawns at a new location</p></li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec52"></a>The KillTarget script</h3></div></div></div><p>This time, we'll <a id="id236" class="indexterm"></a>attach the script to a new empty <code class="literal">GameController</code> object by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create an empty game object and name it <code class="literal">GameController</code>.</p></li><li><p>Attach a new C# script to it, using <span class="strong"><strong>Add Component</strong></span>, named <code class="literal">KillTarget</code>.</p></li><li><p>Open the script in MonoDevelop.</p></li></ol></div><p>Here's the completed <code class="literal">KillTarget.cs</code> script:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class KillTarget : MonoBehaviour {
+  public GameObject target;
+  public ParticleSystem hitEffect;
+  public GameObject killEffect;
+  public float timeToSelect = 3.0f;
+  public int score;
+
+  private float countDown;
+
+  void Start () {
+    score = 0;
+    countDown = timeToSelect;
+    hitEffect.enableEmission = false;
+  }
+  
+  void Update () {
+    Transform camera = Camera.main.transform;
+    Ray ray = new Ray (camera.position, camera.rotation * Vector3.forward);
+    RaycastHit hit;
+    if (Physics.Raycast (ray, out hit) &amp;&amp; (hit.collider.gameObject == target)) {
+      if (countDown &gt; 0.0f) {
+        // on target
+        countDown -= Time.deltaTime;
+        // print (countDown);
+        hitEffect.transform.position = hit.point;
+        hitEffect.enableEmission = true;
+      } else {
+        // killed
+        Instantiate( killEffect, target.transform.position, target.transform.rotation );
+        score += 1;
+        countDown = timeToSelect;
+        SetRandomPosition();
+      }
+    } else {
+      // reset
+      countDown = timeToSelect;
+      hitEffect.enableEmission = false;
+    }
+  }
+
+  void SetRandomPosition() {
+    float x = Random.Range (-5.0f, 5.0f);
+    float z = Random.Range (-5.0f, 5.0f);
+    target.transform.position = new Vector3 (x, 0.0f, z);
+  }
+}</pre></div><p>Let's go through this. First, we<a id="id237" class="indexterm"></a> declare a number of public variables, as follows:</p><div class="informalexample"><pre class="programlisting">  public GameObject target;
+  public ParticleSystem hitEffect;
+  public GameObject killEffect;
+  public float timeToSelect = 3.0f;
+  public int score;</pre></div><p>Like we did in the previous <code class="literal">LookMoveTo</code> script, our target will be Ethan. We're also adding a <code class="literal">hitEffect</code> particle emitter, a <code class="literal">killEffect</code> explosion, and a start value for the countdown timer, <code class="literal">timeToSelect</code>. Lastly, we'll keep track of our kills in the <code class="literal">score</code> variable.</p><p>The <code class="literal">Start()</code> method, which is called at the start of game play, initializes the score to zero, sets the <code class="literal">countDown</code> timer to its starting value, and turns off <code class="literal">hitEffect</code>.</p><p>Then, in the <code class="literal">Update()</code> method, like in the <code class="literal">LookMoveTo</code> script, we cast a ray from the camera and check whether it hits our target, Ethan. When it does, we check the <code class="literal">countDown</code> timer.</p><p>If the timer is still counting, we decrement its value by the amount of time that's gone by since the last time <code class="literal">Update()</code> was called, using <code class="literal">Time.deltaTime</code>, and make sure that <code class="literal">pickEffect</code> is emitting at the hit point.</p><p>If the ray is<a id="id238" class="indexterm"></a> still on its target and the timer is done counting down, Ethan is killed. We explode, bump up the score by one, reset the timer to its starting value, and move (respawn) Ethan to a random new location.</p><p>For an explosion, we'll use one of Unity's standard assets found in the <code class="literal">ParticleSystems</code> package. To activate it, <code class="literal">killEffect</code> should be set to the prefab named <code class="literal">Explosion</code>. Then, the script <span class="emphasis"><em>instantiates</em></span> it. In other words, it makes it an object in the scene (at a specified transform), which kicks off its awesome scripts and effects.</p><p>Lastly, if the ray did not hit Ethan, we reset the counter and turn off the particles.</p><p>Save the script and go into the Unity editor. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note09"></a>Note</h3><p>
+<span class="strong"><strong>Extra challenge</strong></span>: Refactor the script to use co-routines to manage the delay timing, like we did in the <code class="literal">RandomPosition</code> script at the start of this chapter.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec53"></a>Adding particle effects</h3></div></div></div><p>Now, to<a id="id239" class="indexterm"></a> populate the <code class="literal">public</code> variables, we will perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, we need the <code class="literal">ParticleSystems</code> package that comes with Unity standard assets. If you do not have them, navigate to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>ParticleSystems</strong></span>, choose <span class="strong"><strong>All</strong></span>, and then click on <span class="strong"><strong>Import</strong></span>.</p></li><li><p>Select <code class="literal">GameController</code> from the <span class="strong"><strong>Hierarchy</strong></span> panel and go to the <span class="strong"><strong>Kill Target (Script)</strong></span> pane in the <span class="strong"><strong>Inspector</strong></span> panel.</p></li><li><p>Drag the <code class="literal">Ethan</code> object from the <span class="strong"><strong>Hierarchy</strong></span> panel onto the <span class="strong"><strong>Target</strong></span> field.</p></li><li><p>From the main menu bar, navigate to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Particle System</strong></span> and name it <code class="literal">SparkEmitter</code>.</p></li><li><p>Reselect <code class="literal">GameController</code> and drag <code class="literal">SparkEmitter</code> onto the <span class="strong"><strong>Hit Effect</strong></span> field.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> panel, find the <code class="literal">Explosion</code> prefab in <code class="literal">Assets/Standard Assets/ParticleSystems/Prefabs</code>, drag the <code class="literal">Explosion</code> prefab onto the <span class="strong"><strong>Kill Effect</strong></span> field.</p></li></ol></div><p>The script pane looks like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783988556/graphics/B04781_04_04.jpg" /></div><p>We created <a id="id240" class="indexterm"></a>a default particle system that will be used as the sparks emitter. We need to set that up to our liking. I'll get you started, and you can play with it as you desire, as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Select <code class="literal">SparkEmitter</code> from the <span class="strong"><strong>Hierarchy</strong></span> panel.</p></li><li><p>And in its <span class="strong"><strong>Inspector</strong></span> panel, under <span class="strong"><strong>Particle System</strong></span>, set the following values:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Start Size</strong></span>: <code class="literal">0.15</code>,</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Start Color</strong></span>: pick a red/orange color</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Start Lifetime</strong></span>: <code class="literal">0.3</code>,</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Max Particles</strong></span>: <code class="literal">50</code>.</p></li></ul></div></li><li><p>Under <span class="strong"><strong>Emission</strong></span>, set <span class="strong"><strong>Rate</strong></span>: <code class="literal">100</code>.</p></li><li><p>Under <span class="strong"><strong>Shape</strong></span>, set <span class="strong"><strong>Shape</strong></span>: <span class="strong"><strong>Sphere</strong></span> and <span class="strong"><strong>Radius</strong></span>: <code class="literal">0.01</code>.</p></li><li><p>For performance, under <span class="strong"><strong>Renderer</strong></span>, set <span class="strong"><strong>Cast Shadows</strong></span>: <span class="strong"><strong>Off</strong></span>, <span class="strong"><strong>Receive Shadows</strong></span>: un-check, and <span class="strong"><strong>Reflection Probes</strong></span>: <span class="strong"><strong>Off</strong></span>.</p></li></ol></div><p>Here's what my <span class="strong"><strong>Scene</strong></span> view looks like as I run Play Mode and zap Ethan in the chest:</p><div class="mediaobject"><img src="/graphics/9781783988556/graphics/B04781_04_05.jpg" /></div><p>When <a id="id241" class="indexterm"></a>Ethan is shot, the <code class="literal">hitEffect</code> particle system is activated. After 3 seconds (or whatever value you set in the <code class="literal">TimeToSelect</code> variable), his <span class="emphasis"><em>health</em></span> is depleted, the explosion effect is instantiated, the score is incremented, and he respawns at a new location. In the next chapter, we'll see how we can show the current score to the player.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec54"></a>Cleaning up</h3></div></div></div><p>One last thing<a id="id242" class="indexterm"></a> before we're done—let's clean up the <span class="strong"><strong>Assets</strong></span> folder a bit and move all the scripts into a <code class="literal">Assets/Scripts/</code> subfolder. Select the <span class="strong"><strong>Project Assets</strong></span> folder in <span class="strong"><strong>Project</strong></span>, create a folder, name it <code class="literal">Scripts</code>, and drag all your scripts into it.</p></div></div>

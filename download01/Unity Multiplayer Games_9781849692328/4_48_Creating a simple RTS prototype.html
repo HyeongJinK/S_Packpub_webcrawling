@@ -1,0 +1,784 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec52"></a>Creating a simple RTS prototype</h2></div></div><hr /></div><p>Using the<a id="id224" class="indexterm"></a> knowledge we've gained about Player.IO and applying the concepts from the previous chapter, we're going to create a simple RTS style game.</p><p>The player will<a id="id225" class="indexterm"></a> own five bots. Each of these bots can be commanded to move, or attack another bot. The number of bots killed and lost will be recorded (and persisted to the database for a leaderboard).</p><p>Upon losing all five bots the player is kicked out of the game to the main menu.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec38"></a>The server-side code</h3></div></div></div><p>We'll start by<a id="id226" class="indexterm"></a> modifying the server code as follows:</p><div class="informalexample"><pre class="programlisting">using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Collections;
+using PlayerIO.GameLibrary;
+using System.Drawing;
+
+namespace BotWarsGame
+{
+  public class Player : BasePlayer
+  {
+    public string Name;
+  }
+
+  // This attribute is used to identify the room type
+  // When starting a room, you can specify room type - it corresponds to this value.
+  // Note that the Game class is the base class for room code – it takes a Type which is the type to use for Players
+  [RoomType( "GameRoom" )]
+  public class GameCode : Game&lt;Player&gt;
+  {
+    // This method is called when an instance of your the game is created
+    public override void GameStarted()
+    {
+    }
+
+    // This method is called when the last player leaves the room, and it's closed down.
+    public override void GameClosed()
+    {
+    }
+
+    // This method is called whenever a player joins the game
+    public override void UserJoined( Player player )
+    {
+      player.Name = player.JoinData[ "Name" ];
+
+      // send the player their own ID
+      player.Send( "SetID", player.Id );
+
+      // inform everyone that this user has joined
+      Broadcast( "UserJoined", player.Id, player.Name );
+
+      // inform the user of everyone else in the room,
+      foreach( Player p in Players )
+      {
+        if( p == player )
+          continue;
+
+        player.Send( "UserJoined", player.Id, player.Name );
+      }
+    }
+
+    // This method is called when a player leaves the game
+    public override void UserLeft( Player player )
+    {
+      Broadcast( "UserLeft", player.Id );
+    }
+
+    // This method is called when a player sends a message into the server code
+    public override void GotMessage( Player player, Message message )
+    {
+    }
+  }
+}</pre></div><p>This is the base class we will start from. At the moment, it does very little aside from store your name <a id="id227" class="indexterm"></a>from join data, send your Player ID, and broadcast your presence to other players (as well as send you join messages for all existing players).</p><p>We'll also create a class to represent our bots using the following code:</p><div class="informalexample"><pre class="programlisting">using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace BotWarsGame
+{
+  public class Bot
+  {
+    public ulong BotID;
+    public int OwnerID;
+
+    public float PositionX = 0f;
+    public float PositionY = 0f;
+
+    public int Health = 100;
+
+    public Bot( Player owner, ulong botID )
+    {
+      this.OwnerID = owner.Id;
+      this.BotID = botID;
+    }
+  }
+}</pre></div><p>You may notice that we aren't generating an ID for our bots. We're going to learn how to generate objects <a id="id228" class="indexterm"></a>instantly on the client side without server intervention. This will include how to generate a unique object ID on the client. For the time being, we'll continue with the server code and worry about the details of this later.</p><p>Let's modify our <code class="literal">Player</code> class so that the player can own a list of bots.</p><div class="informalexample"><pre class="programlisting">public class Player : BasePlayer
+{
+  public string Name;
+
+  <span class="strong"><strong>// the bots this player owns</strong></span>
+<span class="strong"><strong>  public List&lt;Bot&gt; OwnedBots = new List&lt;Bot&gt;();</strong></span>
+}</pre></div><p>And, we'll handle a message that spawns a bot for the player:</p><div class="informalexample"><pre class="programlisting">// This method is called when a player sends a message into the server code
+Dictionary&lt;ulong,Bot&gt; bots = new Dictionary&lt;ulong,Bot&gt;();
+public override void GotMessage( Player player, Message message )
+{
+  <span class="strong"><strong>switch( message.Type )</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    case "SpawnBot":</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      // player spawned a bot</strong></span>
+<span class="strong"><strong>      ulong botID = message.GetULong( 0 );</strong></span>
+<span class="strong"><strong>      float botPosX = message.GetFloat( 1 );</strong></span>
+<span class="strong"><strong>      float botPosY = message.GetFloat( 2 );</strong></span>
+<span class="strong"><strong>      Bot bot = new Bot( player, botID );</strong></span>
+<span class="strong"><strong>      bot.PositionX = botPosX;</strong></span>
+<span class="strong"><strong>      bot.PositionY = botPosY;</strong></span>
+<span class="strong"><strong>      player.OwnedBots.Add( bot );</strong></span>
+
+<span class="strong"><strong>      // add bot to dictionary so we can later look up bots by ID</strong></span>
+<span class="strong"><strong>      bots.Add( botID, bot );</strong></span>
+<span class="strong"><strong>      </strong></span>
+<span class="strong"><strong>      // broadcast spawn message to other players</strong></span>
+<span class="strong"><strong>      foreach( Player pl in Players )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        if( pl == player )</strong></span>
+<span class="strong"><strong>          continue;</strong></span>
+
+<span class="strong"><strong>        pl.Send( "OnBotSpawned", pl.Id, botID, botPosX, botPosY );</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div><p>So, on the<a id="id229" class="indexterm"></a> client side, a player will spawn a bot and send the <code class="literal">SpawnBot</code> message to the server. The server will handle this message by adding a new bot to the list of bots the player owns and notifying everyone else that the bot was spawned.</p><p>We'll also need to notify new players of all the bots currently spawned, which we'll do in <code class="literal">UserJoined</code>:</p><div class="informalexample"><pre class="programlisting">// This method is called whenever a player joins the game
+public override void UserJoined( Player player )
+{
+  player.Name = player.JoinData[ "Name" ];
+
+  // send the player their own ID
+  player.Send( "SetID", player.Id );
+
+  // inform everyone that this user has joined
+  Broadcast( "UserJoined", player.Id, player.Name );
+
+  // inform the user of everyone else in the room,
+  <span class="strong"><strong>// plus their bots</strong></span>
+  foreach( Player p in Players )
+  {
+    if( p == player )
+      continue;
+
+    player.Send( "UserJoined", player.Id, player.Name );
+
+    <span class="strong"><strong>// notify new player of existing bots</strong></span>
+<span class="strong"><strong>    foreach( Bot bot in p.OwnedBots )</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      player.Send( "OnBotSpawned", p.Id, bot.BotID, bot.PositionX, bot.PositionY );</strong></span>
+<span class="strong"><strong>    }</strong></span>
+  }
+}</pre></div><p>Players will be<a id="id230" class="indexterm"></a> in control of their own bots (client-authoritative), so we'll accept update messages from players to move bots:</p><div class="informalexample"><pre class="programlisting">// This method is called when a player sends a message into the server code
+public override void GotMessage( Player player, Message message )
+{
+  switch( message.Type )
+  {
+    case "SpawnBot":
+    {
+      // player spawned a bot
+      ulong botID = message.GetULong( 0 );
+      float botPosX = message.GetFloat( 1 );
+      float botPosY = message.GetFloat( 2 );
+      Bot bot = new Bot( player, botID );
+      bot.PositionX = botPosX;
+      bot.PositionY = botPosY;
+      player.OwnedBots.Add( bot );
+
+      // broadcast spawn message to other players
+      foreach( Player pl in Players )
+      {
+        if( pl == player )
+          continue;
+
+        pl.Send( "OnBotSpawned", pl.Id, botID, botPosX, botPosY );
+      }
+    }
+      break;
+    <span class="strong"><strong>case "UpdateBot":</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      // update one of the player's bots</strong></span>
+<span class="strong"><strong>      ulong botID = message.GetULong( 0 );</strong></span>
+<span class="strong"><strong>      float botPosX = message.GetFloat( 1 );</strong></span>
+<span class="strong"><strong>      float botPosY = message.GetFloat( 2 );</strong></span>
+
+<span class="strong"><strong>      if( bots.ContainsKey( botID ) )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        Bot bot = bots[ botID ];</strong></span>
+<span class="strong"><strong>        bot.PositionX = botPosX;</strong></span>
+<span class="strong"><strong>        bot.PositionY = botPosY;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+  }
+}</pre></div><p>We'll also handle <a id="id231" class="indexterm"></a>Damage messages for when one unit attacks another.</p><div class="informalexample"><pre class="programlisting">// This method is called when a player sends a message into the server code
+public override void GotMessage( Player player, Message message )
+{
+  switch( message.Type )
+  {
+    case "SpawnBot":
+    {
+      // player spawned a bot
+      ulong botID = message.GetULong( 0 );
+      float botPosX = message.GetFloat( 1 );
+      float botPosY = message.GetFloat( 2 );
+      Bot bot = new Bot( player, botID );
+      bot.PositionX = botPosX;
+      bot.PositionY = botPosY;
+      player.OwnedBots.Add( bot );
+      bots.Add( bot.BotID, bot );
+
+      // broadcast spawn message to other players
+      foreach( Player pl in Players )
+      {
+        if( pl == player )
+          continue;
+
+        pl.Send( "OnBotSpawned", pl.Id, botID, botPosX, botPosY );
+      }
+    }
+      break;
+    case "UpdateBot":
+    {
+      // update one of the player's bots
+      ulong botID = message.GetULong( 0 );
+      float botPosX = message.GetFloat( 1 );
+      float botPosY = message.GetFloat( 2 );
+
+      if( bots.ContainsKey( botID ) )
+      {
+        Bot bot = bots[ botID ];
+        bot.PositionX = botPosX;
+        bot.PositionY = botPosY;
+      }
+    }
+      break;
+    <span class="strong"><strong>case "TakeDamage":</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      // one bot damaged another</strong></span>
+<span class="strong"><strong>      ulong destBotID = message.GetULong( 0 );</strong></span>
+
+<span class="strong"><strong>      if( bots.ContainsKey( destBotID ) )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        Bot destBot = bots[ destBotID ];</strong></span>
+<span class="strong"><strong>        destBot.Health -= 10;</strong></span>
+
+<span class="strong"><strong>        // check if the bot died</strong></span>
+<span class="strong"><strong>        if( destBot.Health &lt;= 0 )</strong></span>
+<span class="strong"><strong>        {</strong></span>
+<span class="strong"><strong>          // remove bot from world</strong></span>
+<span class="strong"><strong>          foreach( Player pl in Players )</strong></span>
+<span class="strong"><strong>          {</strong></span>
+<span class="strong"><strong>            if( pl.Id == destBot.OwnerID </strong></span>
+<span class="strong"><strong>            {                        pl.OwnedBots.Remove( destBot );</strong></span>
+<span class="strong"><strong>              break;</strong></span>
+<span class="strong"><strong>            }</strong></span>
+<span class="strong"><strong>          }</strong></span>
+<span class="strong"><strong>          bots.Remove( destBot.BotID );</strong></span>
+
+<span class="strong"><strong>          // broadcast death message</strong></span>
+<span class="strong"><strong>          Broadcast( "BotDied", destBot.BotID );</strong></span>
+
+<span class="strong"><strong>          // send got kill message to player sending the damage message</strong></span>
+<span class="strong"><strong>          player.Send( "GotKill" );</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>        else</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>// send new health amount to victim</strong></span>
+<span class="strong"><strong>foreach( Player pl in Players )</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  if( pl.Id == destBot.OwnerID )</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    pl.Send( "TookDamage", destBot.BotID, destBot.Health );</strong></span>
+<span class="strong"><strong>    break;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+<span class="strong"><strong>}</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+  }
+}</pre></div><p>We'll also<a id="id232" class="indexterm"></a> periodically broadcast the state of all bots currently alive. Player.IO has a fairly small bandwidth limit, so we'll do this five times per second (in a twitch-based game you would generally broadcast anywhere from ten to twenty times per second)</p><p>We'll hook up a timer in <code class="literal">GameStarted</code> to accomplish this:</p><div class="informalexample"><pre class="programlisting">// This method is called when an instance of your the game is created
+public override void GameStarted()
+{
+  <span class="strong"><strong>// broadcast game state 5 times per second</strong></span>
+<span class="strong"><strong>  AddTimer(</strong></span>
+<span class="strong"><strong>    delegate()</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      foreach( Player player in Players )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        foreach( Bot bot in player.OwnedBots )</strong></span>
+<span class="strong"><strong>        {</strong></span>
+<span class="strong"><strong>          </strong></span>
+<span class="strong"><strong>// broadcast bot state (position &amp; health)</strong></span>
+<span class="strong"><strong>        foreach( Player target in Players )</strong></span>
+<span class="strong"><strong>        {</strong></span>
+<span class="strong"><strong>          if( target != player )</strong></span>
+<span class="strong"><strong>          Broadcast( "UpdateBot", bot.BotID, bot.PositionX, bot.PositionY, bot.Health );</strong></span>
+<span class="strong"><strong>        }        }</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }, 200 );</strong></span>
+}</pre></div><p>And finally, <a id="id233" class="indexterm"></a>when a player's bots have all been killed, we will kick them out of the game. We'll modify our <code class="literal">TakeDamage</code> message case:</p><div class="informalexample"><pre class="programlisting">case "TakeDamage":
+{
+  // one bot damaged another
+  ulong destBotID = message.GetULong( 0 );
+
+  if( bots.ContainsKey( destBotID ) )
+  {
+    Bot destBot = bots[ destBotID ];
+    destBot.Health -= 10;
+
+    // check if the bot died
+    if( destBot.Health &lt;= 0 )
+    {
+      // remove bot from world
+      foreach( Player pl in Players )
+      {
+        if( pl.Id == destBot.OwnerID )
+        {
+          pl.OwnedBots.Remove( destBot );
+
+          <span class="strong"><strong>// player is out of bots?</strong></span>
+<span class="strong"><strong>          if( pl.OwnedBots.Count == 0 )</strong></span>
+<span class="strong"><strong>          {</strong></span>
+<span class="strong"><strong>            // boot them from the game</strong></span>
+<span class="strong"><strong>            pl.Disconnect();</strong></span>
+<span class="strong"><strong>          }</strong></span>
+          break;
+        }
+      }
+      bots.Remove( destBot.BotID );
+
+      // broadcast death message
+      Broadcast( "BotDied", destBot.BotID );
+
+      // send got kill message to player sending the damage message
+      player.Send( "GotKill" );
+    }
+    else
+    {
+      // send new health amount to victim
+      foreach( Player pl in Players )
+      {
+        if( pl.Id == destBot.OwnerID )
+        {
+          pl.Send( "TookDamage", destBot.BotID, destBot.Health );
+          break;
+        }
+      }
+    }
+  }
+}
+  break;</pre></div><p>We are now<a id="id234" class="indexterm"></a> finished with our server-side code. Now to work on the client side.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec39"></a>The client-side code</h3></div></div></div><p>In our <a id="id235" class="indexterm"></a>game we'll have two scenes. The first scene lets the player choose a name, displays their stats, and lets them join a random room, and the second scene is used for gameplay.</p><p>First, we'll need some place to store our client and connection, among other things. Let's create a class with static variables for these.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+
+using PlayerIOClient;
+
+public class NetworkUtils : MonoBehaviour
+{
+  public static Client client;
+  public static Connection connection;
+  public static DatabaseObject playerObject;
+  public static int localPlayerID;
+  public static Dictionary&lt;int, string&gt; PlayersInRoom = new Dictionary&lt;int, string&gt;();
+}</pre></div><p>Now, our <code class="literal">Connect</code> script can set these values, and we can later retrieve them easily.</p><p>The next thing we'll add is a <code class="literal">Connect</code> script that connects to Player.IO, saves the client, loads the player object, <a id="id236" class="indexterm"></a>saves that, and displays the player's stats (bots killed, and bots lost), and will additionally join a random room and load the gameplay scene.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+using PlayerIOClient;
+
+public class ConnectScreen : MonoBehaviour
+{
+  string playerName = "Player";
+
+  bool connecting = true;
+
+  int botsKilled = 0;
+  int botsLost = 0;
+  void Connect()
+  {
+    // we need some monobehavior in the scene for player.io to work, but it can be any monobehavior so we'll just put our NetworkUtils component on it.
+    if( GameObject.Find( "_playerIO" ) == null )
+    {
+      GameObject go = new GameObject( "_playerIO" );
+      go.AddComponent&lt;NetworkUtils&gt;();
+      DontDestroyOnLoad( go );
+      PlayerIO.UnityInit( go.GetComponent&lt;NetworkUtils&gt;() );
+    }
+    
+    PlayerIO.Connect( "YourGameIDHere", "public", playerName, null, null,
+      delegate( Client client )
+      {
+        Debug.Log( "Connected" );
+        
+        // store client for later retrieval
+        NetworkUtils.client = client;
+
+        // load player object
+        client.BigDB.LoadMyPlayerObject(
+          delegate( DatabaseObject playerObj )
+          {
+            // store player object for later retrieval
+            NetworkUtils.playerObject = playerObj;
+
+            // read stats from player object
+            botsKilled = playerObj.GetInt( "Kills", 0 );
+            botsLost = playerObj.GetInt( "Deaths", 0 );
+          },
+          delegate( PlayerIOError error )
+          {
+            Debug.Log( "Failed loading player object: " + error.Message );
+          } );
+      },
+      delegate( PlayerIOError error )
+      {
+        Debug.Log( "Failed to connect: " + error.Message );
+      } );
+  }
+  void JoinRoom()
+  {
+    NetworkUtils.client.Multiplayer.CreateJoinRoom( "$service-room$", "GameRoom", true,
+      null,
+      new Dictionary&lt;string, string&gt; { },
+      delegate( Connection connection )
+      {
+        Debug.Log( "Connected to room" );
+        NetworkUtils.connection = connection;
+
+        // load gameplay scene
+        Application.LoadLevel( "GameplayScene" );
+      },
+      delegate( PlayerIOError error )
+      {
+        Debug.Log( "Failed to join room: " + error.Message );
+      } );
+  }
+
+  void OnGUI()
+  {
+    if( !connecting )
+    {
+      if( NetworkUtils.playerObject != null )
+      {
+        GUILayout.Label( "Enemy Bots Destroyed: " + botsKilled );
+        GUILayout.Label( "Bots Lost: " + botsLost );
+        if( GUILayout.Button( "Play", GUILayout.Width( 100f ) ) )
+        {
+          // join random room
+          JoinRoom();
+        }
+      }
+      else
+      {
+        playerName = GUILayout.TextField( playerName, GUILayout.Width( 200f ) );
+        if( GUILayout.Button( "Connect", GUILayout.Width( 100f ) ))
+        {
+          Connect();
+        }
+      }
+    }
+    else
+    {
+      GUILayout.Label( "Connecting..." );
+    }
+  }
+}</pre></div><p>This code <a id="id237" class="indexterm"></a>displays a screen allowing the player to enter their name and connect to Player.IO. Once connected, the player's stats are displayed, and the player can click on "Play" to join a service room. After it connects to a room, it loads the "GameplayScene". We'll need to create this scene, and add our gameplay scripts to it.</p><p>First, we'll create a script to handle incoming messages:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class MessageHandler : MonoBehaviour
+{
+  void OnEnable()
+  {
+    NetworkUtils.connection.OnMessage += connection_OnMessage;
+    NetworkUtils.connection.OnDisconnect += connection_OnDisconnect;
+  }
+
+  // We'll also disconnect our event handlers. This is not necessary in some cases, but it is always good practice.
+  void OnDisable()
+  {
+    NetworkUtils.connection.OnMessage -= connection_OnMessage;
+    NetworkUtils.connection.OnDisconnect -= connection_OnDisconnect;
+  }
+
+  void connection_OnDisconnect( object sender, string message )
+  {
+    Debug.Log( "Disconnected from server" );
+    NetworkUtils.connection = null;
+
+    // save player object
+    NetworkUtils.playerObject.Save();
+    // go back to main menu
+    Application.LoadLevel( "MainMenu" );
+  }
+
+  void connection_OnMessage( object sender, PlayerIOClient.Message e )
+  {
+    // handle incoming messages
+  }
+}</pre></div><p>All messages sent to us by the server will trigger our <code class="literal">connection_OnMessage</code> function. Additionally, if the <a id="id238" class="indexterm"></a>client is disconnected from the server the game will dispose of the <code class="literal">Connection</code> object, save the player object, and load the main scene.</p><p>Next, let's create a component to keep track of the owner ID and instance ID of a bot, so that we always have a way to tell who owns a bot:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class BotInfo : MonoBehaviour
+{
+  // a map of botID -&gt; bot
+  public static Dictionary&lt;ulong,BotInfo&gt; botMap = new Dictionary&lt;ulong,BotInfo&gt;();
+
+  // the player that owns this bot
+  public int OwnerID;
+
+  // the ID of this bot
+  public ulong BotID;
+
+  // whether this bot belongs to the local player
+  public bool IsMine
+  {
+    get
+    {
+      return OwnerID == NetworkUtils.localPlayerID;
+    }
+  }
+
+  public void Register()
+  {
+    botMap.Add( this.BotID, this );
+  }
+
+  void OnDestroy()
+  {
+    botMap.Remove( this.BotID );
+  }
+
+  float timer = 0f;
+  void Update()
+  {
+    if( IsMine )
+    {
+      timer += Time.deltaTime;
+      if( timer &gt;= 0.1f )
+      {
+        // send update message to server
+        NetworkUtils.connection.Send( "UpdateBot", BotID, transform.position.x, transform.position.z );
+      }
+    }
+  }
+}</pre></div><p>When a bot is spawned we'll set its <code class="literal">OwnerID</code> and <code class="literal">BotID</code>, and then call Register. Register adds the bot to a <a id="id239" class="indexterm"></a>dictionary, so later we can look up bots by ID. When the bot is destroyed, it is removed from the dictionary.</p><p>Next, we'll handle a few message types:</p><div class="informalexample"><pre class="programlisting">void connection_OnMessage( object sender, PlayerIOClient.Message e )
+{
+  // handle incoming messages
+  switch( e.Type )
+  {
+    // server sent us our ID
+    case "SetID":
+      NetworkUtils.localPlayerID = e.GetInt( 0 );
+      break;
+    // add a player to list of players in the room
+    case "UserJoined":
+      NetworkUtils.PlayersInRoom.Add( e.GetInt( 0 ), e.GetString( 1 ) );
+      break;
+    // remove player from list of players
+    case "UserLeft":
+      NetworkUtils.PlayersInRoom.Remove( e.GetInt( 0 ) );
+      //clean up this player's bots
+      foreach( ulong botID in BotInfo.botMap.Keys )
+      {
+        Destroy( BotInfo.botMap[ botID ].gameObject );
+      }
+      break;
+    // spawn a bot
+    case "OnBotSpawned":
+      break;
+    // update a bot
+    case "UpdateBot":
+      break;
+    // destroy a bot
+    case "BotDied":
+      break;
+    // local player got a kill
+    case "GotKill":
+      break;
+    // one of local player's bots took damage
+    case "TookDamage":
+      break;
+  }
+}</pre></div><p>Currently, this <a id="id240" class="indexterm"></a>handles the server sending us our ID (this is stored in <code class="literal">NetworkUtils</code>, which is important in order to know which bots belong to us), users joining (the user's name is stored in a dictionary so we can look up the player name by ID), and leaving. We also have stubs for gameplay-related messages, which we'll <a id="id241" class="indexterm"></a>start filling in.</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>public GameObject BotPrefab;</strong></span>
+void connection_OnMessage( object sender, PlayerIOClient.Message e )
+{
+  // handle incoming messages
+  switch( e.Type )
+  {
+    // server sent us our ID
+    case "SetID":
+      NetworkUtils.localPlayerID = e.GetInt( 0 );
+      break;
+    // add a player to list of players in the room
+    case "UserJoined":
+      NetworkUtils.PlayersInRoom.Add( e.GetInt( 0 ), e.GetString( 1 ) );
+      break;
+    // remove player from list of players
+    case "UserLeft":
+      NetworkUtils.PlayersInRoom.Remove( e.GetInt( 0 ) );
+      //clean up this player's bots
+      foreach( ulong botID in BotInfo.botMap.Keys )
+      {
+        Destroy( BotInfo.botMap[ botID ].gameObject );
+      }
+      break;
+    <span class="strong"><strong>// spawn a bot</strong></span>
+<span class="strong"><strong>    case "OnBotSpawned":</strong></span>
+<span class="strong"><strong>      int spawnedBotOwnerID = e.GetInt( 0 );</strong></span>
+<span class="strong"><strong>      ulong spawnedBotID = e.GetULong( 1 );</strong></span>
+<span class="strong"><strong>      float spawnedBotPosX = e.GetFloat( 2 );</strong></span>
+<span class="strong"><strong>      float spawnedBotPosY = e.GetFloat( 3 );</strong></span>
+
+<span class="strong"><strong>      GameObject bot = (GameObject)Instantiate( BotPrefab, new Vector3( spawnedBotPosX, 0f, spawnedBotPosY ), Quaternion.identity );</strong></span>
+<span class="strong"><strong>      bot.GetComponent&lt;BotInfo&gt;().OwnerID = spawnedBotOwnerID;</strong></span>
+<span class="strong"><strong>      bot.GetComponent&lt;BotInfo&gt;().BotID = spawnedBotID;</strong></span>
+<span class="strong"><strong>      bot.GetComponent&lt;BotInfo&gt;().Register();</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+<span class="strong"><strong>    // update a bot</strong></span>
+<span class="strong"><strong>    case "UpdateBot":</strong></span>
+<span class="strong"><strong>      ulong updateBotID = e.GetULong( 0 );</strong></span>
+<span class="strong"><strong>      float updatePosX = e.GetFloat( 1 );</strong></span>
+<span class="strong"><strong>      float updatePosY = e.GetFloat( 2 );</strong></span>
+<span class="strong"><strong>      int updateBotHealth = e.GetInt( 3 );</strong></span>
+
+<span class="strong"><strong>      BotInfo updateBot = BotInfo.botMap[ updateBotID ];</strong></span>
+<span class="strong"><strong>      updateBot.transform.position = new Vector3( updatePosX, 0f, updatePosY );</strong></span>
+<span class="strong"><strong>      updateBot.SendMessage( "SetHealth", updateBotHealth, SendMessageOptions.DontRequireReceiver );</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+<span class="strong"><strong>    // destroy a bot</strong></span>
+<span class="strong"><strong>    case "BotDied":</strong></span>
+<span class="strong"><strong>      // kill bot</strong></span>
+<span class="strong"><strong>      ulong killedBotID = e.GetULong( 0 );</strong></span>
+<span class="strong"><strong>      BotInfo killedBot = BotInfo.botMap[ killedBotID ];</strong></span>
+<span class="strong"><strong>      if( killedBot.IsMine )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        // increment lost bots</strong></span>
+<span class="strong"><strong>        NetworkUtils.playerObject.Set( "Deaths", NetworkUtils.playerObject.GetInt( "Deaths" ) + 1 );</strong></span>
+<span class="strong"><strong>      }</strong></span>
+
+<span class="strong"><strong>      // destroy bot obj</strong></span>
+<span class="strong"><strong>      GameObject.Destroy( killedBot );</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+<span class="strong"><strong>    // local player got a kill</strong></span>
+<span class="strong"><strong>    case "GotKill":</strong></span>
+<span class="strong"><strong>      // increment kills</strong></span>
+<span class="strong"><strong>      NetworkUtils.playerObject.Set( "Kills", NetworkUtils.playerObject.GetInt( "Kills" ) + 1 );</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+<span class="strong"><strong>    // one of local player's bots took damage</strong></span>
+<span class="strong"><strong>    case "TookDamage":</strong></span>
+<span class="strong"><strong>      Debug.Log( "Taking damage!" );</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+  }
+}</pre></div><p>This is mostly <a id="id242" class="indexterm"></a>straightforward, the Spawn Bot message instantiates a bot prefab and assigns network IDs, the update and death messages look up the appropriate bot by ID and call methods/set properties, <code class="literal">GotKill</code> increments the number of kills, and so on. Most of the code should be self-explanatory at this point.</p><p>Next, we'll create the script for bots. This script will allow us to select a single bot with left-click, and order that bot with right click. If we click the ground, the bot will move to that spot. Otherwise, if we click on another bot that isn't ours, the bot will move to within range and attack (send damage messages).</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class BotScript : MonoBehaviour
+{
+  public static BotScript SelectedBot;
+
+  private Vector3 targetMovePos;
+  private BotInfo targetEnemy;
+
+  private float attackTimer = 0f;
+  void Awake()
+  {
+    targetMovePos = Vector3.zero;
+  }
+
+  void Update()
+  {
+    // left mouse button pressed?
+    if( Input.GetMouseButtonDown( 0 ) )
+    {
+      // raycast
+      RaycastHit hit;
+      if( Physics.Raycast( Camera.main.ScreenPointToRay( Input.mousePosition ), out hit ) )
+      {
+        BotInfo hitBot = hit.collider.GetComponent&lt;BotInfo&gt;();
+        if( hitBot != null &amp;&amp; hitBot.IsMine )
+        {
+          // select bot
+          SelectedBot = hitBot.GetComponent&lt;BotScript&gt;();
+        }
+      }
+    }
+
+    if( !GetComponent&lt;BotInfo&gt;().IsMine )
+      return;
+
+// current target not null? move towards and attack
+    if( targetEnemy != null )
+    {
+      moveTowards( targetEnemy.transform.position, 2f );
+      targetMovePos = transform.position;
+
+      // close enough to target? attack
+      if( Vector3.Distance( transform.position, targetEnemy.transform.position ) &lt;= 2f )
+      {
+        attackTimer += Time.deltaTime;
+        if( attackTimer &gt;= 1f )
+        {
+          attackTimer = 0f;
+          // send damage message
+          NetworkUtils.connection.Send( "TakeDamage", targetEnemy.BotID );
+        }
+      }
+    }
+    else
+    {
+      moveTowards( targetMovePos, 0.5f );
+    }
+
+    if( SelectedBot != this )
+      return;
+
+    // right mouse button pressed?
+    if( Input.GetMouseButtonDown( 1 ) )
+    {
+      // raycast
+      RaycastHit hit;
+      if( Physics.Raycast( Camera.main.ScreenPointToRay( Input.mousePosition ), out hit ) )
+      {
+        BotInfo hitBot = hit.collider.GetComponent&lt;BotInfo&gt;();
+        if( hitBot != null &amp;&amp; !hitBot.IsMine )
+        {
+          // target selected bot
+          targetEnemy = hitBot;
+        }
+        else if( hitBot == null )
+        {
+          // move to position
+          targetMovePos = hit.point;
+        }
+      }
+    }
+  }
+
+  // move to within a certain distance of the target
+  void moveTowards( Vector3 pos, float range )
+  {
+    if( Vector3.Distance( transform.position, pos ) &gt; range )
+    {
+      // move toward at 5 meters per second
+      transform.position = Vector3.MoveTowards( transform.position, pos, Time.deltaTime * 5f );
+    }
+  }
+}</pre></div><p>We'll attach this to a cube alongside the <code class="literal">BotInfo</code> component and save it as a prefab.</p><p>Next, we'll <a id="id243" class="indexterm"></a>spawn our bots in the scene at five predetermined spawn points. For the purposes of learning, our game is client-authoritative, and this includes generating object IDs. What we're doing here is basing the ID off of the player's ID (four bytes are player ID, the other four bytes are just an incrementing counter), which is why we used an unsigned long for the bot ID. As the player ID is unique for each player, we have a fairly painless way to generate instant network-unique client-side IDs.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SpawnBots : MonoBehaviour
+{
+  public GameObject BotPrefab;
+
+  public Transform[] SpawnPoints;
+
+  private int lastGeneratedBotID = 0;
+
+  IEnumerator Start()
+  {
+    // 3 second prepare time
+    yield return new WaitForSeconds( 3f );
+
+    foreach( Transform spawn in SpawnPoints )
+    {
+      ulong botID = AllocateBotID();
+
+      GameObject bot = (GameObject)Instantiate( BotPrefab, new Vector3( spawn.position.x, 0f, spawn.position.z ), Quaternion.identity );
+      bot.GetComponent&lt;BotInfo&gt;().OwnerID = NetworkUtils.localPlayerID;
+      bot.GetComponent&lt;BotInfo&gt;().BotID = botID;
+
+      // send spawn message to server
+      NetworkUtils.connection.Send( "SpawnBot", botID, spawn.position.x, spawn.position.z );
+    }
+  }
+
+  ulong AllocateBotID()
+  {
+    // here, we will generate a unique network ID for one of our bots
+    // to do this without server intervention, the ID will be based on the Player ID (which is guaranteed to be unique per player)
+    // four of the bytes will be player ID, and the other four bytes will be bot instance ID
+    ulong id = (ulong)lastGeneratedBotID++;        // int fills four bytes, leaving a remaining four
+    id |= ( (ulong)NetworkUtils.localPlayerID &lt;&lt; 4 );  // shift player ID to fill the remaining four bytes
+
+    return id;
+  }
+}</pre></div><p>At this point, we are nearly done. We just have to set up our gameplay scene. This is a fairly simple matter,<a id="id244" class="indexterm"></a> just drop in a plane (make sure <span class="emphasis"><em>Y</em></span> is set to <span class="emphasis"><em>0</em></span>) for the floor, and create starting points for each of the bots as empty game objects (these are then dropped onto the spawn array for the <code class="literal">SpawnBot</code> script, in addition to our bot prefab).</p><p>And now, our Bot Wars example game is complete.</p></div></div>

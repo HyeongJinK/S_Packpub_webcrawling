@@ -1,0 +1,84 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec8"></a>Making it endless</h2></div></div><hr /></div><p>Now that we have a foundation, let's now make it so that we can continue running instead of stopping after a short time:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>To start off with, we have our prefab, so we can delete the original <code class="literal">Basic Tile</code> in the <strong class="userinput"><code>Hierarchy</code></strong> window by selecting it and then pressing the <span class="emphasis"><em><span class="strong"><strong>Delete</strong></span></em></span> key.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>We need to have a place to create all of these tiles and potentially manage information for the game, such as the player's score. In Unity, this is typically referred to as a <code class="literal">GameController</code>. From the <strong class="userinput"><code>Project</code></strong> window, go to the <code class="literal">Scripts</code> folder and create a new C# script called <code class="literal">GameController</code>.</li><li>Open the script in your IDE, and use the following code:</li></ol></div><pre class="programlisting">using UnityEngine;
+
+/// &lt;summary&gt; 
+/// Controls the main gameplay 
+/// &lt;/summary&gt; 
+
+public class GameController : MonoBehaviour
+{
+    [Tooltip("A reference to the tile we want to spawn")]
+    public Transform tile;
+
+    [Tooltip("Where the first tile should be placed at")]
+    public Vector3 startPoint = new Vector3(0, 0, -5);
+
+    [Tooltip("How many tiles should we create in advance")]
+    [Range(1, 15)]
+    public int initSpawnNum = 10;
+
+    /// &lt;summary&gt; 
+    /// Where the next tile should be spawned at. 
+    /// &lt;/summary&gt; 
+    private Vector3 nextTileLocation;
+
+    /// &lt;summary&gt; 
+    /// How should the next tile be rotated? 
+    /// &lt;/summary&gt; 
+    private Quaternion nextTileRotation;
+
+    /// &lt;summary&gt; 
+    /// Used for initialization 
+    /// &lt;/summary&gt; 
+
+    void Start()
+    {
+        // Set our starting point 
+        nextTileLocation = startPoint;
+        nextTileRotation = Quaternion.identity;
+
+        for (int i = 0; i &lt; initSpawnNum; ++i)
+        {
+            SpawnNextTile();
+        }
+    }
+
+    /// &lt;summary&gt; 
+    /// Will spawn a tile at a certain location and setup the next position 
+    /// &lt;/summary&gt; 
+
+    public void SpawnNextTile()
+    {
+        var newTile = Instantiate(tile, nextTileLocation, 
+                                  nextTileRotation);
+
+        // Figure out where and at what rotation we should spawn 
+        // the next item 
+        var nextTile = newTile.Find("Next Spawn Point");
+        nextTileLocation = nextTile.position;
+        nextTileRotation = nextTile.rotation;
+    }
+} </pre><p>This script will spawn a number of tiles, one after another, based on the <code class="literal">tile</code> and <code class="literal">initSpawnNum</code> properties.</p><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Save your script and dive back into Unity. From there, create a new <strong class="userinput"><code>Empty</code></strong> game object and name it <code class="literal">Game Controller</code>. Drag and drop it to the top of the <strong class="userinput"><code>Hierarchy</code></strong> window. For clarity's sake, go ahead and reset the position if you want to. Then, attach the <strong class="userinput"><code>Game Controller</code></strong> script to the object and then set the <strong class="userinput"><code>Tile</code></strong> property by dragging and dropping the <code class="literal">Basic Tile</code> prefab from the <strong class="userinput"><code>Project</code></strong> window into the <strong class="userinput"><code>Tile</code></strong> slot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/f5628c53-ad3d-4232-9fb9-5dc17ed2f218.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Save your scene and run the project:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/3874f33e-ec0e-44cd-a095-7a77d26e5197.png" /></div><p>Great, but now we will need to create new objects after these, but we don't want to spawn a crazy number of these at once. It's better that once we reach the end of a tile, we create a new tile and remove it. We'll work on optimizing this more later, but that way we always have around the same number of tiles in the game at one time.</p><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Go into the <strong class="userinput"><code>Project</code></strong> window and create a new script called <code class="literal">TileEndBehaviour</code>, using the following code:</li></ol></div><pre class="programlisting">using UnityEngine; 
+
+/// &lt;summary&gt; 
+/// Handles spawning a new tile and destroying this one  
+/// upon the player reaching the end 
+/// &lt;/summary&gt; 
+public class TileEndBehaviour : MonoBehaviour 
+{ 
+    [Tooltip("How much time to wait before destroying " + 
+             "the tile after reaching the end")] 
+    public float destroyTime = 1.5f; 
+
+    void OnTriggerEnter(Collider col) 
+    { 
+        // First check if we collided with the player 
+        if (col.gameObject.GetComponent&lt;PlayerBehaviour&gt;()) 
+        { 
+            // If we did, spawn a new tile 
+            GameObject.FindObjectOfType&lt;GameController&gt;().SpawnNextTile(); 
+
+            // And destroy this entire tile after a short delay 
+            Destroy(transform.parent.gameObject, destroyTime); 
+        } 
+    } 
+} </pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Now, to assign it to the prefab, we can go to the <strong class="userinput"><code>Project</code></strong> window and then go into the <code class="literal">Prefabs</code> folder. From there, click on the arrow beside the <code class="literal">Basic Tile</code> to open up its objects and then add a <strong class="userinput"><code>Tile End Behaviour</code></strong> component to the <code class="literal">Tile End</code> object:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/d184d10d-b1f1-478d-8526-e34d35127de9.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Save your scene and play.</li></ol></div><p>You'll note now that as the player continues to move, new tiles will spawn as you continue; if you switch to the <strong class="userinput"><code>Scene</code></strong> tab while playing, you'll see that as the ball passes the tiles they will destroy themselves:</p><div class="mediaobject"><img src="/graphics/9781787288713/graphics/42e08382-5a26-49d6-a42f-4ac9cc8e48c8.png" /></div></div>

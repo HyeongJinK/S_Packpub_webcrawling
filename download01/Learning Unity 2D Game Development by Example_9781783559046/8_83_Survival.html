@@ -1,0 +1,7 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec82"></a>Survival</h2></div></div><hr /></div><p>In an<a id="id544" class="indexterm"></a> endless runner, the character usually only has one life, and as such, we need to check our game. Check when the ninja collides with an obstacle, because when that happens, he dies and the game ends.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note108"></a>Note</h3><p>A Unity function to detect whether the ninja has collided with an obstacle is declared next. We do not need to call the function since it is part of the Unity API and gets called automatically by Unity's Physics engine.</p></div><div class="informalexample"><pre class="programlisting">function OnCollisionEnter2D(other:Collision2D)
+{</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note109"></a>Note</h3><p>If the name of the object that has collided with the obstacle is <code class="literal">Ninja</code>, then end the game by stopping the game using <code class="literal">Time.timeScale = 0;</code>. And then, destroy the obstacle. Have a look at the next code snippet.</p></div><div class="informalexample"><pre class="programlisting">    if(other.gameObject.name=="Ninja")
+    {
+        Time.timeScale = 0;
+    Destroy(gameObject); 
+  }
+}</pre></div></div>

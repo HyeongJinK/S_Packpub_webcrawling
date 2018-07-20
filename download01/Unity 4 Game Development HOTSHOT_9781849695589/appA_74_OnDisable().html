@@ -1,0 +1,13 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec76"></a>OnDisable()</h2></div></div><hr /></div><p>The <code class="literal">OnDisable()</code> function is called when an object/behavior is disabled or inactive.</p><p>This is also<a id="id1303" class="indexterm"></a> called when an object is<a id="id1304" class="indexterm"></a> destroyed and can be used for any clean-up code. When scripts are reloaded after compilation has finished, <code class="literal">OnDisable()</code> will be called, followed by an <code class="literal">OnEnable()</code> function after the script has been loaded.</p><p>An<a id="id1305" class="indexterm"></a> example of <code class="literal">OnDisable()</code> is as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+function OnDisable () {
+  Debug.Log("script becomes inactive");
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void OnDisable () {
+  Debug.Log("script becomes inactive");
+}</pre></div></div>

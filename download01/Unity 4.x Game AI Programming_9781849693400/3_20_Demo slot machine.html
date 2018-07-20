@@ -1,0 +1,225 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec24"></a>Demo slot machine</h2></div></div><hr /></div><p>In this final demo, we'll design and implement a slot machine game with 10 symbols and three reels. Just to make it simple we'll just <a id="id142" class="indexterm"></a>use the numbers from zero to nine as our symbols. Many slot machines would use fruit shapes and other simple shapes, such as bells, stars, and letters. Some other slot machines usually use a specific theme based on popular movies or TV <a id="id143" class="indexterm"></a>programs as a franchise. Since there are 10 symbols and three reels, that's a total of 1,000 (10^3) possible combinations.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec31"></a>Random slot machine</h3></div></div></div><p>This random slot machine demo is <a id="id144" class="indexterm"></a>similar to our previous dice example. This time we are going to generate three random numbers for three reels. The only payout will be when you get three of the same symbols on the payline. To make it simpler, we'll only have one line to play against in this demo. And if the player wins, the game will return 500 times the bet amount.</p><p>We'll set up our scene with four GUI text objects to represent the three reels, and the result message.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_03_05.jpg" /><div class="caption"><p>Our GUI text objects</p></div></div><p>This is how our new script looks, as shown in the following <code class="literal">SlotMachine.cs</code> file::</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SlotMachine : MonoBehaviour {
+
+  public float spinDuration = 2.0f;
+  public int numberOfSym = 10;
+  private GameObject betResult;
+
+  private bool startSpin = false;
+  private bool firstReelSpinned = false;
+  private bool secondReelSpinned = false;
+  private bool thirdReelSpinned = false;
+
+  private string betAmount = "100";
+
+  private int firstReelResult = 0;
+  private int secondReelResult = 0;
+  private int thirdReelResult = 0;
+
+  private float elapsedTime = 0.0f;
+
+    //Use this for initialization
+  void Start () {
+    betResult = gameObject;
+    betResult.guiText.text = "";
+  }
+
+  void OnGUI() {
+    GUI.Label(new Rect(200, 40, 100, 20), "Your bet: ");
+    betAmount = GUI.TextField(new Rect(280, 40, 50, 20),
+      betAmount, 25);
+      if (GUI.Button(new Rect(200, 300, 150, 40),
+        "Pull Liver")) {
+      Start();
+        startSpin = true;
+      }
+    }
+
+  void checkBet() {
+    if (firstReelResult == secondReelResult &amp;&amp; 
+      secondReelResult == thirdReelResult) {
+        betResult.guiText.text = "YOU WIN!";
+      }
+    else {
+      betResult.guiText.text = "YOU LOSE!";
+    }
+  }
+
+    //Update is called once per frame
+    void FixedUpdate () {
+      if (startSpin) {
+        elapsedTime += Time.deltaTime;
+        int randomSpinResult = Random.Range(0,
+          numberOfSym);
+      if (!firstReelSpinned) {
+        GameObject.Find("firstReel").guiText.text = 
+          randomSpinResult.ToString();
+      if (elapsedTime &gt;= spinDuration) {
+        firstReelResult = randomSpinResult;
+        firstReelSpinned = true;
+        elapsedTime = 0;
+      }
+    }
+      else if (!secondReelSpinned) {
+        GameObject.Find("secondReel").guiText.text = 
+          randomSpinResult.ToString();
+      if (elapsedTime &gt;= spinDuration) {
+        secondReelResult = randomSpinResult;
+        secondReelSpinned = true;
+        elapsedTime = 0;
+      }
+    }
+      else if (!thirdReelSpinned) {
+        GameObject.Find("thirdReel").guiText.text = 
+          randomSpinResult.ToString();
+      if (elapsedTime &gt;= spinDuration) {
+        thirdReelResult = randomSpinResult;
+          startSpin = false;
+          elapsedTime = 0;
+          firstReelSpinned = false;
+          secondReelSpinned = false;
+        checkBet();
+        }
+      }
+    }
+  }
+}</pre></div><p>Attach the script to our <a id="id145" class="indexterm"></a>
+<code class="literal">betResult guiText</code> object, and then position the <a id="id146" class="indexterm"></a>
+<code class="literal">guiText</code> element on the screen. We have a button called <span class="strong"><strong>Pull Lever</strong></span> in the <code class="literal">OnGUI()</code> <a id="id147" class="indexterm"></a>method that will set the <code class="literal">startSpin</code> flag to true when clicked. And in our <code class="literal">FixedUpdate()</code> method <a id="id148" class="indexterm"></a>we generate a random value for each reel if the <code class="literal">startSpin</code> is true. Finally, once we've got the value for the third reel, then we reset the <code class="literal">startSpin</code> to false. While we are getting the random value for each reel, we also keep a track of how much time has elapsed, since the player pulled the lever. <a id="id149" class="indexterm"></a>Usually in the real world slot machines, each reel would take three to five seconds before landing the result. Hence, we are also taking some time as specified in <code class="literal">spinDuration</code> before showing the final random value. If you play the scene and click on the <span class="strong"><strong>Pull Lever</strong></span> <a id="id150" class="indexterm"></a>button, you should see the final result as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_03_06.jpg" /><div class="caption"><p>Random slot game in action</p></div></div><p>Since your chance of winning is one out of 100, it becomes boring as you lose several times consecutively. And of course if you've ever played a slot machine, this is not how it works, or at least not anymore. Usually you can have several wins during your play. Even though these small wins don't recoup your principal bet, and in the long run most of the players go broke, the slot machines <a id="id151" class="indexterm"></a>would render winning graphics and winning sounds, which researchers referred to as losses disguised as wins.</p><p>So instead of just one single way to win—winning the jackpot—we'd like to modify the rules a bit so that it pays out smaller returns during the play session.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec32"></a>Weighted probability</h3></div></div></div><p>Real slot machines have <a id="id152" class="indexterm"></a>something called a <span class="strong"><strong>Paytable and Reel Strips</strong></span> (<span class="strong"><strong>PARS</strong></span>) sheet, which is like the complete design document of the machine. The PARS sheet is used to specify what the payout percentage is, <a id="id153" class="indexterm"></a>what the winning patterns, and what their prizes are, and so on. Obviously the number of the payout prizes and the frequencies of such wins need to be carefully selected, so that the house (slot machine) can collect the fraction of the bets over time, while making sure to return the rest to the players to make the machine attractive to play. This is <a id="id154" class="indexterm"></a>known as payback percentage or <span class="strong"><strong>return to player</strong></span> (<span class="strong"><strong>RTP</strong></span>). For example, a slot machine with a 90 percent RTP means that over time the machine will return an average of 90 percent of all the bets to the players.</p><p>In this demo, we'll not be focusing on choosing the optimal value for the house to yield specific wins over time nor maintaining a particular payback percentage, but rather to demonstrate weighting probability to specific symbols, so that they show up more times than usual. So let's say we'd like to make the symbol zero to appear 20 percent more than by chance on the first and third reel, and return a small payout of half of the bet. In other words, a player will only lose half of their bet if they got zero symbols on the first and third reels, essentially disguising a loss as a small win. <a id="id155" class="indexterm"></a>Currently, the zero symbol has a probability of 1/10 (<code class="literal">0.1</code>) or 10 percent probability to occur. Now we'll make it 30 percent for zero to land on the first and third reels as shown in the following <code class="literal">SlotMachineWeighted.cs</code> file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SlotMachineWeighted : MonoBehaviour {
+  public float spinDuration = 2.0f;
+  public int numberOfSym = 10;
+  public GameObject betResult;
+
+  private bool startSpin = false;
+  private bool firstReelSpinned = false;
+  private bool secondReelSpinned = false;
+  private bool thirdReelSpinned = false;
+
+  private int betAmount = 100;
+
+  private int creditBalance = 1000;
+  private ArrayList weightedReelPoll = new ArrayList();
+  private int zeroProbability = 30;
+
+  private int firstReelResult = 0;
+  private int secondReelResult = 0;
+  private int thirdReelResult = 0;
+
+  private float elapsedTime = 0.0f;</pre></div><p>New variable declarations are added, such as <code class="literal">zeroProbability</code> to specify the probability percentage of the zero symbol to land on the first and third reels. The <code class="literal">weightedReelPoll</code> array <a id="id156" class="indexterm"></a>list will be used to fill with all the symbols (zero to nine) according to their distribution, so that we can <a id="id157" class="indexterm"></a>later pick one randomly from the poll like we did in our earlier FSM example. And then we initialize the list in our <code class="literal">Start()</code> <a id="id158" class="indexterm"></a>method as shown in the following code:</p><div class="informalexample"><pre class="programlisting">  void Start () {
+    betResult = gameObject;
+    betResult.guiText.text = "";
+      for (int i = 0; i &lt; zeroProbability; i++) {
+        weightedReelPoll.Add(0);
+      }
+    nt remainingValuesProb = (100 - zeroProbability)/9;
+      for (int j = 1; j &lt; 10; j++) {
+        for (int k = 0; k &lt; remainingValuesProb; k++) {
+          weightedReelPoll.Add(j);
+        }
+      }
+    }
+
+  void OnGUI() {
+    GUI.Label(new Rect(150, 40, 100, 20), "Your bet: ");
+    betAmount = int.Parse(GUI.TextField(new Rect(220, 40,
+      50, 20), betAmount.ToString(), 25));
+    GUI.Label(new Rect(300, 40, 100, 20), "Credits: " + 
+      creditBalance.ToString());
+      if (GUI.Button(new Rect(200,300,150,40),"Pull Lever")) {
+        betResult.guiText.text = "";
+        startSpin = true;
+      }
+    }</pre></div><p>And the following is our revised <a id="id159" class="indexterm"></a>
+<code class="literal">checkBet()</code> method. Instead of just one jackpot win, we are now considering five conditions: jackpot, loss disguised as win, near miss, any two symbols matched on the first and <a id="id160" class="indexterm"></a>third row, and of course the lose condition:</p><div class="informalexample"><pre class="programlisting">  void checkBet() {
+    if (firstReelResult == secondReelResult &amp;&amp; 
+      secondReelResult == thirdReelResult) {
+      betResult.guiText.text = "JACKPOT!";
+      creditBalance += betAmount * 50;
+      }
+    else if (firstReelResult ==0 &amp;&amp; thirdReelResult ==0) {
+      betResult.guiText.text = "YOU WIN" + 
+        (betAmount/2).ToString();
+        creditBalance -= (betAmount/2);
+      }
+    else if (firstReelResult == secondReelResult) {
+      betResult.guiText.text = "AWW... ALMOST JACKPOT!";
+      }
+    else if (firstReelResult == thirdReelResult) {
+      betResult.guiText.text = "YOU WIN" + 
+        (betAmount*2).ToString();
+        creditBalance -= (betAmount*2);
+      }
+    else {
+      betResult.guiText.text = "YOU LOSE!";
+         creditBalance -= betAmount;
+      }
+    }</pre></div><p>In the <code class="literal">checkBet()</code> method, <a id="id161" class="indexterm"></a>we designed our slot machine to return 50 times if they hit the jackpot, only to lose 50 percent of their bet, if the first and third reels are zero, and two times if the first and third reels are <a id="id162" class="indexterm"></a>matched with any other symbol. And we generate values for the three reels in the <a id="id163" class="indexterm"></a>
+<code class="literal">FixedUpdate()</code> method as shown in the following code:</p><div class="informalexample"><pre class="programlisting">  void FixedUpdate () {
+    if (!startSpin) {
+      return;
+    }
+      elapsedTime += Time.deltaTime;
+      int randomSpinResult = Random.Range(0,
+        numberOfSym);
+      if (!firstReelSpinned) {
+         GameObject.Find("firstReel").guiText.text = 
+           randomSpinResult.ToString();
+      if (elapsedTime &gt;= spinDuration) {
+        int weightedRandom = Random.Range(0,
+          weightedReelPoll.Count);
+          GameObject.Find("firstReel").guiText.text = 
+            weightedReelPoll[weightedRandom].ToString();
+            firstReelResult = 
+              (int)weightedReelPoll[weightedRandom];
+            firstReelSpinned = true;
+            elapsedTime = 0;
+          }
+        }
+      else if (!secondReelSpinned) {
+        GameObject.Find("secondReel").guiText.text = 
+          randomSpinResult.ToString();
+      if (elapsedTime &gt;= spinDuration) {
+        secondReelResult = randomSpinResult;
+        secondReelSpinned = true;
+        elapsedTime = 0;
+      }
+    }</pre></div><p>For the first reel, during the spinning period, we really show the real random values. But once the time is up, we choose the value from our poll that is already populated with symbols according to the probability <a id="id164" class="indexterm"></a>distributions. So our zero symbol would have 30 percent more chance of occurring than the rest, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_03_07.jpg" /><div class="caption"><p>Loss disguised as a win</p></div></div><p>Actually the player is losing on his bets, if you get two zero symbols on the first and third reel. But we make it seem like a win. It's just a lame message here, but if we can combine it with nice graphics; maybe with fireworks, and nice winning sound effects, this can really work, and attract players to bet more, and pull that lever again and again.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec09"></a>Near miss</h4></div></div></div><p>If the first and second reels return the same symbol, then we have to provide the near miss effect to the players by returning the random value to the third reel close to the second one. We can do this by checking the <a id="id165" class="indexterm"></a>third random spin result first. If the random value is the same as the first and second results, then this is a jackpot, and we shouldn't alter the result. But if it's not, then we should modify the result so that it is close enough to the other two. Check the comments in the following code:</p><div class="informalexample"><pre class="programlisting">      else if (!thirdReelSpinned) {
+        GameObject.Find("thirdReel").guiText.text = 
+          randomSpinResult.ToString();
+      if (elapsedTime &lt; spinDuration) {
+        return;
+      }
+      if ((firstReelResult == secondReelResult)
+        &amp;&amp; randomSpinResult != firstReelResult) {
+        randomSpinResult = firstReelResult - 1;
+      if (randomSpinResult &lt; firstReelResult)
+        randomSpinResult = firstReelResult - 1;
+      if (randomSpinResult &gt; firstReelResult)
+        randomSpinResult = firstReelResult + 1;
+      if (randomSpinResult &lt; 0) randomSpinResult = 9;
+      if (randomSpinResult &gt; 9) randomSpinResult = 0;
+        GameObject.Find("thirdReel").guiText.text = 
+          randomSpinResult.ToString();
+        thirdReelResult = randomSpinResult;
+      }
+      else {
+        int weightedRandom = Random.Range(0,
+          weightedReelPoll.Count);
+        GameObject.Find("thirdReel").guiText.text = 
+          weightedReelPoll[weightedRandom].ToString();
+          thirdReelResult = 
+            (int)weightedReelPoll[weightedRandom];
+         }
+         startSpin = false;
+         elapsedTime = 0;
+         firstReelSpinned = false;
+         secondReelSpinned = false;
+         checkBet();
+      }
+    }
+}</pre></div><p>And if that "near miss" happens, <a id="id166" class="indexterm"></a>you should see it as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_03_08.jpg" /><div class="caption"><p>A near miss</p></div></div><p>We can go even further by adjusting the probability in real-time based on the bet amount. But that'd be too creepy. Another thing we could add to our game is a check to make sure the player can't bet more money than <a id="id167" class="indexterm"></a>they already have. Also, we could add a game over message that appears when the player has bet all their money.</p></div></div></div>

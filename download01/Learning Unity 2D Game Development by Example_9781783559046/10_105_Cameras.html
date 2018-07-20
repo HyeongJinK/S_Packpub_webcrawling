@@ -1,0 +1,16 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec102"></a>Cameras</h2></div></div><hr /></div><p>We have been using the Main Camera that is included by default within a new scene in Unity. We have kept it stationary since the games that we created had no need for a moving <a id="id692" class="indexterm"></a>camera. However, most games will require camera movement, which will include panning, rotating, zooming, camera cuts, and so forth.</p><p>As with any GameObject in our scene, we can move a camera in the same manner using <code class="literal">transform.Translate</code>, as in the following script:</p><div class="informalexample"><pre class="programlisting">cam.transform.Translate(Vector3.up * camSpeed * Time.deltaTime);</pre></div><p>For camera cuts or switching between cameras, we create multiple cameras by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>Camera</strong></span> and using the enabled property of the Camera component <code class="literal">cameraName.enabled</code>, as in the following script:</p><div class="informalexample"><pre class="programlisting">var cam1 : Camera;
+var cam2 : Camera;
+
+function Update()
+{
+if (Input.GetKeyDown("A"))
+{
+  cam1.enabled = true;
+  cam2.enabled = false;
+}
+if (Input.GetKeyDown("D"))
+{
+  cam1.enabled = false;
+  cam2.enabled = true;
+}
+}</pre></div></div>

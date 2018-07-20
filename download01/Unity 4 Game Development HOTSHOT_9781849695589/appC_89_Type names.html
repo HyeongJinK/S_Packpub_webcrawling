@@ -1,0 +1,17 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec87"></a>Type names</h2></div></div><hr /></div><p>A couple <a id="id1337" class="indexterm"></a>of the basic types are spelled differently in pure Unity C#. In JavaScript, we use <code class="literal">Boolean</code> and <code class="literal">String</code>, but in pure Unity C#, we use <code class="literal">bool</code> and <code class="literal">string</code>, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+var isHit : Boolean;  //The space between ':' isn't necessary.
+var myName : String;
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+bool isHit;
+string myName;</pre></div><p>However, there is an exception. If you include <code class="literal">System</code> in your C# script, you will be able to use .NET's <code class="literal">String</code> and <code class="literal">Boolean</code> classes (uppercase) as shown in the following script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// C# user:</strong></span>
+
+using System;
+
+Boolean isHit;
+String myName;</pre></div></div>

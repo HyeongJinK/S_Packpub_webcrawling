@@ -1,0 +1,72 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec20"></a>Creating a transparent material</h2></div></div><hr /></div><p>All the <a id="id119" class="indexterm"></a>shaders seen so far have something in common—they are used for solid materials. If you want to improve the look of your game, transparent materials are often a good way to start. They can be used for anything from a fire effect to a window glass. Working with them, unfortunately, is slightly more complicated. Before rendering solid models, Unity orders them according to the distance from the camera (<span class="strong"><strong>Z ordering</strong></span>) and <a id="id120" class="indexterm"></a>skips all the triangles that are facing away from the camera (<span class="strong"><strong>culling</strong></span>). When rendering transparent geometries, there are instances in which these <a id="id121" class="indexterm"></a>two aspects can cause problems. This recipe will show you how to solve some of these issues when it comes to creating a transparent Surface Shader. This topic will be heavily revisited in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Fragment Shaders and Grab Passes</em></span>, where realistic glass and water shaders will be provided.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec45"></a>Getting ready</h3></div></div></div><p>This recipe requires a new shader, which we'll be calling <code class="literal">Transparent</code>, and a new material so that it can be attached to an object. As this is going to be a transparent glass window, a quad or plane is perfect. We will also need several other non-transparent objects to test the effect. In this example, we will use a PNG for the glass texture. The alpha channel of the image will be used to determine the transparency of the glass. The process of creating such an image depends on the software that you are using. However, these are the main steps that you will need to follow:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Find the image of the glass you want for your windows.</p></li><li><p>Open it with a <a id="id122" class="indexterm"></a>photoediting software, such as <span class="strong"><strong>GIMP</strong></span> or <span class="strong"><strong>Photoshop</strong></span>.</p></li><li><p>Select the parts of the <a id="id123" class="indexterm"></a>image that you want to be semi-transparent.</p></li><li><p>Create a white (full opacity) layer mask on your image.</p></li><li><p>Use the selection previously made to fill the layer mask with a darker color.</p></li><li><p>Save the image and import it to Unity.</p></li></ol></div><p>The toy image used in this recipe is a picture of a stained glass from the <span class="emphasis"><em>Meaux Cathedral</em></span> in <span class="emphasis"><em>France</em></span> (<a class="ulink" href="https://en.wikipedia.org/wiki/Stained_glass" target="_blank">https://en.wikipedia.org/wiki/Stained_glass</a>). If you have followed all <a id="id124" class="indexterm"></a>the steps, your image should look like this (<a id="id125" class="indexterm"></a>
+<span class="strong"><strong>RGB</strong></span> channels on the left, and <span class="strong"><strong>A</strong></span> channel on the right):</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_02_10.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec46"></a>How to do it…</h3></div></div></div><p>As mentioned previously, there are a few aspects that we need to take care of while using a Transparent Shader:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <code class="literal">SubShader{}</code> section of the shader, add the following tags that signal the shader <a id="id126" class="indexterm"></a>is transparent:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>Tags</strong></span>
+{
+  <span class="strong"><strong>"Queue"</strong></span> = <span class="strong"><strong>"Transparent"</strong></span>
+  <span class="strong"><strong>"IgnoreProjector"</strong></span> = <span class="strong"><strong>"True"</strong></span>
+  <span class="strong"><strong>"RenderType"</strong></span> = <span class="strong"><strong>"Transparent"</strong></span>
+}</pre></div></li><li><p>As this shader is designed for 2D materials, make sure that the back geometry of your model is not drawn by adding the following:</p><div class="informalexample"><pre class="programlisting">Cull Back</pre></div></li><li><p>Tell the shader that this material is transparent and needs to be blended with what was drawn on the screen before:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>#pragma</strong></span> surface surf Standard alpha:fade</pre></div></li><li><p>Use this Surface Shader to determine the final color and transparency of the glass:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> surf(Input IN, <span class="strong"><strong>inout</strong></span> SurfaceOutputStandard o)
+{
+  <span class="strong"><strong>float4</strong></span> c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
+  o.Albedo = c.rgb;
+  o.Alpha = c.a;
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec47"></a>How it works…</h3></div></div></div><p>This shader introduces several new concepts. First of all, <code class="literal">Tags</code> are used to add information about how the object is going to be rendered. The really interesting one here is <code class="literal">Queue</code>. Unity, by default, will sort your objects for you based on the distance from the camera. So, as an object gets nearer to the camera, it is going to be drawn over all the objects that are further away from the camera. For most cases, this works out just fine for games, but you will find certain situations where you will want to have more control over the sorting of your objects in your scene. Unity has provided us with some default render queues, each with a unique value that directs Unity when to draw the object to the screen. These built-in render queues are called <code class="literal">Background</code>, <code class="literal">Geometry</code>, <code class="literal">AlphaTest</code>, <code class="literal">Transparent</code>, and <code class="literal">Overlay</code>. These queues weren't just created arbitrarily; they actually serve a purpose to make our lives easier when writing shaders and interacting with the real-time renderer. Refer to the following table for descriptions on the usage of each of these individual <a id="id127" class="indexterm"></a>render queues:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Render queue</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Render queue description</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Render queue value</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Background</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This render queue is rendered first. It is used for skyboxes and so on.</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">1000</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Geometry</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is the default render queue. This is used for most objects. Opaque geometry uses this queue.</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">2000</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">AlphaTest</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Alpha-tested geometry uses this queue. It's different from the <code class="literal">Geometry</code> queue as it's more efficient to render alpha-tested objects after all the solid objects are drawn.</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">2450</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Transparent</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This render queue is rendered after <code class="literal">Geometry</code> and <code class="literal">AlphaTest</code> queues in back-to-front order. Anything alpha-blended (that is, shaders that don't write to the depth buffer) should go here, for example, glass and particle effects.</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">3000</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Overlay</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This render queue is meant for overlay effects. Anything rendered last should go here, for example, lens flares.</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">4000</code>
+</p>
+</td></tr></tbody></table></div><p>So, once you know <a id="id128" class="indexterm"></a>which render queue your object belongs to, you can assign its built-in render queue tag. Our shader used the <code class="literal">Transparent</code> queue, so we wrote <code class="literal">Tags{"Queue"="Trasparent"}</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note16"></a>Note</h3><p>The fact that the <code class="literal">Transparent</code> queue is rendered after <code class="literal">Geometry</code> does <span class="emphasis"><em>not</em></span> mean that our glass will appear on top of all the other solid objects. Unity will draw the glass last, but it will not render pixels that belong to pieces of geometry hidden behind something else. This control is done using a technique called <span class="strong"><strong>ZBuffering</strong></span>. More <a id="id129" class="indexterm"></a>information on how models are rendered can be found at <a class="ulink" href="http://docs.unity3d.com/Manual/SL-CullAndDepth.html" target="_blank">http://docs.unity3d.com/Manual/SL-CullAndDepth.html</a>.</p></div><p>The <code class="literal">IgnoreProjector</code> tag makes this object unaffected by Unity's projectors. Lastly, <code class="literal">RenderType</code> plays a role in <a id="id130" class="indexterm"></a>
+<span class="strong"><strong>shader replacement</strong></span>, a topic that will be covered briefly in <a class="link" href="#" linkend="ch09">Chapter 9</a>, <span class="emphasis"><em>Gameplay and Screen Effects</em></span>.</p><p>The last concept introduced is <code class="literal">alpha:fade</code>. This indicates that all the pixels from this material have to be blended with what was on the screen before according to their alpha values. Without <a id="id131" class="indexterm"></a>this directive, the pixels will be drawn in the correct order, but they won't have any transparency.</p></div></div>

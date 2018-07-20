@@ -1,0 +1,934 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec41"></a>Building a star collector game</h2></div></div><hr /></div><p>Our <a id="id146" class="indexterm"></a>star collector game will be a semi-server-authoritative game. <a id="id147" class="indexterm"></a>That is, players send move commands (which makes it possible to speedhack, teleport, and so on) but the server gets control over spawning players, stars, controlling star pickup, and other game logic.</p><p>Upon joining the server, players are spawned. Players will find stars they can collect. When all stars have been collected, the winner is announced in chat based on the player with the most stars, the stars are re-spawned, and the players reset.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec28"></a>Preparing the class library</h3></div></div></div><p>Again, <a id="id148" class="indexterm"></a>we're going to make a class library for our game server. This class library, as before, contains the <code class="literal">Peer</code> class and the <code class="literal">Application</code> class.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note18"></a>Note</h3><p>You may find it easier, if you will work with Photon frequently, to create a project template in Visual Studio, so you already have a base to work from instead of recreating the project from scratch each time.</p></div><p>We'll also create a <code class="literal">Game</code> class just as we did with the <code class="literal">Ack</code> server.</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+
+using System.Collections.Generic;
+
+namespace StarCollectorDemo
+{
+  public class StarCollectorDemoGame
+  {
+    public static StarCollectorDemoGame Instance;
+
+    public void Startup()
+    {
+    }
+
+    public void Shutdown()
+    {
+    }
+
+    public void PeerJoined( StarCollectorDemoPeer peer )
+    {
+    }
+
+    public void PeerLeft( StarCollectorDemoPeer peer )
+    {
+    }
+
+    public void OnOperationRequest( StarCollectorDemoPeer sender, OperationRequest operationRequest, SendParameters sendParameters )
+    {
+    }
+  }
+}</pre></div><p>And, we'll <a id="id149" class="indexterm"></a>create a new instance of the <code class="literal">Game</code> class when our application starts up:</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+
+namespace StarCollectorDemo
+{
+  public class StarCollectorDemoApplication : ApplicationBase
+  {
+    protected override PeerBase CreatePeer( InitRequest initRequest )
+    {
+      return new StarCollectorDemoPeer( initRequest.Protocol, initRequest.PhotonPeer );
+    }
+
+    protected override void Setup()
+    {
+      StarCollectorDemoGame.Instance = new StarCollectorDemoGame();
+      StarCollectorDemoGame.Instance.Startup();
+    }
+
+    protected override void TearDown()
+    {
+      StarCollectorDemoGame.Instance.Shutdown();
+    }
+  }
+}</pre></div><p>And finally, we'll also hook up our <code class="literal">Peer</code> class to the <code class="literal">Game</code> class:</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+
+namespace StarCollectorDemo
+{
+  public class StarCollectorDemoPeer : PeerBase
+  {
+    public StarCollectorDemoPeer( IRpcProtocol protocol, IPhotonPeer unmanagedPeer )
+      : base( protocol, unmanagedPeer )
+    {
+      lock( StarCollectorDemoGame.Instance )
+      {
+        StarCollectorDemoGame.Instance.PeerJoined( this );
+      }
+    }
+
+    protected override void OnDisconnect( DisconnectReason reasonCode, string reasonDetail )
+    {
+      lock( StarCollectorDemoGame.Instance )
+      {
+        StarCollectorDemoGame.Instance.PeerLeft( this );
+      }
+    }
+
+    protected override void OnOperationRequest( OperationRequest operationRequest, SendParameters sendParameters )
+    {
+      StarCollectorDemoGame.Instance.OnOperationRequest( this, operationRequest, sendParameters );
+    }
+  }
+}</pre></div><p>Before <a id="id150" class="indexterm"></a>we move on to actually creating the game logic, we're going to make one important change: We need to create some kind of message queue for our <code class="literal">Game</code> class, so that it can thread-safely process messages. We're going to use a handy class provided with Photon called <code class="literal">PoolFiber</code>.</p><p>What does this do? Well, when our Game class starts up we'll create a new <code class="literal">PoolFiber</code> instance. When a message is received, we call our <code class="literal">PoolFiber</code> instance's <code class="literal">Enqueue</code> method, queuing a new action, which calls a <code class="literal">ProcessMessage</code> function. The <code class="literal">PoolFiber</code> class is essentially a way for other threads to schedule actions to be called on the main thread. So, we'll use this as a way for peer threads to schedule messages to be processed on the main thread.</p><p>So, here's what our <code class="literal">Game</code> class will look like:</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+using ExitGames.Concurrency.Fibers;
+
+using System.Collections.Generic;
+
+namespace StarCollectorDemo
+{
+  public class StarCollectorDemoGame
+  {
+    public static StarCollectorDemoGame Instance;
+
+    <span class="strong"><strong>private IFiber executionFiber;</strong></span>
+
+    public void Startup()
+    {
+      <span class="strong"><strong>// create a new execution fiber and start it</strong></span>
+      <span class="strong"><strong>executionFiber = new PoolFiber();</strong></span>
+      <span class="strong"><strong>executionFiber.Start();</strong></span>
+    }
+
+    public void Shutdown()
+    {
+      <span class="strong"><strong>// dispose the execution fiber</strong></span>
+      <span class="strong"><strong>executionFiber.Dispose();</strong></span>
+    }
+
+    public void PeerJoined( StarCollectorDemoPeer peer )
+    {
+    }
+
+    public void PeerLeft( StarCollectorDemoPeer peer )
+    {
+    }
+    public void OnOperationRequest( StarCollectorDemoPeer sender, OperationRequest operationRequest, SendParameters sendParameters )
+    {
+      // <span class="strong"><strong>schedule a message to be processed on the main thread</strong></span>
+      <span class="strong"><strong>executionFiber.Enqueue( () =&gt; { this.ProcessMessage( sender, </strong></span>        <span class="strong"><strong>operationRequest, sendParameters ); } );</strong></span>
+    }
+
+    <span class="strong"><strong>public void ProcessMessage( StarCollectorDemoPeer sender,</strong></span> <span class="strong"><strong>OperationRequest operationRequest, SendParameters </strong></span>
+<span class="strong"><strong>sendParameters )</strong></span>
+    <span class="strong"><strong>{</strong></span>
+      <span class="strong"><strong>// process messages here</strong></span>
+    <span class="strong"><strong>}</strong></span>
+  }
+}</pre></div><p>Now, we can safely process messages in our <code class="literal">ProcessMessage</code> function without worrying about thread safety.</p><p>We can also <a id="id151" class="indexterm"></a>use this for other features. For example, let's keep a list of all peers connected to the game. We'll use the execution fiber to schedule <code class="literal">Add</code> and <code class="literal">Remove</code> operations on a <code class="literal">List</code> object:</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+using ExitGames.Concurrency.Fibers;
+
+using System.Collections.Generic;
+
+namespace StarCollectorDemo
+{
+  public class StarCollectorDemoGame
+  {
+    public static StarCollectorDemoGame Instance;
+
+    <span class="strong"><strong>public List&lt;StarCollectorDemoPeer&gt; PeerList;</strong></span>
+
+    private IFiber executionFiber;
+
+    public void Startup()
+    {
+      // create a new execution fiber and start it
+      executionFiber = new PoolFiber();
+      executionFiber.Start();
+
+      <span class="strong"><strong>PeerList = new List&lt;StarCollectorDemoPeer&gt;();</strong></span>
+    }
+
+    public void Shutdown()
+    {
+      // dispose the execution fiber
+      executionFiber.Dispose();
+    }
+
+    public void PeerJoined( StarCollectorDemoPeer peer )
+    {
+      <span class="strong"><strong>// schedule peer to be added to PeerList on the main thread</strong></span>
+      <span class="strong"><strong>executionFiber.Enqueue( () =&gt;</strong></span>
+        <span class="strong"><strong>{</strong></span>
+          <span class="strong"><strong>PeerList.Add( peer );</strong></span>
+        <span class="strong"><strong>} );</strong></span>
+    }
+
+    public void PeerLeft( StarCollectorDemoPeer peer )
+    {
+      <span class="strong"><strong>// schedule peer to be removed from PeerList on the main </strong></span>
+<span class="strong"><strong>thread</strong></span>
+      <span class="strong"><strong>executionFiber.Enqueue( () =&gt;</strong></span>
+      <span class="strong"><strong>{</strong></span>
+        <span class="strong"><strong>PeerList.Remove( peer );</strong></span>
+      <span class="strong"><strong>} );</strong></span>
+    }
+
+    public void OnOperationRequest( StarCollectorDemoPeer sender, OperationRequest operationRequest, SendParameters sendParameters )
+    {
+      // schedule a message to be processed on the main thread
+      executionFiber.Enqueue( () =&gt; { this.ProcessMessage( sender, operationRequest, sendParameters ); } );
+    }
+
+    public void ProcessMessage( StarCollectorDemoPeer sender, OperationRequest operationRequest, SendParameters sendParameters )
+    {
+      // process messages here
+    }
+  }
+}</pre></div><p>We now <a id="id152" class="indexterm"></a>have convenient access to a list of peers currently connected to the server. Now, we have a framework in place, so let's start working on the actual game code.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec29"></a>The Actor class</h3></div></div></div><p>I want all<a id="id153" class="indexterm"></a> objects in the game to have a common base. While this isn't necessary, it often makes for better organization, and limits code reuse as common functionality can be defined in parent classes. So, let's create an <code class="literal">Actor</code> class for this. The <code class="literal">Actor</code> class will form the basis for Player objects, Stars, or whatever else we decide to add.</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+
+namespace StarCollectorDemo
+{
+  public class Actor
+  {
+    public PeerBase Owner; // the Peer that owns this actor, or NULL if actor is owned by server
+    public long ActorID; // the ID of this actor instance
+    public byte ActorType; // the type of this actor (player, star, etc)
+    public float PosX; // the world X position of this actor
+    public float PosY; // the world Y position of this actor
+    public float Radius; // the collision radius of this actor
+  }
+}</pre></div><p>We'll also <a id="id154" class="indexterm"></a>create a <code class="literal">Star</code> class:</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+namespace StarCollectorDemo
+{
+  public class Star : Actor
+  {
+    public Star()
+    {
+      this.ActorType = 0; // star
+      this.Radius = 0.25f; // radius, used to detect pickup
+    }
+
+    public bool DetectCollision( Actor other )
+    {
+      // calculate square distance between actors
+      float sqrDist = ( ( this.PosX - other.PosX ) * ( this.PosX - other.PosX ) + ( this.PosY - other.PosY ) * ( this.PosY - other.PosY ) );
+
+      // if the distance is less than the sum of the radii, collision occurs
+      if( sqrDist &lt;= ( this.Radius + other.Radius ) )
+      {
+        return true;
+      }
+
+      return false;
+    }
+  }
+}</pre></div><p>Our <code class="literal">Star</code> class also <a id="id155" class="indexterm"></a>detects collisions with other actors via the <code class="literal">DetectCollision</code> method. This is used to detect when a player walks over a <code class="literal">Star</code> class and picks it up.</p><p>Finally, the <code class="literal">Player</code> class. We're actually going to make our movement semi-server authoritative. So, a player provides a movement direction, and the server will set the velocity of the player. At regular intervals, the server will broadcast the absolute position and velocity of all player objects using the following code:</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+
+namespace StarCollectorDemo
+{
+  public class Player : Actor
+  {
+    public float VelocityX = 0f; // the X velocity of the player
+    public float VelocityY = 0f; // the Y velocity of the player
+
+    public int Score = 0; // the number of stars this player has collected
+
+    public Player()
+    {
+      this.ActorType = 1; // player
+      this.Radius = 0.5f; // radius, used to detect pickup
+    }
+
+    public void Simulate( float timestep )
+    {
+      this.PosX += this.VelocityX * timestep;
+      this.PosY += this.VelocityY * timestep;
+    }
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec30"></a>Sending an ID to a player</h3></div></div></div><p>As before, <a id="id156" class="indexterm"></a>we'll need to assign player IDs to our peers. Again, we'll just keep an incrementing static counter, and send the ID of a player to them when they connect. This becomes useful as we need a way to provide info about <a id="id157" class="indexterm"></a>which peer owns a given player object.</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+
+namespace StarCollectorDemo
+{
+  public class StarCollectorDemoPeer : PeerBase
+  {
+    <span class="strong"><strong>private static long lastAssignedID = long.MinValue;</strong></span>
+    <span class="strong"><strong>private static object allocateIDLock = new object();</strong></span>
+
+    <span class="strong"><strong>public long PlayerID;</strong></span>
+
+    public StarCollectorDemoPeer( IRpcProtocol protocol, IPhotonPeer unmanagedPeer )
+      : base( protocol, unmanagedPeer )
+    {
+      lock( StarCollectorDemoGame.Instance )
+      {
+        StarCollectorDemoGame.Instance.PeerJoined( this );
+      }
+
+      <span class="strong"><strong>lock( allocateIDLock )</strong></span>
+      <span class="strong"><strong>{</strong></span>
+        <span class="strong"><strong>PlayerID = lastAssignedID;</strong></span>
+        <span class="strong"><strong>lastAssignedID++;</strong></span>
+      <span class="strong"><strong>}</strong></span>
+
+      <span class="strong"><strong>//notify player of their ID</strong></span>
+      <span class="strong"><strong>EventData evt = new EventData();</strong></span>
+      <span class="strong"><strong>evt.Code = (byte)StarCollectorEventTypes.ReceivePlayerID;</strong></span>
+      <span class="strong"><strong>evt.Parameters = new System.Collections.Generic.Dictionary</strong></span>        <span class="strong"><strong>&lt;byte, object&gt;();</strong></span>
+      <span class="strong"><strong>evt.Parameters[ 0 ] = PlayerID;</strong></span>
+
+      <span class="strong"><strong>this.SendEvent( evt, new SendParameters() );</strong></span>
+    }
+    protected override void OnDisconnect( DisconnectReason reasonCode, string reasonDetail )
+    {
+      lock( StarCollectorDemoGame.Instance )
+      {
+        StarCollectorDemoGame.Instance.PeerLeft( this );
+      }
+    }
+
+    protected override void OnOperationRequest( OperationRequest operationRequest, SendParameters sendParameters )
+    {
+      StarCollectorDemoGame.Instance.OnOperationRequest( this, operationRequest, sendParameters );
+    }
+  }
+}</pre></div><p>We'll also <a id="id158" class="indexterm"></a>add an <code class="literal">enum</code> variable instance for event types:</p><div class="informalexample"><pre class="programlisting">namespace StarCollectorDemo
+{
+  public enum StarCollectorEventTypes : byte
+  {
+    ReceivePlayerID = 0,
+  }
+}</pre></div><p>So now, when a player connects they receive player ID. This can be used to check, for example, which objects a player owns, or who sent a specific message (for instance move messages).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec31"></a>Keeping track of the game state</h3></div></div></div><p>Now, we're going <a id="id159" class="indexterm"></a>to add to our <code class="literal">Game</code> class a list of actors. We'll separate our <code class="literal">Stars</code> and <code class="literal">Players</code> for easier management, although in production games you'll likely want to unify your actor management (this way you can more easily extend the types of actors your game has).</p><p>First, we'll add some variables:</p><div class="informalexample"><pre class="programlisting">public List&lt;Star&gt; Stars = new List&lt;Star&gt;();
+public List&lt;Player&gt; Players = new List&lt;Player&gt;();
+
+private long lastAssignedActorID = long.MinValue;
+
+private System.Random rand = new System.Random();</pre></div><p>Next, we'll add a function to allocate an object ID for actors using the following code:</p><div class="informalexample"><pre class="programlisting">public long AllocateActorID()
+{
+  return lastAssignedActorID++;
+}</pre></div><p>We'll add a couple of methods to spawn objects—one for spawning stars, and the other for spawning players:</p><div class="informalexample"><pre class="programlisting">public void SpawnStar()
+{
+  // find a random position
+  double x = rand.NextDouble();
+  double y = rand.NextDouble();
+
+  // map to the range -50, +50
+  x -= 0.5f;
+  x *= 100f; // 0.5 * 100 = 50
+  y -= 0.5f;
+  y *= 100f;
+
+  Star star = new Star();
+  star.PosX = (float)x;
+  star.PosY = (float)y;
+
+  star.ActorID = AllocateActorID();
+
+  Stars.Add( star );
+}
+
+public void SpawnPlayer( StarCollectorDemoPeer peer )
+{
+  Player player = new Player();
+  player.Owner = peer;
+  player.ActorID = AllocateActorID();
+
+  Players.Add( player );
+}</pre></div><p>We'll <a id="id160" class="indexterm"></a>modify our <code class="literal">PeerJoined</code> and <code class="literal">PeerLeft</code> methods to create and destroy player objects:</p><div class="informalexample"><pre class="programlisting">public void PeerJoined( StarCollectorDemoPeer peer )
+{
+  // schedule peer to be added to PeerList on the main thread
+  executionFiber.Enqueue( () =&gt;
+    {
+      PeerList.Add( peer );
+      <span class="strong"><strong>SpawnPlayer( peer );</strong></span>
+    } );
+}
+
+public void PeerLeft( StarCollectorDemoPeer peer )
+{
+  // schedule peer to be removed from PeerList on the main thread
+  executionFiber.Enqueue( () =&gt;
+  {
+    PeerList.Remove( peer );
+
+    <span class="strong"><strong>// remove player object belonging to this peer</strong></span>
+    <span class="strong"><strong>Players.RemoveAll( player =&gt; { return player.Owner == peer; }</strong></span> <span class="strong"><strong>);</strong></span>
+  } );
+}</pre></div><p>And finally, <a id="id161" class="indexterm"></a>we'll add a <code class="literal">Simulate</code> function to simulate players and detect collisions between players and stars using the following code:</p><div class="informalexample"><pre class="programlisting">public void Simulate( float timeStep )
+{
+  // copy star collection so we can modify collection while iterating
+  Star[] stars = Stars.ToArray();
+
+  foreach( Player player in Players )
+  {
+    // simulate "physics"
+    player.Simulate( timeStep );
+
+    // compare player with each star
+    foreach( Star star in stars )
+    {
+      if( star.DetectCollision( player ) )
+      {
+        // collision detected with star
+      }
+    }
+  }
+}</pre></div><p>So, we're now keeping track of stars and players. Players are created when a peer joins, and removed when the peer leaves. In every game tick, players are simulated, and then compared against each star for collision.</p><p>There are a few things remaining. We still need to spawn new stars at the beginning of the round, destroy stars, and increment scores when they are picked up, and send events to clients when these occur so clients stay synchronized with the game state.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec32"></a>Spawning and picking up stars</h3></div></div></div><p>First, we'll <a id="id162" class="indexterm"></a>create a new <code class="literal">InitRound</code> method. This method <a id="id163" class="indexterm"></a>will reset all players, and spawn hundred stars. Add this to your <code class="literal">Game</code> class:</p><div class="informalexample"><pre class="programlisting">public void InitRound()
+{
+  // reset players
+  foreach( Player player in Players )
+  {
+    player.PosX = 0f;
+    player.PosY = 0f;
+    player.VelocityX = 0f;
+    player.VelocityY = 0f;
+    player.Score = 0;
+  }
+
+  // spawn new stars
+  for( int i = 0; i &lt; 100; i++ )
+  {
+    SpawnStar();
+  }
+}</pre></div><p>And, we'll start by calling this in the <code class="literal">Startup</code> method of our game, so a round is started as soon as the server starts up.</p><div class="informalexample"><pre class="programlisting">public void Startup()
+{
+  // create a new execution fiber and start it
+  executionFiber = new PoolFiber();
+  executionFiber.Start();
+
+  PeerList = new List&lt;StarCollectorDemoPeer&gt;();
+
+  <span class="strong"><strong>// start a new round</strong></span>
+  <span class="strong"><strong>InitRound();</strong></span>
+}</pre></div><p>We'll also handle the case of stars being picked up by players with a new function:</p><div class="informalexample"><pre class="programlisting">public void StarPickedUp( Star star, Player taker )
+{
+  Stars.Remove( star );
+
+  taker.Score++;
+
+  if( Stars.Count == 0 )
+  {
+    // the round is over!
+
+    // restart round
+    InitRound();
+  }
+}</pre></div><p>And <a id="id164" class="indexterm"></a>we'll call<a id="id165" class="indexterm"></a> this when a collision is detected with a star:</p><div class="informalexample"><pre class="programlisting">public void Simulate( float timeStep )
+{
+  // copy star collection so we can modify collection while iterating
+  Star[] stars = Stars.ToArray();
+
+  foreach( Player player in Players )
+  {
+    // simulate "physics"
+    player.Simulate( timeStep );
+
+    // compare player with each star
+    foreach( Star star in stars )
+    {
+      if( star.DetectCollision( player ) )
+      {
+        // collision detected with star
+        StarPickedUp( star, player );
+      }
+    }
+  }
+}</pre></div><p>Our server logic is almost complete. We still need to announce the winner, as well as broadcast important events to clients.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec33"></a>Broadcasting events</h3></div></div></div><p>We're<a id="id166" class="indexterm"></a> going to start broadcasting important gameplay events to players.</p><p>When a player joins, we first need to inform them of all available actors in the scene.</p><p>We'll add some event types for creating, destroying, and updating actors.</p><div class="informalexample"><pre class="programlisting">namespace StarCollectorDemo
+{
+  public enum StarCollectorEventTypes : byte
+  {
+    <span class="strong"><strong>ReceivePlayerID = 0,</strong></span>
+    <span class="strong"><strong>CreateActor = 1,</strong></span>
+    <span class="strong"><strong>DestroyActor = 2,</strong></span>
+    <span class="strong"><strong>UpdateActor = 3</strong></span>
+  }
+}</pre></div><p>We'll also <a id="id167" class="indexterm"></a>add a new method to our <code class="literal">Game</code> class for broadcasting events to all connected peers:</p><div class="informalexample"><pre class="programlisting">public void BroadcastEvent( IEventData evt, SendParameters param )
+{
+  foreach( StarCollectorDemoPeer peer in PeerList )
+  {
+    peer.SendEvent( evt, param );
+  }
+}</pre></div><p>Now, let's broadcast events for when players or stars are created. In our <code class="literal">SpawnStar</code> method:</p><div class="informalexample"><pre class="programlisting">public void SpawnStar()
+{
+  // find a random position
+  double x = rand.NextDouble();
+  double y = rand.NextDouble();
+
+  // map to the range -50, +50
+  x -= 0.5f;
+  x *= 100f; // 0.5 * 100 = 50
+  y -= 0.5f;
+  y *= 100f;
+
+  Star star = new Star();
+  star.PosX = (float)x;
+  star.PosY = (float)y;
+
+  star.ActorID = AllocateActorID();
+
+  Stars.Add( star );
+
+  <span class="strong"><strong>EventData evt = new EventData(</strong></span> <span class="strong"><strong>(byte)StarCollectorEventTypes.CreateActor );</strong></span>
+  <span class="strong"><strong>evt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+  <span class="strong"><strong>evt.Parameters[ 0 ] = star.ActorType;</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 1 ] = star.ActorID;</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 2 ] = star.PosX;</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 3 ] = star.PosY;</strong></span>
+
+  <span class="strong"><strong>BroadcastEvent( evt, new SendParameters() );</strong></span>
+}</pre></div><p>When <a id="id168" class="indexterm"></a>broadcasting a <code class="literal">CreateActor</code> event for Stars, we don't need to send info about owner ID because Stars are always owned by the server.</p><p>Our player <code class="literal">CreateActor</code> event looks much the same, but we'll also broadcast the player ID of the owner:</p><div class="informalexample"><pre class="programlisting">public void SpawnPlayer( StarCollectorDemoPeer peer )
+{
+  Player player = new Player();
+  player.Owner = peer;
+  player.ActorID = AllocateActorID();
+
+  Players.Add( player );
+
+  <span class="strong"><strong>EventData evt = new EventData( </strong></span>
+<span class="strong"><strong>(byte)StarCollectorEventTypes.CreateActor );</strong></span>
+  <span class="strong"><strong>evt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 0 ] = player.ActorType;</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 1 ] = player.ActorID;</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 2 ] = player.PosX;</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 3 ] = player.PosY;</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 4 ] = peer.PlayerID;</strong></span>
+
+  <span class="strong"><strong>BroadcastEvent( evt, new SendParameters() );</strong></span>
+}</pre></div><p>When a player leaves, we'll need to broadcast a <code class="literal">DestroyActor</code> event:</p><div class="informalexample"><pre class="programlisting">public void PeerLeft( StarCollectorDemoPeer peer )
+{
+  // schedule peer to be removed from PeerList on the main thread
+  executionFiber.Enqueue( () =&gt;
+  {
+    PeerList.Remove( peer );
+    <span class="strong"><strong>// find the player object belonging to the peer</strong></span>
+    <span class="strong"><strong>Player player = Players.Find( actor =&gt; { return actor.Owner == peer; } );</strong></span>
+
+    <span class="strong"><strong>// broadcast DestroyActor event with player's actor ID</strong></span>
+<span class="strong"><strong>    EventData evt = new EventData( (byte)StarCollectorEventTypes.DestroyActor );</strong></span>
+<span class="strong"><strong>    evt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+<span class="strong"><strong>    evt.Parameters[ 0 ] = player.ActorID;</strong></span>
+
+<span class="strong"><strong>    BroadcastEvent( evt, new SendParameters() );</strong></span>
+
+<span class="strong"><strong>    // remove from Players list</strong></span>
+<span class="strong"><strong>    Players.Remove( player );</strong></span>
+  } );
+}</pre></div><p>Note that<a id="id169" class="indexterm"></a> the <code class="literal">DestroyActor</code> event only needs to contain an Actor ID. Clients can look up at game object by using an Actor ID and destroy the game object.</p><p>And, we'll need to do the same when a Star is picked up:</p><div class="informalexample"><pre class="programlisting">public void StarPickedUp( Star star, Player taker )
+{
+  Stars.Remove( star );
+
+  <span class="strong"><strong>// broadcast DestroyActor event</strong></span>
+<span class="strong"><strong>  EventData evt = new EventData( (byte)StarCollectorEventTypes.DestroyActor );</strong></span>
+<span class="strong"><strong>  evt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+<span class="strong"><strong>  evt.Parameters[ 0 ] = star.ActorID;</strong></span>
+
+<span class="strong"><strong>  BroadcastEvent( evt, new SendParameters() );</strong></span>
+
+  taker.Score++;
+
+  if( Stars.Count == 0 )
+  {
+    // the round is over!
+
+    // restart round
+    InitRound();
+  }
+}</pre></div><p>We also need to make sure we send the current game state to new clients. We'll iterate through each player and star, sending the <code class="literal">CreateActor</code> events to the new peer (rather than broadcasting them).</p><div class="informalexample"><pre class="programlisting">public void PeerJoined( StarCollectorDemoPeer peer )
+{
+  // schedule peer to be added to PeerList on the main thread
+  executionFiber.Enqueue( () =&gt;
+    {
+      PeerList.Add( peer );
+
+<span class="strong"><strong>      // send player CreateActor events for all players and stars</strong></span>
+
+<span class="strong"><strong>      foreach( Player p in Players )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        EventData evt = new EventData( (byte)StarCollectorEventTypes.CreateActor );</strong></span>
+        <span class="strong"><strong>evt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 0 ] = p.ActorType;</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 1 ] = p.ActorID;</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 2 ] = p.PosX;</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 3 ] = p.PosY;</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 4 ] = ( p.Owner as StarCollectorDemoPeer ).PlayerID;</strong></span>
+
+<span class="strong"><strong>        peer.SendEvent( evt, new SendParameters() );</strong></span>
+      <span class="strong"><strong>}</strong></span>
+
+<span class="strong"><strong>      foreach( Star s in Stars )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        EventData evt = new EventData( (byte)StarCollectorEventTypes.CreateActor );</strong></span>
+<span class="strong"><strong>        evt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 0 ] = s.ActorType;</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 1 ] = s.ActorID;</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 2 ] = s.PosX;</strong></span>
+<span class="strong"><strong>        evt.Parameters[ 3 ] = s.PosY;</strong></span>
+
+<span class="strong"><strong>        peer.SendEvent( evt, new SendParameters() );</strong></span>
+<span class="strong"><strong>      }</strong></span>
+
+      SpawnPlayer( peer );
+    } );
+}</pre></div><p>We will <a id="id170" class="indexterm"></a>also want to broadcast chat messages. So let's add a new event type for this:</p><div class="informalexample"><pre class="programlisting">namespace StarCollectorDemo
+{
+  public enum StarCollectorEventTypes : byte
+  {
+    ReceivePlayerID = 0,
+    CreateActor = 1,
+    DestroyActor = 2,
+    UpdateActor = 3,
+    <span class="strong"><strong>ChatMessage = 4</strong></span>
+  }
+}</pre></div><p>For now, <a id="id171" class="indexterm"></a>we'll broadcast one thing: When the last star is picked up, we'll broadcast a chat message announcing the winner.</p><p>We'll be using LINQ to do this. We will order the players by <code class="literal">Score</code>, descending, and then pick the first player in the list (this is the player with the highest score). We display a chat message announcing the winner, before restarting the round.</p><div class="informalexample"><pre class="programlisting">public void StarPickedUp( Star star, Player taker )
+{
+  Stars.Remove( star );
+
+  // broadcast DestroyActor event
+  EventData evt = new EventData( (byte)StarCollectorEventTypes.DestroyActor );
+  evt.Parameters = new Dictionary&lt;byte, object&gt;();
+  evt.Parameters[ 0 ] = star.ActorID;
+
+  BroadcastEvent( evt, new SendParameters() );
+
+  taker.Score++;
+
+  if( Stars.Count == 0 )
+  {
+    // the round is over!
+
+<span class="strong"><strong>    // order players by score, pick the player with the highest score</strong></span>
+<span class="strong"><strong>    Player winner = ( from p in Players orderby taker.Score descending select p ).First();</strong></span>
+
+<span class="strong"><strong>    // broadcast a chat message</strong></span>
+<span class="strong"><strong>    EventData chatEvt = new EventData( (byte)StarCollectorEventTypes.ChatMessage );</strong></span>
+<span class="strong"><strong>    chatEvt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+<span class="strong"><strong>    chatEvt.Parameters[0] = "Player " + ( winner.Owner as StarCollectorDemoPeer).PlayerID.ToString() + " wins the round with " + winner.Score + " stars!";</strong></span>
+
+<span class="strong"><strong>    BroadcastEvent( chatEvt, new SendParameters() );</strong></span>
+
+    // restart round
+    InitRound();
+  }
+}</pre></div><p>There is one final event we need to broadcast. After every simulate tick, we'll broadcast move events<a id="id172" class="indexterm"></a> for each player (our simulate will happen ten times per second). This is what the <code class="literal">UpdateActor</code> event code is for:</p><div class="informalexample"><pre class="programlisting">public void Simulate( float timeStep )
+{
+  // copy star collection so we can modify collection while iterating
+  Star[] stars = Stars.ToArray();
+
+  foreach( Player player in Players )
+  {
+    // simulate "physics"
+    player.Simulate( timeStep );
+
+<span class="strong"><strong>    // broadcast move event</strong></span>
+<span class="strong"><strong>    EventData moveEvt = new EventData( (byte)StarCollectorEventTypes.UpdateActor );</strong></span>
+<span class="strong"><strong>    moveEvt.Parameters = new Dictionary&lt;byte, object&gt;();</strong></span>
+<span class="strong"><strong>    moveEvt.Parameters[ 0 ] = player.ActorID;</strong></span>
+<span class="strong"><strong>    moveEvt.Parameters[ 1 ] = player.PosX;</strong></span>
+<span class="strong"><strong>    moveEvt.Parameters[ 2 ] = player.PosY;</strong></span>
+
+<span class="strong"><strong>    BroadcastEvent( moveEvt, new SendParameters() );</strong></span>
+
+    // compare player with each star
+    foreach( Star star in stars )
+    {
+      if( star.DetectCollision( player ) )
+      {
+        // collision detected with star
+        StarPickedUp( star, player );
+      }
+    }
+  }
+}</pre></div><p>We also need to respond, to some kind of move request from the player. We'll add a new request code for this:</p><div class="informalexample"><pre class="programlisting">namespace StarCollectorDemo
+{
+  public enum StarCollectorRequestTypes : byte
+  {
+    MoveCommand = 0
+  }
+}</pre></div><p>And when<a id="id173" class="indexterm"></a> processing a request, if it's a move command from the player we'll set the player's velocity:</p><div class="informalexample"><pre class="programlisting">public void ProcessMessage( StarCollectorDemoPeer sender, OperationRequest operationRequest, SendParameters sendParameters )
+{
+  <span class="strong"><strong>if( operationRequest.OperationCode == (byte)StarCollectorRequestTypes.MoveCommand )</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    // move command from player</strong></span>
+<span class="strong"><strong>    long actorID = (long)operationRequest.Parameters[ 0 ];</strong></span>
+<span class="strong"><strong>    float velX = (float)operationRequest.Parameters[ 1 ];</strong></span>
+<span class="strong"><strong>    float velY = (float)operationRequest.Parameters[ 2 ];</strong></span>
+
+<span class="strong"><strong>    // find actor</strong></span>
+<span class="strong"><strong>    Player player = ( Players.Find( pl =&gt; { return pl.ActorID == actorID; } ) );</strong></span>
+
+<span class="strong"><strong>    // apply velocity</strong></span>
+<span class="strong"><strong>    player.VelocityX = velX;</strong></span>
+<span class="strong"><strong>    player.VelocityY = velY;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div><p>Now, players can send a <code class="literal">MoveCommand</code> operation request to the server, which modifies the server-side player actor velocity.</p><p>Our game logic is now complete. There is one final thing to take care of before our server is fully functional, and that is starting up a game loop, which calls our <code class="literal">Simulate</code> method on a regular basis. Luckily we can take advantage of our execution fiber to schedule a repeating event:</p><div class="informalexample"><pre class="programlisting">public void Startup()
+{
+  // create a new execution fiber and start it
+  executionFiber = new PoolFiber();
+  executionFiber.Start();
+
+  PeerList = new List&lt;StarCollectorDemoPeer&gt;();
+
+  // start a new round
+  InitRound();
+
+<span class="strong"><strong>  // schedule Simulate 10 times per second, or once every 100 milliseconds</strong></span>
+<span class="strong"><strong>  executionFiber.ScheduleOnInterval(</strong></span>
+<span class="strong"><strong>    delegate()</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      Simulate( 0.1f );</strong></span>
+<span class="strong"><strong>    }, 0, 100 );</strong></span>
+}</pre></div><p>And our <a id="id174" class="indexterm"></a>server is now fully functional. All that remains is to connect to it from Unity and handle the various events from the server.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec34"></a>Connecting from Unity</h3></div></div></div><p>The first <a id="id175" class="indexterm"></a>thing we'll do is create a peer listener to connect to our server.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+using ExitGames.Client.Photon;
+
+public class StarCollectorClient : MonoBehaviour, IPhotonPeerListener
+{
+  public static PhotonPeer Connection;
+  public static bool Connected = false;
+  public static long PlayerID;
+
+  public string ServerIP = "127.0.0.1:5055";
+  public string AppName = "StarCollectorDemo";
+
+  void Start()
+  {
+    Debug.Log( "Connecting..." );
+    Connection = new PhotonPeer( this, ConnectionProtocol.Udp );
+    Connection.Connect( ServerIP, AppName );
+    StartCoroutine( doService() );
+  }
+
+void OnDestroy()
+{
+  // explicitly disconnect if the client game object is destroyed
+    if( Connected )
+      Connection.Disconnect();
+}
+
+  // update peer 20 times per second
+  IEnumerator doService()
+  {
+    while( true )
+    {
+      Connection.Service();
+      yield return new WaitForSeconds( 0.05f );
+    }
+  }
+
+  #region IPhotonPeerListener Members
+
+  public void DebugReturn( DebugLevel level, string message )
+  {
+    // log message to console
+    Debug.Log( message );
+  }
+
+  public void OnEvent( EventData eventData )
+  {
+    //server raised an event
+  }
+
+  public void OnOperationResponse( OperationResponse operationResponse )
+  {
+    //server sent operation response
+  }
+
+  public void OnStatusChanged( StatusCode statusCode )
+  {
+    // log status change
+    Debug.Log( "Status change: " + statusCode.ToString() );
+    switch( statusCode )
+    {
+      case StatusCode.Connect:
+        Debug.Log( "Connected, awaiting player ID..." );
+        break;
+      case StatusCode.Disconnect:
+      case StatusCode.DisconnectByServer:
+      case StatusCode.DisconnectByServerLogic:
+      case StatusCode.DisconnectByServerUserLimit:
+      case StatusCode.Exception:
+      case StatusCode.ExceptionOnConnect:
+      case StatusCode.SecurityExceptionOnConnect:
+      case StatusCode.TimeoutDisconnect:
+        StopAllCoroutines();
+        Connected = false;
+        break;
+    }
+  }
+
+  #endregion
+}</pre></div><p>Firstly, <a id="id176" class="indexterm"></a>startup connects to our server and begins servicing the peer 20 times per second. If any exceptions, it disconnects, or timeouts occur, it stops servicing the peer and sets connected to false. If the peer reports that, it has connected to our application, we print a debug message (stating that our application is waiting for the player ID, after which it will receive the game state).</p><p>Before we continue, copy the <code class="literal">enum</code> variable instances we defined on the server (<code class="literal">StarCollectorRequestTypes</code> and <code class="literal">StarCollectorEventTypes</code>) to your Unity project.</p><p>The first thing we'll do is receive the player ID and store it in a static long variable is as follows:</p><div class="informalexample"><pre class="programlisting">public void OnEvent( EventData eventData )
+{
+  //server raised an event
+  <span class="strong"><strong>switch( (StarCollectorEventTypes)eventData.Code )</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    // store player ID</strong></span>
+<span class="strong"><strong>    case StarCollectorEventTypes.ReceivePlayerID:</strong></span>
+<span class="strong"><strong>      long playerId = (long)eventData.Parameters[ 0 ];</strong></span>
+<span class="strong"><strong>      PlayerID = playerId;</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div><p>Now, when the client connects, it will store its player ID, which is used to check which player actor it owns.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec35"></a>Creating/destroying actors</h3></div></div></div><p>Next, we'll <a id="id177" class="indexterm"></a>handle <code class="literal">CreateActor</code>/<code class="literal">DestroyActor</code> events by spawning and deleting game objects. The first thing we'll do is create some scripts, one to store the actor ID and the other to store the owner ID. Stars will only need the actor ID component, but players will need both.</p><p>Our actor<a id="id178" class="indexterm"></a> ID component looks like this:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class GameActor : MonoBehaviour
+{
+  public static Dictionary&lt;long, GameActor&gt; Actors = new Dictionary&lt;long, GameActor&gt;();
+
+  public long ActorID;
+
+  void SetActorID( long actorID )
+  {
+    this.ActorID = actorID;
+    Actors.Add( this.ActorID, this );
+  }
+
+  public void Destruct()
+  {
+    Actors.Remove( this.ActorID );
+    Destroy( gameObject );
+  }
+}</pre></div><p>When we <a id="id179" class="indexterm"></a>spawn an actor, we need to call <code class="literal">SetActorID</code> immediately. This causes the object to be stored in a <code class="literal">Dictionary</code> object. The <code class="literal">Dictionary</code> object allows us to easily look up at actors by ID. The <code class="literal">Destruct</code> method is mostly for convenience, which handles cleaning up the <code class="literal">Dictionary</code> object entry and destroying the actual game object.</p><p>We'll also make an <code class="literal">OwnerID</code> component using following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class OwnerInfo : MonoBehaviour
+{
+  public long OwnerID;
+
+  public bool IsMine
+  {
+    get
+    {
+      return OwnerID == StarCollectorClient.PlayerID;
+    }
+  }
+
+  void SetOwnerID( long ownerID )
+  {
+    this.OwnerID = ownerID;
+  }
+}</pre></div><p>The most <a id="id180" class="indexterm"></a>important part of this script is checking <a id="id181" class="indexterm"></a>whether or not the object belongs to the local client, based on the <code class="literal">OwnerID</code>.</p><p>Now that we've created the necessary components, let's make some prefabs for the players and stars.</p><p>First, the <code class="literal">Player</code> prefab. Create a Cube, and attach the <code class="literal">GameActor</code> and <code class="literal">OwnerInfo</code> scripts. Save this as a prefab in your project. For the <code class="literal">Star</code>, create a Cube, scale it down to <span class="emphasis"><em>0.5 x 0.5 x 0.5</em></span>, and attach the <code class="literal">GameActor</code> component. Save this as a prefab, too.</p><p>Now, we'll modify our <code class="literal">Client</code> class to handle the <code class="literal">Create</code> and <code class="literal">Destroy</code> events.</p><p>First, we'll add some prefab references to the top of our script:</p><div class="informalexample"><pre class="programlisting">public class StarCollectorClient : MonoBehaviour, IPhotonPeerListener
+{
+  public static PhotonPeer Connection;
+  public static bool Connected = false;
+  public static long PlayerID;
+
+  public string ServerIP = "127.0.0.1:5055";
+  public string AppName = "StarCollectorDemo";
+
+<span class="strong"><strong>  public GameObject PlayerPrefab;</strong></span>
+<span class="strong"><strong>  public GameObject StarPrefab;</strong></span>
+
+  <span class="strong"><strong>// [...]</strong></span>
+</pre></div><p>And, handle the appropriate events in our <code class="literal">OnEvent</code> method:</p><div class="informalexample"><pre class="programlisting">public void OnEvent( EventData eventData )
+{
+  //server raised an event
+  switch( (StarCollectorEventTypes)eventData.Code )
+  {
+    // store player ID
+    case StarCollectorEventTypes.ReceivePlayerID:
+      long playerId = (long)eventData.Parameters[ 0 ];
+      PlayerID = playerId;
+      Debug.Log( "Received player ID, awaiting game state..." );
+      break;
+    <span class="strong"><strong>// spawn actor</strong></span>
+<span class="strong"><strong>    case StarCollectorEventTypes.CreateActor:</strong></span>
+<span class="strong"><strong>      byte actorType = (byte)eventData.Parameters[ 0 ];</strong></span>
+<span class="strong"><strong>      long actorID = (long)eventData.Parameters[ 1 ];</strong></span>
+<span class="strong"><strong>      float posX = (float)eventData.Parameters[ 2 ];</strong></span>
+<span class="strong"><strong>      float posY = (float)eventData.Parameters[ 3 ];</strong></span>
+<span class="strong"><strong>      GameObject actor = null;</strong></span>
+<span class="strong"><strong>      switch( actorType )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        // Star</strong></span>
+<span class="strong"><strong>        case 0:</strong></span>
+<span class="strong"><strong>          actor = (GameObject)Instantiate( StarPrefab, new Vector3( posX, 0f, posY ), Quaternion.identity );</strong></span>
+<span class="strong"><strong>          break;</strong></span>
+<span class="strong"><strong>        // Player</strong></span>
+<span class="strong"><strong>        case 1:</strong></span>
+<span class="strong"><strong>          long ownerID = (long)eventData.Parameters[ 4 ];</strong></span>
+<span class="strong"><strong>          actor = (GameObject)Instantiate( PlayerPrefab, new Vector3( posX, 0f, posY ), Quaternion.identity );</strong></span>
+<span class="strong"><strong>          actor.SendMessage( "SetOwnerID", ownerID );</strong></span>
+<span class="strong"><strong>          break;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>      actor.SendMessage( "SetActorID", actorID );</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+<span class="strong"><strong>    // destroy actor</strong></span>
+<span class="strong"><strong>    case StarCollectorEventTypes.DestroyActor:</strong></span>
+<span class="strong"><strong>      GameActor destroyActor = GameActor.Actors[ (long)eventData.Parameters[ 0 ] ];</strong></span>
+<span class="strong"><strong>      if( destroyActor != null )</strong></span>
+<span class="strong"><strong>        destroyActor.Destruct();</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+  }
+}</pre></div><p>Place your<a id="id182" class="indexterm"></a> client script on an empty game object (if you haven't already) and assign the <code class="literal">Player</code> and <code class="literal">Star</code> prefabs to the appropriate slots. If you run the server <a id="id183" class="indexterm"></a>and connect from Unity, you will now see a field of randomly placed "stars" and a single "player" in the middle of the field. We're almost there, just a few things left to implement: Adding controls to the player object, receiving movement updates, and displaying chat messages.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec04"></a>Controlling the player</h4></div></div></div><p>The first <a id="id184" class="indexterm"></a>thing we'll do, is create a <code class="literal">Player</code> script. This script will allow us to control the <code class="literal">Player</code> object if it belongs to us. We will use the following code for performing this:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Player : MonoBehaviour
+{
+  public float MoveSpeed = 5f;
+
+  private OwnerInfo ownerInfo;
+  private GameActor actorInfo;
+  private bool isMine = false;
+
+  private Vector3 lastReceivedMove;
+
+  private float timeOfLastMoveCmd = 0f;
+
+  void Start()
+  {
+    timeOfLastMoveCmd = Time.time;
+
+    lastReceivedMove = transform.position;
+
+    ownerInfo = GetComponent&lt;OwnerInfo&gt;();
+    actorInfo = GetComponent&lt;GameActor&gt;();
+    isMine = ( ownerInfo.OwnerID == StarCollectorClient.PlayerID );
+  }
+
+  void Update()
+  {
+    if( isMine )
+    {
+      // get movement direction
+      float mX = Input.GetAxis( "Horizontal" ) * MoveSpeed;
+      float mY = Input.GetAxis( "Vertical" ) * MoveSpeed;
+
+      if( Time.time &gt;= timeOfLastMoveCmd + 0.1f )
+      {
+        timeOfLastMoveCmd = Time.time;
+
+        // send move command to server every 0.1 seconds
+        Dictionary&lt;byte, object&gt; moveParams = new Dictionary&lt;byte, object&gt;();
+        moveParams[ 0 ] = actorInfo.ActorID;
+        moveParams[ 1 ] = mX;
+        moveParams[ 2 ] = mY;
+        StarCollectorClient.Connection.OpCustom( (byte)StarCollectorRequestTypes.MoveCommand, moveParams, false );
+      }
+    }
+
+    // lerp toward last received position
+    transform.position = Vector3.Lerp( transform.position, lastReceivedMove, Time.deltaTime * 20f );
+  }
+
+  void UpdatePosition( Vector3 newPos )
+  {
+    lastReceivedMove = newPos;
+  }
+}</pre></div><p>This script goes on our <code class="literal">Player</code> prefab. It first grabs a reference to the <code class="literal">GameActor</code> component, <a id="id185" class="indexterm"></a>and the <code class="literal">OwnerInfo</code> component. It then checks and stores whether the actor belongs to the local player by comparing the <code class="literal">OwnerID</code> with the local <code class="literal">PlayerID</code>.</p><p>If the actor does belong to the player, it proceeds to process input commands. Every 0.1 seconds (ten times per second), it sends a <code class="literal">Move</code> command to the server, which tells the server to update the velocity of the given actor.</p><p>Additionally, it keeps track of a "last received position". When we receive move updates from the server, we'll call the <code class="literal">UpdatePosition</code> method on the appropriate actor. This will cause the actor to lerp toward that position.</p><p>Next, let's start receiving move commands from the server. We'll find the appropriate actor and call <code class="literal">SendMessage</code> to update it's position. In the <code class="literal">switch</code> statement of the <code class="literal">OnEvent</code> method of our <code class="literal">StarCollectorClient</code>, we'll add this case:</p><div class="informalexample"><pre class="programlisting">// update actor
+case StarCollectorEventTypes.UpdateActor:
+  GameActor updateActor = GameActor.Actors[ (long)eventData.Parameters[ 0 ] ];
+  float newPosX = (float)eventData.Parameters[ 1 ];
+  float newPosY = (float)eventData.Parameters[ 2 ];
+  updateActor.SendMessage( "UpdatePosition", new Vector3( newPosX, 0f, newPosY ), SendMessageOptions.DontRequireReceiver );
+  break;</pre></div><p>We're also going to display chat messages. For this example, we'll debug log them (a real game would display them in the GUI, such as in a chatbox). So we'll add another case for chat messages:</p><div class="informalexample"><pre class="programlisting">// log chat messages
+case StarCollectorEventTypes.ChatMessage:
+  Debug.Log( (string)eventData.Parameters[ 0 ] );
+  break;</pre></div><p>There is one <a id="id186" class="indexterm"></a>final thing we should do. In our main scene, we'll move the camera to give an overhead view of the game world. Set the camera to <span class="strong"><strong>Orthographic</strong></span>, move it to <code class="literal">(0,100,0)</code>, and set the <span class="strong"><strong>Orthographic Size</strong></span> to <code class="literal">51</code>. This should give the camera enough room to see all of the stars (<code class="literal">50</code> would be enough, but the extra 1 adds a slight border, which makes it easier to see stars on the edge).</p><p>Now, make sure your server is running, and start up the main scene. You should see the playing field populated with hundred small cubes, and a single larger cube in the center. You should be able to control your cube with the arrow keys, and collect stars by moving over them. When all stars are collected, your cube moves back to the center, all stars are re-spawned, and the console displays your <code class="literal">PlayerID</code> as the winner of the game (for example, <code class="literal">"Player -9223372036854775808 is the winner with 100 stars!"</code>)</p></div></div></div>

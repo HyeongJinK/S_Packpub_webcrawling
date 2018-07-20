@@ -1,0 +1,9 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec32"></a>Syncing a level between players</h2></div></div><hr /></div><p>In Unity Networking, we <a id="id107" class="indexterm"></a>had to develop our own way to make sure each player was running on the same level, via RPCs, disabling the network queue, waiting for the load to finish, and so on.</p><p>In Photon, this problem is significantly easier to solve. You simply set <code class="literal">PhotonNetwork.automaticallySyncScene</code> to true, and to load a level call <code class="literal">PhotonNetwork.LoadLevel</code> on the master client. For example, we can modify our lobby example to automatically sync the scene between players in a room.</p><p>Firstly, in <code class="literal">Start</code> we would enable automatic level syncing:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+  // ...
+  // ensure that all players play on the same map
+  PhotonNetwork.automaticallySyncScene = true; 
+}</pre></div><p>Then, when starting a game, we use PhotonNetwork's load level replacement in order to load the level for all players:</p><div class="informalexample"><pre class="programlisting">void OnCreatedRoom()
+{
+  PhotonNetwork.LoadLevel( "Level Name Here" );
+}</pre></div><p>Note that level loads can also occur in-game. For example, this feature makes it incredibly easy to add a map vote feature, where players can vote for the next map, and at the end of the round the map with the most votes is loaded.</p></div>

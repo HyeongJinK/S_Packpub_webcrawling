@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec81"></a>Time for action – modifying BeginState and add three more States</h2></div></div><hr /></div><p>Once we modify <code class="literal">BeginState</code>, <a id="id277" class="indexterm"></a>we'll essentially use it as a sort of template for creating all the other States, with just a few minor differences.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note45"></a>Note</h3><p>I will explain code flow once we have the State Machine operating.</p></div><p>Using the next screenshot of <code class="literal">BeginState</code>, make the following changes:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add line 8: <code class="literal">private StateManager manager;</code>.</p></li><li><p>Modify line 10: <code class="literal">public BeginState(StateManager managerRef).</code>
+</p></li><li><p>Add line 12: <code class="literal">manager = managerRef;</code>.</p><div class="mediaobject"><img src="/graphics/9781849696586/graphics/6586OT_08_01.jpg" /></div></li></ol></div><p>Follow these<a id="id278" class="indexterm"></a> next steps three times to create the other State classes: <code class="literal">PlayState</code>, <code class="literal">WonState</code>, and <code class="literal">LostState</code>.</p><p>In the <span class="strong"><strong>Solution</strong></span> window of MonoDevelop, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Right-click on the <code class="literal">States</code> folder, and select <span class="strong"><strong>Add</strong></span> | <span class="strong"><strong>New File</strong></span>.</p></li><li><p>In the <span class="strong"><strong>New File</strong></span> window, navigate to <span class="strong"><strong>General</strong></span> | <span class="strong"><strong>Empty Class</strong></span>,</p></li><li><p>At the bottom of the window, enter the class name.</p></li><li><p>Click on the <span class="strong"><strong>New</strong></span> button.</p></li></ol></div><p>In each of the three new files, make them almost identical to the code of <code class="literal">BeginState</code> except for the class name, the constructor method name, and the text in the <code class="literal">Debug.Log</code> statement.</p><p>Line 6 on each respective class file will be as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">public class PlayState : IStateBase</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">public class WonState : IStateBase</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">public class LostState : IStateBase</code>
+</p></li></ul></div><p>Line 10 on each respective class file will be as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">public PlayState (StateManager managerRef)</code>  <code class="literal">//Constructor</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">public WonState (StateManager managerRef)</code>  <code class="literal">//Constructor</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">public LostState (StateManager managerRef)</code>  <code class="literal">//Constructor</code>
+</p></li></ul></div><p>Line<a id="id279" class="indexterm"></a> 13 on each respective class file will be as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">Debug.Log("Constructing PlayState");</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Debug.Log("Constructing WonState");</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Debug.Log("Constructing LostState");</code>
+</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note46"></a>Note</h3><p>The <code class="literal">Debug.Log</code> statement is not a requirement in these State classes. They are only there temporarily for testing. They will be removed later.</p></div><p>Each State is responsible for determining why and when to switch to another State. Since there is no game code at this point, we need to manually switch States to test the State Machine. We will do this by Unity detecting when we press the Space bar key.</p><p>Add the following <code class="literal">if</code> statements to the <a id="id280" class="indexterm"></a>
+<code class="literal">StateUpdate()</code> method code block (line 18 in the previous screenshot) for each State:</p><p>In the <code class="literal">BeginState</code> class line 18:</p><div class="informalexample"><pre class="programlisting">if (Input.GetKeyUp (KeyCode.Space))
+  {
+    manager.SwitchState (new PlayState (manager));
+  }</pre></div><p>In the <code class="literal">PlayState</code> class line 18:</p><div class="informalexample"><pre class="programlisting">  if (Input.GetKeyUp (KeyCode.Space))
+  {
+    manager.SwitchState (new WonState (manager));
+  }</pre></div><p>In the <code class="literal">WonState</code> class line 18:</p><div class="informalexample"><pre class="programlisting">  if (Input.GetKeyUp (KeyCode.Space))
+  {
+    manager.SwitchState (new BeginState (manager));
+  }</pre></div><p>In the <code class="literal">LostState</code> class line 18:</p><div class="informalexample"><pre class="programlisting">if (Input.GetKeyUp (KeyCode.Space))
+  {
+    manager.SwitchState (new BeginState (manager));
+  }</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec115"></a>
+<span class="emphasis"><em>What just happened?</em></span>
+</h3></div></div></div><p>We modified <a id="id281" class="indexterm"></a>
+<code class="literal">BeginState</code> so that it would have a reference to <code class="literal">StateManager</code>, which is the controller for State switching. Once <code class="literal">BeginState</code> was properly coded, we created three more similar State classes: <code class="literal">PlayState</code>, <code class="literal">WonState</code>, and <code class="literal">LostState</code>. We now have enough code in the State classes for testing the State Machine. Now let's modify the <code class="literal">StateManager</code> class.</p></div></div>

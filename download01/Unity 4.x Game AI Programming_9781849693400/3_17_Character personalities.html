@@ -1,0 +1,65 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec21"></a>Character personalities</h2></div></div><hr /></div><p>We can also use different probabilities to specify the in-game characters' specialties. Let's pretend we designed a game proposal for a population management game for the local government. We need to address and simulate issues like taxation versus global talent attraction, immigration versus social cohesion, and so on. We have three types of characters in our proposal, namely, workers, scientists, and professionals. Their efficiencies in performing the particular tasks are defined in the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Characters</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Construction</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>R&amp;D</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Corporate Jobs</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>Worker</p>
+</td><td style="" align="left" valign="top">
+<p>95</p>
+</td><td style="" align="left" valign="top">
+<p>2</p>
+</td><td style="" align="left" valign="top">
+<p>3</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Scientist</p>
+</td><td style="" align="left" valign="top">
+<p>5</p>
+</td><td style="" align="left" valign="top">
+<p>85</p>
+</td><td style="" align="left" valign="top">
+<p>10</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Professional</p>
+</td><td style="" align="left" valign="top">
+<p>10</p>
+</td><td style="" align="left" valign="top">
+<p>10</p>
+</td><td style="" align="left" valign="top">
+<p>80</p>
+</td></tr></tbody></table></div><p>Let us take a look at how we can implement this mechanic. Let's say the player needs to build new houses to accommodate the increased population. A house construction would require 1,000 units of workload to finish. We use the value specified earlier as the workload that can be done per second per unit type for a particular task. So if you're building a house with one worker that will only take about 10 seconds to finish the construction (<code class="literal">1000/95</code>) whereas it'll take more than three minutes if you are trying to build with the scientists (<code class="literal">1000/5 = 200 seconds</code>). The same will be true for other tasks such as R&amp;D and corporate jobs. These factors can be adjusted/enhanced later as the game progresses, making some of the early level tasks become simpler, and takes less time.</p><p>Then we introduce special items that could be discovered by the particular unit type. Now, we don't want to give these items every time a particular unit has done its tasks. Instead we want to reward the player as a surprise. So we associate the probability of finding such items according to the unit type, as described in the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Special items</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Worker</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Scientist</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Professional</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>Raw materials</p>
+</td><td style="" align="left" valign="top">
+<p>0.3</p>
+</td><td style="" align="left" valign="top">
+<p>0.1</p>
+</td><td style="" align="left" valign="top">
+<p>0.0</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>New tech</p>
+</td><td style="" align="left" valign="top">
+<p>0.0</p>
+</td><td style="" align="left" valign="top">
+<p>0.3</p>
+</td><td style="" align="left" valign="top">
+<p>0.0</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Bonus</p>
+</td><td style="" align="left" valign="top">
+<p>0.1</p>
+</td><td style="" align="left" valign="top">
+<p>0.2</p>
+</td><td style="" align="left" valign="top">
+<p>0.4</p>
+</td></tr></tbody></table></div><p>The preceding table means there's a 30 percent chance that a worker will find some raw materials, and a 10 percent chance to earn bonus income whenever they have built a factory or a house. This allows the players to anticipate the possible upcoming rewards, once they've done some tasks. This can make the game more fun because the players will not know the outcome of the event.</p></div>

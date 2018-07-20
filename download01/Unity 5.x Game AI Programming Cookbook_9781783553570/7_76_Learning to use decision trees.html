@@ -1,0 +1,117 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec77"></a>Learning to use decision trees</h2></div></div><hr /></div><p>We already learned <a id="id344" class="indexterm"></a>the power and flexibility of decision trees for adding a decision-making component to our game. Furthermore, we can also build them dynamically through supervised learning. That's why we're revisiting them in this chapter.</p><p>There are several algorithms for building decision trees that are suited for different uses such as prediction and classification. In our case, we'll explore decision-tree learning by implementing the ID3 algorithm.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec265"></a>Getting ready…</h3></div></div></div><p>Despite having built decision trees in a previous chapter, and the fact that they're based on the same principles as the ones that we will implement now, we will use different data types for our implementation needs in spite of the learning algorithm.</p><p>We will need two data types: one for the decision nodes and one for storing the examples to be learned.</p><p>The code for the <code class="literal">DecisionNode</code> data type is as follows:</p><div class="informalexample"><pre class="programlisting">using System.Collections.Generic;
+
+public class DecisionNode
+{
+    public string testValue;
+    public Dictionary&lt;float, DecisionNode&gt; children;
+
+    public DecisionNode(string testValue = "")
+    {
+        this.testValue = testValue;
+        children = new Dictionary&lt;float, DecisionNode&gt;();
+    }
+}</pre></div><p>The code for the <code class="literal">Example</code> data type is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+
+public enum ID3Action
+{
+    STOP, WALK, RUN
+}
+
+public class ID3Example : MonoBehaviour
+{
+    public ID3Action action;
+    public Dictionary&lt;string, float&gt; values;
+    
+    public float GetValue(string attribute)
+    {
+        return values[attribute];
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec266"></a>How to do it…</h3></div></div></div><p>We will create the <a id="id345" class="indexterm"></a>
+<code class="literal">ID3</code> class with several functions for computing the resulting decision tree.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">ID3</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+public class ID3 : MonoBehaviour
+{
+    // next steps
+}</pre></div></li><li><p>Start the implementation of the function responsible for splitting the attributes into sets:</p><div class="informalexample"><pre class="programlisting">public Dictionary&lt;float, List&lt;ID3Example&gt;&gt; SplitByAttribute(
+        ID3Example[] examples,
+        string attribute)
+{
+    Dictionary&lt;float, List&lt;ID3Example&gt;&gt; sets;
+    sets = new Dictionary&lt;float, List&lt;ID3Example&gt;&gt;();
+    // next step
+}</pre></div></li><li><p>Iterate though all the examples received, and extract their value in order to assign them to a set:</p><div class="informalexample"><pre class="programlisting">foreach (ID3Example e in examples)
+{
+    float key = e.GetValue(attribute);
+    if (!sets.ContainsKey(key))
+        sets.Add(key, new List&lt;ID3Example&gt;());
+    sets[key].Add(e);
+}
+return sets;</pre></div></li><li><p>Create the function for computing the entropy for a set of examples:</p><div class="informalexample"><pre class="programlisting">public float GetEntropy(ID3Example[] examples)
+{
+    if (examples.Length == 0) return 0f;
+    int numExamples = examples.Length;
+    Dictionary&lt;ID3Action, int&gt; actionTallies;
+    actionTallies = new Dictionary&lt;ID3Action, int&gt;();
+    // next steps
+}</pre></div></li><li><p>Iterate through <a id="id346" class="indexterm"></a>all of the examples to compute their action quota:</p><div class="informalexample"><pre class="programlisting">foreach (ID3Example e in examples)
+{
+    if (!actionTallies.ContainsKey(e.action))
+        actionTallies.Add(e.action, 0);
+    actionTallies[e.action]++;
+}</pre></div></li><li><p>Compute the entropy :</p><div class="informalexample"><pre class="programlisting">int actionCount = actionTallies.Keys.Count;
+if (actionCount == 0) return 0f;
+float entropy = 0f;
+float proportion = 0f;
+foreach (int tally in actionTallies.Values)
+{
+    proportion = tally / (float)numExamples;
+    entropy -= proportion * Mathf.Log(proportion, 2);
+}
+return entropy;</pre></div></li><li><p>Implement the function for computing the entropy for all the sets of examples. This is very similar to the preceding one; in fact, it uses it:</p><div class="informalexample"><pre class="programlisting">public float GetEntropy(
+        Dictionary&lt;float, List&lt;ID3Example&gt;&gt; sets,
+        int numExamples)
+{
+    float entropy = 0f;
+    foreach (List&lt;ID3Example&gt; s in sets.Values)
+    {
+        float proportion;
+        proportion = s.Count / (float)numExamples;
+        entropy -= proportion * GetEntropy(s.ToArray());
+    }
+    return entropy;
+}</pre></div></li><li><p>Define the <a id="id347" class="indexterm"></a>function for building a decision tree:</p><div class="informalexample"><pre class="programlisting">public void MakeTree(
+        ID3Example[] examples,
+        List&lt;string&gt; attributes,
+        DecisionNode node)
+{
+    float initEntropy = GetEntropy(examples);
+    if (initEntropy &lt;= 0) return;
+    // next steps
+}</pre></div></li><li><p>Declare and initialize all the required members for the task:</p><div class="informalexample"><pre class="programlisting">int numExamples = examples.Length;
+float bestInfoGain = 0f;
+string bestSplitAttribute = "";
+float infoGain = 0f;
+float overallEntropy = 0f;
+Dictionary&lt;float, List&lt;ID3Example&gt;&gt; bestSets;
+bestSets = new Dictionary&lt;float, List&lt;ID3Example&gt;&gt;();
+Dictionary&lt;float, List&lt;ID3Example&gt;&gt; sets;</pre></div></li><li><p>Iterate through all the attributes in order to get the best set based on the information gain:</p><div class="informalexample"><pre class="programlisting">foreach (string a in attributes)
+{
+    sets = SplitByAttribute(examples, a);
+    overallEntropy = GetEntropy(sets, numExamples);
+    infoGain = initEntropy - overallEntropy;
+    if (infoGain &gt; bestInfoGain)
+    {
+        bestInfoGain = infoGain;
+        bestSplitAttribute = a;
+        bestSets = sets;
+    }
+}</pre></div></li><li><p>Select the root node based on the best split attribute, and rearrange the remaining attributes for building the rest of the tree:</p><div class="informalexample"><pre class="programlisting">node.testValue = bestSplitAttribute;
+List&lt;string&gt; newAttributes = new List&lt;string&gt;(attributes);
+newAttributes.Remove(bestSplitAttribute);</pre></div></li><li><p>Iterate through <a id="id348" class="indexterm"></a>all the remaining attributes. calling the function recursively:</p><div class="informalexample"><pre class="programlisting">foreach (List&lt;ID3Example&gt; set in bestSets.Values)
+{
+    float val = set[0].GetValue(bestSplitAttribute);
+    DecisionNode child = new DecisionNode();
+    node.children.Add(val, child);
+    MakeTree(set.ToArray(), newAttributes, child);
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec267"></a>How it works…</h3></div></div></div><p>The class is modular in terms of functionality. It doesn't store any information but is able to compute and retrieve everything needed for the function that builds the decision tree. <code class="literal">SplitByAttribute</code> takes the examples and divides them into sets that are needed for computing their entropy. <code class="literal">ComputeEntropy</code> is an overloaded function that computes a list of examples and all the sets of examples using the formulae defined in the ID3 algorithm. Finally, <code class="literal">MakeTree</code> works recursively in order to build the decision tree, getting hold of the most significant attribute.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec268"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Decision Making</em></span>, the <span class="emphasis"><em>Choosing through a decision tree</em></span> recipe</p></li></ul></div></div></div>

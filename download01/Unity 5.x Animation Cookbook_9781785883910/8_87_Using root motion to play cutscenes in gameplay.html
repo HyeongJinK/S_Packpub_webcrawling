@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec87"></a>Using root motion to play cutscenes in gameplay</h2></div></div><hr /></div><p>We can also play <span>cutscenes</span><a id="id325241232" class="indexterm"></a> in gameplay without changing the camera, and using smooth transitions to move in and out of a cutscene. This recipe shows an example of that.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec273"></a>Getting ready</h3></div></div></div><p>In this recipe, we will use the same cutscene as in the previous recipe. You can also open the example Unity project and go to the <code class="literal">Chapter 08 Animating Cutscenes\Recipe 06 Using root motion to play cutscenes during gameplay</code> directory. If you open the <code class="literal">Example.unity</code> scene there and play the game, you will be able to move the character. Approach the red sphere marker and press the space bar to play the cutscene:</p><div class="mediaobject"><img src="/graphics/9781785883910/graphics/afb8c4c2-eaea-4a26-9200-9fd212d925df.png" /></div><p>Cutscene played during gameplay</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec274"></a>How to do it...</h3></div></div></div><p>To play cutscenes during gameplay, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Import your cutscene. Make sure to import the character animation as a separate file.</li><li>Go to the cutscene asset's <strong class="userinput"><code>Import Settings</code></strong>, <strong class="userinput"><code>Animation</code></strong> tab.</li><li>Rename the <strong class="userinput"><code>Default Take</code></strong> animation to <code class="literal">Cutscene</code>.</li><li>Create a new Animation Clip, choose the <strong class="userinput"><code>Default Take</code></strong> as the source, and set the <strong class="userinput"><code>Start</code></strong> frame to 0 and the <strong class="userinput"><code>End</code></strong> frame to 1. Call this animation <strong class="userinput"><code>CutsceneIdle</code></strong> and make it loop.</li><li>Place the cutscene game object (in our example this is the <strong class="userinput"><code>Ball</code></strong> game object) and the character in the scene.</li><li>Follow the <span class="emphasis"><em>Using root motion to steer a character</em></span> recipe from <span><a class="link" href="#" linkend="ch04">Chapter 4</a></span>, <span class="emphasis"><em>Character Movement</em></span>. This way, you will have a moving character you can control.</li><li>Create an Animator Controller for the cutscene.</li><li>Make the <strong class="userinput"><code>CutsceneIdle</code></strong> the default animation.</li><li>Drag and drop the <strong class="userinput"><code>Cutscene</code></strong> animation.</li><li>Create a <code class="literal">Trigger</code> parameter and name it <code class="literal">Cutscene</code>.</li><li>Make a transition from <strong class="userinput"><code>CutsceneIdle</code></strong> to <strong class="userinput"><code>Cutscene</code></strong> animation using the <strong class="userinput"><code>Cutscene </code></strong><code class="literal">Trigger</code> parameter. Set the <strong class="userinput"><code>Has Exit Time</code></strong> to false and the <strong class="userinput"><code>Transition Duration</code></strong> to 0.1 seconds.</li><li>Assign the <code class="literal">Player</code> tag to the character.</li><li>Add the cutscene animation to the character's Animator Controller. In our example, the animation is called <strong class="userinput"><code>SoccerKick</code></strong>.</li><li>Add a <strong class="userinput"><code>Cutscene  </code></strong><code class="literal">Trigger</code> parameter to the character's controller.</li><li>Create a transition from <strong class="userinput"><code>Any Stat</code></strong><strong class="userinput"><code>e</code></strong> to <strong class="userinput"><code>SoccerKick</code></strong> with the <strong class="userinput"><code>Cutscene </code></strong><code class="literal">Trigger</code> as the condition. <strong class="userinput"><code>Has Exit Time</code></strong> should be set to false and <strong class="userinput"><code>Transition Duration</code></strong> set to around 0.5 seconds.</li><li>Add another transition from <strong class="userinput"><code>SoccerKick</code></strong> to <strong class="userinput"><code>Idle</code></strong>, with no conditions, and <strong class="userinput"><code>Has Exit Time</code></strong> set to true. <strong class="userinput"><code>Transition Duration</code></strong> should also be set to around 0.5 seconds.</li><li>Create a new C# script and call it <code class="literal">CutsceneTrigger.cs</code>. In this script, we have the <code class="literal">void OnTriggerEnter()</code> and <code class="literal">void OnTriggerExit()</code> functions. Their main task is to set the <code class="literal">bool inTrigger</code> flag. The <code class="literal">OnTriggerEnter()</code> function also stores the reference to the player's game object:</li></ol></div><pre class="programlisting">        void OnTriggerEnter (Collider other) { 
+            if (other.gameObject.CompareTag("Player")) 
+            { 
+                player = other.gameObject; 
+                inTrigger = true; 
+            } 
+        } 
+        void OnTriggerExit(Collider other) 
+        { 
+            if (other.gameObject.CompareTag("Player")) 
+            { 
+                inTrigger = false; 
+            } 
+        } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="18" type="1"><li>We check the <code class="literal">inTrigger</code> flag's value in the <code class="literal">Update()</code> function. If it is set to true, the player can press the space bar to start the cutscene. This starts a coroutine to match the character's position and rotation with the trigger's position and rotation. This position and rotation is the one our character should have when the cutscene starts. We also enable or disable a hint, the reference to which we store in the <code class="literal">public GameObject onScreenInfo</code> variable. When the player starts the cutscene, we turn off the <strong class="userinput"><code>Box Collider</code></strong> component to disable the trigger:</li></ol></div><pre class="programlisting">        if (inTrigger) 
+        { 
+            onScreenInfo.SetActive(true); 
+ 
+            if (Input.GetKeyDown(KeyCode.Space)) 
+            { 
+                GetComponent&lt;BoxCollider&gt;().enabled = false; 
+                inTrigger = false; 
+                StartCoroutine("StartCutscene"); 
+            } 
+        } 
+        else 
+        { 
+            onScreenInfo.SetActive(false); 
+        }     </pre><div class="orderedlist"><ol class="orderedlist arabic" start="19" type="1"><li>In the <code class="literal">IEnumerator StartCutscene()</code> coroutine, we first set the <strong class="userinput"><code>Rigidbody</code></strong> component of the character to <strong class="userinput"><code><span>Kinematic</span><a id="id325550875" class="indexterm"></a></code></strong>. This way, we turn off the physics simulation. Then we interpolate the player's position and rotation so that it matches the position and rotation of the trigger. If it is close enough, we set the <strong class="userinput"><code>Cutscene </code></strong><code class="literal">Trigger</code> in the player's and cutscene's Animator component to play the animation simultaneously on both objects:</li></ol></div><pre class="programlisting">        IEnumerator StartCutscene() 
+        { 
+           player.GetComponent&lt;Rigidbody&gt;().isKinematic =    true; 
+           bool positionAdjusted = false; 
+           bool rotationAdjusted = false; 
+            while(true) 
+            { 
+            yield return null; 
+                if ((player.transform.position - 
+                transform.position).magnitude &lt;= 0.01f) 
+               { 
+                    positionAdjusted = true; 
+                } 
+                else 
+                { 
+                player.transform.position = 
+                Vector3.Lerp(player.transform.position, 
+                transform.position, positionAdjustmentSpeed 
+                * Time.deltaTime); 
+                } 
+                if (Vector3.Angle(player.transform.forward, 
+                transform.forward) &lt;= 1f) 
+                { 
+                    rotationAdjusted = true; 
+                } 
+                else 
+                { 
+                player.transform.rotation = 
+                Quaternion.Lerp(player.transform.rotation, 
+                transform.rotation, positionAdjustmentSpeed 
+                * Time.deltaTime); 
+                } 
+                if (positionAdjusted &amp;&amp; rotationAdjusted) 
+                { 
+                    break; 
+                } 
+            } 
+        player.GetComponent&lt;Animator&gt;
+        ().SetTrigger(animationTrigger); 
+        cutsceneAnimator.SetTrigger(animationTrigger); 
+        } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="20" type="1"><li>Create a new empty game object and name it <code class="literal">CutsceneTrigger</code>. Add a <strong class="userinput"><code>Box Collider</code></strong> component to it and set it to <strong class="userinput"><code>Is Trigger</code></strong>.</li><li>Place it in the exact spot at which the character has to be in the cutscene. Rotate it the same way the character needs to be rotated. You may use an empty object in the cutscene (exported from the 3D package) to make it easier.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="22" type="1"><li>Assign the <code class="literal">CutsceneTrigger.cs</code> script to the <strong class="userinput"><code>CutsceneTrigger</code></strong> game object.</li><li>Create a hint <strong class="userinput"><code>UI Text</code></strong> and assign it to the <strong class="userinput"><code>On Screen Info</code></strong> field of the <strong class="userinput"><code>Cutscene Trigger</code></strong> component.</li><li>Assign the cutscene game object's <strong class="userinput"><code>Animator</code></strong> component to the <strong class="userinput"><code>Cutscene</code></strong><strong class="userinput"><code>Animator</code></strong> field of the <strong class="userinput"><code>Cutscene Trigger</code></strong> component.</li><li>Create another C# script and call it <code class="literal">SetKinematic.cs</code>. In this script, we have just one <code class="literal">public void NotKinematic()</code> function, in which we set the <strong class="userinput"><code>Rigidbody</code></strong> component to non-kinematic:</li></ol></div><pre class="programlisting">        public void NotKinematic() 
+        { 
+            GetComponent&lt;Rigidbody&gt;().isKinematic = false; 
+        } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="26" type="1"><li>Attach the script to the character.</li><li>With the character selected, open the <strong class="userinput"><code>Animation</code></strong> View.</li><li>Select the <strong class="userinput"><code>SoccerKick</code></strong> animation.</li><li>Add an <strong class="userinput"><code>Animation Event</code></strong> near the end of the animation and choose <strong class="userinput"><code>NotKinematic()</code></strong>. This will make the character react to physics again.</li><li>Play the game, approach the trigger, and press the space bar to see the effect.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec275"></a>How it works...</h3></div></div></div><p>This recipe uses a similar concept to the one used in the <span class="emphasis"><em>Action Points - performing an action in a specified spot</em></span> recipe from <span><a class="link" href="#" linkend="ch05">Chapter 5</a></span>, <span class="emphasis"><em>Characters Actions and Expressions</em></span>. Here we've added a one-frame looped <span>CutsceneIdle animation</span><a id="id325241506" class="indexterm"></a> to the animated props (a Ball game object in our example). This makes the objects wait for the cutscene to start. Our character's cutscene animation is exported as a separate file, which enables us to set its rig to <strong class="userinput"><code>Humanoid</code></strong> and use it along with other animations.</p><p>Our character starts playing the animation in the same moment as the cutscene game object. This makes them synchronized.</p><p>Another important thing is that we set the <strong class="userinput"><code>Rigidbody</code></strong> component of our character to <strong class="userinput"><code>Is Kinematic</code></strong> for the time of the cutscene. This makes the animation control our character with 100 percent weight. No collisions can interrupt our character from playing the animation. After the cutscene is finished, we turn off the <strong class="userinput"><code>Is Kinematic</code></strong> option to make our character behave normally.</p></div></div>

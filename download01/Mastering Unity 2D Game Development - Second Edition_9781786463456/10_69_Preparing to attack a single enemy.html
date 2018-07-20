@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec66"></a>Preparing to attack a single enemy</h2></div></div><hr /></div><p>Following on from the previous chapter, we will continue building our battle system.</p><p>Let's begin our focus on letting the player attack a single enemy. To do this, we'll add some variables to <code class="literal">BattleManager</code> to manage this.</p><p>We will also add some other elements to spruce up the battle, such as a selection circle or a target identifier, and add a variable to set a prefab for this.</p><p>So, open the <code class="literal">BattleManager</code> script and add the following variables to the top of the class:</p><pre class="programlisting">private string selectedTargetName; &#13;
+private EnemyController selectedTarget; &#13;
+public GameObject selectionCircle; &#13;
+private bool canSelectEnemy; &#13;
+ &#13;
+bool attacking = false; &#13;
+ &#13;
+public bool CanSelectEnemy &#13;
+{ &#13;
+  get &#13;
+  { &#13;
+    return canSelectEnemy; &#13;
+  } &#13;
+} &#13;
+ &#13;
+public int EnemyCount &#13;
+{ &#13;
+  get &#13;
+  { &#13;
+    return enemyCount; &#13;
+  } &#13;
+} &#13;
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note115"></a>Note</h3><p>We haven't created the <code class="literal">EnemyController</code> class yet, so it will show as an error. We will add that next.</p></div><p>So, we have added properties to hold the selected target, a flag, and a property to track whether we can actually select an enemy (as the player needs to select an attack first). Additionally, we've added a variable to maintain a record of just how many enemies are left in the battle.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip116"></a>Tip</h3><p>Instantiating prefabs in the code requires the prefab to be in the <code class="literal">Resources</code> folder, because they are associated with the asset-bundling features.</p><p>For single objects, it's easier to attach a prefab to the editor via the Inspector and use it from there (either on an existing class or a static editor class).</p></div></div>

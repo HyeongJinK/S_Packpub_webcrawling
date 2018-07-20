@@ -1,0 +1,60 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec27"></a>Connecting to Photon and getting a list of rooms</h2></div></div><hr /></div><p>Let's<a id="id85" class="indexterm"></a> connect to Photon Cloud. There are three main ways of doing this:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>You can call <code class="literal">PhotonNetwork.ConnectUsingSettings</code> which will connect via the settings defined in the editor panel</p></li><li style="list-style-type: disc"><p>You can call <code class="literal">PhotonNetwork.ConnectToBestCloudServer</code> which will ping each available server cluster and connect to the best one</p></li><li style="list-style-type: disc"><p>You can call <code class="literal">PhotonNetwork.Connect</code>, passing the server address of the appropriate Photon region and the port</p></li><li style="list-style-type: disc"><p>You can also use <code class="literal">ConnectUsingSettings</code> which will connect to the region we defined in the editor panel. We'll be using this for the rest of the chapter</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note11"></a>Note</h3><p>If you wish to use <span class="strong"><strong>Connect manually</strong></span>, as of the time of writing, the addresses for each region are:</p><p>US (East Coast): <a class="ulink" href="http://app-us.exitgamescloud.com" target="_blank">app-us.exitgamescloud.com</a>
+</p><p>EU (Amsterdam): <a class="ulink" href="http://app-eu.exitgamescloud.com" target="_blank">app-eu.exitgamescloud.com</a>
+</p><p>Asia (Singapore): <a class="ulink" href="http://app-asia.exitgamescloud.com" target="_blank">app-asia.exitgamescloud.com</a>
+</p><p>Japan (Tokyo): <a class="ulink" href="http://app-jp.exitgamescloud.com" target="_blank">app-jp.exitgamescloud.com</a>
+</p><p>And the port to connect on can be read from the static <code class="literal">ServerSettings.DefaultMasterPort</code> field. You will also have to provide your app ID to the connect function.</p></div><p>For instance, a script to connect to Photon and <a id="id86" class="indexterm"></a>display a list of rooms currently open is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Example_ConnectToPhoton : MonoBehaviour
+{
+  bool joined = false;
+
+  void Start()
+  {
+    // connect to Photon
+    PhotonNetwork.ConnectUsingSettings( "v1.0" );
+  }
+
+  void OnJoinedLobby()
+  {
+    // we joined Photon and are ready to get a list of rooms
+    joined = true;
+  }
+
+  void OnFailedToConnectToPhoton( DisconnectCause cause )
+  {
+    // some error occurred, 'cause' is an enumeration of the error that happened
+  }
+
+  void OnGUI()
+  {
+    if( !joined &amp;&amp; string.IsNullOrEmpty( error ) )
+    {
+      // we're still connecting to photon, display a loading GUI
+    }
+    else if( joined )
+    {
+      // we're connected to Photon, so now we can draw the lobby screen
+
+      drawLobby();
+    }
+  }
+
+  void drawLobby()
+  {
+    // no rooms available
+    if( PhotonNetwork.GetRoomList().Length == 0 )
+    {
+      // display a message informing the user that there aren't any rooms available to join
+    }
+    // draw each room in a scroll view
+    else
+    {
+      foreach( RoomInfo room in PhotonNetwork.GetRoomList() )
+      {
+        // draw the room info to the GUI
+      }
+      
+    }
+  }
+}</pre></div><p>Notice that we <a id="id87" class="indexterm"></a>only use <code class="literal">GetRoomList</code>, unlike in Unity Networking where we would use <code class="literal">GetHostList</code> and <code class="literal">PollHostList</code>. In Photon, this room list is automatically updated in near real time, so there's no need to manually download the list from the server. If you need some kind of Refresh functionality, you can simply grab the results from GetRoomList and cache the results.</p></div>

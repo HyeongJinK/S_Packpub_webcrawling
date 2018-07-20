@@ -1,0 +1,33 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec56"></a>The game manager</h2></div></div><hr /></div><p>To create the game manager <a id="id360" class="indexterm"></a>functionality, we need a script to initialize a new scene and the state manager. We also need a second scene to be added to our project, to switch between scenes (named <span class="strong"><strong>Home</strong></span> and <span class="strong"><strong>Game</strong></span>). Another script is required to create a button that sends the application from the home scene to the game scene. Finally, we need a game object to attach the scripts to, which we are preserving as we switch between scenes. Let's get to work!</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec141"></a>Getting ready</h3></div></div></div><p>Open your project in Unity. We begin by adding a new script to the <code class="literal">Scripts</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec142"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Access the <code class="literal">Scripts</code> folder<a id="id361" class="indexterm"></a> in the <span class="strong"><strong>Project</strong></span> panel and create a new C# script. Name the script <code class="literal">StateManager</code>.</p></li><li><p>Double-click on the file to open it in <span class="strong"><strong>Monodevelop</strong></span>.</p></li><li><p>Add the following lines to the script:</p><div class="informalexample"><pre class="programlisting">  using UnityEngine;
+  using System.Collections;
+  public class StateManager : MonoBehaviour {
+    private static StateManager instance
+    public static StateManager Instance
+    {
+      get
+      {
+        if(instance == null)
+        {
+          instance = new GameObject("StateManager").AddComponent&lt;StateManager&gt; ();
+        }
+        return instance;
+      }
+    }
+    public void OnApplicationQuit()
+    {
+      instance = null;
+    }
+    public void StartState()
+    {
+      Debug.Log ("New scene is being created...");
+    }
+  }</pre></div></li><li><p>Save the <a id="id362" class="indexterm"></a>script.</p></li><li><p>Save the scene we built so far and name it <code class="literal">level_01</code>. As we haven't mentioned this before, we advise you to create a new folder in the <span class="strong"><strong>Project</strong></span> panel before saving, and name it <code class="literal">Scenes</code>. Use this folder to save the <code class="literal">level_01</code> game scene and any other game scene you may create.</p></li><li><p>From the top menu, navigate to <span class="strong"><strong>File</strong></span> | <span class="strong"><strong>NewScene</strong></span> to create a new empty game scene.</p></li><li><p>Save this game scene too with the name <code class="literal">home</code>.</p></li><li><p>From the top menu, navigate to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span>. We've added a screenshot showing this in case you don't remember how to do it:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_06_01.jpg" /></div></li><li><p>Name this <a id="id363" class="indexterm"></a>object <code class="literal">game_starter</code> from the <span class="strong"><strong>Hierarchy</strong></span> panel.</p></li><li><p>Now create a new C# script and name it the same as the object we will attach it to—<code class="literal">GameStarter</code>.</p></li><li><p>Open the script in <span class="strong"><strong>Monodevelop</strong></span>. First, we need a function to create a button with a label on the screen so that we can launch the <code class="literal">lev_01</code> game scene at runtime. Add the following lines to the script:</p><div class="informalexample"><pre class="programlisting">  void OnGUI(){
+    if(GUI.Button(new Rect (120, 120, 150, 30), "Start Game"))
+    {
+      StartGame();
+    }
+  }</pre></div><p>In the previous piece of code, we call a <code class="literal">StartGame()</code> function on pressing the button. We need to add this function to the script with the following lines:</p><div class="informalexample"><pre class="programlisting">  void StartGame(){
+    print("starting game...");
+    DontDestroyOnLoad(StateManager.Instance);
+    StateManager.Instance.StartState();
+  }</pre></div><p>Now drag the <span class="strong"><strong>GameStart</strong></span> script onto the GameStarter game object, inside the home scene of your project.</p></li><li><p>Run the<a id="id364" class="indexterm"></a> game. You should see an empty scene with a <span class="strong"><strong>Start Game</strong></span> button, as shown in the following screenshot. Press it to launch the game scene we have built so far.</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_06_61.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec143"></a>How it works…</h3></div></div></div><p>The home scene is the launching game screen of our prototype. The script attached to the GameStarter game object in the scene creates a button. Upon pressing this button, an instance of a game object with the <code class="literal">StateManager</code> script is added to the scene. The <code class="literal">DontDestroyOnLoad()</code> method takes care of preventing this script from being destroyed whenever we switch between game scenes.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec144"></a>There's more...</h3></div></div></div><p>State machines is a<a id="id365" class="indexterm"></a> fascinating topic for anyone interested in science in general. For game developers, even more for AI developers, it is a must! We recommend digging into this <a id="id366" class="indexterm"></a>matter, starting with <a class="ulink" href="http://en.wikipedia.org/wiki/Finite-state_machine" target="_blank">http://en.wikipedia.org/wiki/Finite-state_machine</a>.</p></div></div>

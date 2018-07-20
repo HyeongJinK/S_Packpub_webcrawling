@@ -1,0 +1,68 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch15lvl1sec133"></a>Creating an Options menu</h2></div></div><hr /></div><p>Something that many<a id="id565" class="indexterm"></a> games also need is an <span class="strong"><strong>Options</strong></span> menu, so let's create it by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, let's prepare <span class="strong"><strong>Pause Menu</strong></span> to support an <span class="strong"><strong>Options</strong></span> screen. Select the <span class="strong"><strong>Pause Menu</strong></span> object and create an empty child called <span class="strong"><strong>Bottom Row</strong></span> and then add a <span class="strong"><strong>Horizontal Group Layout</strong></span> component to it.</p></li><li><p>Duplicate the <span class="strong"><strong>Main Menu</strong></span> button and then drag and drop the original <span class="strong"><strong>Main Menu</strong></span> and <span class="strong"><strong>Quit Game</strong></span> to <span class="strong"><strong>Bottom Row</strong></span>. Afterward, rename the <span class="strong"><strong>Main Menu</strong></span> copy <span class="strong"><strong>Options</strong></span> and change the text as well to reflect that.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_02_20.jpg" /></div></li><li><p>Now, we will need to <a id="id566" class="indexterm"></a>create the <span class="strong"><strong>Options</strong></span> menu. Duplicate the <span class="strong"><strong>Pause Menu</strong></span> object and rename it <span class="strong"><strong>Options Menu</strong></span>.</p></li><li><p>Then, move the <span class="strong"><strong>Options</strong></span> button to the bottom and rename it <span class="strong"><strong>Back</strong></span> and then changes the names of <span class="strong"><strong>Quit</strong></span> and <span class="strong"><strong>Main Menu</strong></span> to <span class="strong"><strong>Decrease</strong></span> and <span class="strong"><strong>Increase Quality</strong></span>.</p></li><li><p>Next, we want to add a slider to the menu to allow players to change the volume of the game. To do that, go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>UI</strong></span> | <span class="strong"><strong>Slider</strong></span> and then drag it on top of <span class="strong"><strong>Options Menu</strong></span> to add it to the menu.</p></li><li><p>Select the <span class="strong"><strong>Options Menu</strong></span> object and set <span class="strong"><strong>Height</strong></span> to <code class="literal">200</code> to account for us adding new things and then put a <code class="literal">Text</code> object above the <span class="strong"><strong>Slider</strong></span> and <span class="strong"><strong>Quality</strong></span> markers, saying <span class="strong"><strong>Master Volume</strong></span> and <span class="strong"><strong>Quality Level</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_02_21.jpg" /></div></li><li><p>Next, we're <a id="id567" class="indexterm"></a>going to need to write some functions and add a new property to our <span class="strong"><strong>PauseMenuBehaviour</strong></span>, so with that in mind open it up and add the following variable:</p><div class="informalexample"><pre class="programlisting">public GameObject optionsMenu;</pre></div></li><li><p>Then, update the script to have the following new functions:</p><div class="informalexample"><pre class="programlisting">public void IncreaseQuality()
+{
+    QualitySettings.IncreaseLevel();
+    UpdateQualityLabel();
+}
+
+public void DecreaseQuality()
+{
+    QualitySettings.DecreaseLevel();
+    UpdateQualityLabel();
+}
+
+public void SetVolume(float value)
+{
+    AudioListener.volume = value;
+    UpdateVolumeLabel();
+}
+
+private void UpdateQualityLabel()
+{
+    int currentQuality = QualitySettings.GetQualityLevel();
+    string qualityName = QualitySettings.names[currentQuality];
+
+    optionsMenu.transform.FindChild("Quality Level").GetComponent&lt;UnityEngine.UI.Text&gt;().text = "Quality Level - " + qualityName;
+}
+
+private void UpdateVolumeLabel()
+{
+    optionsMenu.transform.FindChild("Master Volume").GetComponent&lt;UnityEngine.UI.Text&gt;().text = "Master Volume - " + (AudioListener.volume * 100).ToString("f2") + "%";
+}</pre></div><p>In the following code we use the ToString function to convert the AudioListener's volume property (a float) into a string which we can print. We provide "f2" to the function to say we want to format the text as a float with 2 decimal points.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note62"></a>Note</h3><p>For more info on the ToString function, check out: <a class="ulink" href="https://msdn.microsoft.com/en-us/library/f71z6k0c(v=vs.110).aspx" target="_blank">https://msdn.microsoft.com/en-us/library/f71z6k0c(v=vs.110).aspx</a>.</p></div></li><li><p>Then, we need to have to update the <span class="strong"><strong>Start</strong></span> function of have the following bolded lines:</p><div class="informalexample"><pre class="programlisting">public void Start()
+{
+    isPaused = false;
+    pauseMenu.SetActive(false);
+ optionsMenu.SetActive(false);
+
+    UpdateQualityLabel();
+    UpdateVolumeLabel();
+}</pre></div></li><li><p>Save the script and <a id="id568" class="indexterm"></a>move back into the Unity editor. From there, go to <span class="strong"><strong>Pause Menu Behaviour</strong></span> and set the <span class="strong"><strong>Options Menu</strong></span> property to our <span class="strong"><strong>Options Menu</strong></span> object.</p></li><li><p>Next, select the <span class="strong"><strong>Slider</strong></span> object and scroll down to the <span class="strong"><strong>Slider</strong></span> component and add an <code class="literal">On Value Changed</code> event with <span class="strong"><strong>Pause Menu Behaviour</strong></span> attached and call the <span class="strong"><strong>Dynamic float</strong></span> version of <code class="literal">SetVolume</code>.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_02_22.jpg" /></div></li><li><p>Afterward, change<a id="id569" class="indexterm"></a> the <span class="strong"><strong>Value</strong></span> of the <span class="strong"><strong>Slider</strong></span> component to 1 to reflect full volume.</p></li><li><p>Then, have <span class="strong"><strong>Decrease</strong></span> and <span class="strong"><strong>Increase Quality</strong></span> call their respective functions.</p></li><li><p>Next, we need to be able to go from <span class="strong"><strong>Options</strong></span> to the <span class="strong"><strong>Pause </strong></span>menu and vice versa, so add in two more functions for us to work with in <span class="strong"><strong>Pause Menu Behaviour</strong></span>:</p><div class="informalexample"><pre class="programlisting">public void OpenOptions()
+    {
+        optionsMenu.SetActive(true);
+        pauseMenu.SetActive(false);
+    }
+
+    public void OpenPauseMenu()
+    {
+        optionsMenu.SetActive(false);
+        pauseMenu.SetActive(true);
+    }</pre></div></li><li><p>Then, assign <code class="literal">OpenPauseMenu</code> to the <span class="strong"><strong>Back</strong></span> button and <code class="literal">OpenOptions</code> to the <span class="strong"><strong>Options</strong></span> button on the <span class="strong"><strong>Pause</strong></span> menu.</p></li><li><p>Then, we need to adjust our <span class="strong"><strong>Escape</strong></span> button behavior in <code class="literal">Update</code>:</p><div class="informalexample"><pre class="programlisting">    public void Update()
+    {
+        if (Input.GetKeyUp("escape"))
+        {
+            if (!optionsMenu.activeInHierarchy)
+            {
+                // If false becomes true and vice-versa
+                isPaused = !isPaused;
+
+                // If isPaused is true, 0 otherwise 1
+                Time.timeScale = (isPaused) ? 0 : 1;
+
+                pauseMenu.SetActive(isPaused);
+            }
+            else
+            {
+                OpenPauseMenu();
+            }
+            
+        }
+    }</pre></div></li><li><p>It looks fine now, but<a id="id570" class="indexterm"></a> we also want our text to look easy to read, so go to the <span class="strong"><strong>Options Menu</strong></span> object and change the <span class="strong"><strong>Image</strong></span> component's <span class="strong"><strong>Color</strong></span> to have an Alpha to 200. Then, do the same to the <span class="strong"><strong>Pause Menu</strong></span> panel.</p></li><li><p>Lastly, hide the <span class="strong"><strong>Options Menu</strong></span> object from the <span class="strong"><strong>Hierarchy</strong></span> tab.</p></li><li><p>After this, we save all of our files and then go back into Unity and run the game, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_02_23.jpg" /></div><p>Over the course of this section, we've done two things. First of all, we changed the pause menu to now have an <a id="id571" class="indexterm"></a>additional <span class="strong"><strong>Options</strong></span> menu.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_02_24.jpg" /></div></li></ol></div><p>And when we click on the <span class="strong"><strong>Options</strong></span> button, we will see a separate menu that will allow users to modify the <span class="strong"><strong>Master Volume</strong></span> value as well as the <span class="strong"><strong>Graphics Quality</strong></span> value of their project. This is shown in the following screenshot:</p></div>

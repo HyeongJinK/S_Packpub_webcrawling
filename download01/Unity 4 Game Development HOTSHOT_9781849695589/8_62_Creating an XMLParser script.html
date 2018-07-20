@@ -1,0 +1,123 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec66"></a>Creating an XMLParser script</h2></div></div><hr /></div><p>In this section, we will create the <code class="literal">XMLParser</code> script that<a id="id1251" class="indexterm"></a> will parse the XML data from the server to use for the <span class="emphasis"><em>Saving and loading server high score</em></span> section. We will use <code class="literal">XmlDocument</code> from the .NET framework in C#.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec145"></a>Engage thrusters</h3></div></div></div><p>Now, we can<a id="id1252" class="indexterm"></a> start creating the <code class="literal">XMLParser</code> script using the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We will navigate to <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>Hiscore</strong></span> (for C# users) or <span class="strong"><strong>Chapter8</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>Javascript</strong></span> | <span class="strong"><strong>Hiscore</strong></span> (for Unity JavaScript users), and right-click and go to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span> (for C# users) or <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span>. We will name it <code class="literal">XMLParser</code> and double-click on it to open the <code class="literal">XMLParser</code> file.</p></li><li><p>First, we will start coding at the beginning of the <code class="literal">XMLParser</code> script, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+#pragma strict
+import System.Xml;
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+using System.Xml;</pre></div><p>We added <code class="literal">using System.Xml</code>, and <code class="literal">import System.Xml</code> allows us to access the <code class="literal">System.Xml</code> library in the .NET framework.</p></li><li><p>Next, we will<a id="id1253" class="indexterm"></a> create the <code class="literal">XMLParser</code> class as the static class, which allows us to access the method of this class directly without creating a new <code class="literal">XMLParser</code> object and all the necessary variables. Let's add the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+public static class XMLParser {
+  private var _doc : XmlDocument;
+  private var _root : XmlNode;
+  private var _users : UserData[];
+  private var _userLength : int;
+
+  public function get users() : UserData[] {
+    return _users;
+  }
+  public function get usersLength () : int {
+    return _userLength;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public static class XMLParser {
+  static XmlDocument _doc;
+  static XmlNode _root;
+  static UserData[] _users;
+  static int _usersLength;  
+
+  public static UserData[] users {
+    get { return _users; }
+  }
+  public static int usersLength {
+    get { return _usersLength; }
+  }
+}</pre></div></li><li><p>Then, we will add the <code class="literal">Parse()</code> function, which will be used to parse the XML string<a id="id1254" class="indexterm"></a> to the array of <code class="literal">UserData</code>. Let's add this method inside the <code class="literal">XMLParser</code> class, as shown in the following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+<span class="strong"><strong> </strong></span>
+public static class XMLParser {
+  …
+  public function get usersLength () : int {
+    return _userLength;
+  }
+  
+<span class="strong"><strong>public function Parse(  xml : String ) : void {</strong></span>
+<span class="strong"><strong>    _doc = new XmlDocument();</strong></span>
+<span class="strong"><strong>    _doc.LoadXml(xml); // Loading from String</strong></span>
+<span class="strong"><strong>    //Using doc.Load("HiScore.xml"); When load from an xml file</strong></span>
+<span class="strong"><strong>    //Using Last Child to Skip the &lt;?xml version="1.0" encoding="UTF-8"?&gt;</strong></span>
+<span class="strong"><strong>    //If we load from the xml file we will use the FirstChild instead</strong></span>
+<span class="strong"><strong>    _root = _doc.LastChild;</strong></span>
+<span class="strong"><strong>    if (_root.HasChildNodes ) {</strong></span>
+<span class="strong"><strong>      _userLength = _root.ChildNodes.Count;</strong></span>
+<span class="strong"><strong>      _users = new UserData[_userLength];</strong></span>
+<span class="strong"><strong>      for (var i : int = 0; i &lt; _userLength; i++) {</strong></span>
+<span class="strong"><strong>        if (_root.ChildNodes[i].InnerText.Contains("No entries yet.") == false) {</strong></span>
+<span class="strong"><strong>          var nameAtt : XmlAttribute = _root.ChildNodes[i].Attributes["name"];</strong></span>
+<span class="strong"><strong>          var scoreAtt : XmlAttribute = _root.ChildNodes[i].Attributes["score"];</strong></span>
+<span class="strong"><strong>          var user : UserData = new UserData();</strong></span>
+<span class="strong"><strong>          user.name = nameAtt.Value;</strong></span>
+<span class="strong"><strong>          user.score = parseInt(scoreAtt.Value);</strong></span>
+<span class="strong"><strong>          _users[i] = user;</strong></span>
+<span class="strong"><strong>        } else {</strong></span>
+<span class="strong"><strong>          break;</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}
+<span class="strong"><strong>// C# user:</strong></span>
+
+public static class XMLParser {
+  …
+  public static int usersLength {
+    get { return _usersLength; }
+  }
+
+<span class="strong"><strong>  public static void Parse( string xml) {</strong></span>
+<span class="strong"><strong>    _doc = new XmlDocument();</strong></span>
+<span class="strong"><strong>    _doc.LoadXml(xml); // Loading from String</strong></span>
+<span class="strong"><strong>    //Using doc.Load("HiScore.xml"); When load from an xml file</strong></span>
+<span class="strong"><strong>    //Using Last Child to Skip the &lt;?xml version="1.0" encoding="UTF-8"?&gt;</strong></span>
+<span class="strong"><strong>    //If we load from the xml file we will use the FirstChild instead</strong></span>
+<span class="strong"><strong>    _root = _doc.LastChild;</strong></span>
+<span class="strong"><strong>    if (_root.HasChildNodes ) {</strong></span>
+<span class="strong"><strong>      _usersLength = _root.ChildNodes.Count;</strong></span>
+<span class="strong"><strong>      _users = new UserData[_usersLength];</strong></span>
+<span class="strong"><strong>      for (int i = 0; i &lt; _usersLength; i++) {</strong></span>
+<span class="strong"><strong>        if (_root.ChildNodes[i].InnerText.Contains("No entries yet.") == false) {</strong></span>
+<span class="strong"><strong>          XmlAttribute nameAtt = _root.ChildNodes[i].Attributes["name"];</strong></span>
+<span class="strong"><strong>          XmlAttribute scoreAtt = _root.ChildNodes[i].Attributes["score"];</strong></span>
+<span class="strong"><strong>          UserData user = new UserData();</strong></span>
+<span class="strong"><strong>          user.name = nameAtt.Value;</strong></span>
+<span class="strong"><strong>          user.score = Convert.ToInt32(scoreAtt.Value);</strong></span>
+<span class="strong"><strong>          _users[i] = user;</strong></span>
+<span class="strong"><strong>        } else {</strong></span>
+<span class="strong"><strong>          break;</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec146"></a>Objective complete – mini debriefing</h3></div></div></div><p>In this section, we <a id="id1255" class="indexterm"></a>basically just created the <code class="literal">XMLParser</code> script to parse the XML string that we loaded from the server, and then we stored the user's data in this class to use it at a later stage.</p><p>First, we used the <code class="literal">static</code> keyword for this class because we wanted it to be accessible from the entire project. Then, we created the <code class="literal">XmlDocument</code> and <code class="literal">XmlNode</code> parameters to hold the XML data that we want to parse. Then, we had the array of <code class="literal">UserData</code> to contain all the user data. The last <a id="id1256" class="indexterm"></a>parameter is to store the length of the users that we have got from the XML data.</p><p>Next, we created the <code class="literal">Parse(string xml)</code> function. In this function, we created <code class="literal">XmlDocument</code> and then loaded the XML string data of this document using _<code class="literal">doc.LoadXml(xml)</code> to load the string XML that we pass from the server. Then, we get <code class="literal">XmlNode</code> from the last child of <code class="literal">XmlDocument</code> as follows:</p><div class="informalexample"><pre class="programlisting">_root = _doc.LastChild;</pre></div><p>We used <code class="literal">LastChild()</code> because we wanted to skip the first node, which is the headlineof the <code class="literal">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</code> XML file. Next, we checked if the <code class="literal">_root</code> node has a child node or not. If it has, we get the length of this child node. Then, we created the array of <code class="literal">UserData</code> to store username and score data.</p><p>Next, we looped through the child node, got the name and score from the XML attribute, set it to the <code class="literal">UserData</code> object, and then we added the data to the array of <code class="literal">UserData</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec147"></a>Classified intel</h3></div></div></div><p>From the previous section, if we go to the <code class="literal">UIHiscore</code> script at the <code class="literal">LocalHiscore()</code> function inside the <code class="literal">for</code> loop, we will see that we have shown the score with the commas as the following script:</p><div class="informalexample"><pre class="programlisting">_localHiscore.GetUserDataAt(i).score.AddCommas()</pre></div><p>As we can see from the preceding script, <code class="literal">_localHiscore.GetUserDataAt(i).score</code> is the <code class="literal">int</code> type, which doesn't have the <code class="literal">AddCommas()</code> method to call. So, why doesn't it work? Let's go to the <span class="strong"><strong>Project</strong></span> view in Unity and go to the <span class="strong"><strong>Standard Assets</strong></span> folder; we will see the <span class="strong"><strong>ExtensionMethods</strong></span> C# script, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_08_07.jpg" /></div><p>We can double-click on the file to open it. We will see that there are four methods here. All these are the extension methods. The extension method is the custom method for the class, struct, or variable that we don't have the permission or access to modify, such as <code class="literal">float</code>, <code class="literal">int</code>, <code class="literal">Transform</code>, and <code class="literal">Vector3</code>. To create the extension method, we need to create a static class and the static method, which<a id="id1257" class="indexterm"></a> need to have the first parameter set to <code class="literal">this</code> followed by its class type and the class name, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public static class ExtensionMethods {
+  public static void ResetTransform ( this Transform t )
+  {
+    t.position = Vector3.zero;
+    t.rotation = Quaternion.identity;
+    t.localScale = Vector3.one;
+  }
+}</pre></div><p>To use it, we can just call the <code class="literal">transform.ResetTransform()</code> function from the game object.</p><p>This extension method can only be created in C#. So, how can we use it if we use Unity JavaScript? We can use the extension method by reordering the script complier to compile the <code class="literal">ExtensionMethods</code> script before other scripts. This is because all the Unity JavaScript<span class="emphasis"><em> </em></span>will get executed before the C# script. To solve this problem, we can either put the <code class="literal">ExtensionMethods</code> script in the <span class="strong"><strong>Standard Assets</strong></span> folder or navigate to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Script Execution Order</strong></span> and add the script that we want to reorder.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note90"></a>Note</h3><p>For more details, visit the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Manual/ScriptCompileOrderFolders.html" target="_blank">http://docs.unity3d.com/Documentation/Manual/ScriptCompileOrderFolders.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Components/class-ScriptExecution.html" target="_blank">http://docs.unity3d.com/Documentation/Components/class-ScriptExecution.html</a>
+</p></li></ul></div></div></div></div>

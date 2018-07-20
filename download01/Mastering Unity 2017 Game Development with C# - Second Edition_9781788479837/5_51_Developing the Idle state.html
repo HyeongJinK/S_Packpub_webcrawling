@@ -1,0 +1,73 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec54"></a>Developing the Idle state</h2></div></div><hr /></div><p>The <span>Idle</span> state is ultimately the starting state for a zombie, and a passive state. Normally, an NPC in Idle will stand around and just look about. It's a state from which action may begin. For <span class="emphasis"><em>Dead Keys</em></span>, the zombies remain in Idle until instructed to change, based on camera movement and the position of the player:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/31d1701a-4d8b-4ed3-9891-f9ca7cee352e.png" /></div><p>Idle state</p><p>As the player enters the <strong class="userinput"><code>Chase</code></strong> range of an NPC, the NPC comes to life. In many games, a deciding factor will be the line of sight. The enemy chases, or pursues, the player as they enter their line of sight. However, for <span class="emphasis"><em>Dead Keys</em></span>, this is unnecessary because camera movement, as the player progresses from one point to the next, determines whether an NPC moves into view. For this reason, the <code class="literal">StateIdle</code> coroutine will remain almost empty. However, the <code class="literal">SetInteger</code> function will be called to set the animator's integer parameter:</p><pre class="programlisting">    public IEnumerator StateIdle() 
+    { 
+        //Run idle animation 
+        ThisAnimator.SetInteger("AnimState", (int) ActiveState); 
+        //While in idle state 
+        while(ActiveState == AISTATE.IDLE) 
+        { 
+            yield return null; 
+        } 
+    }  </pre><p>Although the <code class="literal">StateIdle</code> coroutine represents everything needed for an NPC in <span class="emphasis"><em>Dead Keys</em></span>, let's take a small detour and consider an NPC for other uses and games. What about cases where NPC states rest on whether the player can be seen (line of sight)? An example is when an NPC chases the player because the player has been seen. Consider the following sample code for an enemy object, with a <span><strong class="userinput"><code>Nav Mesh Agent</code></strong></span> attached. This code finds a <span>player</span> object in the level and determines whether it can be seen. Comments follow the code:</p><pre class="programlisting">using UnityEngine; 
+using System.Collections; 
+//-------------------------------------------------- 
+public class Enemy_Script : MonoBehaviour  
+{ 
+    private Transform Player = null; 
+    //-------------------------------------------------- 
+    // Use this for initialization
+    void Start () { 
+        Player = GameObject.FindGameObjectWithTag("Player").transform; 
+    } 
+    //-------------------------------------------------- 
+    // Update is called once per frame 
+    void Update () { 
+        CanSeeAgent(transform, Player, 10f, 30f); 
+    } 
+    //-------------------------------------------------- 
+    //Function to determine if enemy can see player 
+    //Agent = The enemy character 
+    //Target = The player who may be seen 
+    //NearDistance = How close player must be within field of view 
+    //FieldofView = Viewing angle enemy must have to be classified as 
+    facing player 
+    public static bool CanSeeAgent(Transform Agent, Transform Target, 
+    float NearDistance, float FieldofView) 
+    { 
+        //Determine if player is within field of view 
+        Vector3 VecDiff = Target.position - Agent.position; 
+        //Get angle between look at direction and player direction from 
+        enemy 
+        float Dot = Vector3.Dot(Agent.forward.normalized, 
+        VecDiff.normalized); 
+        //If player is behind enemy, then exit 
+            if(Dot &lt; 0) return false; 
+        //If player is not within viewing angle then exit 
+                if(FieldofView &lt; (90f - Dot * 90f)) return false; 
+        //Enemy is facing player. Is player within range and is there a 
+        direct line? 
+        NavMeshHit Hit; 
+        if(!NavMesh.Raycast(Agent.position, Target.position, out 
+        Hit,-1)) 
+        { 
+            //Has direct line, is within range? 
+            if((Agent.position - Target.position).sqrMagnitude  &gt; 
+            NearDistance) return false; 
+            //Can be seen (the enemy (Agent) can see the player 
+            (Target) 
+                        return true; 
+        } 
+        return false; 
+    } 
+    //-------------------------------------------------- 
+    //Draw forward vector of enemy for line of sight 
+    void OnDrawGizmos() 
+    { 
+        Gizmos.color = Color.red; 
+        Vector3 direction = 
+        transform.TransformDirection(Vector3.forward) * 5; 
+        Gizmos.DrawRay(transform.position, direction); 
+    } 
+    //-------------------------------------------------- 
+} 
+//--------------------------------------------------  </pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec55"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <code class="literal">CanSeeAgent</code> function <span>returns</span><code class="literal">true</code> or <code class="literal">false</code>, indicating whether a specific NPC (represented by the <code class="literal">Transform</code> component) can see the player (an object tagged as, player). <code class="literal">true</code> means the player can be seen, and <code class="literal">false</code> means the player cannot be seen.</li><li style="list-style-type: disc">There are several steps to determining player visibility. The first is to establish a field of view for the NPC, that is, an angle threshold either side of the forward vector, representing the angular limits of view.</li><li style="list-style-type: disc">To determine whether the player is within the angular limits, the <code class="literal">Vector3.Dot</code> function is used. This function takes two vectors as input and returns information about the angle between the vectors, assuming that they were laid out from a common starting point.
+</li><li style="list-style-type: disc">If <code class="literal">Vector3.Dot</code> returns <code class="literal">-1</code>, then the two vectors are pointing in the exact opposite directions. The closer a value moves toward <code class="literal">-1</code>, the further apart the vectors are in orientation.</li><li style="list-style-type: disc">If <code class="literal">Vector3.Dot</code> returns <code class="literal">1</code>, then both vectors are pointing in the same direction. The closer a value moves toward <code class="literal">1</code>, the closer together the vectors are in orientation.</li><li style="list-style-type: disc">If <code class="literal">Vector3.Dot</code> returns <code class="literal">0</code>, then the two input vectors are perpendicular, that is, intersecting at 90 degrees to each other.</li><li style="list-style-type: disc"><code class="literal">Vector3.Dot</code> is, therefore, used to determine whether the angle between two vectors is within the field of view. If so, the player can potentially be seen. However, there are additional considerations to explore before we can finally conclude that the player is seen by the NPC.</li><li style="list-style-type: disc">In addition to the player being in the NPC's field of view, they must be within a specified radius from the NPC. This is because the NPC has a specific horizon or distance beyond which they cannot see. Even when the player is within the field of view, they must also be close enough to be seen. Additionally, there cannot be intervening obstacles (such as walls) between the player and NPC. To solve this, the <code class="literal">Raycast</code> function of <span>the</span><code class="literal">NavMeshAgent</code> component is used. This determines whether an unbroken line can be traced between two points, without its leaving the navmesh. If so, a line of sight exists between the NPC and player. Soon, we'll code the functionality to change between states!</li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note39"></a>Note</h3><p>A sample line of sight project is included in the course companion files, in the <code class="literal">Chapter05/LineofSight</code> folder.</p></div></div></div>

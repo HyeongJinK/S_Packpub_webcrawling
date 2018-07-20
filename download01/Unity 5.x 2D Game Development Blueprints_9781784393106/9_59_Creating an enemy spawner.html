@@ -1,0 +1,20 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec56"></a>Creating an enemy spawner</h2></div></div><hr /></div><p>The next thing to do is to actually spawn enemies against the player. This can be done in many different ways. Here, we are going to see a simple way to do that.</p><p>The key concept is that we have a coroutine that gradually spawns enemies.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip31"></a>Tip</h3><p>If you are not familiar with coroutines, you can check out the following documentation: <a class="ulink" href="http://docs.unity3d.com/Manual/Coroutines.html" target="_blank">http://docs.unity3d.com/Manual/Coroutines.html</a>.</p></div><p>Let's get started with opening the <code class="literal">EnemyScript</code> and adding a new variable that holds the position where we want to spawn the enemies. Since we want to set this in the <span class="strong"><strong>Inspector</strong></span>, we need to set it to public:</p><pre class="programlisting">public Vector3 SpawnPoint; &#13;
+</pre><p>Furthermore, we need one more variable, public again, that stores the prefab for the enemy in order to spawn all the enemies:</p><pre class="programlisting">public GameObject enemyPrefab; &#13;
+</pre><p>Also, we need some other variables that we are going to use to set how many enemies the coroutine is going to spawn and how fast:</p><pre class="programlisting">public int numberOfEnemiesToSpawn = 50; &#13;
+public float minSpawnTime = 1f; &#13;
+public float maxSpawnTime = 3f; &#13;
+</pre><p>Now, in the <code class="literal">Start()</code> function, we need to start this coroutine, which we are going to create in the next step, and we pass the number of enemies to spawn as the parameter:</p><pre class="programlisting">  void Start () { &#13;
+        livesCounter = GameObject.Find("LivesCounter").GetComponent&lt;LivesCounterScript&gt;(); &#13;
+     StartCoroutine("SpawnEnemies", numberOfEnemiesToSpawn); &#13;
+  } &#13;
+</pre><p>Let's create our coroutine by paying attention to use the same name that we have used in the <code class="literal">Start()</code> function. We need to loop over all the number of enemies and spawn the same number. Since we don't want them all together, we need to use a <code class="literal">WaitForSeconds()</code> function to create a delay. We need to be careful when setting a value for this delay as it can change the balance of the game a lot, so we need to consider how to design and implement this in order to maintain balance. In this case, we are going to use a simple linear interpolation to decrease the delay over time (so the more the game goes on, the faster the enemies are spawned):</p><pre class="programlisting">    IEnumerator SpawnEnemies(int number) { &#13;
+        for (int i = 0; i &lt; number; i++) { &#13;
+            Instantiate(enemyPrefab, SpawnPoint, Quaternion.identity); &#13;
+            float ratio = i*1f / (number-1); &#13;
+            float timeTowait = Mathf.Lerp(minSpawnTime, maxSpawnTime, 1 - ratio); &#13;
+            yield return new WaitForSeconds(timeTowait); &#13;
+        } &#13;
+    } &#13;
+</pre><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip32"></a>Tip</h3><p>There are really lots of ways to implement this delay, and you should find the one that best suits your game. However, our implementation allows us to tweak its value by regulating the maximum and the minimum time that an enemy is spawned.</p></div><p>Finally, we can save our script. In the <span class="strong"><strong>Inspector</strong></span>, we still need to set the values of the new variables that we have just created. Therefore, good values to set could be as follows:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_09_012.jpg" /></div><p>
+</p></div>

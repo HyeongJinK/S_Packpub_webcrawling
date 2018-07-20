@@ -1,0 +1,73 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec18"></a>Housing our 3D UI</h2></div></div><hr /></div><p>We will <a id="id92" class="indexterm"></a>follow similar steps when housing our 3D UI as we did when housing our 2D UI. Create a new script and call it <code class="literal">GUI_3D</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec37"></a>Creating a 3D health bar</h3></div></div></div><p>Our <a id="id93" class="indexterm"></a>first step will be to add our variables needed for the <a id="id94" class="indexterm"></a>health bar:</p><div class="informalexample"><pre class="programlisting">public float currentHealth = 100;
+public float maximumHealth = 100;
+float currentBarLength;
+public Transform HealthBar;
+Vector3 OrigScale;</pre></div><p>The first three variables are what we'll use to calculate our health bar. The <code class="literal">Transform</code> variable is how <a id="id95" class="indexterm"></a>we'll interact with our 3D object that's being used as our health bar. The <code class="literal">Vector3</code> variable<a id="id96" class="indexterm"></a> is a reference point for when we scale the bar.</p><p>Our <a id="id97" class="indexterm"></a>next step will be to add a <code class="literal">Start()</code> function. We'll use the <code class="literal">Start()</code> function to set the <code class="literal">OrigScale</code> variable:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+  OrigScale = HealthBar.transform.localScale;
+}</pre></div><p>We set <code class="literal">OrigScale</code> before we do anything else in the health bar. This is what we'll use as a reference point for the health bar. Next, we'll create our <code class="literal">Update()</code> function:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  currentBarLength = currentHealth / maximumHealth;
+  HealthBar.transform.LookAt(Camera.main.transform);
+
+  if(Input.GetButton("Fire1"))
+  {
+    currentHealth -= 1.00f;
+    ChangeBar();
+  }
+}</pre></div><p>We <a id="id98" class="indexterm"></a>will use <code class="literal">currentBarLength</code> to scale our object, so <a id="id99" class="indexterm"></a>we set it by dividing <code class="literal">currentHealth</code> by <code class="literal">maximumHealth</code>. This will give us a value less than or equal to 1 and will scale our health bar perfectly. Next, we tell our <code class="literal">HealthBar</code> quad to look at our camera; this will allow us to always see it in 3D space. For testing purposes, we subtract the <code class="literal">currentHealth</code> value and call the <code class="literal">ChangeBar()</code> function when we press the left mouse button.</p><p>Our final step in creating the 3D health bar is to create the <code class="literal">ChangeBar()</code> function:</p><div class="informalexample"><pre class="programlisting">void ChangeBar()
+{
+  HealthBar.transform.localScale = Vector3.Lerp(OrigScale, new Vector3(currentBarLength, OrigScale.y,OrigScale.z), Time.time);
+}</pre></div><p>Here, we set the <code class="literal">localScale</code> value of the <code class="literal">HealthBar</code> quad by lerping from <code class="literal">OrigScale</code> to our new scale. The <a id="id100" class="indexterm"></a>new scale uses <code class="literal">CurrentBarLength</code> to determine the width of our health bar. When you press the left mouse button while testing the scene, you'll see the health bar go down over time.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec38"></a>Creating 3D damage reports</h3></div></div></div><p>The <a id="id101" class="indexterm"></a>damage reports will show up every time damage is<a id="id102" class="indexterm"></a> done to our enemy. It'll pop up above the enemy for a brief amount of time and then disappear again. To start things off, we'll add a few variables to our script for the damage reports:</p><div class="informalexample"><pre class="programlisting">public TextMesh DamageReport;
+public float Damage = 5;
+Color txtColor;
+public float SpawnTime = 2;
+public float KillTime = 3;
+public float PreviousTime = 0;
+bool HasChanged = false;</pre></div><p>The <code class="literal">TextMesh</code> object<a id="id103" class="indexterm"></a> is the actual 3D text object that we use to show the <a id="id104" class="indexterm"></a>damage report in-game. The <code class="literal">Damage</code> variable is what will be shown<a id="id105" class="indexterm"></a> in the text of our <code class="literal">TextMesh</code>. We use a <code class="literal">Color</code> variable so that we can modify the alpha value of the <code class="literal">TextMesh</code> object; this will allow us to turn on/off the <code class="literal">TextMesh</code> object without having to instantiate it.</p><p>The next three float variables are used when we create a timer. We use the timer to pick when we<a id="id106" class="indexterm"></a> want to show or hide the damage report. Lastly, the <code class="literal">bool</code> variable will help us check if we've taken damage or not.</p><p>Our next step will be to add a couple lines to our <code class="literal">Start()</code> function:</p><div class="informalexample"><pre class="programlisting">txtColor = DamageReport.color;
+txtColor.a = 0;</pre></div><p>The <code class="literal">txtColor</code> variable<a id="id107" class="indexterm"></a> is what we'll use to show or hide the damage report. First, we set it to the color of <code class="literal">TextMesh</code>, and then we set its alpha value to zero. We set it to zero so that the player can only see it when damage is done.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec39"></a>The new Update function</h3></div></div></div><p>Our <a id="id108" class="indexterm"></a>next step is to add our <code class="literal">Update()</code> function. We will actually<a id="id109" class="indexterm"></a> change this function a lot, so I'll show you the entire function and then go through it step by step:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  currentBarLength = currentHealth / maximumHealth;
+  HealthBar.transform.LookAt(Camera.main.transform);
+
+  DamageReport.color = txtColor;
+  if(Time.time &gt; (SpawnTime + PreviousTime))
+  {
+    DamageReport.text = Damage.ToString();
+    txtColor.a = 1;
+    if(!HasChanged)
+    {
+      currentHealth -= Damage;
+      ChangeBar();
+    }
+  }
+  if(Time.time &gt; (KillTime + PreviousTime))
+  {
+    DamageReport.text = "";
+
+    txtColor.a = 0;
+    PreviousTime = Time.time;
+    HasChanged = false;
+  }
+}</pre></div><p>The first two<a id="id110" class="indexterm"></a> lines of the function haven't changed, but they should<a id="id111" class="indexterm"></a> remain at the top of the function. The next line sets the color of our <code class="literal">TextMesh</code> to our color variable. Now we will encounter our first timer:</p><div class="informalexample"><pre class="programlisting">if(Time.time &gt; (SpawnTime + PreviousTime))
+{
+  DamageReport.text = Damage.ToString();
+  txtColor.a = 1;
+  if(!HasChanged)
+  {
+    currentHealth -= Damage;
+    ChangeBar();
+  }
+}</pre></div><p>Here, we check whether the current time passed in-game is greater than the value of the <code class="literal">SpawnTime</code> variable plus the <code class="literal">PreviousTime</code> variable. <code class="literal">SpawnTime</code> is the variable that we use to <a id="id112" class="indexterm"></a>spawn the damage report. <code class="literal">PreviousTime</code> will be set later; this is used to mark the previous time we showed the damage report.</p><p>When the current time passed is greater than <code class="literal">SpawnTime</code> and <code class="literal">PreviousTime</code> together, we show the damage report. We first set the text of <code class="literal">TextMesh</code> to the value of the damage variable. Then, we set its alpha value to one; this is so that the player can see it on the screen.</p><p>Afterwards, we check whether <code class="literal">HasChanged</code> is false. If it is false, then we subtract the health with our <code class="literal">Damage</code> variable. We then run the <code class="literal">ChangeBar</code> function. Time to look at the next timer:</p><div class="informalexample"><pre class="programlisting">if(Time.time &gt; (KillTime + PreviousTime))
+{
+  DamageReport.text = "";
+
+  txtColor.a = 0;
+  PreviousTime = Time.time;
+  HasChanged = false;
+}</pre></div><p>The <code class="literal">if</code> statement is<a id="id113" class="indexterm"></a> similar to the previous timer, but we<a id="id114" class="indexterm"></a> check with <code class="literal">KillTime</code> instead of <code class="literal">SpawnTime</code>. <code class="literal">KillTime</code> is what we'll use to hide the damage report. Within the <code class="literal">if</code> statement in the first line, we set the text of <code class="literal">TextMesh</code> to an empty value. For good measure, we set the alpha value of <code class="literal">TextMesh</code> to zero to hide it.</p><p>After this, we set the <code class="literal">PreviousTime</code> variable to the current time passed in-game. This will represent the last time damage report in the game. Finally, we set the <code class="literal">HasChanged</code> variable to false.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec40"></a>Completing the damage reports</h3></div></div></div><p>Our <a id="id115" class="indexterm"></a>last step in creating the damage report will be<a id="id116" class="indexterm"></a> to add one line of code to the <code class="literal">ChangeBar()</code> function:</p><div class="informalexample"><pre class="programlisting">HasChanged = true;</pre></div><p>Setting this to <code class="literal">true</code> will allow us to run the <code class="literal">ChangeBar()</code> function again. We use the <code class="literal">bool</code> variable so that the <code class="literal">ChangeBar()</code> function doesn't continually run in the <code class="literal">Update()</code> function. If we didn't use the <code class="literal">bool</code> variable, our <code class="literal">currentHealth</code> would run down past zero and the scale of our health bar would be in the negative.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec41"></a>Creating 3D name tags</h3></div></div></div><p>The <a id="id117" class="indexterm"></a>name tag is what will be used to show the player <a id="id118" class="indexterm"></a>what the enemy's name and level is. To create it, we'll perform similar steps as we did while creating the damage reports. Our first step is to add a few variables:</p><div class="informalexample"><pre class="programlisting">public string Name = "Skeleton Warrior";
+public int Level = 1;
+public TextMesh NameTag;</pre></div><p>We set all our variables here to <code class="literal">public</code> so that we can access them later. The <code class="literal">Name</code> string is the enemy's name, the <code class="literal">Level</code> integer is the enemy's level, and <code class="literal">TextMesh</code> <code class="literal">NameTag</code> is the object we use to represent the previous two variables.</p><p>Next, we will create a new function, which we will use to set the name tag. Add this function to the bottom of your script:</p><div class="informalexample"><pre class="programlisting">void SetNameTag()
+{
+  NameTag.text = Level + "   " + Name;
+}</pre></div><p>Here, we set the <code class="literal">NameTag</code> text to the level and name variables. We add a few spaces between <a id="id119" class="indexterm"></a>them so that the name tag looks good on the screen. This <a id="id120" class="indexterm"></a>completes the creation of our name tag as well as our 3D GUI. Here's what our scene now looks like with our 2D and 3D GUI:</p><div class="mediaobject"><img src="/graphics/9781783553631/graphics/3631OT_02_03.jpg" /><div class="caption"><p>Playtest</p></div></div><p>Try these steps to<a id="id121" class="indexterm"></a> playtest the different parts of this chapter:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Press the play button and test to see if everything works correctly.</p></li><li><p>Move the camera around to different angles to ensure the 3D GUI always looks at the camera.</p></li><li><p>To test the GUI buttons, add the <code class="literal">Debug.Log</code> statements to them to show that they work.</p></li><li><p>Iterate the <code class="literal">currentExperience</code> variable<a id="id122" class="indexterm"></a> to ensure the experience bar works correctly.</p></li><li><p>Modify the <a id="id123" class="indexterm"></a>timer variables to see which fits better.</p></li></ol></div></div></div>

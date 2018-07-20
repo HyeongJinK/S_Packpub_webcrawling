@@ -1,0 +1,47 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec110"></a>Improving efficiency with delegates and events (and avoiding SendMessage!)</h2></div></div><hr /></div><p>When events can be based on<a id="id834" class="indexterm"></a> distance or collisions, we can use <code class="literal">OnTrigger</code> methods as described in the preceding recipe. When events are based on time periods, we can use coroutines, as described in a later recipe in this chapter. When there are other kinds of events, we can use C# delegates and events, as described in this recipe. These work in a similar way to <code class="literal">SendMessage()</code><a id="id835" class="indexterm"></a>, but are much more efficient, since Unity has a defined list of the objects "listening" to the broadcast events. <code class="literal">SendMessage()</code> should be avoided, since it means Unity has to analyze each scripted object ("reflect over" the object) to see whether there is a public method corresponding to the message that has been sent—this is much slower than using delegates and events.</p><p>Delegates and events implement the <span class="strong"><strong>publish-subscribe</strong></span> (<span class="strong"><strong>pubsub</strong></span>) design pattern<a id="id836" class="indexterm"></a>. Objects can subscribe one of their methods to receive a particular type of event message from a particular publisher. In this recipe, we'll have a manager class displaying some color change buttons and publishing a new event for each button clicked; we'll also have a cube and a sphere that subscribe to the color change events, so each time a color change event is published, both the cube and the sphere should receive the event message and change their color accordingly. Publishers don't have to worry about how many objects subscribe to them at any point in time (it could be none, or 1000!), this is known as "loose coupling", since it allows different code components to be written (and maintained) independently, and this is a desirable feature of object-oriented code.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec385"></a>How to do it...</h3></div></div></div><p>To implement <a id="id837" class="indexterm"></a>delegates and events, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following C# script class <code class="literal">ColorManager</code><a id="id838" class="indexterm"></a> to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: ColorManager.cs
+using UnityEngine;
+using System.Collections;
+
+public class ColorManager : MonoBehaviour {
+  public delegate void ColorChangeHandler(Color newColor);
+  public static event ColorChangeHandler changeColorEvent;
+
+  void OnGUI(){
+    bool makeGreenButtonClicked = GUILayout.Button("make things GREEN");
+    bool makeBlueButtonClicked = GUILayout.Button("make things BLUE");
+    bool makeRedButtonClicked = GUILayout.Button("make things RED");
+
+    if(makeGreenButtonClicked)
+      PublishColorChangeEvent( Color.green );
+
+    if(makeBlueButtonClicked)
+      PublishColorChangeEvent( Color.blue );
+
+    if(makeRedButtonClicked)
+      PublishColorChangeEvent( Color.red );
+  }
+
+  private void PublishColorChangeEvent(Color newColor){
+    // if there is at least one listener to this event
+    if(changeColorEvent != null){
+      // broadcast change color event 
+      changeColorEvent( newColor );
+    }
+  }
+}</pre></div></li><li><p>Create<a id="id839" class="indexterm"></a> a <a id="id840" class="indexterm"></a>cube at (0, 0, 0), and attach the following C# script class <code class="literal">ColorChangeListener</code> to it:</p><div class="informalexample"><pre class="programlisting">// file: ColorChangeListener.cs
+using UnityEngine;
+using System.Collections;
+
+public class ColorChangeListener : MonoBehaviour {
+  void OnEnable() {
+    ColorManager.changeColorEvent += OnChangeColor;
+  }
+
+  private void OnDisable(){
+    ColorManager.changeColorEvent -= OnChangeColor;
+  }
+
+  void OnChangeColor(Color newColor){
+    renderer.sharedMaterial.color = newColor;
+  }
+}</pre></div></li><li><p>Create a<a id="id841" class="indexterm"></a> new material named <code class="literal">m_cube</code> and add this to your cube.</p></li><li><p>Create a sphere at (-5, 0, 0), and attach a <code class="literal">ColorChangeListener</code> component<a id="id842" class="indexterm"></a> to it.</p></li><li><p>Create a <a id="id843" class="indexterm"></a>new material named <code class="literal">m_sphere</code> and add this to your sphere.</p></li><li><p>Create a directional light, so we can see the cube and sphere colors easily.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec386"></a>How it works...</h3></div></div></div><p>First let's consider what we want to happen—we want the cube and sphere to both change their color when they receive an event message <code class="literal">OnChangeColor()</code><a id="id844" class="indexterm"></a> with a new color argument.</p><p>This is achieved by each object instance of the <code class="literal">ColorChangeListener</code> class (there is one present as a component of the cube and one of the sphere), subscribing their <code class="literal">OnChangeColor()</code> methods<a id="id845" class="indexterm"></a> to listen for color change events published from the <code class="literal">ColorManager</code> class. Since our scripted objects may be disabled and enabled at different times, each time a scripted <code class="literal">ColorChangeListener</code> object is enabled (such as when its GameObject parent is instantiated), its <code class="literal">OnChangeColor()</code> method is added (<code class="literal">+=</code>) to the list of those subscribed to listen for color change events. Then each time <code class="literal">ColorChangeListener</code> objects<a id="id846" class="indexterm"></a> are disabled, those methods are removed (<code class="literal">-=</code>) from the list of event subscribers.</p><p>When a <code class="literal">ColorChangeListener</code> object receives a color change message, its subscribed <code class="literal">OnChangeColor()</code> method is executed, and the color of the shared materials of the renderer component is changed to the received <code class="literal">Color</code> value (<code class="literal">green</code>/<code class="literal">red</code>/<code class="literal">blue</code>).</p><p>The <code class="literal">ColorManager</code> class has a public class (static) variable <code class="literal">changeColorEvent</code>, which defines an event to which Unity maintains a dynamic list of all the subscribed object methods. It is to this event that <code class="literal">ColorChangeListener</code> objects register or deregister their methods.</p><p>The <code class="literal">ColorManager</code> class <a id="id847" class="indexterm"></a>displays three buttons to the user to make things green, red, and blue. When a button is clicked, the <code class="literal">changeColorEvent</code> is told to publish a new event, passing a corresponding <code class="literal">Color</code> argument to all subscribed object methods (that is, the cube and sphere).</p><p>The <code class="literal">ColorManager</code> class declares a delegate named <code class="literal">ColorChangeHandler</code>. <span class="strong"><strong>Delegates</strong></span><a id="id848" class="indexterm"></a> define the return type (in this case <code class="literal">void</code>) and argument "signature" of methods that can be delegated (subscribed) to an event. In this case, methods must have the argument signature of a single parameter of type <code class="literal">Color</code>. Our <code class="literal">OnChangeColor()</code> method in the <code class="literal">ColorChangeListener</code> class matches this argument signature, and so it is permitted to subscribe to the <code class="literal">changeColorEvent</code><a id="id849" class="indexterm"></a> in class <code class="literal">ColorManager</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note52"></a>Note</h3><p>An easy-to-understand video about Unity delegates and events can be found at <a class="ulink" href="http://www.youtube.com/watch?v=N2zdwKIsXJs" target="_blank">http://www.youtube.com/watch?v=N2zdwKIsXJs</a>.</p></div></div></div>

@@ -1,0 +1,41 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec64"></a>Shooting projectiles</h2></div></div><hr /></div><p>To ensure that the hero can fight and defeat the enemies, we will give him the ability to shoot <a id="id457" class="indexterm"></a>magical orbs at the enemies. Let's execute the following steps to do this:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create<a id="id458" class="indexterm"></a> an orb GameObject by downloading and unzipping the <code class="literal">Orb.png</code> sprite from the following URL:</p><p>
+<a class="ulink" href="http://freeartsprites.com/roguelike/" target="_blank">http://freeartsprites.com/roguelike/</a>
+</p><p>The orb sprite is shown in the following image:</p><div class="mediaobject"><img src="/graphics/9781783559046/graphics/9046OT_06_13.jpg" /></div></li><li><p>We name the orb GameObject <code class="literal">orb</code>.</p></li><li><p>Add a Circle Collider by going to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>Physics 2D</strong></span> | <span class="strong"><strong>Circle Collider 2D</strong></span>.</p></li><li><p>Then, go to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>Physics 2D</strong></span> | <span class="strong"><strong>Rigidbody 2D</strong></span>.</p></li></ol></div><p>The script is <a id="id459" class="indexterm"></a>similar to the previous shooting script that we created in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>Code Control</em></span>. The only difference is that we will add conditional checks to make sure that the hero can shoot in all four directions depending on which direction he is facing and traveling.</p><p>Add the following code to our hero script:</p><div class="informalexample"><pre class="programlisting">var orb:Rigidbody2D;
+var orbSpeed:float = 20f;
+var orbSpeed2:float = -20f;
+
+function Update ()
+{
+
+
+var orbInstance:Rigidbody2D;
+
+
+    if(Input.GetButtonDown("Fire1"))
+    {
+
+
+orbInstance = Instantiate(orb, transform.position, Quaternion.Euler(new Vector3(-1,0,0)));
+
+if (right==true)
+{
+  orbInstance.velocity = new Vector2(orbSpeed, 0);
+}
+if (left==true)
+{
+  orbInstance.velocity = new Vector2(orbSpeed2, 0);
+}
+
+
+if (up==true)
+{
+
+    orbInstance.velocity = new Vector2(0, orbSpeed);
+  }
+if (down==true)	
+  {
+    orbInstance.velocity = new Vector2(0, orbSpeed2);
+  }
+
+}
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note62"></a>Note</h3><p>The<a id="id460" class="indexterm"></a> preceding script will not work unless we assign a value to the <code class="literal">orb</code> variable within the Unity Editor.</p><p>Refer to the <span class="emphasis"><em>Destroying the enemy</em></span> section in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>Code Control</em></span>, on how to assign unassigned variables that we declare in a script within the Inspector in Unity.</p></div></div>

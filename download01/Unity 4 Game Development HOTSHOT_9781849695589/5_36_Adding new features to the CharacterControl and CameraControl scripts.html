@@ -1,0 +1,349 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec43"></a>Adding new features to the CharacterControl and CameraControl scripts</h2></div></div><hr /></div><p>In<a id="id757" class="indexterm"></a> this step, we <a id="id758" class="indexterm"></a>will adapt and add <a id="id759" class="indexterm"></a>new features to the <code class="literal">CharacterControl</code> and <code class="literal">CameraControl</code> scripts that we created in <a class="link" href="#" linkend="ch04">Project 4</a>, <span class="emphasis"><em>Add Character Control and Animation to Our Hero/Heroine</em></span>. We will add the script to control our character<a id="id760" class="indexterm"></a>'s movement by gradually changing <a id="id761" class="indexterm"></a>the speed from <span class="strong"><strong>idle</strong></span> to <span class="strong"><strong>walk</strong></span> and <span class="strong"><strong>walk</strong></span> to <span class="strong"><strong>run</strong></span>. Then, we <a id="id762" class="indexterm"></a>will add the ability to switch between shooting and movement, which will also change the camera's view position.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec89"></a>Engage thrusters</h3></div></div></div><p>Let's get started! To add new features to the <code class="literal">CharacterControl</code> and <code class="literal">CameraControl</code> scripts, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to the <code class="literal">Chapter5/Scripts/C#</code> (for C# users) or <code class="literal">Chapter5/Scripts/Javascript</code> (for Unity JavaScript users) folder in the <span class="strong"><strong>Project</strong></span> view and double-click on the <code class="literal">CharacterControl</code> script file to open it, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_21.jpg" /></div></li><li><p>Open the <code class="literal">ChracterControl</code> script file; add the following highlighted script in the variable area as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+<span class="strong"><strong>public enum MOTION_STATE {GROUND,JUMP,FALL,JUMP_HOLD,AIM}</strong></span>
+…
+<span class="strong"><strong>private var _currentEulerAngle : Vector3;</strong></span>
+<span class="strong"><strong>private var _isAiming : boolean;</strong></span>
+<span class="strong"><strong>private var _isShot : boolean;</strong></span>
+…
+function get IsFall () : boolean {
+  return (_inAirTime &gt; MIN_AIR_TIME);
+}
+<span class="strong"><strong>function get IsAiming () : boolean {</strong></span>
+<span class="strong"><strong>  return _isAiming;</strong></span>
+<span class="strong"><strong>}</strong></span>
+<span class="strong"><strong>function get GetCharacterEulerAngle() : Vector3{</strong></span>
+<span class="strong"><strong>  return _currentEulerAngle;</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public class CharacterControl : MonoBehaviour {
+<span class="strong"><strong>  public enum MOTION_STATE {GROUND,JUMP,FALL,JUMP_HOLD,AIM}</strong></span>
+  …
+<span class="strong"><strong>  Vector3 _currentEulerAngle;</strong></span>
+<span class="strong"><strong>  bool _isAiming;</strong></span>
+<span class="strong"><strong>  bool _isShot;</strong></span>
+  …
+  public bool IsFall {
+    get { return (_inAirTime &gt; MIN_AIR_TIME); }
+  }
+<span class="strong"><strong>  public bool IsAiming {</strong></span>
+<span class="strong"><strong>    get { return _isAiming; }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  public Vector3 GetCharacterEulerAngle {</strong></span>
+<span class="strong"><strong>    get { return _currentEulerAngle; }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+  …
+}</pre></div></li><li><p>Next, we<a id="id763" class="indexterm"></a> will <a id="id764" class="indexterm"></a>go <a id="id765" class="indexterm"></a>to the <a id="id766" class="indexterm"></a>
+<code class="literal">Start()</code> function and add the following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function Start () {
+  …
+  _inAirStartTime = Time.time;
+<span class="strong"><strong>  _currentEulerAngle = transform.eulerAngles;</strong></span>
+<span class="strong"><strong>  _isAiming = false;</strong></span>
+}
+
+
+<span class="strong"><strong>C# user:</strong></span>
+
+void Start () {
+  …
+  _inAirStartTime = Time.time;
+<span class="strong"><strong>  _currentEulerAngle = transform.eulerAngles;</strong></span>
+<span class="strong"><strong>  _isAiming = false;</strong></span>
+}</pre></div></li><li><p>Then, we <a id="id767" class="indexterm"></a>go<a id="id768" class="indexterm"></a> to<a id="id769" class="indexterm"></a> the<a id="id770" class="indexterm"></a> <code class="literal">Update()</code> function to set <a id="id771" class="indexterm"></a>the <a id="id772" class="indexterm"></a>running and aiming animation controller. Let's go to the <code class="literal">If (IsGround)</code> function and replace the old code from <code class="literal">if (!_isJumping &amp;&amp; (_motionState == MOTION_STATE.GROUND)) {…}</code> to <code class="literal">if (_moveDirection != Vector3.zero) {…}</code>, as shown in the following highlighted script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+If (IsGround) {
+  …
+} else {
+  …
+}
+<span class="strong"><strong>if (!_isJumping) {</strong></span>
+<span class="strong"><strong>  _isAiming = (Input.GetKey(KeyCode.E));</strong></span>
+<span class="strong"><strong>  if (_isAiming) {</strong></span>
+<span class="strong"><strong>    _isShot = Input.GetButtonDown("Fire1");</strong></span>
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    if (_motionState == MOTION_STATE.GROUND) {</strong></span>
+<span class="strong"><strong>      _isRun = (Input.GetKey (KeyCode.LeftShift) || Input.GetKey (KeyCode.RightShift));</strong></span>
+<span class="strong"><strong>      if (_isRun) {</strong></span>
+<span class="strong"><strong>        if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>          _moveSpeed += 0.15f;</strong></span>
+<span class="strong"><strong>          _moveSpeed = Mathf.Clamp(_moveSpeed,0.0f,runSpeed);</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>      } else {</strong></span>
+<span class="strong"><strong>        if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>          _moveSpeed -= 0.15f;</strong></span>
+<span class="strong"><strong>          _moveSpeed = Mathf.Max(walkSpeed,_moveSpeed);</strong></span>
+<span class="strong"><strong>        } else {</strong></span>
+<span class="strong"><strong>          _moveSpeed = 0.0f;</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>      if (Input.GetButtonDown ("Jump")) {</strong></span>
+<span class="strong"><strong>        _verticalSpeed = jumpSpeed;</strong></span>
+<span class="strong"><strong>        _isJumping = true;</strong></span>
+<span class="strong"><strong>        _inAirTime = 0.0f;</strong></span>
+<span class="strong"><strong>        _inAirStartTime = Time.time;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>} else {</strong></span>
+<span class="strong"><strong>  // TODO – Reset Aiming  </strong></span>
+<span class="strong"><strong>}</strong></span>
+
+<span class="strong"><strong>if (!_isAiming) {</strong></span>
+<span class="strong"><strong>  _movement = (_moveDirection * _moveSpeed) + new Vector3 (0, _verticalSpeed, 0);</strong></span>
+<span class="strong"><strong>  _movement *= Time.deltaTime;</strong></span>
+<span class="strong"><strong>  if (_movement != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    _characterController.Move(_movement);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>transform.eulerAngles = _currentEulerAngle;</strong></span>
+<span class="strong"><strong>  if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    transform.rotation = Quaternion.LookRotation(_moveDirection);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  _currentEulerAngle = transform.eulerAngles;</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+If (IsGround) {
+  …
+} else {
+  …
+}
+<span class="strong"><strong>if (!_isJumping) {</strong></span>
+<span class="strong"><strong>  _isAiming = (Input.GetKey(KeyCode.E));</strong></span>
+<span class="strong"><strong>  if (_isAiming) {</strong></span>
+<span class="strong"><strong>    _isShot = Input.GetButtonDown("Fire1");</strong></span>
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    if (_motionState == MOTION_STATE.GROUND) {</strong></span>
+<span class="strong"><strong>      _isRun = (Input.GetKey (KeyCode.LeftShift) || Input.GetKey (KeyCode.RightShift));</strong></span>
+<span class="strong"><strong>      if (_isRun) {</strong></span>
+<span class="strong"><strong>        if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>          _moveSpeed += 0.15f;</strong></span>
+<span class="strong"><strong>          _moveSpeed = Mathf.Min(_moveSpeed,runSpeed);</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>      } else {</strong></span>
+<span class="strong"><strong>        if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>          _moveSpeed -= 0.15f;</strong></span>
+<span class="strong"><strong>          _moveSpeed = Mathf.Max(walkSpeed,_moveSpeed);</strong></span>
+<span class="strong"><strong>        } else {</strong></span>
+<span class="strong"><strong>          _moveSpeed = 0.0f;</strong></span>
+<span class="strong"><strong>        }</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>      if (Input.GetButtonDown ("Jump")) {</strong></span>
+<span class="strong"><strong>        _verticalSpeed = jumpSpeed;</strong></span>
+<span class="strong"><strong>        _isJumping = true;</strong></span>
+<span class="strong"><strong>        _inAirTime = 0.0f;</strong></span>
+<span class="strong"><strong>        _inAirStartTime = Time.time;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>} else {</strong></span>
+<span class="strong"><strong>  // TODO – Reset Aiming</strong></span>
+<span class="strong"><strong>}</strong></span>
+<span class="strong"><strong>if (!_isAiming) {</strong></span>
+<span class="strong"><strong>  _movement = (_moveDirection * _moveSpeed) + new Vector3 (0, _verticalSpeed, 0);</strong></span>
+<span class="strong"><strong>  _movement *= Time.deltaTime;</strong></span>
+<span class="strong"><strong>      </strong></span>
+<span class="strong"><strong>  if (_movement != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    _characterController.Move(_movement);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  transform.eulerAngles = _currentEulerAngle;</strong></span>
+<span class="strong"><strong>  if (_moveDirection != Vector3.zero) {</strong></span>
+<span class="strong"><strong>    transform.rotation = Quaternion.LookRotation(_moveDirection);</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  _currentEulerAngle = transform.eulerAngles;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Next, we <a id="id773" class="indexterm"></a>go<a id="id774" class="indexterm"></a> to<a id="id775" class="indexterm"></a> the <a id="id776" class="indexterm"></a>
+<code class="literal">OnAnimatorMove()</code> function<a id="id777" class="indexterm"></a> to <a id="id778" class="indexterm"></a>set up the <code class="literal">MOTION_STATE.AIM</code> and <code class="literal">IsShot</code> parameters. Let's replace the code with <a id="id779" class="indexterm"></a>following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function OnAnimatorMove (){    
+  if (_animator) {
+    if (_isJumping) {
+      …
+    } else {
+      if (IsFall) {
+        …
+      } else {
+<span class="strong"><strong>        if (_isAiming) {</strong></span>
+<span class="strong"><strong>          _motionState = MOTION_STATE.AIM;</strong></span>
+<span class="strong"><strong>        } else {</strong></span>
+<span class="strong"><strong>          _motionState = MOTION_STATE.GROUND;</strong></span>
+<span class="strong"><strong>        }</strong></span>
+      }
+    }
+    _animator.SetFloat ("Speed", _moveSpeed);
+<span class="strong"><strong>    _animator.SetBool ("IsShot", _isShot);</strong></span>
+    _animator.SetInteger ("MotionState", parseInt(_motionState));    
+    }
+} 
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+void OnAnimatorMove (){    
+  if (_animator) {
+    if (_isJumping) {
+      …
+    } else {
+      if (IsFall) {
+        …
+      } else {
+<span class="strong"><strong>        if (_isAiming) {</strong></span>
+<span class="strong"><strong>          _motionState = MOTION_STATE.AIM;</strong></span>
+<span class="strong"><strong>        } else {</strong></span>
+<span class="strong"><strong>          _motionState = MOTION_STATE.GROUND;</strong></span>
+<span class="strong"><strong>        }</strong></span>
+      }
+    }
+    _animator.SetFloat ("Speed", _moveSpeed);
+<span class="strong"><strong>    _animator.SetBool ("IsShot", _isShot);</strong></span>
+    _animator.SetInteger ("MotionState", (int)_motionState);  
+  }
+}</pre></div></li><li><p>We have<a id="id780" class="indexterm"></a> finished<a id="id781" class="indexterm"></a> setting <a id="id782" class="indexterm"></a>up the <code class="literal">CharacterControl</code> script. Now, we <a id="id783" class="indexterm"></a>will go <a id="id784" class="indexterm"></a>to<a id="id785" class="indexterm"></a> the <code class="literal">CameraControl</code> script. Let's go to the <code class="literal">Chapter5/Scripts/C#</code> (for C# users) or <code class="literal">Chapter5/Scripts/Javascript</code> (for Unity JavaScript users) folder in the <span class="strong"><strong>Project</strong></span> view. Double-click on the <code class="literal">CameraControl</code> script and add the variables as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+…
+var heightSmoothTime : float = 0.1f;
+<span class="strong"><strong>var distanceAimming : float = 1.5f;</strong></span>
+var distance : float = 2.5f;
+<span class="strong"><strong>var height : float = 1.0f;</strong></span>
+<span class="strong"><strong>var shootTarget : Transform;</strong></span>
+…
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+…
+public float heightSmoothTime = 0.1f;
+<span class="strong"><strong>public float distanceAimming = 1.5f;</strong></span>
+public float distance = 2.5f;
+<span class="strong"><strong>public float height = 1.0f;</strong></span>
+<span class="strong"><strong>public Transform shootTarget;</strong></span>
+…</pre></div></li><li><p>Next, we will <a id="id786" class="indexterm"></a>go to the <code class="literal">Start()</code> function to offset the target in the <span class="strong"><strong>y</strong></span> position and replace the old code with the following highlighted code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+function Start () {
+<span class="strong"><strong>  var newCenter : Vector3 = _targetTransform.collider.bounds.center + new Vector3(0,0.45f,0);</strong></span>
+<span class="strong"><strong>  _centerOffset = newCenter - _targetTransform.position;</strong></span>
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+void Start () {
+<span class="strong"><strong>  Vector3 newCenter = _targetTransform.collider.bounds.center + new Vector3(0,0.45f,0);</strong></span>
+<span class="strong"><strong>  _centerOffset = newCenter - _targetTransform.position;</strong></span>
+}</pre></div></li><li><p>Now, we will go to the <code class="literal">LateUpdate()</code> function because we want to make <a id="id787" class="indexterm"></a>sure that the camera's<a id="id788" class="indexterm"></a> position will always<a id="id789" class="indexterm"></a> be updated <a id="id790" class="indexterm"></a>after our<a id="id791" class="indexterm"></a> character<a id="id792" class="indexterm"></a> has finished moving. Add the following highlighted code to set up the camera's position when our character is aiming:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function LateUpdate (){    
+  var targetCenter : Vector3 = _targetTransform.position + _centerOffset;
+
+<span class="strong"><strong>  if (!_characterControl.IsAiming) {</strong></span>
+    var originalTargetAngle : float = _targetTransform.eulerAngles.y;
+    …
+    …
+    SetUpRotation(targetCenter);      
+<span class="strong"><strong>  } else {</strong></span>
+<span class="strong"><strong>    currentRotation = Quaternion.Euler (0, _characterControl.GetCharacterEulerAngle.y, 0);</strong></span>
+<span class="strong"><strong>    _cameraTransform.position = targetCenter;</strong></span>
+<span class="strong"><strong>    _cameraTransform.position += currentRotation * Vector3.back * distanceAimming;</strong></span>
+<span class="strong"><strong>    newCameraPos = _cameraTransform.position;</strong></span>
+<span class="strong"><strong>    newCameraPos.y += height;</strong></span>
+<span class="strong"><strong>    _cameraTransform.position = newCameraPos;</strong></span>
+<span class="strong"><strong>    _cameraTransform.LookAt(shootTarget.position);  </strong></span>
+<span class="strong"><strong>  }</strong></span>
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void LateUpdate () {
+  Vector3 targetCenter = _targetTransform.position + _centerOffset;
+<span class="strong"><strong>  if (!_characterControl.IsAiming) {</strong></span>
+    float originalTargetAngle = _targetTransform.eulerAngles.y;
+    …
+    …
+    SetUpRotation(targetCenter);
+<span class="strong"><strong>} else {</strong></span>
+<span class="strong"><strong>    Quaternion currentRotation = Quaternion.Euler (0, _characterControl.GetCharacterEulerAngle.y, 0);</strong></span>
+<span class="strong"><strong>    _cameraTransform.position = targetCenter;</strong></span>
+<span class="strong"><strong>    _cameraTransform.position += currentRotation * Vector3.back * distanceAimming;</strong></span>
+<span class="strong"><strong>    Vector3 newCameraPos = _cameraTransform.position;</strong></span>
+<span class="strong"><strong>    newCameraPos.y += height;</strong></span>
+<span class="strong"><strong>    _cameraTransform.position = newCameraPos;</strong></span>
+<span class="strong"><strong>    _cameraTransform.LookAt(shootTarget.position);    </strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Now, we've finished the first coding part. We need to go back to Unity and set up our character and camera's target position when aiming. Let's go to the <code class="literal">Resources/FBX/Robot Artwork</code> folder in the <span class="strong"><strong>Project</strong></span> view and drag the <span class="strong"><strong>robot</strong></span> prefab to the <span class="strong"><strong>Hierarchy</strong></span> view; then go to the robot <span class="strong"><strong>Inspector</strong></span> view and set it as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0.25</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">-6</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Animator</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Controller</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>MyAnimatorController</strong></span>
+</p>
+</td></tr></tbody></table></div></li><li><p>Next, we<a id="id793" class="indexterm"></a> will <a id="id794" class="indexterm"></a>create<a id="id795" class="indexterm"></a> our <a id="id796" class="indexterm"></a>
+<code class="literal">CameraAiming</code> position <a id="id797" class="indexterm"></a>object<a id="id798" class="indexterm"></a> by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span>; name it <code class="literal">CameraAimingPosition</code>. Then, we need to drag this inside our game object of <span class="strong"><strong>robot</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_22.jpg" /></div></li><li><p>Then, we<a id="id799" class="indexterm"></a> click on the <span class="strong"><strong>CameraAimingPosition</strong></span> option<a id="id800" class="indexterm"></a> and <a id="id801" class="indexterm"></a>set <a id="id802" class="indexterm"></a>
+<span class="strong"><strong>Transform</strong></span> as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0.6</code>,<span class="strong"><strong>Y</strong></span>: <code class="literal">1</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0.4</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>After that, we <a id="id803" class="indexterm"></a>need to add <code class="literal">CameraControl</code> to our <span class="strong"><strong>robot</strong></span>. Let's go to the robot <span class="strong"><strong>Inspector</strong></span> view and click <a id="id804" class="indexterm"></a>on the <span class="strong"><strong>Add Component</strong></span> button and then navigate to <span class="strong"><strong>Script</strong></span> | <span class="strong"><strong>CameraControl</strong></span>.</p></li><li><p>Then, we will see that our robot has <span class="strong"><strong>Character Controller</strong></span>, <span class="strong"><strong>Character Control (Script)</strong></span>, and <span class="strong"><strong>Camera Control (Script)</strong></span> attached to the <span class="strong"><strong>Inspector</strong></span> view. Let's go to the robot <span class="strong"><strong>Inspector</strong></span> view again and set the <span class="strong"><strong>Character Controller</strong></span> and <span class="strong"><strong>Camera Control (Script)</strong></span> parameters as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Character Controller</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Center</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-0.05</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">2.4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Camera Control (Script)</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Shoot Target</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>CameraAimingPosition</strong></span> (drag it here)</p>
+</td></tr></tbody></table></div><p>We have now finished this step. Let's click on play to see the result. We will see that we can press the Space bar to jump, <span class="emphasis"><em>WASD</em></span> or arrow keys to walk, and if we are pressing the <span class="emphasis"><em>Shift</em></span> key while the character is walking, this will trigger the <span class="strong"><strong>running</strong></span> state. The last thing to note is, if we hold the <span class="emphasis"><em>E</em></span> key, our character will prepare to shoot, and if we press the left-mouse button, our character will shoot.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec90"></a>Objective complete – mini debriefing</h3></div></div></div><p>Basically, what we have done here is create the script to control our robot character. We added the new <span class="strong"><strong>aiming</strong></span> and <span class="strong"><strong>shooting</strong></span> animation states to get the scene ready for the next step. In this step, we added the script that will detect whether our character is walking or running by increasing the value of the <code class="literal">_moveSpeed</code> parameter while we move our character or hold the <span class="emphasis"><em>Shift</em></span> key. On the other hand, we decrease the speed when we aren't moving.</p><p>We <a id="id805" class="indexterm"></a>created the <code class="literal">CameraAimingPosition</code> object, which<a id="id806" class="indexterm"></a> is the target <a id="id807" class="indexterm"></a>position while our<a id="id808" class="indexterm"></a> character<a id="id809" class="indexterm"></a> is aiming. We also have<a id="id810" class="indexterm"></a> the script to switch our camera between aiming and normal movement, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_23.jpg" /></div><p>However, right now, we won't be able to rotate our character while it is aiming. So, in the next step, we will add the <code class="literal">MouseLook</code> script and <code class="literal">Laser</code> target object to make our character able to look around while aiming.</p></div></div>

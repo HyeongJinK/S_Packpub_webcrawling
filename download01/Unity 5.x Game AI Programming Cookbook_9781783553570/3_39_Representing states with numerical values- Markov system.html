@@ -1,0 +1,57 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec44"></a>Representing states with numerical values: Markov system</h2></div></div><hr /></div><p>Having <a id="id168" class="indexterm"></a>learned about fuzzy logic, it may do us well to mix <a id="id169" class="indexterm"></a>some approaches and probably extend the functionality with finite-state machines. However, fuzzy logic doesn't work directly with values—they have to be <span class="emphasis"><em>defuzzified</em></span> before they have a meaning within its scope. A Markov chain is a mathematical system that allows us to develop a decision-making system that can be seen as a fuzzy state machine.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec148"></a>Getting ready</h3></div></div></div><p>This recipe uses the matrix and vector classes that come with Unity to illustrate the theoretical approach and make a working example, but it can be improved with our own matrix and vector classes with the proper implementation of the required member functions, such as vector-matrix multiplication.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec149"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create <a id="id170" class="indexterm"></a>the parent class for handling <a id="id171" class="indexterm"></a>transitions:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class MarkovTransition : MonoBehaviour
+{
+    public Matrix4x4 matrix;
+    public MonoBehaviour action;
+}</pre></div></li><li><p>Implement the <code class="literal">IsTriggered</code> member function:</p><div class="informalexample"><pre class="programlisting">public virtual bool IsTriggered()
+{
+    // implementation details here
+    return false;
+}</pre></div></li><li><p>Define the Markov state machine with its member variables:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class MarkovStateMachine : MonoBehaviour
+{
+    public Vector4 state;
+    public Matrix4x4 defaultMatrix;
+    public float timeReset;
+    public float timeCurrent;
+    public List&lt;MarkovTransition&gt; transitions;
+    private MonoBehaviour action;
+}</pre></div></li><li><p>Define the <code class="literal">Start</code> function for initialization:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+    timeCurrent = timeReset;
+}</pre></div></li><li><p>Implement <a id="id172" class="indexterm"></a>the <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+    if (action != null)
+        action.enabled = false;
+
+    MarkovTransition triggeredTransition;
+    triggeredTransition = null;
+    // next steps
+}</pre></div></li><li><p>Look for a <a id="id173" class="indexterm"></a>triggered transition:</p><div class="informalexample"><pre class="programlisting">foreach (MarkovTransition mt in transitions)
+{
+    if (mt.IsTriggered())
+    {
+        triggeredTransition = mt;
+        break;
+    }
+}</pre></div></li><li><p>If found, compute its matrix into the game state:</p><div class="informalexample"><pre class="programlisting">if (triggeredTransition != null)
+{
+    timeCurrent = timeReset;
+    Matrix4x4 matrix = triggeredTransition.matrix;
+    state = matrix * state;
+    action = triggeredTransition.action;
+}</pre></div></li><li><p>Otherwise, update the countdown timer and compute the default matrix into the game state, if necessary:</p><div class="informalexample"><pre class="programlisting">else
+{
+    timeCurrent -= Time.deltaTime;
+    if (timeCurrent &lt;= 0f)
+    {
+        state = defaultMatrix * state;
+        timeCurrent = timeReset;
+        action = null;
+    }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec150"></a>How it works...</h3></div></div></div><p>We define a game state based on the numerical value of the vector 4 member variable, with each position corresponding to a single state. The values in the game state change according to the matrix attached to each transition. When transitions are triggered, the game state changes, but we also have a countdown timer to handle a default transition and change the <a id="id174" class="indexterm"></a>game accordingly. This is useful when we <a id="id175" class="indexterm"></a>need to reset the game state after a period of time or just apply a regular transformation.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec151"></a>See also</h3></div></div></div><p>For more theoretical insights regarding the Markov process' application to game AI, please refer to Ian Millington's book, <span class="emphasis"><em>Artificial Intelligence for Games</em></span>.</p></div></div>

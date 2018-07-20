@@ -1,0 +1,97 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec53"></a>Influence maps</h2></div></div><hr /></div><p>Another way to use <a id="id207" class="indexterm"></a>graphs is to represent how much reach or influence an agent, or in this case a unit, has over an area of the world. In this context, influence is represented as the total area of a map an agent, or a group of agents of the same party, covers.</p><p>This is a key element for creating good AI decision mechanisms based on the military presence in real-time simulation games, or games where it is important to know how much of the world is taken by a group of agents, each representing a given faction.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec178"></a>Getting ready</h3></div></div></div><p>This is a recipe that requires the experience of graph building, so it is based on the general <code class="literal">Graph</code> class. However, we will need to derive it from a specific graph definition, or define our own methods to handle vertices and the neighbors retrieval logic, as learned in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Navigation</em></span>.</p><p>We will learn how to implement the specific algorithms for this recipe, based on the <code class="literal">Graph</code> class general functions and the <code class="literal">Vertex</code> class.</p><p>Finally, we will need a base Unity component for our agent and <code class="literal">Faction enum</code>.</p><p>The following is the code for the <code class="literal">Faction enum</code> and <code class="literal">Unit</code> classes. They can be written in the same file, called <code class="literal">Unit.cs</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public enum Faction
+{
+    // example values
+    BLUE, RED
+}
+
+public class Unit : MonoBehaviour
+{
+    public Faction faction;
+    public int radius = 1;
+    public float influence = 1f;
+
+    public virtual float GetDropOff(int locationDistance)
+    {
+        return influence;
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec179"></a>How to do it…</h3></div></div></div><p>We will build the <code class="literal">VertexInfluence</code> and <code class="literal">InfluenceMap</code> classes, used for handle vertices and <a id="id208" class="indexterm"></a>the graph, respectively:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">VertexInfluence</code> class, deriving from <code class="literal">Vertex</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+
+public class VertexInfluence : Vertex
+{
+    public Faction faction;
+    public float value = 0f;
+}</pre></div></li><li><p>Implement the function for setting up values and notifying success:</p><div class="informalexample"><pre class="programlisting">public bool SetValue(Faction f, float v)
+{
+    bool isUpdated = false;
+    if (v &gt; value)
+    {
+        value = v;
+        faction = f;
+        isUpdated = true;
+    }
+    return isUpdated;
+}</pre></div></li><li><p>Create the <code class="literal">InfluenceMap</code> class deriving from <code class="literal">Graph</code> (or a more specific graph <a id="id209" class="indexterm"></a>implementation):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class InfluenceMap : Graph
+{
+    public List&lt;Unit&gt; unitList;
+    // works as vertices in regular graph
+    GameObject[] locations;
+}</pre></div></li><li><p>Define the <code class="literal">Awake</code> function for initialization:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+    if (unitList == null)
+        unitList = new List&lt;Unit&gt;();
+}</pre></div></li><li><p>Implement the function for adding a unit on the map:</p><div class="informalexample"><pre class="programlisting">public void AddUnit(Unit u)
+{
+    if (unitList.Contains(u))
+        return;
+    unitList.Add(u);
+}</pre></div></li><li><p>Implement the function for removing a unit from the map:</p><div class="informalexample"><pre class="programlisting">public void RemoveUnit(Unit u)
+{
+    unitList.Remove(u);
+}</pre></div></li><li><p>Start building the function for computing the influence:</p><div class="informalexample"><pre class="programlisting">public void ComputeInfluenceSimple()
+{
+    int vId;
+    GameObject vObj;
+    VertexInfluence v;
+    float dropOff;
+    List&lt;Vertex&gt; pending = new List&lt;Vertex&gt;();
+    List&lt;Vertex&gt; visited = new List&lt;Vertex&gt;();
+    List&lt;Vertex&gt; frontier;
+    Vertex[] neighbours;
+
+    // next steps
+}</pre></div></li><li><p>Continue by <a id="id210" class="indexterm"></a>creating a loop for iterating over the list of units:</p><div class="informalexample"><pre class="programlisting">foreach(Unit u in unitList)
+{
+    Vector3 uPos = u.transform.position;
+    Vertex vert = GetNearestVertex(uPos);
+    pending.Add(vert);
+
+    // next step
+}</pre></div></li><li><p>Finally, apply a BFS-based code for spreading influence given the radius reach:</p><div class="informalexample"><pre class="programlisting">// BFS for assigning influence
+for (int i = 1; i &lt;= u.radius; i++)
+{
+    frontier = new List&lt;Vertex&gt;();
+    foreach (Vertex p in pending)
+    {
+        if (visited.Contains(p))
+            continue;
+        visited.Add(p);
+        v = p as VertexInfluence;
+        dropOff = u.GetDropOff(i);
+        v.SetValue(u.faction, dropOff);
+        neighbours = GetNeighbours(vert);
+        frontier.AddRange(neighbours);
+    }
+    pending = new List&lt;Vertex&gt;(frontier);
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec180"></a>How it works…</h3></div></div></div><p>The influence-map graph works exactly as a general graph as well as the influence-based vertex because there's just a couple of extra parameters for mapping the influence across the graph. The most relevant part relies on the computation of the influence, and it is based on the BFS algorithm.</p><p>For each unit on the <a id="id211" class="indexterm"></a>map, we spread its influence given the radius. When the computed influence (drop off) is greater than the vertex original faction, the vertex faction is changed.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec181"></a>There is more…</h3></div></div></div><p>The drop-off function should be tuned according to your specific game needs. We can define a smarter function with the following example code, using the distance parameter:</p><div class="informalexample"><pre class="programlisting">public virtual float GetDropOff(int locationDistance)
+{
+    float d = influence / radius * locationDistance;
+    return influence - d;
+}</pre></div><p>It is important to note that the distance parameter is an integer indicating the distance measured in vertices.</p><p>Finally, we could avoid using factions and instead use a reference to the unit itself. That way, we could map the influence based on individual units, but we think it makes the most sense to think in terms of factions or teams.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec182"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Navigation</em></span>, the <span class="emphasis"><em>Representing the world with grids</em></span> and <span class="emphasis"><em>Finding the shortest path in a grid with BFS</em></span> recipes</p></li></ul></div></div></div>

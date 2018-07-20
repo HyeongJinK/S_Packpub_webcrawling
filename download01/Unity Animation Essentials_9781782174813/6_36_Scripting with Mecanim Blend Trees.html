@@ -1,0 +1,31 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec37"></a>Scripting with Mecanim Blend Trees</h2></div></div><hr /></div><p>We're now almost <a id="id229" class="indexterm"></a>ready to animate the player character from a script. We just need to define the newly created script file. Consider the following code sample, and then a deeper explanation will follow:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class CharControl : MonoBehaviour 
+{
+  //Animator Controller
+  private Animator ThisAnimator = null;
+
+  //Float names
+  <span class="strong"><strong>private int HorzFloat = Animator.StringToHash("Horz");</strong></span>
+<span class="strong"><strong>  private int VertFloat = Animator.StringToHash("Vert");</strong></span>
+  
+  void Awake()
+  {
+    //Get animator component on this object
+    <span class="strong"><strong>ThisAnimator = GetComponent&lt;Animator&gt;();</strong></span>
+  }
+
+  // Update is called once per frame
+  void Update () 
+  {
+    //Read player input
+    float Vert = Input.GetAxis("Vertical");
+    float Horz = Input.GetAxis("Horizontal");
+
+
+    //Set animator floating point values
+  <span class="strong"><strong>  ThisAnimator.SetFloat(HorzFloat, Horz, 0.2f, Time.deltaTime);</strong></span>
+<span class="strong"><strong>    ThisAnimator.SetFloat(VertFloat, Vert, 0.2f, Time.deltaTime);</strong></span>
+  }
+}</pre></div><p>Here are some <a id="id230" class="indexterm"></a>comments about this code:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">Animator.StringToHash</code> function is used to convert the parameter string names <code class="literal">Horz</code> and <code class="literal">Vert</code> into a more efficient integer variable that can be used later as an argument for the <code class="literal">SetFloat</code> function. By converting string names to integers for later use, we can make our code faster.</p></li><li style="list-style-type: disc"><p>Next, the <code class="literal">Animator.SetFloat</code> function is used to set the float parameters in the graph, controlling the animation.</p></li></ul></div></div>

@@ -1,0 +1,86 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec39"></a>Creating a game logic class</h2></div></div><hr /></div><p>When<a id="id133" class="indexterm"></a> writing<a id="id134" class="indexterm"></a> game servers, it's very common that you need some central class for processing game logic. What we have right now doesn't allow for that, so we're going to modify our <code class="literal">ack</code> server to add a central class for processing game logic.</p><p>Our game class will accomplish the same thing that our <code class="literal">ack</code> server already does (sends acknowledgements in response to operation requests). It will also be able to keep track of a list of peers connected to the server, and when the server shuts down it will automatically disconnect any peers that are currently connected.</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+
+using System.Collections.Generic;
+
+public class PhotonAckGame
+{
+  public static PhotonAckGame Instance;
+
+  public List&lt;PeerBase&gt; Connections;
+
+  public void Startup()
+  {
+    Connections = new List&lt;PeerBase&gt;();
+  }
+
+  public void Shutdown()
+  {
+    // kick out any players still on the server before shutting down
+    foreach( PeerBase peer in Connections )
+    {
+      peer.Disconnect();
+    }
+  }
+
+  public void PeerConnected( PeerBase peer )
+  {
+    lock( Connections )
+    {
+      Connections.Add( peer );
+    }
+  }
+  public void PeerDisconnected( PeerBase peer )
+  {
+    lock( Connections )
+    {
+      Connections.Remove( peer );
+    }
+  }
+
+  public void OnOperationRequest( PeerBase src, OperationRequest request, SendParameters sendParams )
+  {
+    // send ack to peer
+    src.SendOperationResponse( new OperationResponse( (byte)PhotonAckResponseTypes.Ack ), sendParams );
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note17"></a>Note</h3><p>Note the use of lock statements—peers in Photon Server are executed in parallel for performance. This presents thread safety issues, so you need to be careful to properly deal with thread safety.</p></div><p>In<a id="id135" class="indexterm"></a> our <code class="literal">Application</code> class, in the <code class="literal">Setup</code> method<a id="id136" class="indexterm"></a> we'll create a new instance of the game and call its <code class="literal">Startup</code> method. Additionally, in the <code class="literal">Teardown</code> method, we'll call the game instance's <code class="literal">Shutdown</code> method.</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+
+public class PhotonAckServer : ApplicationBase
+{
+  protected override PeerBase CreatePeer( InitRequest initRequest )
+  {
+    return new PhotonAckPeer( initRequest.Protocol, initRequest.PhotonPeer );
+  }
+
+  protected override void Setup()
+  {
+    <span class="strong"><strong>PhotonAckGame.Instance = new PhotonAckGame();</strong></span>
+    <span class="strong"><strong>PhotonAckGame.Instance.Startup();</strong></span>
+  }
+
+  protected override void TearDown()
+  {
+    <span class="strong"><strong>PhotonAckGame.Instance.Shutdown();</strong></span>
+  }
+}</pre></div><p>And<a id="id137" class="indexterm"></a> finally, <a id="id138" class="indexterm"></a>in our peer class we need to inform the game instance of connecting peers, disconnecting peers, and operation requests.</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+using System.Collections.Generic;
+
+class PhotonAckPeer : PeerBase
+{
+  public PhotonAckPeer( IRpcProtocol protocol, IPhotonPeer unmanagedPeer )
+    : base( protocol, unmanagedPeer )
+  {
+    <span class="strong"><strong>PhotonAckGame.Instance.PeerConnected( this );</strong></span>
+  }
+
+  protected override void OnDisconnect( DisconnectReason reasonCode, string reasonDetail )
+  {
+    <span class="strong"><strong>PhotonAckGame.Instance.PeerDisconnected( this );</strong></span>
+  }
+
+  protected override void OnOperationRequest( OperationRequest operationRequest, SendParameters sendParameters )
+  {
+    <span class="strong"><strong>PhotonAckGame.Instance.OnOperationRequest( this, </strong></span>      <span class="strong"><strong>operationRequest, sendParameters );</strong></span>
+  }
+}</pre></div><p>If you run this server and connect from Unity, you should have the same results as you did before, but<a id="id139" class="indexterm"></a> the difference is that we are now processing messages from a central class rather than on a per-peer basis, which makes designing server logic for multiplayers far easier.</p></div>

@@ -1,0 +1,64 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec32"></a>Let's go huntin'!</h2></div></div><hr /></div><p>The enemy can now kill<a id="id124" class="indexterm"></a> the player on impact. Well, that's kind of one-sided, isn't it? The player needs a way to fight back! If only the player had some kind of weapon. Oh wait, <span class="emphasis"><em>they do</em></span>! Let's make the player's bullets actually do something. However, we aren't going to edit the bullets, we're going to edit the enemy.</p><p>The enemy's <span class="strong"><strong>Defense Collider</strong></span> object<a id="id125" class="indexterm"></a> has a perfect size and position to also act as the collider that takes damage. This is a case where a collider can have multiple purposes. Let's add a new script that is specifically meant to accept damage from the player's weapon shots. Create a new script called <code class="literal">TakeDamageFromPlayerBullet</code> and write it up as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class TakeDamageFromPlayerBullet : MonoBehaviour
+{
+    public delegate void hitByPlayerBullet();
+    public event hitByPlayerBullethitByBullet;
+    
+    void OnTriggerEnter2D( Collider2D collidedObject )
+    {   
+        if(collidedObject.tag == "Player Bullet")
+        {
+            if(hitByBullet != null)
+                hitByBullet();
+        }
+    }    
+}</pre></div><p>Attach the script to the <a id="id126" class="indexterm"></a>
+<span class="strong"><strong>Defense Collider</strong></span> object inside the <span class="strong"><strong>Enemy</strong></span> parent object. Now we can accept weapon shots from the player and call the <code class="literal">hitByBullet</code> event when it occurs. Let's modify the <code class="literal">EnemyControllerScript</code> to listen to these events.</p><p>First, at the beginning of <code class="literal">EnemyControllerScript</code>, add an object reference to <code class="literal">TakeDamageFromPlayerBullet</code> using the following line of code:</p><div class="informalexample"><pre class="programlisting">public TakeDamageFromPlayerBullet bulletColliderListener = null;</pre></div><p>Make sure that you assign the <span class="strong"><strong>Defense Collider</strong></span> object to this field in the <span class="strong"><strong>Inspector</strong></span> panel. Next, add the following functions above the <code class="literal">Start</code> function in <code class="literal">EnemyControllerScript</code>:</p><div class="informalexample"><pre class="programlisting">    void OnEnable()
+    {
+        // Subscribe to events from the bullet collider 
+        bulletColliderListener.hitByBullet += hitByPlayerBullet;
+    }
+    
+    void OnDisable()
+    {
+        // Unsubscribe from events
+        bulletColliderListener.hitByBullet -= hitByPlayerBullet;
+    }</pre></div><p>Finally, add a function called <code class="literal">Destroy</code> to manage what happens when the enemy is hit by a bullet, as shown in the following code snippet. This code could technically go anywhere, but let's place it at the bottom of the <code class="literal">EnemyControllerScript</code>.</p><div class="informalexample"><pre class="programlisting">public void hitByPlayerBullet()
+{
+// Wait a moment to ensure we are clear, then destroy the //enemy object.
+Destroy(gameObject,0.1f);
+}</pre></div><p>Now, play the game and fire the player's weapon at the enemy. When the bullets hit the enemy, they will cease to exist!</p><p>You may be wondering why we used events and delegates for this when we could have just used a script component reference. Well, let me ask you this, if you did not know how events and delegates worked a page ago, do you know now? No? Well then go over it and hopefully you will get it the second time around. Essentially, each event is a type of delegate, and any object can listen to events.</p><p>Now you are ready for the future event and delegate work that we will be doing in the rest of this book, as much of that upcoming work will not work well with object references. If you don't understand, give it another read-through.</p><p>Just for fun, let's give the<a id="id127" class="indexterm"></a> enemy a particle effect when they are killed. First things first, create a new <span class="strong"><strong>Particle System</strong></span> object named <code class="literal">EnemyDeathFX</code>. As a skilled Unity ninja, it is most likely that you already know how to build these, so I won't go into the nitty-gritty of making awesome particle emitters. To help you out, we have included some particle graphics for you to use; import the graphics from the folder <code class="literal">Sprites\Particles</code>.</p><p>While I'm not going to describe how to create particles, I will, however, discuss a small requirement that you will need to fulfill to make these particles work in a 2D world. If your emitter has too much depth to it, the particles won't be in the camera view of the Orthographic camera. Keep this in mind when building out the particles, and test them frequently to ensure they look the way you want. Try and keep your emitters very, very thin. Check out the following image; that thin line in the middle is the particle system that we created. We really mean thin here.</p><div class="mediaobject"><img src="/graphics/9781849692564/graphics/2564OT_03_06.jpg" /></div><p>Now, build a neat-looking enemy death particle using those rules. For our enemy tanks, I will build an effect of red metal shards flying about. Store this new particle emitter as a Prefab called <code class="literal">EnemyDeathFX</code>.</p><p>In <code class="literal">EnemyControllerScript</code>, add the<a id="id128" class="indexterm"></a> following code at the beginning to store the particle emitter:</p><div class="informalexample"><pre class="programlisting">public ParticleSystemdeathFxParticlePrefab = null;</pre></div><p>At the bottom of <code class="literal">EnemyControllerScript</code>, modify <code class="literal">hitByPlayerBullet</code> to read as follows:</p><div class="informalexample"><pre class="programlisting">public void hitByPlayerBullet()
+    {
+        // Create the particle emitter object
+        GameObjectdeathFxParticle = (GameObject)Instantiate(deathFxParticlePrefab); 
+        
+        // Get the enemy position
+        Vector3 enemyPos = transform.position;
+        
+        // Create a new vector that is in front of the enemy
+        Vector3 particlePosition = new Vector3(enemyPos.x,enemyPos.y,enemyPos.z + 1.0f);
+        
+        // Reposition the particle emitter at this new position
+        deathFxParticle.transform.position = particlePosition;
+        
+        Destroy(gameObject,0.1f);
+    }</pre></div><p>Be sure to also assign the <code class="literal">EnemyDeathFX</code> Prefab to the <code class="literal">deathFxParticlePrefab</code> property of the <span class="strong"><strong>Enemy</strong></span> object. Now, your enemies will display a particle effect when defeated! However, the particle system we created is not getting destroyed automatically. To wrap up this task, let's make the particle system destroy itself. To do this, we will add a quick self-destruct script.</p><p>Create a new script called <code class="literal">SelfDestruct</code>, attach it to the <code class="literal">EnemyDeathFX</code> Prefab, and code it up to look like the following:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SelfDestruct : MonoBehaviour
+{
+    public float fuseLength = 0.1f;
+    private float destructTime = 0.0f;
+    
+    void Start()
+    {
+        destructTime = Time.time + fuseLength;
+    }
+    
+    void Update()
+    {
+        if(destructTime&lt;Time.time)
+            Destroy(gameObject);
+    }
+}</pre></div><p>Assign an appropriate <a id="id129" class="indexterm"></a>value such as <code class="literal">1.25</code> to the <span class="strong"><strong>Fuse Length</strong></span> field on the <span class="strong"><strong>Self Destruct</strong></span> component in the <span class="strong"><strong>Inspector</strong></span> panel, and then play the scene again. Now, you will notice that the enemy’s death particle system object will clean itself up after the specified amount of time.</p></div>

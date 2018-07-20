@@ -1,0 +1,9 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec100"></a>Changing struct properties by value versus by reference</h2></div></div><hr /></div><p>Structures <a id="id1359" class="indexterm"></a>are passed by values in C#, so you cannot change the x, y, or z value of a Vector3. You need to create a new Vector3 and assign it to the Vector3 that you want. However, in JavaScript, you can write it as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+transform.position.x = 1;
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+transform.position = new Vector3(1, transform.position.y, transform.position.z);</pre></div></div>

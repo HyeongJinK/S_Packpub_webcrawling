@@ -1,0 +1,134 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch23lvl1sec213"></a>Level editor – toggling editor, GUI, and selecting additional tiles</h2></div></div><hr /></div><p>Now that we have the basic functionality in, it wouldn't be that enjoyable if all we could do was added and<a id="id1094" class="indexterm"></a> remove walls. We also want to be able to spawn collectibles and change the player's starting<a id="id1095" class="indexterm"></a> location. Let's work on that next:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Back in <code class="literal">MonoDevelop</code> in the <code class="literal">LevelEditor</code> class, we're going to want to first add in an <code class="literal">OnGUI</code> function to display the types of things we can create:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  GUILayout.BeginArea(new Rect(Screen.width - 110, 20, 100, 800));
+  foreach(Transform item in tiles)
+  {
+    if (GUILayout.Button (item.name))
+    {
+      toCreate = item;
+      
+    }
+  }
+  GUILayout.EndArea();
+}</pre></div></li><li><p>The <code class="literal">OnGUI</code> function<a id="id1096" class="indexterm"></a> is called for rendering and handling GUI events using IMGUI which is a code-driven GUI system. While it was the way to create GUIs before Unity 4.6, it currently is primarily used by programmers for tools development and custom inspectors for scripts or new editors to extend Unity itself. </p></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch23lvl2sec128"></a>The anatomy of a IMGUI control</h3></div></div></div><p>The most important <a id="id1097" class="indexterm"></a>concept to grasp first is the <code class="literal">GUILayout.Button</code> function. This is what we refer to as a <a id="id1098" class="indexterm"></a>
+<span class="strong"><strong>GUI control</strong></span>, and there are many others that we will be using in the future. So, to clear up any confusion, let's talk about how all of these work now.</p><p>Creating any <code class="literal">GUILayout</code> control consists of the following:</p><div class="informalexample"><pre class="programlisting">ControlType(Content)</pre></div><p>The parts of the preceding line of code are explained in the following sections:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch23lvl3sec14"></a>ControlType</h4></div></div></div><p>The <code class="literal">ControlType</code> function<a id="id1099" class="indexterm"></a> is a function that exists in Unity's GUI and <code class="literal">GUILayout</code> class, and is the name of the element that you want to create in the world. In the preceding code, we used <code class="literal">GUILayout.Button</code>, but there are many more.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch23lvl3sec15"></a>Content</h4></div></div></div><p>The argument for the control is the actual <a id="id1100" class="indexterm"></a>content that we want to display with the <code class="literal">ControlType</code> we are using. Right now, we're just passing in a string to display, but we can also display images and other content as well, including other controls. We will talk about other pieces of content that we can add in later.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch23lvl2sec129"></a>GUI.Button</h3></div></div></div><p>One of the most <a id="id1101" class="indexterm"></a>common UI elements is the <code class="literal">Button</code> control. This function is used to render a clickable object. If you look at the code we just wrote, you'll note that the button is cased inside of an <code class="literal">if</code> statement. This is because if the button is clicked on, then the function will return <code class="literal">true</code> when the button is released. If this is true, we will set <code class="literal">toCreate</code> to whatever object has that name.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch23lvl2sec130"></a>GUILayout</h3></div></div></div><p>By default, the <code class="literal">GUILayout</code> class will just put the buttons up at the top-left side, but we may also want <a id="id1102" class="indexterm"></a>our objects to be grouped together So, I specify an area that I want the menu to be in using the <code class="literal">BeginArea</code> function. Anything I place before I call the <code class="literal">EndArea</code> function will be inside that area, and <code class="literal">GUILayout</code> will attempt to place it in a pleasing way for me.</p><p>If you want to have precise control on where and how things are drawn, you can make use of the GUI class. However, if you do not want to manually specify a position and are okay with Unity automatically modifying the size and position of controls, you can use the <code class="literal">GUILayout</code> class that adds a parameter for a position.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note118"></a>Note</h3><p>For more information on <a id="id1103" class="indexterm"></a>IMGUI check out <a class="ulink" href="http://docs.unity3d.com/Manual/GUIScriptingGuide.html" target="_blank">http://docs.unity3d.com/Manual/GUIScriptingGuide.html</a>.</p></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Next, inside our <code class="literal">GameController</code> class, add the following code to our <code class="literal">Update</code> function (create the function as well if it doesn't exist in your current implementation, such as the example code):</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  if(Input.GetKeyDown("f2"))
+  {
+    this.gameObject.GetComponent&lt;LevelEditor&gt;().enabled = 
+    true;
+  }
+}</pre></div><p>Now, if we move <a id="id1104" class="indexterm"></a>back to the game and press the <span class="emphasis"><em>F2</em></span> key, you'll see that a menu pops up, which we can then select items from. This works fine for the walls and the collectibles, but there's a bit of an issue with the player and the collectibles. Take a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_10_03.jpg" /></div><p>As you can see, we are spawning more players that all respond to player input, and the number of collectibles on our screen are not reflected properly in our text. We will solve both of these issues now. We will first create a new object named <code class="literal">PlayerSpawner</code>, which will act as the place where the player will start when the game starts, and make it such that we can only have one of them.</p></li><li><p>In <span class="strong"><strong>Project Browser</strong></span>, select <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>New Material</strong></span>. Rename it to <code class="literal">PlayerSpawn</code> by clicking on the name of the material in the project browser, typing in the new name and then pressing <span class="emphasis"><em>Enter</em></span>.</p></li><li><p>With the <code class="literal">PlayerSpawn</code> object selected, set the <span class="strong"><strong>Rendering Mode</strong></span> to <span class="strong"><strong>Transparent</strong></span> so that we can make the material semitransparent. Then, change the <span class="strong"><strong>Main Color</strong></span> property to a red color with a low alpha value. </p><p>If all goes well, it <a id="id1105" class="indexterm"></a>should look like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_10_04.jpg" /></div></li><li><p>Now, let's create a cube to act as the visual representation of our level by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>3D Object</strong></span> | <span class="strong"><strong>Cube</strong></span>. Once the object is created, give it a name, <code class="literal">PlayerSpawn</code>. Switch to the <span class="strong"><strong>Scene</strong></span> view if you haven't so that you can see the newly created object.</p></li><li><p>Under the <span class="strong"><strong>Mesh Renderer</strong></span> component, set the <span class="strong"><strong>Materials</strong></span> | <span class="strong"><strong>Element 0</strong></span> property to our newly <a id="id1106" class="indexterm"></a>created <code class="literal">PlayerSpawn</code> material. Take a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_10_05.jpg" /></div></li><li><p>Next, go to the <code class="literal">Scripts</code> folder and create a new C# script named <code class="literal">PlayerStart</code>. Once that's finished, open your IDE and use the following code for the file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerStart : MonoBehaviour 
+{
+  //A reference to our player prefab
+  public Transform player;
+
+  //Have we spawned yet?
+  public static bool spawned = false;
+  
+  public static PlayerStart _instance;
+  
+  // Use this for initialization
+  void Start () 
+  {
+    // If another PlayerStart exists, this will replace it
+    if(_instance != null)
+      Destroy(_instance.gameObject);
+    
+    _instance = this;
+
+    // Have we spawned yet? If not, spawn the player
+    if(!spawned)
+    {
+      SpawnPlayer();
+      spawned = true;
+    }
+  }
+  
+  void SpawnPlayer()
+  {
+    Transform newObject = Instantiate(player, 
+                                this.transform.position,
+                                Quaternion.identity) as Transform;
+    
+    newObject.name = "Player";
+  }
+
+}</pre></div></li><li><p>Back in the <a id="id1107" class="indexterm"></a>editor, attach our new component to the <span class="strong"><strong>PlayerStart</strong></span> object in <span class="strong"><strong>Hierarchy</strong></span>. Then, back in <span class="strong"><strong>Inspector</strong></span>, set the <span class="strong"><strong>Player</strong></span> variable to our <code class="literal">Player</code> prefab.</p></li><li><p>Finally, in the <span class="strong"><strong>Box Collider</strong></span> component, check the <span class="strong"><strong>Is Trigger</strong></span> property.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_10_06.jpg" /></div></li><li><p>Now, drag<a id="id1108" class="indexterm"></a> the <code class="literal">PlayerStart</code> object from <span class="strong"><strong>Hierarchy</strong></span> to the <code class="literal">Prefabs</code> folder to make it a prefab. Then, delete the object from <span class="strong"><strong>Hierarchy</strong></span>.</p></li><li><p>Next, select the <code class="literal">GameController</code> object and assign the <code class="literal">PlayerStart</code> prefab where you used to see the player in <span class="strong"><strong>Tiles</strong></span> | <span class="strong"><strong>Element 1</strong></span>. Save your scene and play the <a id="id1109" class="indexterm"></a>game. Take a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_10_07.jpg" /></div><p>We can now select the <span class="strong"><strong>PlayerStart</strong></span> object from the button and place it wherever we want, and there will always just be one. Also, once we have levels saving/loading, the code will properly spawn the player wherever the <span class="strong"><strong>PlayerStart</strong></span> object is placed!</p></li><li><p>Now, to update the number of orbs we have in the level, we need to open <span class="strong"><strong>GameController</strong></span> and add in a new function, as follows:</p><div class="informalexample"><pre class="programlisting">public void UpdateOrbTotals(bool reset = false)
+{
+    if (reset)
+    orbsCollected = 0;
+
+    GameObject[] orbs;
+    orbs = GameObject.FindGameObjectsWithTag("Orb");
+
+    orbsTotal = orbs.Length;
+  
+    scoreText.text = "Orbs: " + orbsCollected + "/" + orbsTotal;
+}</pre></div></li><li><p>Now that we<a id="id1110" class="indexterm"></a> have this function written, we need to call it every time we do something to modify our level. Go to the <code class="literal">LevelEditor</code> class and add the following line to the end of our <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">GameController._instance.UpdateOrbTotals(true);</pre></div></li><li><p>Then, inside the <code class="literal">Update</code> function, we'll need to add the following lines in bold:</p><div class="informalexample"><pre class="programlisting">    void Update()
+    {
+        // Left click - Create object
+        if (Input.GetMouseButton(0) &amp;&amp; GUIUtility.hotControl == 0)
+        {
+            Vector3 mousePos = Input.mousePosition;
+
+/*
+Set the position in the z axis to the
+opposite of the camera's so that the position is on the
+world so ScreenToWorldPoint will give us valid
+values.
+*/
+            mousePos.z = Camera.main.transform.position.z * -1;
+
+            Vector3 pos = Camera.main.ScreenToWorldPoint(mousePos);
+
+            // Deal with the mouse being not exactly on a 
+            // block
+            int posX = Mathf.FloorToInt(pos.x + .5f);
+            int posY = Mathf.FloorToInt(pos.y + .5f);
+
+            Collider[] hitColliders = Physics.OverlapSphere(pos, 0.45f);
+            int i = 0;
+            while (i &lt; hitColliders.Length)
+            {
+                if (toCreate.name != hitColliders[i].gameObject.name)
+                {
+                    DestroyImmediate(hitColliders[i].gameObject);
+                }
+                else
+                {
+                    // Already exists, no need to create 
+                    // another
+                    return;
+                }
+                i++;
+            }
+
+            CreateBlock(tiles.IndexOf(toCreate) + 1, posX, posY);
+            
+<span class="strong"><strong>            GameController._instance.UpdateOrbTotals();</strong></span>
+        }
+
+        // Right clicking - Delete object
+        if (Input.GetMouseButton(1) &amp;&amp; GUIUtility.hotControl == 0)
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            RaycastHit hit = new RaycastHit();
+
+            Physics.Raycast(ray, out hit, 100);
+
+            // If we hit something other than the player, we 
+            // want to destroy it!
+            if ((hit.collider != null) &amp;&amp; (hit.collider.name != "Player"))
+            {
+                Destroy(hit.collider.gameObject);
+            }
+
+<span class="strong"><strong>            GameController._instance.UpdateOrbTotals();</strong></span>
+        }
+
+    }</pre></div></li><li><p>Save the file, save your project, and start the game. Press <span class="emphasis"><em>F2</em></span> to open our menu and <a id="id1111" class="indexterm"></a>then draw. Take a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_10_08.jpg" /></div></li></ol></div><p>As you can see, we're now able to draw over the other object and place everything that we want for our level!</p></div></div>

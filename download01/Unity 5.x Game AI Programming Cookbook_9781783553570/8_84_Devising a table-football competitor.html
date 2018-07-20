@@ -1,0 +1,252 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec84"></a>Devising a table-football competitor</h2></div></div><hr /></div><p>Another common <a id="id378" class="indexterm"></a>table game that has made its way into the digital realm is table football. In this recipe, we will create a competitor, imitating the way a human plays the game and using some techniques that emulate human senses and limitations.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec286"></a>Getting ready</h3></div></div></div><p>In this recipe, we will use the knowledge gained from <a class="link" href="#" linkend="ch05">Chapter 5</a>, <span class="emphasis"><em>Agent Awareness</em></span>, and the emulation of vision.</p><p>First, it is important to have a couple of <code class="literal">enum</code> data structures, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">public enum TFRAxisCompare
+{
+    X, Y, Z
+}
+
+public enum TFRState
+{
+    ATTACK, DEFEND, OPEN
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec287"></a>How to do it…</h3></div></div></div><p>This is a very extensive recipe. We'll build a couple of classes, one for the table-football bar and the other for the main AI agent that handles the bars, as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a class for the bar that will be handled by the AI:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class TFRBar : MonoBehaviour
+{
+    [HideInInspector]
+    public int barId;
+    public float barSpeed;
+    public float attackDegrees = 30f;
+    public float defendDegrees = 0f;
+    public float openDegrees = 90f;
+    public GameObject ball;
+    private Coroutine crTransition;
+    private bool isLocked;
+    // next steps
+}</pre></div></li><li><p>Implement <a id="id379" class="indexterm"></a>the <code class="literal">Awake</code> function:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+    crTransition = null;
+    isLocked = false;
+}</pre></div></li><li><p>Define the function for setting the state of the bar:</p><div class="informalexample"><pre class="programlisting">public void SetState(TFRState state, float speed = 0f)
+{
+    // next steps
+}</pre></div></li><li><p>Check whether it is locked (after beginning a movement). This is optional:</p><div class="informalexample"><pre class="programlisting">// optional
+if (isLocked)
+    return;
+isLocked = true;</pre></div></li><li><p>Validate the speed:</p><div class="informalexample"><pre class="programlisting">if (speed == 0)
+    speed = barSpeed;
+float degrees = 0f;</pre></div></li><li><p>Validate the state and make a decision out of it:</p><div class="informalexample"><pre class="programlisting">switch(state)
+{
+    case TFRState.ATTACK:
+        degrees = attackDegrees;
+        break;
+    default:
+    case TFRState.DEFEND:
+        degrees = defendDegrees;
+        break;
+    case TFRState.OPEN:
+        degrees = openDegrees;
+        break;
+}</pre></div></li><li><p>Execute the transition:</p><div class="informalexample"><pre class="programlisting">if (crTransition != null)
+    StopCoroutine(crTransition);
+crTransition = StartCoroutine(Rotate(degrees, speed));</pre></div></li><li><p>Define the function for rotating the bar:</p><div class="informalexample"><pre class="programlisting">public IEnumerator Rotate(float target, float speed)
+{
+    // next steps
+}</pre></div></li><li><p>Implement the <a id="id380" class="indexterm"></a>internal body for the transition:</p><div class="informalexample"><pre class="programlisting">while (transform.rotation.x != target)
+{
+    Quaternion rot = transform.rotation;
+    if (Mathf.Approximately(rot.x, target))
+    {
+        rot.x = target;
+        transform.rotation = rot;
+    }
+    float vel = target - rot.x;
+    rot.x += speed * Time.deltaTime * vel;
+    yield return null;
+}</pre></div></li><li><p>Restore the bar to its default position:</p><div class="informalexample"><pre class="programlisting">isLocked = false;
+transform.rotation = Quaternion.identity;</pre></div></li><li><p>Implement the function for moving the bar from side to side:</p><div class="informalexample"><pre class="programlisting">public void Slide(float target, float speed)
+{
+    Vector3 targetPos = transform.position;
+    targetPos.x = target;
+    Vector3 trans = transform.position - targetPos;
+    trans *= speed * Time.deltaTime;
+    transform.Translate(trans, Space.World);
+}</pre></div></li><li><p>Create the <a id="id381" class="indexterm"></a>class for the main AI:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class TFRival : MonoBehaviour
+{
+
+    public string tagPiece = "TFPiece";
+    public string tagWall = "TFWall";
+    public int numBarsToHandle = 2;
+    public float handleSpeed;
+    public float attackDistance;
+    public TFRAxisCompare depthAxis = TFRAxisCompare.Z;
+    public TFRAxisCompare widthAxis = TFRAxisCompare.X;
+    public GameObject ball;
+    public GameObject[] bars;
+    List&lt;GameObject&gt;[] pieceList;
+    // next
+}</pre></div></li><li><p>Implement the <code class="literal">Awake</code> function for initializing the piece list:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+    int numBars = bars.Length;
+    pieceList = new List&lt;GameObject&gt;[numBars];
+    for (int i = 0; i &lt; numBars; i++)
+    {
+        pieceList[i] = new List&lt;GameObject&gt;();
+    }
+}</pre></div></li><li><p>Start implementing the <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+    int[] currBars = GetNearestBars();
+    Vector3 ballPos = ball.transform.position;
+    Vector3 barsPos;
+    int i;
+    // next steps
+}</pre></div></li><li><p>Define the status for each bar, depending on the ball's position:</p><div class="informalexample"><pre class="programlisting">for (i = 0; i &lt; currBars.Length; i++)
+{
+    GameObject barObj = bars[currBars[i]];
+    TFRBar bar = barObj.GetComponent&lt;TFRBar&gt;();
+    barsPos = barObj.transform.position;
+    float ballVisible = Vector3.Dot(barsPos, ballPos);
+    float dist = Vector3.Distance(barsPos, ballPos);
+    if (ballVisible &gt; 0f &amp;&amp; dist &lt;= attackDistance)
+        bar.SetState(TFRState.ATTACK, handleSpeed);
+    else if (ballVisible &gt; 0f)
+        bar.SetState(TFRState.DEFEND);
+    else
+        bar.SetState(TFRState.OPEN);
+}</pre></div></li><li><p>Implement the <a id="id382" class="indexterm"></a>
+<code class="literal">OnGUI</code> function. This will handle the prediction at 30 frames per second:</p><div class="informalexample"><pre class="programlisting">public void OnGUI()
+{
+    Predict();
+}</pre></div></li><li><p>Define the prediction function with its member values:</p><div class="informalexample"><pre class="programlisting">private void Predict()
+{
+    Rigidbody rb = ball.GetComponent&lt;Rigidbody&gt;();
+    Vector3 position = rb.position;
+    Vector3 velocity = rb.velocity.normalized;
+    int[] barsToCheck = GetNearestBars();
+    List&lt;GameObject&gt; barsChecked;
+    GameObject piece;
+    barsChecked = new List&lt;GameObject&gt;();
+    int id = -1;
+    // next steps
+}</pre></div></li><li><p>Define the main loop for checking the ball's trajectory:</p><div class="informalexample"><pre class="programlisting">do
+{
+    RaycastHit[] hits = Physics.RaycastAll(position, velocity.normalized);
+    RaycastHit wallHit = null;
+    foreach (RaycastHit h in hits)
+    {
+        // next steps
+    }
+
+} while (barsChecked.Count == numBarsToHandle);</pre></div></li><li><p>Get the object <a id="id383" class="indexterm"></a>of the collision and check whether it is a bar and whether it has been checked already:</p><div class="informalexample"><pre class="programlisting">GameObject obj = h.collider.gameObject;
+if (obj.CompareTag(tagWall))
+    wallHit = h;
+if (!IsBar(obj))
+    continue;
+if (barsChecked.Contains(obj))
+    continue;</pre></div></li><li><p>Check, if it is a bar, whether it is among those closest to the ball:</p><div class="informalexample"><pre class="programlisting">bool isToCheck = false;
+for (int i = 0; i &lt; barsToCheck.Length; i++)
+{
+    id = barsToCheck[i];
+    GameObject barObj = bars[id];
+    if (obj == barObj)
+    {
+        isToCheck = true;
+        break;
+    }         
+}
+if (!isToCheck)
+    continue;</pre></div></li><li><p>Get the bar collision point and calculate the movement for blocking the ball with the closest piece:</p><div class="informalexample"><pre class="programlisting">Vector3 p = h.point;
+piece = GetNearestPiece(h.point, id);
+Vector3 piecePos = piece.transform.position;
+float diff = Vector3.Distance(h.point, piecePos);
+obj.GetComponent&lt;TFRBar&gt;().Slide(diff, handleSpeed);
+barsChecked.Add(obj);</pre></div></li><li><p>Otherwise, recalculate with the wall's hitting point:</p><div class="informalexample"><pre class="programlisting">C</pre></div></li><li><p>Create the function for setting the pieces to the proper bar:</p><div class="informalexample"><pre class="programlisting">void SetPieces()
+{
+    // next steps
+}</pre></div></li><li><p>Create a dictionary for comparing the pieces' depth:</p><div class="informalexample"><pre class="programlisting">// Create a dictionary between z-index and bar
+Dictionary&lt;float, int&gt; zBarDict;
+zBarDict = new Dictionary&lt;float, int&gt;();
+int i;</pre></div></li><li><p>Set up the <a id="id384" class="indexterm"></a>dictionary:</p><div class="informalexample"><pre class="programlisting">for (i = 0; i &lt; bars.Length; i++)
+{
+    Vector3 p = bars[i].transform.position;
+    float index = GetVectorAxis(p, this.depthAxis);
+    zBarDict.Add(index, i);
+}</pre></div></li><li><p>Start mapping the pieces to the bars:</p><div class="informalexample"><pre class="programlisting">// Map the pieces to the bars
+GameObject[] objs = GameObject.FindGameObjectsWithTag(tagPiece);
+Dictionary&lt;float, List&lt;GameObject&gt;&gt; dict;
+dict = new Dictionary&lt;float, List&lt;GameObject&gt;&gt;();</pre></div></li><li><p>Assign pieces to their proper dictionary entry:</p><div class="informalexample"><pre class="programlisting">foreach (GameObject p in objs)
+{
+    float zIndex = p.transform.position.z;
+    if (!dict.ContainsKey(zIndex))
+        dict.Add(zIndex, new List&lt;GameObject&gt;());
+    dict[zIndex].Add(p);
+}</pre></div></li><li><p>Define the function for getting a bar's index, given a position:</p><div class="informalexample"><pre class="programlisting">int GetBarIndex(Vector3 position, TFRAxisCompare axis)
+{
+    // next steps
+}</pre></div></li><li><p>Validate it:</p><div class="informalexample"><pre class="programlisting">int index = 0;
+if (bars.Length == 0)
+    return index;</pre></div></li><li><p>Declare the necessary member values:</p><div class="informalexample"><pre class="programlisting">float pos = GetVectorAxis(position, axis);
+float min = Mathf.Infinity;
+float barPos;
+Vector3 p;</pre></div></li><li><p>Traverse the <a id="id385" class="indexterm"></a>list of bars:</p><div class="informalexample"><pre class="programlisting">for (int i = 0; i &lt; bars.Length; i++)
+{
+    p = bars[i].transform.position;
+    barPos = GetVectorAxis(p, axis);
+    float diff = Mathf.Abs(pos - barPos);
+    if (diff &lt; min)
+    {
+        min = diff;
+        index = i;
+    }
+}</pre></div></li><li><p>Retrieve the found index:</p><div class="informalexample"><pre class="programlisting">return index;</pre></div></li><li><p>Implement the function for calculating the vector axis:</p><div class="informalexample"><pre class="programlisting">float GetVectorAxis(Vector3 v, TFRAxisCompare a)
+{
+    if (a == TFRAxisCompare.X)
+        return v.x;
+    if (a == TFRAxisCompare.Y)
+        return v.y;
+    return v.z;
+}</pre></div></li><li><p>Define the function for getting the nearest bars to the ball:</p><div class="informalexample"><pre class="programlisting">public int[] GetNearestBars()
+{
+    // next steps
+}</pre></div></li><li><p>Initialize all the necessary member variables:</p><div class="informalexample"><pre class="programlisting">int numBars = Mathf.Clamp(numBarsToHandle, 0, bars.Length);
+Dictionary&lt;float, int&gt; distBar;
+distBar = new Dictionary&lt;float, int&gt;(bars.Length);
+List&lt;float&gt; distances = new List&lt;float&gt;(bars.Length);
+int i;
+Vector3 ballPos = ball.transform.position;
+Vector3 barPos;</pre></div></li><li><p>Traverse the bars:</p><div class="informalexample"><pre class="programlisting">for (i = 0; i &lt; bars.Length; i++)
+{
+    barPos = bars[i].transform.position;
+    float d = Vector3.Distance(ballPos, barPos);
+    distBar.Add(d, i);
+    distances.Add(d);
+}</pre></div></li><li><p>Sort the distances:</p><div class="informalexample"><pre class="programlisting">distances.Sort();</pre></div></li><li><p>Get the distances and use the dictionary in an inverse way:</p><div class="informalexample"><pre class="programlisting">int[] barsNear = new int[numBars];
+for (i = 0; i &lt; numBars; i++)
+{
+    float d = distances[i];
+    int id = distBar[d];
+    barsNear[i] = id;
+}</pre></div></li><li><p>Retrieve the bar IDs:</p><div class="informalexample"><pre class="programlisting">return barsNear;</pre></div></li><li><p>Implement the <a id="id386" class="indexterm"></a>function for checking whether a given object is a bar:</p><div class="informalexample"><pre class="programlisting">private bool IsBar(GameObject gobj)
+{
+    foreach (GameObject b in bars)
+    {
+        if (b == gobj)
+            return true;
+    }
+    return false;
+}</pre></div></li><li><p>Start implementing the function for retrieving the closest piece of a bar, given a position:</p><div class="informalexample"><pre class="programlisting">private GameObject GetNearestPiece(Vector3 position, int barId)
+{
+    // next steps
+}</pre></div></li><li><p>Define the <a id="id387" class="indexterm"></a>necessary member variables:</p><div class="informalexample"><pre class="programlisting">float minDist = Mathf.Infinity;
+float dist;
+GameObject piece = null;</pre></div></li><li><p>Traverse the list of pieces and calculate the closest one:</p><div class="informalexample"><pre class="programlisting">foreach (GameObject p in pieceList[barId])
+{
+    dist = Vector3.Distance(position, p.transform.position);
+    if (dist &lt; minDist)
+    {
+        minDist = dist;
+        piece = p;
+    }
+}</pre></div></li><li><p>Retrieve the piece:</p><div class="informalexample"><pre class="programlisting">return piece;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec288"></a>How it works…</h3></div></div></div><p>The table-football competitor draws on the skills developed from the air-hockey rival. This means casting rays to get the trajectory of the ball and moving the nearest bar considering the pieces. It also moves the bar, depending on whether the rival is attacking or defending, so that it can block the ball or let it go further.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec289"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Seeing using a collider-based system</em></span> recipe in <a class="link" href="#" linkend="ch05">Chapter 5</a>, <span class="emphasis"><em>Agent Awareness</em></span></p></li></ul></div></div></div>

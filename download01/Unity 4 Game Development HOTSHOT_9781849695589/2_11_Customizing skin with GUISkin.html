@@ -1,0 +1,813 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec21"></a>Customizing skin with GUISkin</h2></div></div><hr /></div><p>Those who are familiar with HTML will probably have a good understanding of using a repetitive <a id="id217" class="indexterm"></a>image for a background to reduce<a id="id218" class="indexterm"></a> memory usage. Unity uses <a id="id219" class="indexterm"></a>the same idea to create a graphic for the user interface, which will save a lot of memory and size for our game. In this section, we will take a look at the <span class="strong"><strong>GUISkin</strong></span> feature, which is the main key to creating a custom skin in Unity.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec38"></a>Prepare for lift off</h3></div></div></div><p>We will begin by creating a new project in Unity. Let's start our project by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, create a new project and name it <code class="literal">MenuInRPG</code>, similar to what we did in <a class="link" href="#" linkend="ch01">Project 1</a>, <span class="emphasis"><em>Develop a Sprite and Platform Game</em></span>. Click on the <span class="strong"><strong>Create new Project</strong></span> button, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_02.jpg" /></div></li><li><p>Next, import the assets package by going to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>Custom Package…</strong></span>; choose <code class="literal">Chapter2Package.unityPackage</code>, which we just downloaded, and then click on the <span class="strong"><strong>Import</strong></span> button in the pop-up window link, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_03.jpg" /></div></li><li><p>Wait <a id="id220" class="indexterm"></a>until it's done, and<a id="id221" class="indexterm"></a> you will see the <code class="literal">MenuInRPGGame</code> and <code class="literal">SimplePlatform</code> folders in the <span class="strong"><strong>Window</strong></span> view. Next, click on the arrow in front of the <code class="literal">SimplePlatform</code> folder to bring <a id="id222" class="indexterm"></a>up the drop-down options and you will see the <span class="strong"><strong>Scenes</strong></span> folder and the <span class="strong"><strong>SimplePlatform_C#</strong></span> and <span class="strong"><strong>SimplePlatform_JS</strong></span> scenes, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_04.jpg" /></div></li><li><p>Next, double-click on the <span class="strong"><strong>SimplePlatform_C#</strong></span> (for a C# user) and <span class="strong"><strong>SimplePlatform_JS</strong></span> (for a Unity JavaScript user) scenes, as shown in the preceding screenshot, to open the scene that we will work on in this project.</p></li><li><p>When you double-click on either of the <span class="strong"><strong>SimplePlatform</strong></span> scenes, Unity will display a pop-up window asking whether you want to save the current scene or not. As we want to use the <span class="strong"><strong>SimplePlatform</strong></span> scene, just click on the <span class="strong"><strong>Don't Save</strong></span> button to open up the <span class="strong"><strong>SimplePlatform</strong></span> scene, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_05.jpg" /></div></li><li><p>Then, go to the <code class="literal">MenuInRPGGame/Resources/UI</code> folder and click on the<a id="id223" class="indexterm"></a> first file to make <a id="id224" class="indexterm"></a>sure that the <span class="strong"><strong>Texture Type</strong></span> and <span class="strong"><strong>Format</strong></span> fields are selected correctly, as shown<a id="id225" class="indexterm"></a> in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_06.jpg" /></div><p>Why do we set it up in this way? This is because we want to have a UI graphic to look as close to the source image as possible. However, we set the <span class="strong"><strong>Format</strong></span> field to <span class="strong"><strong>Truecolor</strong></span>, which will make the size of the image larger than <span class="strong"><strong>Compress</strong></span>, but will show the right color of the UI graphics.</p></li><li><p>Next, we need to set up the <span class="strong"><strong>Layers</strong></span> and <span class="strong"><strong>Tags</strong></span> configurations; for this, go to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Tags</strong></span> and set them as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Tags</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>UI</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 1</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Key</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 2</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>RestartButton</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 3</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Floor</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 4</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Wall</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 5</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 6</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Door</strong></span>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Layers</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>User Layer</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>User Layer</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Level</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Use Layer</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>UI</strong></span>
+</p>
+</td></tr></tbody></table></div></li><li><p>At last, we will save this scene in the <code class="literal">MenuInRPGGame/Scenes</code> folder, and name it <code class="literal">MenuInRPG</code> by going to <span class="strong"><strong>File</strong></span> | <span class="strong"><strong>Save Scene as…</strong></span> and then save it.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec39"></a>Engage thrusters</h3></div></div></div><p>Now we <a id="id226" class="indexterm"></a>are ready to create a GUI skin; for <a id="id227" class="indexterm"></a>this, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's create a <a id="id228" class="indexterm"></a>new <code class="literal">GUISkin</code> object by going to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>GUISkin</strong></span>, and we will see <span class="strong"><strong>New GUISkin</strong></span> in our <span class="strong"><strong>Project</strong></span> window. Name the GUISkin object as <code class="literal">MenuSkin</code>. Then, click on <span class="strong"><strong>MenuSkin</strong></span> and go to its <span class="strong"><strong>Inspector</strong></span> window. We will see something similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_07.jpg" /></div></li><li><p>You will see many properties here, but don't be afraid, because this is the main key to creating custom graphics for our UI. <span class="strong"><strong>Font</strong></span> is the base font<a id="id229" class="indexterm"></a> for the GUI skin. From <span class="strong"><strong>Box</strong></span> to <span class="strong"><strong>Scroll View</strong></span>, each property is <span class="strong"><strong>GUIStyle</strong></span>, which is <a id="id230" class="indexterm"></a>used for <a id="id231" class="indexterm"></a>creating our custom UI. The <span class="strong"><strong>Custom Styles</strong></span> property<a id="id232" class="indexterm"></a> is the array of <span class="strong"><strong>GUIStyle</strong></span> that we can set up to apply extra styles. <span class="strong"><strong>Settings</strong></span> are the setups for the entire GUI.</p></li><li><p>Next, we will set up the new font style for our menu UI; go to the <span class="strong"><strong>Font</strong></span> line in the <span class="strong"><strong>Inspector</strong></span> view, click the circle icon, and select the <span class="strong"><strong>Federation Kalin</strong></span> font.</p></li><li><p>Now, you have set up the base font for <span class="strong"><strong>GUISkin</strong></span>. Next, click on the arrow in front of the <span class="strong"><strong>Box</strong></span> line to bring up a drop-down list. We will see all the properties, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_08.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note13"></a>Note</h3><p>For more information and to learn more about these properties, visit <a class="ulink" href="http://unity3d.com/support/documentation/Components/class-GUISkin.html" target="_blank">http://unity3d.com/support/documentation/Components/class-GUISkin.html</a>.</p></div><p>
+<span class="strong"><strong>Name</strong></span> is basically the name of this style, which by default is <span class="strong"><strong>box</strong></span> (the default style of <code class="literal">GUI.Box</code>). Next, we will be setting our custom UI to this <span class="strong"><strong>GUISkin</strong></span>; click on the arrow in front of <span class="strong"><strong>Normal</strong></span> to bring up the drop-down list, and you will see two parameters—<span class="strong"><strong>Background</strong></span> and <span class="strong"><strong>Text Color</strong></span>.</p></li><li><p>Click <a id="id233" class="indexterm"></a>on the circle <a id="id234" class="indexterm"></a>icon on the right-hand side of the <span class="strong"><strong>Background</strong></span> line<a id="id235" class="indexterm"></a> to bring up the <span class="strong"><strong>Select Texture2D</strong></span> window and choose the <span class="strong"><strong>boxNormal</strong></span> texture, or you can drag the <span class="strong"><strong>boxNormal</strong></span> texture from the <code class="literal">MenuInRPG/Resources/UI</code> folder and drop it to the <span class="strong"><strong>Background</strong></span> space.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip12"></a>Tip</h3><p>We can also use the search bar in the <span class="strong"><strong>Select Texture2D</strong></span> window or the <span class="strong"><strong>Project</strong></span> view to find our texture by typing <code class="literal">boxNormal</code> in the search bar, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_09.jpg" /></div></div></li><li><p>Then, under the <span class="strong"><strong>Text Color</strong></span> line, we leave the color as the default color—because we don't need any text to be shown in this style—and repeat the previous step with <span class="strong"><strong>On Normal</strong></span> by using the <span class="strong"><strong>boxNormal</strong></span> texture.</p></li><li><p>Next, click on the arrow in front of <span class="strong"><strong>Active</strong></span> under <span class="strong"><strong>Background</strong></span>. Choose<a id="id236" class="indexterm"></a> the <span class="strong"><strong>boxActive</strong></span> texture, and repeat this step for <span class="strong"><strong>On Active</strong></span>.</p></li><li><p>Then, go<a id="id237" class="indexterm"></a> to each property in the <span class="strong"><strong>Box</strong></span> style and set the following parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Border</strong></span>: <span class="strong"><strong>Left</strong></span>: <code class="literal">14</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">14</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">14</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">14</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Padding</strong></span>: <span class="strong"><strong>Left</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">6</code>
+</p></li></ul></div><p>For other properties of this style, we will leave <a id="id238" class="indexterm"></a>them as default.</p></li><li><p>Next, we go to the following properties in the <span class="strong"><strong>MenuSkin</strong></span> inspector and set them as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Label</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span> <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Window</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>myWindow</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>On Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>myWindow</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">55</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">96</code> </p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Padding</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">30</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">30</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">60</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">30</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Horizontal Scrollbar</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>horScrollBar</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Horizontal Scrollbar Thumb</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>horScrollBarThumbNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>horScrollBarThumbHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Horizontal Scrollbar Left Button</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowLNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowLHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Width</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">14</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">15</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Horizontal Scrollbar Right Button</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowRNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowRHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Width</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">14</code> </p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">15</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Vertical Scrollbar</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>verScrollBar</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Padding</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Vertical Scrollbar Thumb</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>verScrollBarThumbNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>verScrollBarThumbHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Vertical Scrollbar Up Button</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowUNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowUHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Width</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">16</code> </p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">14</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Vertical Scrollbar Down Button</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowDNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>arrowDHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Width</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">16</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">14</code>
+</p>
+</td></tr></tbody></table></div><p>We have finished setting up of the default styles.</p></li><li><p>Now <a id="id239" class="indexterm"></a>we will go <a id="id240" class="indexterm"></a>to the <span class="strong"><strong>Custom Styles</strong></span> property and create <a id="id241" class="indexterm"></a>our custom <span class="strong"><strong>GUIStyle</strong></span> to use for this menu; go to <span class="strong"><strong>Custom Styles</strong></span> and under <span class="strong"><strong>Size</strong></span>, change the value to <code class="literal">6</code>. Then, we will see <span class="strong"><strong>Element 0</strong></span> to <span class="strong"><strong>Element 5</strong></span>.</p></li><li><p>Next, we go to the first element or <span class="strong"><strong>Element 0</strong></span>; under <span class="strong"><strong>Name</strong></span>, type <code class="literal">Tab Button</code>, and we will see <span class="strong"><strong>Element 0</strong></span> change to <span class="strong"><strong>Tab Button</strong></span>. Set it as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Tab Button</strong></span> (or <span class="strong"><strong>Element 0</strong></span>)</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Name</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Tab Button</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>tabButtonNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">62</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">67</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>tabButtonHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">211</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">166</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">9</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Active</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>tabButtonActive</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">62</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">67</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>On Normal</strong></span>
+</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>tabButtonActive</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">62</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">67</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">12</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">12</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">12</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Padding</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Font Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">14</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Alignment</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Middle Center</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">31</code>
+</p>
+</td></tr></tbody></table></div><p>The settings are shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_10.jpg" /></div><p>For the <span class="strong"><strong>Text Color</strong></span> value, we <a id="id242" class="indexterm"></a>can<a id="id243" class="indexterm"></a> also <a id="id244" class="indexterm"></a>use the eyedropper tool next to the color box to copy the same color, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_11.jpg" /></div></li><li><p>We <a id="id245" class="indexterm"></a>have finished<a id="id246" class="indexterm"></a> our first style, but <a id="id247" class="indexterm"></a>we still have five styles left, so let's carry on with <span class="strong"><strong>Element 1</strong></span> with the following settings:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Exit Button</strong></span> (or <span class="strong"><strong>Element 1</strong></span>)</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Name</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Exit Button</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>buttonCloseNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hover</strong></span> | <span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>buttonCloseHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Width</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">26</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Fixed Height</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">22</code>
+</p>
+</td></tr></tbody></table></div><p>The settings for <span class="strong"><strong>Exit Button</strong></span> are showed in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_12.jpg" /></div></li><li><p>The following styles will create a style for <span class="strong"><strong>Element 2</strong></span>:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Item</strong></span> (or <span class="strong"><strong>Element 2</strong></span>)</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Name</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Item</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Alignment</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Middle Left</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Word Wrap</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Check</p>
+</td></tr></tbody></table></div><p>The settings for <span class="strong"><strong>Text Item</strong></span> are shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_13.jpg" /></div></li><li><p>To set <a id="id248" class="indexterm"></a>up the style<a id="id249" class="indexterm"></a> for <span class="strong"><strong>Element 3</strong></span>, the<a id="id250" class="indexterm"></a> following settings should be done:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Text Amount</strong></span> (or <span class="strong"><strong>Element 3</strong></span>)</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Name</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Amount</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Alignment</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Middle Right</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Word Wrap</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Check</p>
+</td></tr></tbody></table></div><p>The settings for <span class="strong"><strong>Text Amount</strong></span> are shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_14.jpg" /></div></li><li><p>The<a id="id251" class="indexterm"></a> following settings<a id="id252" class="indexterm"></a> should be done to<a id="id253" class="indexterm"></a> create <span class="strong"><strong>Selected Item</strong></span>:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Selected Item</strong></span> (or <span class="strong"><strong>Element 4</strong></span>)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Name</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Selected Item</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span> | <span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Hover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>itemSelectHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Active</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>itemSelectHover</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>On Normal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>itemSelectActive</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <span class="strong"><strong>6</strong></span>, <span class="strong"><strong>Right</strong></span>: <span class="strong"><strong>6</strong></span>, <span class="strong"><strong>Top</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">6</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Margin</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">2</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">2</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">2</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">2</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Padding</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Alignment</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Middle Center</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Word Wrap</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Check</p>
+</td></tr></tbody></table></div><p>The<a id="id254" class="indexterm"></a> settings are shown <a id="id255" class="indexterm"></a>in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_15.jpg" /></div></li><li><p>To <a id="id256" class="indexterm"></a>create the <span class="strong"><strong>Disabled Click</strong></span> style, the following settings should be done:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Disabled Click</strong></span> (or <span class="strong"><strong>Element 5</strong></span>)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Name</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Disabled Click</strong></span>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Normal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Background</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>itemSelectNormal</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">27</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">95</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">104</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Border</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">6</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Margin</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">2</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">2</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">2</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">2</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Padding</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Left</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Right</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Top</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Bottom</strong></span>: <code class="literal">4</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Alignment</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Middle Center</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Word Wrap</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Check</p>
+</td></tr></tbody></table></div><p>The settings for <span class="strong"><strong>Disabled Click</strong></span> are shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_16.jpg" /></div><p>And now, we have finished this step.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec40"></a>Objective complete – mini debriefing</h3></div></div></div><p>Basically, what <a id="id257" class="indexterm"></a>we<a id="id258" class="indexterm"></a> have done in this project is we have created the custom GUI skin to use for our menu. First, we tell the GUI that we want to use the font name <span class="strong"><strong>Federation Kalin</strong></span> as our default font for this <span class="strong"><strong>GUISkin</strong></span> by setting up the <span class="strong"><strong>Font</strong></span> type at the first line <a id="id259" class="indexterm"></a>of the skin's inspector. Then, we changed all the default skin textures to use our custom UI graphics from the <code class="literal">UI</code> folder by setting up all the necessary properties and parameters in the <span class="strong"><strong>Box</strong></span>, <span class="strong"><strong>Label</strong></span>, <span class="strong"><strong>Window</strong></span>, <span class="strong"><strong>Horizontal Scrollbar</strong></span>, <span class="strong"><strong>Horizontal Scrollbar Thumb</strong></span>, <span class="strong"><strong>Horizontal Scrollbar Left Button</strong></span>, <span class="strong"><strong>Horizontal Scrollbar Right Button</strong></span>, <span class="strong"><strong>Vertical Scrollbar</strong></span>, <span class="strong"><strong>Vertical Scrollbar Thumb</strong></span>, <span class="strong"><strong>Vertical Scrollbar Up Button</strong></span>, and <span class="strong"><strong>Vertical Scrollbar Down Button</strong></span> styles. Then, we created six <span class="strong"><strong>Custom Styles</strong></span>—<span class="strong"><strong>Tab Button</strong></span>, <span class="strong"><strong>Exit Button</strong></span>, <span class="strong"><strong>Text Item</strong></span>, <span class="strong"><strong>Text Amount</strong></span>, <span class="strong"><strong>Selected Item</strong></span>, and <span class="strong"><strong>Disabled Click</strong></span>, which will be used for scripting in the next section.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>The <span class="strong"><strong>Custom Style</strong></span> feature is basically <span class="strong"><strong>GUIStyle</strong></span> that we can add to <span class="strong"><strong>GUISkin</strong></span>. This style<a id="id260" class="indexterm"></a> allows us to create a custom style that will act differently from the default styles (<span class="strong"><strong>Box</strong></span>, <span class="strong"><strong>Label</strong></span>, <span class="strong"><strong>Window</strong></span>, and so on) in this <span class="strong"><strong>GUISkin</strong></span>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec41"></a>Classified intel</h3></div></div></div><p>In this section, we applied the UI graphics to <span class="strong"><strong>GUISkin</strong></span>. You might have a question here—how does it work? Here, we will go through the basic concept of how to create a custom UI in Photoshop and get the right texture to use in our <span class="strong"><strong>GUISkin</strong></span>.</p><p>First, let's take a look at the <span class="strong"><strong>myWindow.png</strong></span> in our <code class="literal">MenuInRPGGame/Resources/UI</code> folder. If we select this file, we will see something similar to the following capsule-shaped image. You might be curious—how are we going to create a window graphics with this capsule shape? Well, the trick is the properties of <span class="strong"><strong>Border</strong></span> in which we can set the parameters, <span class="strong"><strong>Left</strong></span>, <span class="strong"><strong>Right</strong></span>, <span class="strong"><strong>Top</strong></span>, and <span class="strong"><strong>Bottom</strong></span>. It uses these parameters to set the number of pixels that will be shown in the fixed image. On the other hand, the pixels in the middle will get repeated depending on the width and height of the settings similar to the <span class="strong"><strong>HTML</strong></span> style or <span class="strong"><strong>scale9grid</strong></span> in Flash (the concept is to draw the pixel perfectly on the four corners and then repeat them in the middle to match the size we need).</p><p>The following figure shows us how the Unity <span class="strong"><strong>GUIStyle</strong></span> works:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_17.jpg" /></div><p>First, we set the parameters for the <span class="strong"><strong>Border</strong></span> attribute. These parameters will offset the pixels of the current UI graphics from <span class="strong"><strong>0</strong></span> to the number that we will assign. For example, if we want to draw a rectangular window, which is 320 pixels in width and 240 pixels in height, and we set the borders, <span class="strong"><strong>Left</strong></span> to <code class="literal">27</code>, <span class="strong"><strong>Right</strong></span> to <code class="literal">27</code>, <span class="strong"><strong>Top</strong></span> to <code class="literal">55</code>, and <span class="strong"><strong>Bottom</strong></span> to <code class="literal">96</code>, this will tell Unity <span class="strong"><strong>GUIStyle</strong></span> to always draw the graphics from pixel <span class="strong"><strong>0</strong></span> to pixel <span class="strong"><strong>27</strong></span> on the left-hand side with the same scale as the source texture. What will happen from pixel 28? Basically, it <a id="id261" class="indexterm"></a>will repeat pixel 27 until it <a id="id262" class="indexterm"></a>hits the right-hand side border, which is<a id="id263" class="indexterm"></a> also set to 27 pixels from the right-hand side. So, this means that we tell <span class="strong"><strong>GUIStyle</strong></span> to draw graphics from the source texture, that is from pixel 0 to pixel 27, and then repeat the texture from pixel 28 to pixel 293, then switch back and draw pixel 294 to pixel 320 from the source texture, which is the offset of 27 pixels from the right-hand side. This also applies to the top and bottom borders, as we can see on the left-hand side of the preceding figure.</p><p>From this concept, we can save a lot of memory because instead of using a 320 x 240 pixel image, we just use 54 x 151 pixels. However, in some cases, we don't want any repeating pixels for our UI such as fixed button graphics—for example, our <span class="strong"><strong>Exit Button</strong></span> style—or any fixed texture, and so on, as we can see in the following figure:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_18.jpg" /></div><p>We can also set the <span class="strong"><strong>Fixed Width</strong></span> and <span class="strong"><strong>Fixed Height</strong></span> properties in <span class="strong"><strong>GUIStyle</strong></span> to match our image size. For instance, we have the <span class="strong"><strong>Exit Image</strong></span> button, which is 26 pixels wide and 22 pixels high. So, we just set the <span class="strong"><strong>Fixed Width</strong></span> value to <code class="literal">26</code> and <span class="strong"><strong>Fixed Height</strong></span> to <code class="literal">22</code>. On the other hand, we can also set either <span class="strong"><strong>Fixed Width</strong></span> or <span class="strong"><strong>Fixed Height</strong></span> in <span class="strong"><strong>GUIStyle</strong></span>—as we already <a id="id264" class="indexterm"></a>did in our <span class="strong"><strong>Tab Button</strong></span> of <span class="strong"><strong>Custom Styles</strong></span>—as we can see in the following figure:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_02_19.jpg" /></div><p>We <a id="id265" class="indexterm"></a>set the <span class="strong"><strong>Fixed Height</strong></span> value to <code class="literal">31</code>, and we leave<a id="id266" class="indexterm"></a> the <span class="strong"><strong>Fixed Width</strong></span> value at <code class="literal">0</code>, which means that the height of the style will be 31 pixels always but the width can vary from zero to infinity.</p></div></div>

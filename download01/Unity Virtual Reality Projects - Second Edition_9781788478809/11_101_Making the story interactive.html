@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec99"></a>Making the story interactive</h2></div></div><hr /></div><p>So far, we used the <span>Timeline</span><a id="id325552311" class="indexterm"></a> to drive our entire VR story experience from start to finish. But in fact, Timelines are a playable asset like others in Unity. For example, if you select the BlackbirdDirector object and look in Inspector at its Playable Director, you'll see it has a Play On Awake checkbox, and it's presently checked. What we're going to do now is not play on awake, but rather start playing on a user event, namely looking directly at the small tree for a few seconds. And when the story ends, it resets itself.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec162"></a>Look to play</h3></div></div></div><p>First, we'll add a LookAtTarget <span>encasing</span><a id="id325552442" class="indexterm"></a> the small tree and then use that to trigger playing the timeline:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Select the <code class="literal">BlackbirdDirector</code> and uncheck the <strong class="userinput"><code>Play On Awake</code></strong> checkbox</li><li>For reference, set the Tree game object Scale to its starting keyframe Scale (<code class="literal">0.1, 0.1, 0.1</code>) </li><li>In <strong class="userinput"><code>Hierarchy</code></strong>, create a cube (<strong class="userinput"><code>Create | 3D Object | Cube</code></strong>) and name it <code class="literal">LookAtTarget</code></li><li>Scale and place it to encase the small tree, <strong class="userinput"><code>Scale</code></strong> (<code class="literal">0.4, 0.5, 0.4</code>), <strong class="userinput"><code>Position</code></strong> (<code class="literal">0, 0.3, 0</code>)</li><li>Disable its <strong class="userinput"><code>Mesh Renderer</code></strong>, but keep its <strong class="userinput"><code>Box Collider</code></strong></li><li>Create a new C# script on the cube, named <code class="literal">LookAtToStart</code>, and write it as follows:</li></ol></div><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Playables;
+
+public class LookAtToStart : MonoBehaviour
+{
+    public PlayableDirector timeline;
+    public float timeToSelect = 2f;
+    private float countDown;
+
+    void Start()
+    {
+        countDown = timeToSelect;
+    }</pre><pre class="programlisting">
+    void Update()
+    {
+        // Do nothing if already playing
+        if (timeline.state == PlayState.Playing)
+            return;
+
+        // Is user looking here?
+        Transform camera = Camera.main.transform;
+        Ray ray = new Ray(camera.position, camera.rotation * Vector3.forward);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit) &amp;&amp; 
+            (hit.collider.gameObject == gameObject))
+        {
+            if (countDown &gt; 0f)
+            {
+                countDown -= Time.deltaTime;
+            }
+            else
+            {
+                // go!
+                timeline.Play();
+            }
+        }
+        else
+        {
+            // reset timer
+            countDown = timeToSelect;
+        }
+    }
+}</pre><p>The script is similar to ones we wrote in <span>Chapter 4</span>. We use the main camera and determine the direction it is looking. Using the physics engine, we call <code class="literal">Physics.Raycast</code> to cast a ray in the view direction and determine if it hit this object. If so, we start or continue a countdown timer and then play the timeline. Meanwhile, if you look away, we reset the timer.</p><p>Try it now. The Timeline will not start playing until you look at the cube for a few seconds.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec163"></a>Resetting the initial scene setup</h3></div></div></div><p>You probably noticed, unfortunately, that the <span>default</span><a id="id325555193" class="indexterm"></a> start scene is not necessary the same state we have for the beginning of the timeline.  You could fix this by manually ensuring that every object in the scene Hierarchy has the same initial state as the start of the timeline. Instead, we'll add a little hack that plays the timeline for a brief 0.1 seconds to reset the objects.</p><p>We will implement this using a coroutine. Modify the <code class="literal">LookAtToStart</code> script as follows. Add a new variable, <code class="literal">resetSetup</code>, and initialize it to true:</p><pre class="programlisting">private bool resetSetup;
+
+void Start()
+{
+    countDown = timeToSelect;
+    resetSetup = true;
+}</pre><p>Add a <code class="literal">PlayToSetup</code> function that will be run as a coroutine. Coroutines are a way to run a function, let Unity do other stuff momentarily, and then resume where you left off (via the <code class="literal">yield</code> statement). Here, we start playing the timeline, go away for 0.1 seconds, and then tell it to stop playing:</p><pre class="programlisting">IEnumerator PlayToSetup()
+{
+    timeline.Play();
+    yield return new WaitForSeconds(0.1f);
+    timeline.Stop();
+}</pre><p>Call the coroutine from <code class="literal">Update</code> when we want to reset the setup:</p><pre class="programlisting">    void Update()
+    {
+        if (timeline.state == PlayState.Playing)
+        {
+            return;
+        }
+        if (resetSetup)
+        {
+            StartCoroutine("PlayToSetup");
+            resetSetup = false;
+        }</pre><p>We also want the scene to reset after the timeline plays all the way through, so we set <code class="literal">resetSetup</code> as soon as the timeline starts playing. It'll be recognized once <code class="literal">timeline.state</code> is no longer playing:</p><pre class="programlisting">        ...
+            // go!
+            timeline.Play();
+            resetSetup = true;
+        }</pre><p>Press Play. Look at the tree. Enjoy the experience. When it ends, you're reset to the beginning and can look at the tree again to replay.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec164"></a>More interactivity ideas</h3></div></div></div><p>We're going to stop developing now. Some <span>suggestions</span><a id="id325567253" class="indexterm"></a> on how to improve the interactivity and user experience include:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Add a particle effect around the tree to indicate that it's a trigger</li><li style="list-style-type: disc">Highlight the tree as feedback when you're looking at it</li><li style="list-style-type: disc">Display a countdown cursor to indicate the timer has started and when the story will begin playing</li></ul></div><p>Here are other suggestions for interactable objects you could add to the story:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Look at the egg in the nest causes it to hatch sooner than its default timing</li><li style="list-style-type: disc">When you look at the bird while it's idle, it will turn to look back at you</li><li style="list-style-type: disc">If you poke the bird with your hand controller, it jumps out of the way</li><li style="list-style-type: disc">You can pick up a rock and throw it to kill the bird (nooo, just kidding!)</li></ul></div></div></div>

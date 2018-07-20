@@ -1,0 +1,34 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec31"></a>Finding the shortest path in a grid with BFS</h2></div></div><hr /></div><p>The <a id="id107" class="indexterm"></a>
+<span class="strong"><strong>Breadth-First </strong></span><a id="id108" class="indexterm"></a>
+<span class="strong"><strong>Search</strong></span> (<span class="strong"><strong>BFS</strong></span>) algorithm is another basic technique for graph traversal and it's aimed to get the shortest path in the fewest steps possible, with the trade-off being expensive in terms of memory; thus, aimed specially at games on high-end consoles and computers.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec97"></a>Getting ready</h3></div></div></div><p>This is a high-level algorithm that relies on each graph's implementation of the general functions, so the algorithm is implemented in the <code class="literal">Graph</code> class.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec98"></a>How to do it...</h3></div></div></div><p>Even <a id="id109" class="indexterm"></a>though this <a id="id110" class="indexterm"></a>recipe is only defining a function, please take into consideration the comments in the code to understand the indentation and code flow more effectively:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Declare the <code class="literal">GetPathBFS</code> function:</p><div class="informalexample"><pre class="programlisting">public List&lt;Vertex&gt; GetPathBFS(GameObject srcObj, GameObject dstObj)
+{
+    if (srcObj == null || dstObj == null)
+        return new List&lt;Vertex&gt;();
+    // next steps
+}</pre></div></li><li><p>Declare and initialize the variables we need for the algorithm:</p><div class="informalexample"><pre class="programlisting">Vertex[] neighbours;
+Queue&lt;Vertex&gt; q = new Queue&lt;Vertex&gt;();
+Vertex src = GetNearestVertex(srcObj.transform.position);
+Vertex dst = GetNearestVertex(dstObj.transform.position);
+Vertex v;
+int[] previous = new int[vertices.Count];
+for (int i = 0; i &lt; previous.Length; i++)
+    previous[i] = -1;
+previous[src.id] = src.id;
+q.Enqueue(src);</pre></div></li><li><p>Implement the BFS algorithm for finding a path:</p><div class="informalexample"><pre class="programlisting">while (q.Count != 0)
+{
+    v = q.Dequeue();
+    if (ReferenceEquals(v, dst))
+    {
+        return BuildPath(src.id, v.id, ref previous);
+    }
+
+    neighbours = GetNeighbours(v);
+    foreach (Vertex n in neighbours)
+    {
+        if (previous[n.id] != -1)
+            continue;
+        previous[n.id] = v.id;
+        q.Enqueue(n);
+    }
+}
+return new List&lt;Vertex&gt;();</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec99"></a>How it works...</h3></div></div></div><p>The <a id="id111" class="indexterm"></a>BFS algorithm is similar to the DFS algorithm because it's based on the same in-order traversing of a <a id="id112" class="indexterm"></a>graph but, instead of a stack such as DFS, BFS uses a queue for visiting the discovered nodes.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec100"></a>There is more…</h3></div></div></div><p>In case you haven't noticed, we didn't implement the method <code class="literal">BuildPath</code>. This is because we talked about it at the end of the Depth-First Search recipe.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec101"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="emphasis"><em>Finding your way out of a maze with DFS</em></span>, recipe.</p></li></ul></div></div></div>

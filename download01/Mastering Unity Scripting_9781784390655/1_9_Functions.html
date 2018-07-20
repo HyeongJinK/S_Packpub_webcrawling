@@ -1,0 +1,53 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec15"></a>Functions</h2></div></div><hr /></div><p>We already used functions<a id="id68" class="indexterm"></a> in this chapter, such as the <code class="literal">Start</code> and <code class="literal">Update</code> functions. However, now, it's time to consider them more formally and precisely. In essence, a function is a collection of statements bundled together as a single, identifiable block, which is given a collective name and can be executed on demand, each line of the function being executed in sequence. When you think about the logic of your game, there are times when you need to perform some operations repeatedly on your objects, such as, firing a weapon, jumping in the air, killing enemies, updating the score, and playing a sound. You can copy and paste your code throughout the source file, wherever you need to reuse it; this is not a good habit to cultivate. It's easier to consolidate the recyclable code into a function that can be executed by a name when you need it, as shown in the following code sample 1-8:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 
+04 public class MyScriptFile : MonoBehaviour 
+05 {
+06     //Private variable for score
+07     //Accessible only within this class
+08     private int Score = 0;
+09 
+10     // Use this for initialization
+11     void Start ()
+12    {
+13       //Call update score
+14       UpdateScore(5, false); //Add five points
+15       UpdateScore (10, false); //Add ten points
+
+16       int CurrentScore = UpdateScore (15, false); //Add fifteen points and store result
+
+17 
+18       //Now double score
+19        UpdateScore(CurrentScore);
+20     }
+21 
+22     // Update is called once per frame
+23     void Update () 
+24     {
+25     }
+26 
+27     //Update game score
+
+28     public int UpdateScore (int AmountToAdd, bool PrintToConsole = true)
+
+29     {
+30       //Add points to score
+31       Score += AmountToAdd;
+32 
+33       //Should we print to console?
+
+34       if(PrintToConsole){Debug.Log ("Score is: " + Score.ToString());}
+
+35 
+36       //Output current score and exit function
+37       return Score;
+38     }
+39 }</pre></div><p>The following is the breakdown<a id="id69" class="indexterm"></a> of the code present for code sample 1-8:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 08</strong></span>: A private, integer class variable <code class="literal">Score</code> is declared to keep track of a sample score value. This variable will be used later in the function <code class="literal">UpdateScore</code>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 11, 23, and 28</strong></span>: The class <code class="literal">MyScriptFile</code> has three functions (sometimes called methods or member functions). These are <code class="literal">Start</code>, <code class="literal">Update</code>, and <code class="literal">UpdateScore</code>. <code class="literal">Start</code> and <code class="literal">Update</code> are special functions that Unity provides, as we'll see shortly. <code class="literal">UpdateScore</code>
+<a id="id70" class="indexterm"></a> is a custom function for <code class="literal">MyScriptFile</code>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 28</strong></span>: The <code class="literal">UpdateScore</code> function represents a complete block of code between lines 29 and 38. This specific function should be invoked every time the game score must change. When called, the code block (lines 29–38) will be executed sequentially. In this way, functions offer us code recyclability.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 14-19</strong></span>: The <code class="literal">UpdateScore</code> function is called several times during the <code class="literal">Start</code> function. For each call, the execution of the <code class="literal">Start</code> function pauses until the <code class="literal">UpdateScore</code> function completes. At this point, the execution resumes in the next line.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 28</strong></span>: <code class="literal">UpdateScore</code> accepts two parameters or arguments. These are an integer <code class="literal">AmountToAdd</code> and a Boolean <code class="literal">PrintToConsole</code>. Arguments act like inputs we can plug in to the function to affect how they operate. The <code class="literal">AmountToAdd</code> variable expresses how much should be added to the current <code class="literal">Score</code> variable, and <code class="literal">PrintToConsole</code> determines whether the <code class="literal">Score</code> variable should be shown in the <span class="strong"><strong>Console</strong></span> window when the function is executed. There is theoretically no limit to the number of arguments a function can have, and a function can also have no arguments at all, such as the <code class="literal">Start</code> and<a id="id71" class="indexterm"></a> <code class="literal">Update</code> functions.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 31–34</strong></span>: Here, the score is actually updated and printed to <span class="strong"><strong>Console</strong></span>, if required. Notice that the <code class="literal">PrintToConsole</code> argument has a default value of <code class="literal">true</code> already assigned to the function declaration in line 28. This makes the argument optional whenever the function is called. Lines 14, 15, and 16 explicitly override the default value by passing a value of <code class="literal">false</code>. Line 19, in contrast, omits a second value and thereby accepts the default of <code class="literal">true</code>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 28 and 37</strong></span>: The <code class="literal">UpdateScore</code> function has a return value, which is a data type specified in line 28 before the function name. Here, the value is an <code class="literal">int</code>. This means on exiting or completion, the function will output an integer. The integer, in this case, will be the current <code class="literal">Score</code>. This is actually output in line 37 using the<a id="id72" class="indexterm"></a> <code class="literal">return</code> statement. Functions don't have to return a value, it's not essential. If no return value is needed, the return type should be <code class="literal">void</code> as with <code class="literal">Start</code> and <code class="literal">Update</code>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip08"></a>Tip</h3><p>More information on functions<a id="id73" class="indexterm"></a> and their usage in C# can be found at <a class="ulink" href="http://csharp.net-tutorials.com/basics/functions/" target="_blank">http://csharp.net-tutorials.com/basics/functions/</a>.</p></div></li></ul></div></div>

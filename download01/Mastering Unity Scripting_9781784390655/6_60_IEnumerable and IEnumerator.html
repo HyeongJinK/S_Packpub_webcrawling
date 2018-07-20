@@ -1,0 +1,155 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec62"></a>IEnumerable and IEnumerator</h2></div></div><hr /></div><p>When you're working with collections of data, whether <code class="literal">List</code>, <code class="literal">Dictionary</code>, <code class="literal">Stack</code>, or others, you'll typically want to iterate (or traverse) all items in the list or at least some items, based on a specific criteria. In some cases, you'll want to loop through all items in sequence or some items. Most often, you'll want to traverse the items forwards in sequence, but as we've seen, there <a id="id459" class="indexterm"></a>are times when reverse traversing is also suitable. You can loop through items using a standard for loop. However, this raises some<a id="id460" class="indexterm"></a> annoyances that the interfaces of <code class="literal">IEnumerable</code> and <code class="literal">IEnumerator</code> can help us solve. Let's see what the annoyances are. Consider the <code class="literal">for</code> loop in the following code sample 6-5:</p><div class="informalexample"><pre class="programlisting"> //Create a total variable
+ int Total = 0;
+ 
+ //Loop through List object, from left to right
+<span class="strong"><strong> for(int i=0; i&lt;MyList.Count; i++)</strong></span>
+ {
+    //Pick number from list
+    int MyNumber = MyList[i];
+ 
+    //Increment total
+    Total += MyNumber;
+ }</pre></div><p>There are three main annoyances while using a <code class="literal">for</code> loop. Let's start with the first two. The first is that the syntax is not especially inviting for a loop that just cycles from left to right, from beginning to end, and we must always use an integer iterator variable (<code class="literal">i</code>) to access each array element as the loop proceeds. The second is that the iterator itself is not truly "bounds safe". It can, in fact, be incremented or decremented either above or below the array limits and cause an out-of-bounds error.</p><p>These issues can, to some extent, be fixed using the neater <code class="literal">foreach</code> loop, which is bounds safe and uses a simpler syntax, as shown in following code sample 6-6:</p><div class="informalexample"><pre class="programlisting"> //Create a total variable
+ int Total = 0;
+ 
+ //Loop through List object, from left to right
+ foreach(int Number in MyList)
+ {
+    //Increment total
+    Total += Number;
+ }</pre></div><p>The <code class="literal">foreach</code> loop is simpler and is to be preferred for readability, but there's more going on here than first meets the eye. The <code class="literal">foreach</code> loop works only for classes that implement the <code class="literal">IEnumerable</code> interface. Objects that implement <code class="literal">IEnumerable</code> must return a valid instance to an <code class="literal">IEnumerator</code> interface. So, for an object to work in a <code class="literal">foreach</code> loop, it must depend on two other interfaces. The question that then arises is why is there all this internal complexity for simple<a id="id461" class="indexterm"></a> looping or traversal behavior. The answer is, not only do the <code class="literal">IEnumerable</code> and <code class="literal">IEnumerator</code> solve the first two problems of simpler syntax and bounds-safe iteration by way of the <code class="literal">foreach</code> loop, but they also solve a third problem. Specifically, they<a id="id462" class="indexterm"></a> allow us to loop through or iterate groups of objects that are not even truly array types; that is, they let us iterate through many different types of objects, whether or not they're in an array, as though they were in an array. This can be very powerful. Let's see this in action in a practical example.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec43"></a>Iterating through enemies with IEnumerator</h3></div></div></div><p>Take, for example, an RPG game that features a medieval world inhabited by many different and evil wizard characters (coded in class <code class="literal">Wizard</code>). For the sake of example, these wizards will spawn into the level at random places and random intervals, potentially causing untold trouble for the gamer, casting spells, and performing evil deeds. The result of such random<a id="id463" class="indexterm"></a> spawning is that, by default, we cannot know in advance how many wizards there will be in the scene at any one time, nor can we know where they've been spawned, because it's random. However, there are still legitimate reasons why we'd need to find all the wizards; perhaps, all the wizards must be disabled, hidden, paused, or killed, or, perhaps, we need a head count to prevent overspawning. So, regardless of the wizard spawning and its randomness, there are still good justifications for being able to access all the wizards in the level on demand.</p><p>We've seen already, in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Debugging</em></span>, one way in which we can retrieve a traversable list of all wizards, as shown in the following code sample 6-7:</p><div class="informalexample"><pre class="programlisting"> //Get all wizards
+<span class="strong"><strong> Wizard[] WizardsInScene = Object.FindObjectsOfType&lt;Wizard&gt;();</strong></span>
+ 
+ //Cycle through wizards
+ foreach (Wizard W in WizardsInScene)
+ {
+    //Access each wizard through W
+ }</pre></div><p>The problem with the<a id="id464" class="indexterm"></a> <code class="literal">FindObjectsOfType</code> function is that it's slow and performance prohibitive when used frequently. Even the <a id="id465" class="indexterm"></a>Unity documentation at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Object.FindObjectsOfType.html" target="_blank">http://docs.unity3d.com/ScriptReference/Object.FindObjectsOfType.html</a> recommends against its repeated use.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip40"></a>Tip</h3><p>A sample Unity project using the <code class="literal">IEnumerator</code> and <code class="literal">IEnumerable</code> interfaces can be found in the book's companion files (code bundle) at <code class="literal">Chapter06\Enumerators</code>.</p></div><p>So, instead, we can achieve similar behavior using <code class="literal">IEnumerable</code> and <code class="literal">IEnumerator</code>, and this avoids significant performance penalties. Using these two interfaces, we'll be able to efficiently iterate<a id="id466" class="indexterm"></a> through all the wizards in the scene, using a <code class="literal">foreach</code> loop, as though they were in an array, as shown in the following code sample 6-8:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 using System.Collections.Generic;
+04 //----------------------------------------------------
+05 //Class derives from IEnumerator
+06 //Handles bounds safe iteration of all wizards in scene
+<span class="strong"><strong>07 public class WizardEnumerator : IEnumerator</strong></span>
+08 {
+09 //Current wizard object pointed to by enumerator
+10 private Wizard CurrentObj = null;
+11 //----------------------------------------------------
+12 //Overrides movenext
+<span class="strong"><strong>13 public bool MoveNext()</strong></span>
+14 {
+15       //Get next wizard
+16       CurrentObj = (CurrentObj==null) ? Wizard.FirstCreated : CurrentObj.NextWizard;
+
+17 
+18       //Return the next wizard
+19       return (CurrentObj != null);
+20 }
+21 //----------------------------------------------------
+22 //Resets the iterator back to the first wizard
+<span class="strong"><strong>23 public void Reset()</strong></span>
+24 {
+25       CurrentObj = null;
+26 }
+27 //----------------------------------------------------
+28 //C# Property to get current wizard
+<span class="strong"><strong>29 public object Current</strong></span>
+30 {
+31       get{return CurrentObj;} 
+32 }
+33 //----------------------------------------------------
+34 }
+35 //----------------------------------------------------
+36 //Sample class defining a wizard object
+37 //Derives from IEnumerable, allowing looping with foreach
+38 [System.Serializable]
+<span class="strong"><strong>39 public class Wizard : MonoBehaviour, IEnumerable</strong></span>
+40 {
+41 //----------------------------------------------------
+42 //Reference to last created wizard
+43 public static Wizard LastCreated = null;
+44 
+45 //Reference to first created wizard
+46 public static Wizard FirstCreated = null;
+47 
+48 //Reference to next wizard in the list
+49 public Wizard NextWizard = null;
+50 
+51 //Reference to previous wizard in the list
+52 public Wizard PrevWizard = null;
+53 
+54 //Name of this wizard
+55 public string WizardName = "";
+56 //----------------------------------------------------
+57 //Constructor
+58 void Awake()
+59 {
+60       //Should we update first created
+61      if(FirstCreated==null)
+62             FirstCreated = this;
+63 
+64       //Should we update last created
+65       if(Wizard.LastCreated != null) 
+66       {
+67              Wizard.LastCreated.NextWizard = this;
+68              PrevWizard = Wizard.LastCreated;
+69       }
+70 
+71        Wizard.LastCreated = this;
+72 }
+73 //----------------------------------------------------
+74 //Called on object destruction
+75 void OnDestroy()
+76 {
+77       //Repair links if object in chain is destroyed
+78       if(PrevWizard!=null)
+79              PrevWizard.NextWizard = NextWizard;
+80 
+81       if(NextWizard!=null) 
+82              NextWizard.PrevWizard = PrevWizard;
+83 }
+84 //----------------------------------------------------
+85 //Get this class as enumerator
+86 public IEnumerator GetEnumerator()
+87 {
+88        return new WizardEnumerator();
+89 }
+90 //----------------------------------------------------
+91 }
+92 //-------------------------------------------------------------------</pre></div><p>The following are the <a id="id467" class="indexterm"></a>comments for code sample 6-8:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 07 and 39</strong></span>: Two classes are created here: the first is <code class="literal">WizardEnumerator</code>, which implements <code class="literal">IEnumerator</code>, and the second is <code class="literal">Wizard</code>, which implements <code class="literal">IEnumerable</code>. The <code class="literal">WizardEnumerator</code> class is instantiated simply to iterate over a collection of wizards that keeps track of the current wizard in the iteration process. To loop through or iterate over all wizards in the scene, it relies on member variables for the <code class="literal">Wizard</code> class, as we'll see in the upcoming sections.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 13, 23, and 29</strong></span>: The<a id="id468" class="indexterm"></a> <code class="literal">WizardEnumerator</code> class implements the methods and properties of <code class="literal">IEnumerator</code>, specifically, <code class="literal">MoveNext</code> (which iterates over to the next wizard in the cycle), <code class="literal">Reset</code> (which resets the iterator back to the first wizard), and <code class="literal">Current</code> (which returns the active wizard in the cycle).</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 39</strong></span>: The <a id="id469" class="indexterm"></a>
+<code class="literal">Wizard</code> class encapsulates a wizard character in the scene and inherits from two classes: <code class="literal">MonoBehaviour</code> and <code class="literal">IEnumerable</code>. This means that all the features of both classes come together in this derived class. It internally maintains several variables that allow the enumerator to loop through all the wizard instances in the scene at any time. First, <code class="literal">Wizard</code> holds the <code class="literal">FirstCreated</code> and <code class="literal">LastCreated</code> static members (which are global to all the wizard instances). These variables are set when objects are created (see the <code class="literal">Awake</code> function in line 58). <code class="literal">FirstCreated</code> always refers to the instance of a wizard that was created first, and <code class="literal">LastCreated</code> always to the most recently created instance.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 48 and 52</strong></span>: The <code class="literal">Wizard</code> class also maintains the instance variables, <code class="literal">NextWizard</code> and <code class="literal">PrevWizard</code>. This implements a doubly-linked list; that is, each instance of the wizard points to the previously and subsequently created instance, which allows a chain-like connection between all wizards. The first wizard will have <code class="literal">PrevWizard</code> or <code class="literal">null</code>, and the last wizard will have <code class="literal">NextWizard</code> or <code class="literal">null</code>. These variables make it possible for the iterator to cycle through all wizard instances even when none of them are in an array.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 86</strong></span>: The <code class="literal">GetEnumerator</code> method<a id="id470" class="indexterm"></a> returns an instance to an <code class="literal">Enumerator</code> object. This is required<a id="id471" class="indexterm"></a> by the <code class="literal">IEnumerable</code> interface and allows a <code class="literal">foreach</code> loop across all wizards.</p></li></ul></div><p>Together, the <code class="literal">Wizard</code> and <code class="literal">WizardEnumerator</code> classes offer fast, direct, and efficient <code class="literal">Wizard</code> object cycling, even though no array of wizards need to truly exist. To see this in practice, in a scene of wizards, the following code sample 6-9 can enumerate all wizards:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+   //Press space to list all wizards in scene
+   if(Input.GetKeyDown(KeyCode.Space))
+   {
+         //Get first wizard through static member
+         Wizard WizardCollection= Wizard.FirstCreated;
+
+         //If there is at least one wizard, then loop them all
+         if(Wizard.FirstCreated != null)
+          {
+                //Loop through all wizards in foreach
+                foreach(Wizard W in WizardCollection)
+                       Debug.Log (W.WizardName);
+
+          }
+   }
+}</pre></div><p>You can also enumerate through all wizards outside a <code class="literal">foreach</code> loop by accessing the <code class="literal">Enumerator</code> object directly, as shown in the following code sample 6-10:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+   //Press space to list all wizards in scene
+   if(Input.GetKeyDown(KeyCode.Space))
+   {
+         //Get Enumerator
+         IEnumerator WE = Wizard.FirstCreated.GetEnumerator();
+
+          while(WE.MoveNext())
+          {
+                Debug.Log(((Wizard)WE.Current).WizardName);
+          }
+   }
+}</pre></div></div></div>

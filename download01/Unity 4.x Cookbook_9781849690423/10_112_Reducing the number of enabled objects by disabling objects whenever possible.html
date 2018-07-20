@@ -1,0 +1,45 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec109"></a>Reducing the number of enabled objects by disabling objects whenever possible</h2></div></div><hr /></div><p>Optimization principal 3: <span class="emphasis"><em>Minimize the number of enabled objects in a scene</em></span>. Sometimes we may not want to<a id="id820" class="indexterm"></a> completely <a id="id821" class="indexterm"></a>remove an object, but we can identify times when a scripted component of an object can be safely disabled. If a <code class="literal">Monobehaviour</code> script<a id="id822" class="indexterm"></a> is disabled, then Unity no longer needs to send the object <code class="literal">Update()</code> and <code class="literal">OnGUI()</code> messages for each frame.</p><p>For example, if a non-player character (NPC) should only demonstrate some behavior when the player can see that character, then we only need to be executing the behavior logic when the NPC is visible—the rest of the time we can safely disable the scripted component.</p><p>Unity provides the very useful events <code class="literal">OnBecameInvisible()</code><a id="id823" class="indexterm"></a> and <code class="literal">OnBecameVisible()</code><a id="id824" class="indexterm"></a>, which informs an object when it moves out of and into the visible area for one or more cameras in the scene.</p><p>This recipe illustrates the following rule of thumb: if an object has no reason to be doing actions when it cannot be seen, then we should disable that object while it cannot be seen.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec381"></a>How to do it...</h3></div></div></div><p>To disable objects to<a id="id825" class="indexterm"></a> reduce computer processing "workload" requirements, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new Unity project by importing the <code class="literal">Character Controller</code> package.</p></li><li><p>Create a new terrain.</p></li><li><p>Add a <span class="strong"><strong>3rd Person Controller</strong></span> in the center of the terrain.</p></li><li><p>Create a new cube just in front of your <span class="strong"><strong>3rd Person Controller</strong></span>.</p></li><li><p>Add the following C# script class to your cube:</p><div class="informalexample"><pre class="programlisting">// file: DisableWhenInvisible
+using UnityEngine;
+using System.Collections;
+
+public class DisableWhenInvisible : MonoBehaviour {
+  public Transform player;
+
+    void OnBecameVisible() {
+        enabled = true;
+    print ("cube became visible again");
+  }
+
+    void OnBecameInvisible() {
+        enabled = false;
+    print ("cube became in-visible");
+  }
+  
+  private void OnGUI() {
+    float d = Vector3.Distance( transform.position, player.position);
+    GUILayout.Label ("distance from player to cube = " + d);
+  }
+}</pre></div></li><li><p>With the cube selected in the <span class="strong"><strong>Hierarchy</strong></span> panel, drag your <span class="strong"><strong>3rd Person Controller</strong></span> into the <span class="strong"><strong>Inspector</strong></span> for the public variable <code class="literal">player</code>.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec382"></a>How it works...</h3></div></div></div><p>When visible,<a id="id826" class="indexterm"></a> the scripted <code class="literal">DisableWhenInvisible</code> component<a id="id827" class="indexterm"></a> of the cube recalculates and displays the distance from itself to the transform of the <span class="strong"><strong>3rd Person Controller</strong></span>, via the <code class="literal">player</code> variable in the <code class="literal">OnGUI()</code> method for each frame. However, when this object receives the <code class="literal">OnBecameInvisible()</code> message<a id="id828" class="indexterm"></a>, the object sets its <code class="literal">enabled</code> property to <code class="literal">false</code>. This results in Unity no longer sending <code class="literal">Update()</code> and <code class="literal">OnGUI()</code> messages to the object, so the distance calculation in <code class="literal">OnGUI()</code> is no longer performed, thus reducing the game's processing workload. <a id="id829" class="indexterm"></a>Upon receiving the <code class="literal">OnBecameVisible()</code> message, the <code class="literal">enabled</code> property is set back to <code class="literal">true</code>, and the object will then receive <code class="literal">Update()</code> and <code class="literal">OnGUI()</code> messages for each frame. Note that you can see the scripted component become disabled by seeing the blue "tick" in its <span class="strong"><strong>Inspector</strong></span> checkbox disappear, if you have the cube selected in the <span class="strong"><strong>Hierarchy</strong></span> panel, when running the game.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec383"></a>There's more...</h3></div></div></div><p>The following are some details you don't want to miss:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec87"></a>Another common case – only enable after OnTrigger()</h4></div></div></div><p>Another common situation is that we only want a scripted component to be active if the player's character is nearby (within some minimum distance). In these situations, a sphere collider can be set up, and the scripted component can be enabled only when the player's character enters that sphere. This can be implemented using the <code class="literal">OnTriggerEnter()</code><a id="id830" class="indexterm"></a> and <code class="literal">OnTriggerExit()</code><a id="id831" class="indexterm"></a> events; for example:</p><div class="informalexample"><pre class="programlisting">private void OnTriggerEnter(Collider hitObjectCollider) {
+if (hitObjectCollider.CompareTag("Player"))
+enabled = true;
+}
+
+private void OnTriggerExit(Collider hitObjectCollider) {
+if (hitObjectCollider.CompareTag("Player"))
+enabled = false;
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec88"></a>Going one step further – make the parent GameObject inactive</h4></div></div></div><p>In some cases you can go one step further, and <a id="id832" class="indexterm"></a>make the parent GameObject that contains the scripted component "inactive". This is just like deselecting the checkbox next to the GameObject in the <span class="strong"><strong>Inspector</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_10_08.jpg" /></div><p>To deactivate the parent GameObject, you set its active property to <code class="literal">false</code>:</p><div class="informalexample"><pre class="programlisting">void OnBecameInvisible() {
+  gameObject.SetActive(false);
+  print ("cube became in-visible");
+}</pre></div><p>Note, however, <a id="id833" class="indexterm"></a>that an inactive GameObject does not receive <span class="emphasis"><em>any</em></span> messages, so it will not receive the <code class="literal">OnBecameVisible()</code> message; and this may not be appropriate for every object that is out of sight of the camera. However, when deactivating objects is appropriate, a larger performance saving is made over simply disabling a single scripted <code class="literal">Monobehaviour</code> component of a GameObject.</p><p>The only way to reactivate an inactive object is for another object to set the GameObject's active property back to <code class="literal">true</code>. The following script, when added to an active GameObject (such as terrain or controller), will display a button to demonstrate how an inactive object can be reactivated. For this script to work, the public <code class="literal">cubeGO</code> variable must be set by dragging the cube over the variable in the <span class="strong"><strong>Inspector</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: MakeCubeActive.cs
+using UnityEngine;
+using System.Collections;
+
+public class MakeCubeActive : MonoBehaviour {
+  public GameObject cubeGO;
+
+  private void OnGUI(){
+    bool makeCubeActiveButtonClicked = GUILayout.Button("make cube active");
+    if( makeCubeActiveButtonClicked )
+      cubeGO.SetActive(true);
+  }
+}</pre></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec384"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Reducing the number of objects by destroying objects at a "death" time</em></span> recipe</p></li></ul></div></div></div>

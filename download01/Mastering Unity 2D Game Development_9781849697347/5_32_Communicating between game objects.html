@@ -1,0 +1,304 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec34"></a>Communicating between game objects</h2></div></div><hr /></div><p>In any game, there are planned interactions between any components within the game. These could be as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Physics collision tests</p></li><li style="list-style-type: disc"><p>Reacting to being shot or shooting</p></li><li style="list-style-type: disc"><p>Opening and closing doors</p></li><li style="list-style-type: disc"><p>Triggers, switches, or traps</p></li><li style="list-style-type: disc"><p>Two or more characters talking</p></li></ul></div><p>There are several ways in which you can achieve this, and each has their own particular traits. The selection of the implementations depends on what you need to achieve. The methods are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Delegates</p></li><li style="list-style-type: disc"><p>Events</p></li><li style="list-style-type: disc"><p>Messaging</p></li></ul></div><p>In this section, we will go through each method in detail and highlight the best uses of each.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec53"></a>Delegates</h3></div></div></div><p>We encounter delegates in our everyday lives. Sometimes they are managers, sometimes they are subordinates, and they could even be the barista at your local coffee shop. Delegates effectively are methods that accept pieces of work to do on behalf of someone else.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip28"></a>Tip</h3><p>Another form of delegates is to use the C# generics and the <code class="literal">Action</code> or <code class="literal">Action&lt;T&gt;</code> methods, which is a shorthand version of the implementations mentioned in the next section. For more information about generics and <code class="literal">Action</code>, refer to <a class="ulink" href="http://msdn.microsoft.com/en-us/library/018hxwa8(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/018hxwa8(v=vs.110).aspx</a>.</p></div><p>There are two main patterns in which delegates are used: the configurable method pattern and the delegation pattern.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note47"></a>Note</h3><p>The scripts in this section can be found in <code class="literal">Assets\Scripts\Examples</code> under the <code class="literal">Delegates</code> script.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec32"></a>The configurable method pattern</h4></div></div></div><p>The configurable method pattern is used when a piece of work or function is passed to another method to be used to complete a task. This pattern is usually used where different pieces of code can perform a common task in unique ways, such as walking, running, or patrolling. All these tasks can be the default behaviors of a character. Refer to the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_05_03.jpg" /></div><p>Here, you will have your code calling a <code class="literal">delegate</code> method, but the contents of this method can be different depending on what you have set it to.</p><p>For instance, refer to the following code:</p><div class="informalexample"><pre class="programlisting">using System;
+using UnityEngine;
+public class Delegates
+{
+  //Define delegate method signature
+  delegate void RobotAction();
+  //private property for delegate use
+  RobotAction myRobotAction;
+
+  void Start ()
+  {
+    //Set the default method for the delegate
+    myRobotAction = RobotWalk;
+  }
+
+  void Update()
+  {
+    //Run the selected delegate method on update
+    myRobotAction();
+  }
+
+  //public method to tell the robot to walk
+  public void DoRobotWalk()
+  {
+    //set the delegate method to the walk function
+    myRobotAction = RobotWalk;
+  }
+
+  void RobotWalk()
+  {
+    Debug.Log("Robot walking");
+  }
+
+  //public method to tell the robot to run
+  public void DoRobotRun()
+  {
+    //set the delegate method to the run function
+    myRobotAction = RobotRun;
+  }
+
+  void RobotRun()
+  {
+    Debug.Log("Robot running");
+  }
+}</pre></div><p>This means that when the <code class="literal">DoRobotWalk</code> method is called, it will set the delegate to the <code class="literal">Walk</code> method, and once updated, it will run the <code class="literal">Walk</code> behavior. If you call the <code class="literal">DoRobotRun</code> public method, it will change the delegate to the <code class="literal">Run</code> behavior, and once updated, it will run the <code class="literal">Run</code> behavior. This is a very simple kind of state machine with no conditions around.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec33"></a>The delegation pattern</h4></div></div></div><p>The delegation pattern is used where a method calls out to a helper library, and on completion of the required task, continues on back in the <code class="literal">main</code> function, as shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_05_04.jpg" /></div><p>This is usually used with what you might download from the Web. When the download is finished, we do something with what we have downloaded.</p><p>For instance, refer to the following code:</p><div class="informalexample"><pre class="programlisting">using System;
+using System.Collections.Generic;
+public class Delegates
+{
+  public class Worker
+  {
+    List&lt;string&gt; WorkCompletedfor = new List&lt;string&gt;();
+    public void DoSomething(
+      string ManagerName,
+      Action myDelegate)
+    {
+      //Audits that work was done for which manager
+      WorkCompletedfor.Add(ManagerName);
+
+      //Begin work
+      myDelegate();
+    }
+  }
+
+  public class Manager
+  {
+    private Worker myWorker = new Worker();
+
+    public void PeiceOfWork1()
+    {
+    //A piece of very long tedious work
+    }
+
+    public void PeiceOfWork2()
+    {
+      //You guessed it, yet more tedious work
+    }
+
+    public void DoWork()
+    {
+      //Send worker to do job 1
+      myWorker.DoSomething("Manager1",PeiceOfWork1);
+
+      //Send worker to do job 2
+      myWorker.DoSomething("Manager1", PeiceOfWork2);
+    }
+  }
+}</pre></div><p>Alternatively, you could just express it using the C# lamdas, which simply means you don't need to declare separate functions as follows:</p><div class="informalexample"><pre class="programlisting">public void DoWork2()
+{
+  private Worker myWorker = new Worker();
+
+  //Send worker to do job 1
+  myWorker.DoSomething("Manager1", () =&gt;
+  {
+    //A piece of very long tedious work
+  });
+
+  //Send worker to do job 2
+  myWorker.DoSomething("Manager2", () =&gt;
+  {
+    //You guessed it, yet more tedious work
+  });
+}</pre></div><p>If your delegate also uses a string as a parameter, the preceding example could be used as a download pattern where a helper library does the entire download and just returns the XML asset. This asset can then be unpacked and used in the game in your <code class="literal">main</code> function.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec34"></a>Compound delegates</h4></div></div></div><p>Both the configurable method pattern and delegation pattern are very powerful techniques when used correctly.</p><p>Another feature of delegates is that they can be compounded, meaning you can assign multiple functions to a single delegate. Also, when a delegate is called, all the methods assigned to the delegate will run, as shown in the following code. This feature is very handy when you want to chain several common functions together instead of one:</p><div class="informalexample"><pre class="programlisting">public class WorkerManager
+{
+  void DoWork()
+  {
+    DoJob1();
+    DoJob2();
+    DoJob3();
+  }
+
+  private void DoJob1()
+  {
+    //Do some filing
+  }
+
+  private void DoJob2()
+  {
+    //Make coffee for the office
+  }
+
+  private void DoJob3()
+  {
+    //Stick it to the man
+  }
+}</pre></div><p>You can achieve the same output but with more flexibility by using the following code:</p><div class="informalexample"><pre class="programlisting">//A more intelligent WorkerManager
+public class WorkerManager2
+{
+  //WorkerManager delegate
+  delegate void MyDelegateHook();
+  MyDelegateHook ActionsToDo;
+
+  public string WorkerType = "Peon";
+
+  //On Startup, assign jobs to the worker; note this is
+  //configurable instead of fixed
+  void Start()
+  {
+    //Peons get lots of work to do
+    if (WorkerType == "Peon")
+    {
+      ActionsToDo += DoJob1;
+      ActionsToDo += DoJob2;
+    }
+    //Everyone else plays golf
+    else
+    {
+      ActionsToDo += DoJob3;
+    }
+  }
+
+  //With Update, do the actions set on ActionsToDo
+  void Update()
+  {
+    ActionsToDo();
+  }
+
+  private void DoJob1()
+  {
+    //Do some filing
+  }
+
+  private void DoJob2()
+  {
+    //Make coffee for the office
+  }
+
+  private void DoJob3()
+  {
+    //Play Golf
+  }
+}</pre></div><p>This also means it's dynamic and you can add additional functions to the delegate that will be called whenever the delegate is called.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip29"></a>Tip</h3><p>Word to the wise: only use chained delegates when you absolutely need the flexibility to do so as they are a more complex pattern to implement. They are also difficult to debug should something untoward happen.</p></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec54"></a>Events</h3></div></div></div><p>We can describe events as "expected announcements". Imagine you have a bat phone at your desk; when it rings, you know it's "Batman" on the other end, usually telling you some trouble has been averted. Events are similar to this pattern where there is a hook; this is where you can listen for something to happen and then do something with that event. When it occurs, additionally, through events, you can pass this information to provide yourself with additional information about what has occurred, as depicted in the following image:</p><div class="mediaobject"><img src="/graphics/9781849697347/graphics/7347OT_05_05.jpg" /></div><p>In the following code, events use delegates to describe how they are going to communicate. It defines the form that communication will take and what information will be passed when the event is fired:</p><div class="informalexample"><pre class="programlisting">//Delegate method definition
+public delegate void ClickAction();
+
+//Event hook using delegate method signature
+public static event ClickAction OnClicked;</pre></div><p>Now when an event needs to be initiated in your class, all it needs to do to notify any other code that is listening to the event is call the event like a method using <code class="literal">delegate</code> as the signature.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip30"></a>Tip</h3><p>However, what you must be careful about is that no one is listening to the event (no one has subscribed to it). To do this, you need to check that <code class="literal">delegate</code> is <span class="emphasis"><em>not</em></span> <code class="literal">null</code> before you call it.</p></div><p>Refer to the following code:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  //If the space bar is pressed, this item has been clicked
+  if (Input.GetKeyDown(KeyCode.Space))
+  {
+    //Trigger the event delegate if there is a subscriber
+    if (OnClicked != null)
+    {
+      OnClicked();
+    }
+  }
+}</pre></div><p>With the event exposed, any other class or game object that needs to be informed about the occurrence of the event just needs to subscribe to the event as follows using the <code class="literal">+=</code> syntax:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+  //Hook on to the function's onClicked event and run the
+  //Events_OnClicked method when it occurs
+  OnClicked += Events_OnClicked;
+}
+
+  //Subordinate method
+  void Events_OnClicked()
+  {
+    Debug.Log("The button was clicked");
+
+  }
+
+void OnDestroy()
+{
+  //Unsubscribe from the event to clean up
+  OnClicked -= Events_OnClicked;
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note48"></a>Note</h3><p>It's always a good idea to clean up after yourself and unsubscribe from the events when you no longer need them, as shown in the preceding code, using the <code class="literal">-=</code> syntax.</p></div><p>This is a very simple example, but you could imagine exposing an event for when an enemy is destroyed and hooking your score system into it so that the score is incremented every time an enemy dies.</p><p>A better way is to write a separate method to call when you need to trigger the event; refer to the following code. In this way, you don't have the preceding code repeated throughout:</p><div class="informalexample"><pre class="programlisting">//Safe method for calling the event
+void Clicked()
+{
+  //Trigger the event delegate if there is a subscriber
+  if (OnClicked != null)
+  {
+    OnClicked();
+  }
+}</pre></div><p>Now, all you have to do whenever the event needs to be fired is call the <code class="literal">Clicked</code> method that is shown in the preceding code, which is always safe and won't crash if there are no subscribers.</p><p>As a help, this code is the template I always use when creating an event. To simplify its creation, all you have to do to use it each time is change the name, and if necessary, the delegate signature if you need additional parameters; the following code will tell you how to do this:</p><div class="informalexample"><pre class="programlisting">//Logging template to send a string/report every time something //happens
+public delegate void LogMessage(string message);
+public static event LogMessage Log;
+
+void OnLog(string message)
+{
+  if (Log != null)
+  {
+    Log(message);
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec55"></a>Messaging</h3></div></div></div><p>Communication is a key factor in any game. A lot of times, we just use colliders or physics to notify two components that there is something to be aware of. This is a very basic form of communication. Other times, we use referencing or (in the case of Unity) trawl through the project's hierarchy to find another game object to communicate with or notify.</p><p>Unity has its own messaging-type functions, such as <code class="literal">SendMessage</code> and <code class="literal">BroadcastMessage</code>. Both functions actually implement event-style code (as in the preceding case) without actually declaring events, but they are <span class="emphasis"><em>very</em></span> slow and shouldn't be used extensively.</p><p>The <code class="literal">SendMessage</code> function will call a named method on a game object (any method with the same name) with a <span class="emphasis"><em>single</em></span> optional parameter as follows:</p><div class="informalexample"><pre class="programlisting">void OnCollisionEnter(Collision col)
+{
+  col.gameObject.SendMessage("IHitYou");
+}</pre></div><p>So, it will call the <code class="literal">IHitYou</code> method on whatever you will collide with. By default, this will not cause an error to be raised if whatever you collide with does not have the <code class="literal">IHitYou</code> method. However, if you wish, you can change this by adding <code class="literal">SendMessageOptions</code> when you call <code class="literal">SendMessage</code>, as follows:</p><div class="informalexample"><pre class="programlisting">void OnCollisionEnter(Collision col)
+{
+  col.gameObject.SendMessage("IHitYou", SendMessageOptions.RequireReceiver);
+}</pre></div><p>If you want to send a value (there can only be one) with the call, just add it after the method name and before <code class="literal">SendMessageOptions</code> (if set).</p><p>The <code class="literal">BroadcastMessage</code> method works in a similar way but will attempt to run your selected method on the selected <code class="literal">gameObject</code> and <span class="emphasis"><em>all</em></span> its children as follows:</p><div class="informalexample"><pre class="programlisting">void OnCollisionEnter(Collision col)
+{
+  col.gameObject.BroadcastMessage("IHitYou");
+}</pre></div><p>Using either of the methods (as stated) is very slow. This is because it has to try and discover (under the hood) if the game object (and its children if using broadcast) has the method first; it will then attempt to run it. As Unity will not know until your game starts running and whether a game object will have that method, it has to perform this each and every time you try it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec56"></a>A better way</h3></div></div></div><p>To break this dependency between the game objects and the need to keep references or the need to discover each other at the design or runtime stage, we need an intermediary that all objects know about, that is, a <code class="literal">Manager</code> class.</p><p>With this <code class="literal">manager</code> class, it will manage the list of game objects that want to listen to the messages and provide an easy way to notify anyone who's listening.</p><p>To implement this, we will use the singleton behavior described earlier by creating three simple, reusable components as a test case.</p><p>First, we create the <code class="literal">manager</code> class itself. So, create a <code class="literal">MessagingManager.cs</code> C# script and then replace its contents as follows:</p><div class="informalexample"><pre class="programlisting">using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class MessagingManager : MonoBehaviour
+{
+  //Static singleton property
+  public static MessagingManager Instance { get; private set; }
+
+  // public property for manager
+  private List&lt;Action&gt; subscribers = new List&lt;Action&gt;();
+}</pre></div><p>The first property is the singleton instance for the <code class="literal">manager</code> class, while the second is a list of delegates that will be used to keep track of who needs to be notified.</p><p>Next, we add the <code class="literal">Awake</code> function to initialize the singleton approach:</p><div class="informalexample"><pre class="programlisting">void Awake()
+{
+  Debug.Log("Messaging Manager Started");
+  //First, we check if there are any other instances conflicting
+  if (Instance != null &amp;&amp; Instance != this)
+  {
+    //Destroy other instances if it's not the same
+    Destroy(gameObject);
+  }
+
+  //Save our current singleton instance
+  Instance = this;
+
+  //Make sure that the instance is not destroyed between scenes
+  //(this is optional)
+  DontDestroyOnLoad(gameObject);
+}</pre></div><p>This is the same as before but with a little extra debug information so you can see when it is initialized in the <span class="strong"><strong>Console</strong></span> window.</p><p>Then, we add a method so we can register recipients or subscribers to the messages (with the associated <code class="literal">UnSubscribe</code> and <code class="literal">ClearAllSubscribers</code> methods), as follows:</p><div class="informalexample"><pre class="programlisting">//The Subscribe method for manager
+public void Subscribe(Action subscriber)
+{
+  Debug.Log("Subscriber registered");
+  subscribers.Add(subscriber);
+}
+
+//The Unsubscribe method for manager
+public void UnSubscribe(Action subscriber)
+{
+  Debug.Log("Subscriber registered");
+  subscribers.Remove(subscriber);
+}
+
+//Clear subscribers method for manager
+public void ClearAllSubscribers()
+{
+  subscribers.Clear();
+}</pre></div><p>This method just adds the delegate you passed to the <code class="literal">manager</code> class to be added to the notification list.</p><p>Finally, we add a <code class="literal">Broadcast</code> method that tells the messaging system to let all the subscribers know that something has happened; the following code tells us how to do this:</p><div class="informalexample"><pre class="programlisting">public void Broadcast()
+{
+  Debug.Log("Broadcast requested, No of Subscribers = " + subscribers.Count);
+  foreach (var subscriber in subscribers)
+  {
+    subscriber();
+  }
+}</pre></div><p>Here, we simply loop through all the subscribers and notify them using their delegates; very simple!</p><p>As you can see, this is just a very basic messenger that when called will tell anyone who is listening that something has happened; there will be no extra information, no details, just an event. This is like the fire alarm in your building; when it goes off, you just run—you don't (usually) ask, you don't question—you just know that when that alarm goes off, you need to get out of the building!</p><p>To finish this <code class="literal">manager</code> class off, simply create an empty game object in your scene and add the script to it. There are ways to do that automatically, but I find this way is cleaner so that you always know what the active agents in the scene are. Later in <a class="link" href="#" linkend="ch10">Chapter 10</a>, <span class="emphasis"><em>The Battle Begins</em></span>, I'll show you a way to create an editor menu option to do this automatically for you.</p><p>Putting this to use is simple. As mentioned before, we need three scripts; we have the <code class="literal">manager</code> class, so now we need a client and a broadcast agent.</p><p>For the broadcast agent, create a C# script named <code class="literal">MessagingClientBroadcast</code> and replace its contents with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class MessagingClientBroadcast : MonoBehaviour {
+
+  void OnCollisionEnter2D(Collision2D col)
+  {
+    MessagingManager.Instance.Broadcast();
+  }
+}</pre></div><p>The preceding code is just a simple example so that when attached to an object with a 2D collider, it will trigger a broadcast. To test, just add it to one or both of the border objects in our game scene. In this way, if the player tries to leave the scene, it will ring the alarm bells.</p><p>At the moment though, no one is listening, so let's add a listener/receiver. Create another C# script and name it <code class="literal">MessagingClientReceiver</code>. This script will register for events and log in to the <span class="strong"><strong>Console</strong></span> window with some information about the object it's attached to (obviously, there will be no information from the broadcast event as it has none); the following code will tell you how to do this:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class MessagingClientReceiver : MonoBehaviour
+{
+  void Start()
+  {
+    MessagingManager.Instance.Subscribe(ThePlayerIsTryingToLeave);
+  }
+
+  void ThePlayerIsTryingToLeave()
+  {
+    Debug.Log("Oi Don't Leave me!! - " + tag.ToString());
+  }
+}</pre></div><p>In simple words, when the game object script is attached to a startup, it will register itself with the <code class="literal">MessagingManager</code> script, telling the <code class="literal">manager</code> class to run the second method in the script when the event occurs. As stated before, this just logs in to the <span class="strong"><strong>Console</strong></span> window for now so that we have something to see.</p><p>Just for fun, also add this script to one or both of the borders in our scene; this is simply because we don't have anything else at the moment. You could add it to the player, making the event as an alarm that goes off and changing the <code class="literal">ThePlayerIsTryingToLeave</code> method to cause the player to run in the opposite direction if you wish.</p><p>If you run the project now, you should get the following results:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>One message to tell you that the <code class="literal">MessagingManager</code> script has started.</p></li><li style="list-style-type: disc"><p>One message per subscriber that has registered with the manager (although in the <span class="strong"><strong>Console</strong></span> window, you may just see <span class="strong"><strong>2</strong></span> next to the event because it is the same).</p></li><li style="list-style-type: disc"><p>When the event is triggered, you will get one message per subscriber to tell you that they have received it. Note that each message from the client is particular to the game object you attached it to as the message is different.</p></li></ul></div><p>Now, you could have just executed the preceding code using the <code class="literal">Send</code> or <code class="literal">Broadcast</code> Unity methods, and it would have been much simpler. However, you should note that since we are using a single <code class="literal">manager</code> class, which is a static instance in the scene, at no point should any of the game objects involved need to know about each other. There is no need to search the hierarchy or add components to each other at editing time; it just works.</p></div></div>

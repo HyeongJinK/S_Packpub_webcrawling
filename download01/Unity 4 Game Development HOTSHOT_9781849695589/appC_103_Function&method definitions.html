@@ -1,0 +1,41 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec101"></a>Function/method definitions</h2></div></div><hr /></div><p>First of all, terminology <a id="id1360" class="indexterm"></a>in JavaScript uses the term <code class="literal">Function</code>, while C# calls these <code class="literal">Methods</code>. They mean the same thing, and most C# coders understand the <a id="id1361" class="indexterm"></a>term <code class="literal">Function</code>.</p><p>JavaScript functions are declared with the <code class="literal">function</code> keyword before the function name. C# method <a id="id1362" class="indexterm"></a>declarations just use the return type and the method name. The return type is often <code class="literal">void</code> for common Unity events. JavaScript functions are <code class="literal">public</code> by default, and you can specify them as <code class="literal">private</code>, if required. C# methods are <code class="literal">private</code> by default, and you can specify that they should be <code class="literal">public</code>, if required.</p><p>In JavaScript, you can omit the parameter types and the return type from the declaration, but it's also possible to explicitly specify these (which is sometimes necessary if you run into type ambiguity or problems):</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+// a common Unity MonoBehaviour event handler: 
+function Start () { ...function body here... }  
+
+// a private function: 
+private function TakeDamage (amount) { 
+  energy -= amount; 
+}  
+
+// a public function with a return type. 
+// the parameter type is "Transform", and the return type is "int" 
+
+function GetHitPoint (hp : int) : int {
+   return (maxHp – hp); 
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+// a common Unity monoBehaviour event handler: 
+void Start() { ...function body here... }  
+
+// a private function: 
+void TakeDamage(int amount) {     
+  energy -= amount; 
+}  
+
+// a public function with a return type. 
+// the parameter type is "Transform", and the return type is "int" 
+
+public int GetHitPoint (int hp) {     
+  return (maxHp – hp); 
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec155"></a>References</h3></div></div></div><p>For more details<a id="id1363" class="indexterm"></a> and references, please check out the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://answers.unity3d.com/questions/12911/what-are-the-syntax-differences-in-c-and-javascript.html" target="_blank">http://answers.unity3d.com/questions/12911/what-are-the-syntax-differences-in-c-and-javascript.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://www.unifycommunity.com/wiki/index.php?title=Csharp_Differences_from_JS" target="_blank">http://www.unifycommunity.com/wiki/index.php?title=Csharp_Differences_from_JS</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Manual/CreatingAndUsingScripts.html" target="_blank">http://docs.unity3d.com/Documentation/Manual/CreatingAndUsingScripts.html</a>
+</p></li></ul></div></div></div>

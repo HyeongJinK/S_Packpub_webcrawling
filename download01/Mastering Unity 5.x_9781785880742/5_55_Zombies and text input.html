@@ -1,0 +1,66 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec55"></a>Zombies and text input</h2></div></div><hr /></div><p>In addition to the FSM for zombie behaviors, like Idle, Chase, Attack, and Death, zombies respond to player input. Specifically, the player may attack by typing letters on the keyboard, matching the complete word above the zombie's head:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_034.jpg" /></div><p>
+</p><p>Attacking zombie with typed text input</p><p>To achieve this, we must firstly display a word above the zombie's head, then keep track of the word being typed, and finally determine whether a match has been made. We already have some code to achieve much of this, but we should now link it specifically to the zombie character. Let's start by creating a text object that hovers above the zombie's head. Select the zombie NPC and expand its hierarchy in the <span class="strong"><strong>Hierarchy </strong></span>panel. Select the <span class="strong"><strong>Armature</strong></span> object and locate the <span class="strong"><strong>h</strong></span>
+<span class="strong"><strong>ead </strong></span>bone. This represents an empty game object used to move the character head during animation. Any object attached to the head bone therefore moves with the character head:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_035.jpg" /></div><p>
+</p><p>Selecting the character head bone</p><p>Now right-click the selected head bone, and from the context menu navigate to <span class="strong"><strong>UI</strong></span>
+<span class="emphasis"><em> | </em></span>
+<span class="strong"><strong>Canvas</strong></span>. This creates a new UI canvas object that is a child of the <span class="strong"><strong>head</strong></span> bone. Alternatively, you can navigate to <span class="strong"><strong>GameObject</strong></span>
+<span class="emphasis"><em> | </em></span>
+<span class="strong"><strong>UI</strong></span>
+<span class="emphasis"><em> | </em></span>
+<span class="strong"><strong>Canvas </strong></span>from the application menu, and then drag-and-drop the newly created <span class="strong"><strong>Canvas</strong></span> to the <span class="strong"><strong>head</strong></span> bone:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_036.jpg" /></div><p>
+</p><p>Creating a Canvas object as a child of the head bone</p><p>By default, a UI Canvas object is configured with a render mode of <span class="strong"><strong>Screen Space - Overlay</strong></span>. This means the interface will always appear on top of everything else in 2D screen space. For the head text, however, we'll need a <span class="strong"><strong>World Space</strong></span> UI element. That is, a UI object existing as a 2D object in a 3D world (with its own position, rotation, and scale), as opposed to a flat object aligned in screen space. After selecting a <span class="strong"><strong>World Space Render Mode</strong></span>, you'll need to select a camera for rendering the element. For our scene, choose the <span class="strong"><strong>Main Camera</strong></span>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_037.jpg" /></div><p>
+</p><p>Creating a Canvas object as a child of the head bone</p><p>Next, create a <span class="strong"><strong>Text</strong></span> object as a child of the <span class="strong"><strong>World Space</strong></span> canvas, simply by right-clicking the <span class="strong"><strong>Canvas</strong></span> object in the <span class="strong"><strong>Hierarchy</strong></span> panel and navigating to <span class="strong"><strong>UI</strong></span>
+<span class="strong"><strong>|</strong></span>
+<span class="strong"><strong>Text</strong></span> from the context menu. Assign the text a yellow color to attract attention, and set the <span class="strong"><strong>Font Size</strong></span> to <span class="strong"><strong>20</strong></span>. Ensure <span class="strong"><strong>Rich Text</strong></span> is enabled, to allow for font color changes and other formatting effects, to allow for text effects while the user is typing. In addition, change the text-alignment to both vertical and horizontal center:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_038.jpg" /></div><p>
+</p><p>Creating head text</p><p>The text object, though existing in world space above the zombie head, should always face the camera wherever it is located. This is to prevent the text from being shown at grazing angles, or from behind, where it becomes difficult to read. The player must always be able to see the text to enter the right combination of letters. To achieve this, we'll need to create a short but important script (<code class="literal">CameraFacing</code>), which should be attached to the text (and any other object) that must always face the camera. The following is the featured code:</p><pre class="programlisting">//------------------------------------ &#13;
+using UnityEngine; &#13;
+using System.Collections; &#13;
+//------------------------------------ &#13;
+public class CameraFacing : MonoBehaviour  &#13;
+{ &#13;
+    //------------------------------------ &#13;
+    //Reference to local transform &#13;
+    private Transform ThisTransform = null; &#13;
+    //------------------------------------ &#13;
+    // Use this for initialization &#13;
+    void Awake () &#13;
+    { &#13;
+        ThisTransform = GetComponent&lt;Transform&gt; (); &#13;
+    } &#13;
+    //------------------------------------ &#13;
+    // Update is called once per frame &#13;
+    void LateUpdate ()  &#13;
+    { &#13;
+        ThisTransform.LookAt (Camera.main.transform); &#13;
+    } &#13;
+    //------------------------------------ &#13;
+} &#13;
+</pre><p>The <code class="literal">CameraFacing</code> script should be attached specifically to the Canvas object:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_039.jpg" /></div><p>
+</p><p>Attaching the CameraFacing script to the zombie character</p><p>Now we must refine the <code class="literal">EnemyAI</code> script further to select a word from the word list, at random, for the zombie character when the level begins. In addition, once the word is selected from the list, we'll update the zombie text to show the selected word. This is achieved by the <code class="literal">UpdateText</code> function. Consider the following code, for both the <code class="literal">Start</code> function and the <code class="literal">UpdateText</code> function, included in the <code class="literal">EnemyAI</code> script:</p><pre class="programlisting"> &#13;
+    //------------------------------------ &#13;
+    void Start() &#13;
+    { &#13;
+        //Set active state &#13;
+        ActiveState = mActiveState; &#13;
+ &#13;
+        //Get random word &#13;
+        AssocWord = WordList.ThisInstance.GetRandomWord(); &#13;
+ &#13;
+        UpdateText(); &#13;
+    } &#13;
+    //------------------------------------  &#13;
+    public void UpdateText () &#13;
+    { &#13;
+        //Build UI String &#13;
+        NameTextComp.text = "&lt;color=red&gt;" + MatchedWord + "&lt;/color&gt;" + AssocWord.Substring(MatchedWord.Length,AssocWord.Length-MatchedWord.Length); &#13;
+    } &#13;
+    //------------------------------------  &#13;
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec59"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">Start</code> function uses the <code class="literal">WordList</code> class to select a word at random from the word list. This list is loaded from a text file. The selected word is stored in the string variable <code class="literal">AssocWord</code> (meaning Associated Word).</p></li><li style="list-style-type: disc"><p>Next, the <code class="literal">UpdateText</code> function simply displays the selected word, from the <code class="literal">WordList</code>, in the text object attached to the zombie head. This function should be called whenever the zombie text changes. The <code class="literal">MatchedWord</code> variable, as we'll see, determines how much of the associated word has been successfully typed by the player:</p></li></ul></div><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_05_040.jpg" /></div><p>
+</p><p>Stylizing the enemy text</p><p>The <code class="literal">UpdateText</code> function uses the <span class="strong"><strong>Rich Text</strong></span> functionality in Unity to stylize the displayed text. Specifically, all typed letters in the associated word are shown in red, while all untyped letters remain in yellow. This is achieved by inserting HTML style tags within the string itself. When <span class="strong"><strong>Rich Text</strong></span> is enabled for the text field, all HTML style tags are removed and replaced with corresponding stylizations. Unity supports the following tag types: <code class="literal">&lt;b&gt;</code> for bold, <code class="literal">&lt;i&gt;</code> for italic, <code class="literal">&lt;size&gt;</code> for font size, and <code class="literal">&lt;color&gt;</code> for font color. More information on <span class="strong"><strong>Rich Text</strong></span> can be found online at the Unity documentation at <a class="ulink" href="https://docs.unity3d.com/Manual/StyledText.html" target="_blank">https://docs.unity3d.com/Manual/StyledText.html</a>.</p></div></div>

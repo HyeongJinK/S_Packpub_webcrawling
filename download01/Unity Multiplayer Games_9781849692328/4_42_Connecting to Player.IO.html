@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec46"></a>Connecting to Player.IO</h2></div></div><hr /></div><p>The first thing<a id="id193" class="indexterm"></a> we will do is connect to Player.IO. Note that connecting to Player.IO does not involve actually connecting to our development server. Essentially, our client connects to the Player.IO cloud service, and then joins a room in the chosen cluster.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note19"></a>Note</h3><p>By default, Player.IO connects to the public cluster, but you can tell the client library to connect to the "development cluster" instead, which is your local server.</p></div><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+using PlayerIOClient;
+
+public class ConnectToPlayerIO : MonoBehaviour
+{
+  Client client;
+
+  void Start()
+  {
+    PlayerIO.UnityInit( this );
+
+    // We connect to Player.IO here. Parameters are:
+    // - The ID you copied earlier
+    // - The connection type to use. "public" specifies the "public" connection. It's possible to have different connection types with different permissions, but on a Free account we only have access to "public".
+    // - The ID you wish to give the player, usually screen name
+    // - The auth token. You can make a connection type require authentication, and if this connection is used you pass an auth value generated from the user ID. Don't worry about this for now, just pass null. For information see:
+    // http://playerio.com/documentation/connections
+    // - The "partner" to use. Third parties can sign up with Player.IO to be "partners", and can negotiate deals with developers via the PartnerPay service. Don't worry about this for now, just pass null. For more information see:
+    // http://playerio.com/documentation/partnerpay
+    PlayerIO.Connect( "YourGameIDHere", "public", "YourUserIDHere", null, null,,
+    delegate( Client c )
+    {
+      // connected successfully
+      client = c;
+      Debug.Log( "Connected" );
+    },
+    delegate( PlayerIOError error )
+    {
+      // did not connect successfully
+      Debug.Log( error.Message );
+    } );
+  }
+}</pre></div><p>Nearly all calls made to Player.IO, which are expected to return a result are done via delegates. Usually,<a id="id194" class="indexterm"></a> this involves a success and a failure delegate. In this case, on success we get a client, which can be used to make calls to Player.IO services.</p><p>Once we have a client, we can make calls to the Multiplayer service. Before we do that, we'll tell the client to connect to our local development server for testing.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+using PlayerIOClient;
+
+public class ConnectToPlayerIO : MonoBehaviour
+{
+  <span class="strong"><strong>public bool UseDevServer = true;</strong></span>
+
+  Client client;
+
+  void Start()
+  {
+    PlayerIO.UnityInit( this );
+
+    PlayerIO.Connect( "YourGameIDHere", "public", "YourUserIDHere", null, null,
+    delegate( Client c )
+    {
+      // connected successfully
+      client = c;
+      Debug.Log( "Connected" );
+
+      // <span class="strong"><strong>if we're using the dev server, connect to the local IP</strong></span>
+      // <span class="strong"><strong>Note that the development server uses port 8184, this cannot be changed.</strong></span>
+      <span class="strong"><strong>if( UseDevServer )</strong></span>
+      <span class="strong"><strong>{</strong></span>
+        <span class="strong"><strong>client.Multiplayer.DevelopmentServer = new ServerEndpoint( "127.0.0.1", 8184 );</strong></span>
+      <span class="strong"><strong>}</strong></span>
+    },
+    delegate( PlayerIOError error )
+    {
+      // did not connect successfully
+      Debug.Log( error.Message );
+    } );
+  }
+}</pre></div><p>Now, when we go to connect to a game, our client will use the local server if <code class="literal">UseDevServer</code> is enabled.</p></div>

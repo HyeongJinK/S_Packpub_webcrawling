@@ -1,0 +1,55 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec46"></a>Using Unity events for input</h2></div></div><hr /></div><p>The third software pattern we will <span>explore</span><a id="id325317294" class="indexterm"></a> using Unity Events. Events allow decoupling of the source of the event from the consumer of the event. Basically, events are a messaging system where one object triggers an event. Any other objects in the project can listen for the event. It can subscribe a specific function to be called when the event occurs.</p><p>You can set this up using drag-and-drop via the Unity Inspector. Or you can subscribe listener functions in scripts. In this example, we will minimize the scripting involved, and use the Unity editor to subscribe to events.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip51"></a>Note</h3><p>Events are a very rich topic and we can only introduce them here. For more information on using Unity Events, there are a lot of good references online, including the Unity tutorials <a class="ulink" href="https://unity3d.com/learn/tutorials/topics/scripting/events" target="_blank">https://unity3d.com/learn/tutorials/topics/scripting/events</a> and <a class="ulink" href="https://unity3d.com/learn/tutorials/topics/scripting/events-creating-simple-messaging-system" target="_blank">https://unity3d.com/learn/tutorials/topics/scripting/events-creating-simple-messaging-system</a>.</p></div><p>The following diagram illustrates the relationship between our input controller, which invokes events, and the balloon controller, which subscribes to the events:</p><div class="mediaobject"><img src="/graphics/9781788478809/graphics/7b692b8e-4c84-497c-ae30-640acf547408.jpg" /></div><p>It's important to note that, unlike normal events, these events do not need to be unsubscribed.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note52"></a>Note</h3><p>If you are a developer and familiar with .NET, it may help to know that Unity Events are delegates. As explained in the Unity Manual, "UnityEvents can be added to any MonoBehaviour and are executed from code like a standard .net delegate. When a UnityEvent is added to a MonoBehaviour it appears in the Inspector and persistent callbacks can be added." </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec79"></a>Invoking our input action events</h3></div></div></div><p>To implement our example <span>using</span><a id="id325576985" class="indexterm"></a> events, we'll first have the <code class="literal">MyInputController</code> trigger events when a button is pressed and another event when the button is released. </p><p>First, at the top of the script we need to declare that we are using the Unity event API. The we declare the two UnityEvents we will invoke. The <code class="literal">Update()</code> function only needs to invoke one event or the other as they happen. </p><p>The entire <code class="literal">MyInputController.cs</code> is as follows:</p><pre class="programlisting">using UnityEngine;
+using UnityEngine.Events;
+
+public class MyInputController : MonoBehaviour 
+{
+ public UnityEvent ButtonDownEvent;
+ public UnityEvent ButtonUpEvent;
+
+ void Update()
+ {
+   if (ButtonDown())
+     ButtonDownEvent.Invoke();
+   else if (ButtonUp())
+     ButtonUpEvent.Invoke();
+ }
+
+ private bool ButtonDown()
+ {
+   return Input.GetButtonDown("Fire1");
+ }
+
+ private bool ButtonUp()
+ {
+   return Input.GetButtonUp("Fire1");
+ }
+}</pre><p> That's it for this side of the equation.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec80"></a>Subscribing to input events</h3></div></div></div><p>Using events, <code class="literal">BalloonController</code> does not <span>need</span><a id="id325577436" class="indexterm"></a> to check for input actions each frame Update. All that conditional logic can be bypassed. Instead, we'll drag and drop the components to subscribe them to events. The <code class="literal">Update</code> function now only needs to grow the balloon if it's already instantiated.</p><p>The entire <code class="literal">BalloonController.cs</code> now looks like this. Aside from being less code, please note that we changed the <code class="literal">NewBalloon</code> and <code class="literal">ReleaseBalloon</code> functions from <code class="literal">private</code> to <code class="literal">public</code> so we can reference them in the Inspector:</p><pre class="programlisting">public class BalloonController : MonoBehaviour
+{
+  public GameObject balloonPrefab;
+  public float floatStrength = 20f;
+  public float growRate = 1.5f;
+
+  private GameObject balloon;
+
+ void Update()
+ {
+   if (balloon != null)
+     GrowBalloon();
+ }
+
+ public void NewBalloon()
+ {
+   balloon = Instantiate(balloonPrefab);
+ }
+
+ public void ReleaseBalloon()
+ {
+   balloon.GetComponent&lt;Rigidbody&gt;().AddForce(Vector3.up * floatStrength);
+   balloon = null;
+ }
+
+ private void GrowBalloon()
+ {
+   balloon.transform.localScale += balloon.transform.localScale * growRate * Time.deltaTime;
+ }
+}</pre><p>To wire up the input events to our balloon controller:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Select <strong class="userinput"><code>MeMyselfEye</code></strong> and look at its <strong class="userinput"><code>Inspector</code></strong> window</li><li>You will see the <strong class="userinput"><code>My Input Controller</code></strong> component now has two event lists, as we declared in its script</li><li>On the <strong class="userinput"><code>Button Down Event</code></strong> list, press the <strong class="userinput"><code>+</code></strong> in the lower-right to create a new item. </li><li>Drag the <strong class="userinput"><code>BalloonController</code></strong> from <strong class="userinput"><code>Hierarchy</code></strong> into the empty Object slot</li><li>In the function select list, choose <span class="strong"><strong><strong class="userinput"><code>BalloonController</code></strong></strong></span> | <span class="strong"><strong><strong class="userinput"><code>NewBalloon</code></strong></strong></span></li></ol></div><p>Repeat the process for the Button Up Event as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>On the <strong class="userinput"><code>Button Up Event</code></strong> list, press the <strong class="userinput"><code>+</code></strong> in the lower-right to create a new item</li><li>Drag the <strong class="userinput"><code>BalloonController</code></strong> from <strong class="userinput"><code>Hierarchy</code></strong> into the empty Object slot</li><li>In the function select list, choose <span class="strong"><strong><strong class="userinput"><code>BalloonController</code></strong></strong></span> | <span class="strong"><strong><strong class="userinput"><code>ReleaseBalloon</code></strong></strong></span></li></ol></div><p>The component should now look like this:</p><div class="mediaobject"><img src="/graphics/9781788478809/graphics/1ed7f4e2-ae87-41a2-a2ab-676e3e6b3365.png" /></div><p>Now when you press <strong class="userinput"><code>Play</code></strong> and press a button, the input controller invokes an event. The <span class="emphasis"><em>NewBalloon</em></span> function is listening for these events and gets called. Likewise for the Button Up event.</p><p>This wiring can also be done entirely with scripting. We will not go into it here. As a developer, we more often are "users" of event systems set up by others. As your experience grows, you may find yourself implementing your own custom events.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note53"></a>Note</h3><p>For another detailed example of using Unity Events for user interface, consider <span class="emphasis"><em>Augmented Reality for Developers</em></span>, a Unity projects book from Packt Publishing co-authored by the author of this book, Jonathan Linowes, and Krystian Babilinski.</p></div></div></div>

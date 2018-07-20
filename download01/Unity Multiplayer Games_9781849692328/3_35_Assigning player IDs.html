@@ -1,0 +1,84 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec40"></a>Assigning player IDs</h2></div></div><hr /></div><p>Another <a id="id140" class="indexterm"></a>feature required by nearly all multiplayer <a id="id141" class="indexterm"></a>games, is the ability to track players by player ID. We need some kind of lightweight data, which uniquely identifies a specific player, such as a number (for instance, an object might store this number as a reference to the player who owns it). So, let's modify our server to assign player IDs to peers as they connect. It will also notify the client of its player ID upon connecting.</p><p>We'll use a long integer for the purpose.</p><div class="informalexample"><pre class="programlisting">A static long variable is initialized with the smallest value possible (long.MinValue), the last assigned player ID. When a player joins, we copy the static variable as their ID, and then increment the static variable.using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+using System.Collections.Generic;
+
+class PhotonAckPeer : PeerBase
+{
+  // note that we use long.MinValue rather than zero. Signed integer values have a negative minimum and positive maximum. Starting at zero divides the possible range of IDs in half, but starting at the lowest possible value gives us the largest possible range. 
+  <span class="strong"><strong>private static long lastAssignedPlayerID = long.MinValue;</strong></span>
+  <span class="strong"><strong>private static object lockPlayerID = new object();</strong></span>
+
+  <span class="strong"><strong>public long PlayerID;</strong></span>
+
+  public PhotonAckPeer( IRpcProtocol protocol, IPhotonPeer unmanagedPeer )
+    : base( protocol, unmanagedPeer )
+  {
+    <span class="strong"><strong>lock( lockPlayerID )</strong></span>
+    <span class="strong"><strong>{</strong></span>
+      <span class="strong"><strong>this.PlayerID = lastAssignedPlayerID;</strong></span>
+      <span class="strong"><strong>lastAssignedPlayerID++;</strong></span>
+    <span class="strong"><strong>}</strong></span>
+    PhotonAckGame.Instance.PeerConnected( this );
+  }
+
+  protected override void OnDisconnect( DisconnectReason reasonCode, string reasonDetail )
+  {
+    PhotonAckGame.Instance.PeerDisconnected( this );
+  }
+
+  protected override void OnOperationRequest( OperationRequest operationRequest, SendParameters sendParameters )
+  {
+    PhotonAckGame.Instance.OnOperationRequest( this, operationRequest, sendParameters );
+  }
+}</pre></div><p>Now, <a id="id142" class="indexterm"></a>our <a id="id143" class="indexterm"></a>peer has a player ID but the client doesn't know what their player ID is. Let's create an event type <code class="literal">enum</code> variable instance (just as we did for the response type <code class="literal">enum</code>), since we'll send an event to the peer containing the peer's assigned player ID.</p><div class="informalexample"><pre class="programlisting">public enum PhotonAckEventType : byte
+{
+  AssignPlayerID = 0
+}</pre></div><p>And in our peer constructor, send an event with the <code class="literal">AssignPlayerID</code> event type:</p><div class="informalexample"><pre class="programlisting">using Photon.SocketServer;
+using PhotonHostRuntimeInterfaces;
+using System.Collections.Generic;
+
+class PhotonAckPeer : PeerBase
+{
+  private static long lastAssignedPlayerID = long.MinValue;
+  private static object lockPlayerID = new object();
+
+  public ulong PlayerID;
+
+  public PhotonAckPeer( IRpcProtocol protocol, IPhotonPeer unmanagedPeer )
+    : base( protocol, unmanagedPeer )
+  {
+    lock( lockPlayerID )
+    {
+      this.PlayerID = lastAssignedPlayerID;
+      lastAssignedPlayerID++;
+    }
+
+    PhotonAckGame.Instance.PeerConnected( this );
+
+    <span class="strong"><strong>EventData evt = new EventData( </strong></span>
+<span class="strong"><strong>(byte)PhotonAckEventType.AssignPlayerID );</strong></span>
+    <span class="strong"><strong>evt.Parameters = new Dictionary&lt;byte, object&gt;() { { 0,</strong></span> <span class="strong"><strong>this.PlayerID } };</strong></span>
+    <span class="strong"><strong>this.SendEvent( evt, new SendParameters() );</strong></span>
+  }
+
+  protected override void OnDisconnect( DisconnectReason reasonCode, string reasonDetail )
+  {
+    PhotonAckGame.Instance.PeerDisconnected( this );
+  }
+
+  protected override void OnOperationRequest( OperationRequest operationRequest, SendParameters sendParameters )
+  {
+    PhotonAckGame.Instance.OnOperationRequest( this, operationRequest, sendParameters );
+  }
+}</pre></div><p>Now,<a id="id144" class="indexterm"></a> copy the <code class="literal">PhotonAckEventTypes</code> file to our Unity project,<a id="id145" class="indexterm"></a> and we'll modify our Unity client to receive and store player ID from the <code class="literal">OnEvent</code> function:</p><div class="informalexample"><pre class="programlisting">public void OnEvent( EventData eventData )
+{
+  //server raised an event
+  Debug.Log( "Received event - type: " + eventData.Code.ToString() );
+
+  <span class="strong"><strong>if( (PhotonAckEventType)eventData.Code == PhotonAckEventType.AssignPlayerID )</strong></span>
+  <span class="strong"><strong>{</strong></span>
+    <span class="strong"><strong>long playerID = (long)eventData.Parameters[ 0 ];</strong></span>
+    <span class="strong"><strong>Debug.Log( "Received player ID: " + playerID );</strong></span>
+    <span class="strong"><strong>localPlayerID = playerID;</strong></span>
+  <span class="strong"><strong>}</strong></span>
+}</pre></div><p>Now, upon connecting you will see that it has received the player ID in the console.</p><p>We're now going to use these concepts to build a star collector game in Photon.</p></div>

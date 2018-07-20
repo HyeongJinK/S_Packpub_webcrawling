@@ -1,0 +1,9 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec325"></a>Time for action – the final four</h2></div></div><hr /></div><p>That leaves us with four more functions to write: <code class="literal">Win()</code>, <code class="literal">Block()</code>, <code class="literal">CreateTrap()</code>, and <code class="literal">PreventTrap()</code>. Note that for the remainder of the chapter, we'll be using the word "row" to refer both to a horizontal line, and to three squares in a line regardless of their orientation, as in "in-a-row".</p><p>A very interesting thing happens if we carefully work out what needs to happen in each of these functions. Take the <code class="literal">Win</code> and <code class="literal">Block</code> functions first.</p><p>
+<span class="emphasis"><em>To determine whether we can </em></span>
+<span class="strong"><strong>win</strong></span>
+<span class="emphasis"><em>, we need to look at three spaces in a row. If two of the spaces in a row contain our piece, and the third is empty, we can win the game.</em></span>
+</p><p>
+<span class="emphasis"><em>To determine whether we can </em></span>
+<span class="strong"><strong>block</strong></span>
+<span class="emphasis"><em>, we need to look at three spaces in a row. If two of the spaces contain the opponent's piece, and the third is empty, we can block.</em></span>
+</p></div>

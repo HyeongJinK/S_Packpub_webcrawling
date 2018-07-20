@@ -1,0 +1,38 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec43"></a>Audio</h2></div></div><hr /></div><a id="id962" class="indexterm"></a><p>There are two things that we need to keep in mind when dealing with audio in Unity—<span class="strong"><strong>Audio</strong></span> <span class="strong"><strong>Listener</strong></span> and <span class="strong"><strong>Audio</strong></span> <span class="strong"><strong>Source</strong></span>. <a id="id963" class="indexterm"></a>
+<span class="strong"><strong>Audio</strong></span> <span class="strong"><strong>Source</strong></span> is a component that uses the transform information of an object to emit sound from a location. <span class="strong"><strong>Audio</strong></span> <span class="strong"><strong>Listener</strong></span><a id="id964" class="indexterm"></a> picks up all the sounds and serves as a microphone. Listeners are usually attached to cameras; however, sometimes attaching them to the character can give better results. Each scene can have only one listener and any number of sources. It is important to remember that Unity will issue an error if it finds more than one listener in the scene.</p><a id="id965" class="indexterm"></a><p><span class="strong"><strong>Audio</strong></span> <span class="strong"><strong>Source</strong></span> has a few interesting parameters that we need to look at. The first of them is <a id="id966" class="indexterm"></a>
+<span class="strong"><strong>Audio</strong></span> <span class="strong"><strong>Clip</strong></span>; this specifies a sound track that is to be played by a selected <span class="strong"><strong>Audio</strong></span> <span class="strong"><strong>Source</strong></span>. The other two parameters are <span class="strong"><strong>Play</strong></span> <span class="strong"><strong>On</strong></span> <span class="strong"><strong>Awake</strong></span> and <span class="strong"><strong>Loop</strong></span>. If we are not creating ambient sounds, it is recommended to uncheck them; it would be easier to control them through scripts.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_06_06.jpg" /></div><p>The first thing that we need to do is to attach sound to a controllable character. Perform the following steps<a id="id967" class="indexterm"></a>:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open <span class="strong"><strong>CH_Controller</strong></span> and declare three <code class="literal">public</code> variables of a <code class="literal">AudioClip</code> type.</p></li><li><p>Inside the <code class="literal">Movement</code> function where we apply movement to the player, we need to check if any audio is playing and the character is not moving.</p></li><li><p>At the beginning of the <code class="literal">AltShooting</code> function, we need to start playing the shooting sound:</p><div class="informalexample"><pre class="programlisting">public var ShootingAlt : AudioClip;
+public var ShootingMain : AudioClip;
+public var FootstepSound : AudioClip;</pre></div></li><li><p>The following code snippet goes to the <code class="literal">Movement</code> function:</p><div class="informalexample"><pre class="programlisting">...
+if (isGrounded){
+this.transform.Translate((MoveDirection.normalized * Speed) * Time.deltaTime);
+if(audio.isPlaying == false &amp;&amp; MoveDirection != Vector3.zero){
+audio.clip = FootstepSound;
+audio.Play();
+}
+}
+...</pre></div></li><li><p>The following code snippet goes to the <code class="literal">AltShooting</code> function:</p><div class="informalexample"><pre class="programlisting">...
+if (audio.clip == FootstepSound || audio.isPlaying == false || (audio.isPlaying == false &amp;&amp; audio.clip == ShootingAlt)){
+audio.clip = ShootingAlt;
+audio.Play();
+}
+...</pre></div></li></ol></div><p>We are assigning an audio clip that will be played from the character's audio source to play a footsteps sound.</p><p>From the character, we will switch to the environmental object, like the fan that is located in the second level. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new script called <code class="literal">fan_rotation</code>.</p></li><li><p>We need to make this fan spin around constantly.</p></li><li><p>In the <code class="literal">Awake</code> function from the <code class="literal">fan_rotation</code> script, we need to start playing the fan sound and make it loop, as follows:</p><div class="informalexample"><pre class="programlisting">public var FanSound : AudioClip;
+function Awake(){
+    audio.clip = FanSound;
+    audio.loop = true;
+    audio.Play();
+}
+function Update () {
+transform.Rotate(Vector3.right * Time.deltaTime * 100.0);
+}</pre></div></li><li><p>Create a new script called <code class="literal">deathTrigger</code>; it will be used as a killing volume in level 3, when the player falls in a river.</p></li><li><p>In the <code class="literal">Awake</code> function, we will assign a clip to the audio source.</p></li><li><p>We need <code class="literal">OnTriggerEnter</code> for decreasing the player's health, destroying the player's object, playing the audio sound, loading <code class="literal">EndGameLevel</code>, and changing the level state to <code class="literal">Dead</code>.</p></li><li><a id="id968" class="indexterm"></a><p>The following code snippet goes into the <code class="literal">deathTrigger</code> script:</p><div class="informalexample"><pre class="programlisting">public var WaterSplash : AudioClip;
+function Awake(){
+audio.clip = WaterSplash;
+}
+function OnTriggerEnter(other : Collider){
+if(other.gameObject.tag == "Player"){
+other.gameObject.GetComponent("CH_PlayerStats").AddHealth(-100);
+WorldManager.SetLevelState("Dead");
+audio.Play();
+Destroy(other.gameObject);
+Application.LoadLevel(4);
+}
+}</pre></div></li></ol></div></div>

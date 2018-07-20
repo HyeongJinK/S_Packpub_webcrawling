@@ -1,0 +1,94 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec36"></a>Avoiding obstacles</h2></div></div><hr /></div><p>In this section, we'll set up a scene as shown <a id="id279" class="indexterm"></a>in the following screenshot, and make our AI entity avoid the obstacles while trying to reach the target point. The algorithm presented here using the <code class="literal">raycasting</code> method is very simple, so it can only avoid the obstacles blocking the path in front of it. The following screenshot will show us what our scene will look like:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_06_05.jpg" /><div class="caption"><p>A sample scene set up</p></div></div><p>To create this, we make a few cube <a id="id280" class="indexterm"></a>entities and group them under an empty game object called <span class="strong"><strong>Obstacles</strong></span>. We also create another cube object called <code class="literal">Agent</code> and g<a id="id281" class="indexterm"></a>ive it our obstacle avoidance script. We then create a ground plane object to assist in finding a target position.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_06_07.jpg" /><div class="caption"><p>Here is how the Hierarchy is organized</p></div></div><p>It is worth noting that this <code class="literal">Agent</code> object is not a pathfinder. As such, if we set too many walls up, our <code class="literal">Agent</code> might have a hard time <a id="id282" class="indexterm"></a>finding the target. Try a few wall setups and see how our <code class="literal">Agent</code> performs.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec43"></a>Adding a custom layer</h3></div></div></div><p>We will now add a custom layer to our <a id="id283" class="indexterm"></a>object. To add a new layer, we navigate to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Tags</strong></span>. Assign the name <code class="literal">Obstacles</code> to <span class="strong"><strong>User Layer 8</strong></span>. Now, we go back to our cube entity and set its <code class="literal">layer</code> property to <code class="literal">Obstacles</code>.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_06_09.jpg" /><div class="caption"><p>Creating a new layer</p></div></div><p>This is our new layer, which is added to Unity3D. Later, when we do the ray casting to detect obstacles, we'll only check for <a id="id284" class="indexterm"></a>those entities using this particular layer. This way, we can ignore some objects that are not obstacles that are being hit by a ray, such as bushes or vegetation.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_06_08.jpg" /><div class="caption"><p>Assigning our new layer</p></div></div><p>For larger projects, our game objects probably already have a layer assigned to them. As such, instead of changing the object's layer to <code class="literal">Obstacles</code>, we would instead make a list using bitmaps of layers for our cube entity to <a id="id285" class="indexterm"></a>use when detecting obstacles. We will talk more about bitmaps in the next section.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note04"></a>Note</h3><p>Layers are most commonly <a id="id286" class="indexterm"></a>used by cameras to render a part of the scene and by lights to illuminate only some parts of the scene. But, they can also be used by ray casting to selectively ignore colliders or to create collisions. You can learn more about this at <a class="ulink" href="http://docs.unity3d.com/Documentation/Components/Layers.html" target="_blank">http://docs.unity3d.com/Documentation/Components/Layers.html</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec44"></a>Obstacle avoidance</h3></div></div></div><p>Now it is time to make the script <a id="id287" class="indexterm"></a>that will help our cube entity avoid those walls.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_06_06.jpg" /><div class="caption"><p>Properties of our Vehicle Avoidance script</p></div></div><p>As usual, we first initialize our entity script with the default properties and draw a GUI text in our <code class="literal">OnGUI</code> method. <a id="id288" class="indexterm"></a>Let's take a look at the following code in the <code class="literal">VehicleAvoidance.cs</code> file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class VehicleAvoidance : MonoBehaviour {
+  public float speed = 20.0f;
+  public float mass = 5.0f;
+  public float force = 50.0f;
+  public float minimumDistToAvoid = 20.0f;
+
+  //Actual speed of the vehicle
+  private float curSpeed;
+  private Vector3 targetPoint;
+
+  // Use this for initialization
+  void Start () {
+    mass = 5.0f;
+    targetPoint = Vector3.zero;
+  }
+
+  void OnGUI() {
+    GUILayout.Label("Click anywhere to move the vehicle.");
+  }</pre></div><p>Then in our <code class="literal">Update</code> <a id="id289" class="indexterm"></a>method, we update <a id="id290" class="indexterm"></a>the agent entity's position and rotation based on the direction vector returned by the <code class="literal">AvoidObstacles</code> <a id="id291" class="indexterm"></a>method:</p><div class="informalexample"><pre class="programlisting">  //Update is called once per frame
+  void Update () {
+    //Vehicle move by mouse click
+    RaycastHit hit;
+    var ray = Camera.main.ScreenPointToRay 
+        (Input.mousePosition);
+
+    if (Input.GetMouseButtonDown(0) &amp;&amp; 
+      Physics.Raycast(ray, out hit, 100.0f)) {
+      targetPoint = hit.point;
+    }
+
+    //Directional vector to the target position
+    Vector3 dir = (targetPoint - transform.position);
+    dir.Normalize();
+
+    //Apply obstacle avoidance
+    AvoidObstacles(ref dir);
+
+    //...
+
+  }</pre></div><p>The first thing we do in our <code class="literal">Update</code> <a id="id292" class="indexterm"></a>method is retrieve the mouse click position so we can move our AI entity. We do this by shooting a ray from the camera in the direction it's looking. Then, we take the point where the ray hit the ground plane as our target position. Once we get the target position vector, we can calculate the direction vector by subtracting the current position vector from the target position vector. Then we call the <code class="literal">AvoidObstacles</code> method <a id="id293" class="indexterm"></a>
+<a id="id294" class="indexterm"></a>and pass in this direction vector:</p><div class="informalexample"><pre class="programlisting">  //Calculate the new directional vector to avoid
+    //the obstacle
+  public void AvoidObstacles(ref Vector3 dir) {
+    RaycastHit hit;
+
+    //Only detect layer 8 (Obstacles)
+    int layerMask = 1&lt;&lt;8;
+
+    //Check that the vehicle hit with the obstacles within
+      //it's minimum distance to avoid
+    if (Physics.Raycast(transform.position,
+      transform.forward, out hit,
+      minimumDistToAvoid, layerMask)) {
+    //Get the normal of the hit point to calculate the
+      //new direction
+      Vector3 hitNormal = hit.normal;
+      hitNormal.y = 0.0f; //Don't want to move in Y-Space
+
+      //Get the new directional vector by adding force to 
+      //vehicle's current forward vector
+     dir = transform.forward + hitNormal * force;
+    }
+  }
+}</pre></div><p>The <code class="literal">AvoidObstacles</code> method <a id="id295" class="indexterm"></a>is also quite simple. The only trick to note here is that raycasting interacts selectively with the <code class="literal">Obstacles</code> layer that we specified at <span class="strong"><strong>User Layer 8</strong></span> in our Unity3D <span class="strong"><strong>Tag Manager</strong></span>. The <a id="id296" class="indexterm"></a>
+<code class="literal">Raycast</code> method accepts a layer mask parameter to determine which layers to ignore and which to consider during raycasting. Now, if you look at how many layers you can specify in <span class="strong"><strong>Tag Manager</strong></span>, you'll find a total of 32 layers. Therefore, Unity3D uses a <a id="id297" class="indexterm"></a>32-bit integer number to represent this layer mask parameter. For example, the following would represent a zero in 32 bits:</p><p>0000 0000 0000 0000 0000 0000 0000 0000</p><p>By default Unity3D uses the first eight layers as built-in layers. So, when you raycast without using a layer mask parameter, it'll raycast against all those eight layers, which could be represented like the following in a bitmask:</p><p>0000 0000 0000 0000 0000 0000 1111 1111</p><p>Our <code class="literal">Obstacles</code> layer was set at layer 8 (9th index), and we only want to raycast against this layer. So, we'd like to set up our bitmask in the following way:</p><p>0000 0000 0000 0000 0000 0001 0000 0000</p><p>The easiest way to set up this bitmask is by using the bit shift operators. We only need to place the 'on' bit or 1, at the 9th index, which means we can just move that bit <code class="literal">8</code> places to the left. So, we use the left shift operator to move the bit <code class="literal">8</code> places to the left, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">int layerMask = 1&lt;&lt;8;</pre></div><p>If we wanted to use multiple layer masks, say layer <code class="literal">8</code> and layer <code class="literal">9</code>, an easy way would be to use the bitwise OR operator like this:</p><div class="informalexample"><pre class="programlisting">int layerMask = (1&lt;&lt;8) | (1&lt;&lt;9);</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip04"></a>Tip</h3><p>You can also find a good discussion on using layermasks on Unity3D online. The question and answer site can be found at <a class="ulink" href="http://answers.unity3d.com/questions/8715/how-do-i-use-layermasks.html" target="_blank">http://answers.unity3d.com/questions/8715/how-do-i-use-layermasks.html</a>.</p></div><p>Once we have the layer mask, we call the <a id="id298" class="indexterm"></a>
+<code class="literal">Physics.Raycast</code> method from the current entity's position and in the forward direction. For the length of the ray, we use our <a id="id299" class="indexterm"></a>
+<code class="literal">minimumDistToAvoid</code> variable so that we'll only avoid those obstacles that are being hit by the ray within this distance.</p><p>Then we take the normal vector of the hit <a id="id300" class="indexterm"></a>ray, multiply it with the force vector, and add it to the current direction of our entity to get the new resultant direction vector, which we return from this method.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_06_10.jpg" /><div class="caption"><p>How our cube entity avoids a wall</p></div></div><p>Then in our <code class="literal">Update</code> <a id="id301" class="indexterm"></a>method, we use this new direction after avoiding obstacles to rotate the AI entity and update the position according to the speed value.</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>  void Update () {</strong></span>
+
+<span class="strong"><strong>    //...</strong></span>
+
+<span class="strong"><strong>    //Don't move the vehicle when the target point</strong></span>
+<span class="strong"><strong>      //is reached</strong></span>
+<span class="strong"><strong>    if (Vector3.Distance(targetPoint, </strong></span>
+<span class="strong"><strong>      transform.position) &lt; 3.0f) return;</strong></span>
+
+<span class="strong"><strong>      //Assign the speed with delta time</strong></span>
+<span class="strong"><strong>      curSpeed = speed * Time.deltaTime;</strong></span>
+
+<span class="strong"><strong>      //Rotate the vehicle to its target</strong></span>
+<span class="strong"><strong>        //directional vector</strong></span>
+<span class="strong"><strong>    var rot = Quaternion.LookRotation(dir);</strong></span>
+<span class="strong"><strong>    transform.rotation = Quaternion.Slerp</strong></span>
+<span class="strong"><strong>      (transform.rotation, rot, 5.0f * </strong></span>
+<span class="strong"><strong>      Time.deltaTime);</strong></span>
+
+<span class="strong"><strong>      //Move the vehicle towards</strong></span>
+<span class="strong"><strong>        transform.position += transform.forward * </strong></span>
+<span class="strong"><strong>          curSpeed;</strong></span>
+<span class="strong"><strong>  }</strong></span>
+</pre></div></div></div>

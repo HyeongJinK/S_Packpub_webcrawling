@@ -1,0 +1,409 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec46"></a>Basic Terrarium – Plants and Herbivores</h2></div></div><hr /></div><p>The bulk of our work in setting up our terrarium is <span>going</span><a id="id324673274" class="indexterm"></a> to be building the plants, agents that eat plants (herbivores), and agents that eat agents that eat plants (carnivores). We will start <span>with</span><a id="id324673506" class="indexterm"></a> our most basic form of terrarium inhabitant, the plant. Terrarium plants are not unlike their natural cousins; they <span>continually</span><a id="id324673515" class="indexterm"></a> increase in energy by just existing. When they reach a certain size, they also begin discharging seeds that produce more plants and so on. Open up Unity and follow along to create our first Terrarium inhabitant, the plant:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the Terrarium scene where we last left it and from the menu select <strong class="userinput"><code>GameObject</code></strong> | <strong class="userinput"><code>Create Empty</code></strong>. Rename the new object <code class="literal">Plant</code>.</li><li>Drag the <code class="literal">Plant</code> object onto the <code class="literal">Environment -&gt; Plane</code> to attach it as a child. Make sure to reset the <code class="literal">Transform Position</code> to <code class="literal">(0,0,0)</code>.</li><li>Open the <code class="literal">Assets/Free Low Poly Toon Nature/Prefabs</code> folder and drag the <code class="literal">tree_F08</code> prefab onto the <span class="strong"><strong>Plant</strong></span> object in the scene. Make sure the child prefab's <strong class="userinput"><code>Transform Position</code></strong> is <code class="literal">0,0,0</code>.</li><li>Create a new <span class="strong"><strong>C#</strong></span> script in the <code class="literal">Assets/Terrarium/Scripts</code> folder and call it <span class="strong"><strong>Plant</strong></span>. Open the script in your editor of choice and replace it with:</li></ol></div><pre class="programlisting">      using UnityEngine;
+      public class Plant : MonoBehaviour {
+        [Header("Plant Points (30 Max)")] 
+        public float MaxEnergy;
+        public float MatureSize;
+        public float GrowthRate;
+        public float SeedSpreadRadius;
+
+        [Header("Monitoring")]
+        public float Energy;
+        public float Size; 
+        public float Age;
+
+        [Header("Seedling")]
+        public GameObject SeedlingSpawn;
+
+        [Header("Species Parameters")]
+        public float EnergyGrowthRate = .01f;
+        public float AgeRate = .001f;
+        private Transform Environment;
+
+        private void Start()
+        {
+          Size = 1;
+          Energy = 1;
+          Age = 0;
+          Environment = transform.parent;
+          TransformSize();
+        }
+
+        void Update ()
+        { 
+          if (CanGrow) Grow();
+          if (CanReproduce) Reproduce();
+          if (Dead) Destroy(this);
+          Age += AgeRate;
+          Energy += EnergyGrowthRate;     
+        }
+
+        void TransformSize()
+        {
+          transform.localScale = Vector3.one * Size;
+        }
+
+        bool CanGrow
+        {
+          get
+          {
+            return Energy &gt; ((MaxEnergy / 2) + 1);
+          }
+       }
+
+       bool CanReproduce
+       {
+         get
+         {
+           if (Size &gt;= MatureSize &amp;&amp; CanGrow) return true;
+           else return false;
+         }
+       }
+
+       bool Dead
+       {
+         get
+         {
+           return Energy &lt; 0 || Age &gt; MatureSize;
+         }
+       }
+
+       void Grow()
+       {
+         if (Size &gt; MatureSize) return;
+         Energy = Energy / 2;
+         Size += GrowthRate * Random.value; 
+         TransformSize();
+       }
+
+        void Reproduce()
+        {
+          var vec = Random.insideUnitCircle * SeedSpreadRadius + new 
+          Vector2(transform.position.x, transform.position.z);
+          Instantiate(SeedlingSpawn, new Vector3(vec.x,0,vec.y), 
+          Quaternion.identity, 
+          Environment);
+          Energy = Energy / 2;
+         }
+      }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>For the most part, the preceding code should be straightforward enough to follow; we will take a closer look at the <span class="strong"><strong>Reproduce</strong></span> method later. Those of you new to Unity should remember that <span class="strong"><strong>Start</strong></span> is called when the object starts up and <span class="strong"><strong>Update</strong></span> is called every rendering frame. If you take a look at the <span class="strong"><strong>Update</strong></span> method in more detail, you will see the whole life cycle of the plant. The sections we have for the various editor fields want to expose and use the <span class="strong"><strong>Header</strong></span> attribute. Save the script when you are done editing it and return to Unity, making sure no compiler errors appear.</li><li>Attach the <span class="strong"><strong>Plant</strong></span> script to the <span class="strong"><strong>Plant</strong></span> object. You can do this by dragging the script or using <span class="strong"><strong>Add Component</strong></span>; it's your choice. While you are at it, also add a <span class="strong"><strong>Rigid Body</strong></span> and <span class="strong"><strong>Capsule Collider</strong></span> components as well. Edit the properties of the various script <span>components</span><a id="id324673307" class="indexterm"></a> so that they match the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/d332c399-3a93-4fce-a265-48c01a82c975.png" /></div><p>Setting the Plant component properties</p><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Open your code editor to the <span class="strong"><strong>Plant</strong></span> script and <span>scroll</span><a id="id324673339" class="indexterm"></a> down to the <span class="strong"><strong>Reproduce</strong></span> method. When this method is called, the plant spawns new seedlings with the call to <span class="strong"><strong>Instantiate</strong></span>. <span class="strong"><strong>Instantiate</strong></span> creates new game objects in the scene based on a template object called a <span class="strong"><strong>prefab</strong></span> in Unity. Prefabs are a cornerstone in Unity development and create reusable objects for all forms of development activities.</li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip32"></a>Note</h3><p>The next part is tricky and may require your full attention. If you get frustrated, take a look at this example in the book's source code.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Select and drag the <span class="strong"><strong>Plant</strong></span> object from the <span class="strong"><strong>Hierarchy</strong></span> window to the <span class="strong"><strong>Assets/Terrarium/Prefabs</strong></span> folder in the <span class="strong"><strong>Project</strong></span> window to create a new <span class="strong"><strong>Plant</strong></span> prefab.</li><li>Drag the new <span class="strong"><strong>Plant</strong></span> prefab and drop it onto the <span class="strong"><strong>Plant - Seedling Spawn</strong></span> game object field in the <span class="strong"><strong>Inspector</strong></span> window. This creates a recursive relationship with the <span class="strong"><strong>Plant</strong></span> and itself or spawn, meaning that the <span class="strong"><strong>Plant</strong></span> will always spawn a copy of itself.</li><li>Press the <span class="strong"><strong>Apply</strong></span> button in the <span class="strong"><strong>Prefab</strong></span> section at the top of the window to update the <span class="strong"><strong>Plant</strong></span> prefab with the recursive relationship. With a single plant in our terrarium, we can now go ahead and run an example.</li><li>Press the Play button and watch how the plant becomes multiple plants in time and then gradually takes over the terrarium, as shown in the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/f86ebc7c-e315-4c61-b631-7e91e9e52ad5.png" /></div><p>Plants overgrowing in the terrarium</p><p>At this point, you can use the single plant we just made or go <span>back</span><a id="id324673833" class="indexterm"></a> and create other plant types using the poly toon nature prefabs we downloaded. If you do, make sure that you vary the points you give to each of the new species of plants.</p><p>Now that we have established that we have a plant problem, which in our case is a good thing, since our first creature agent, the herbivore, will need to consume plants in order to survive, we will tackle building the herbivore in the next section.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec39"></a>Herbivores to the rescue</h3></div></div></div><p>The herbivore will be our most basic agent that will learn to <span>live</span><a id="id324673850" class="indexterm"></a> in the terrarium. A herbivore creature will thrive by consuming plants, which will give them energy to grow and reproduce. We can follow several of the same basic patterns we used building the Plant script when creating our Herbivore agent script. Open up Unity and follow this exercise to code the Herbivore agent script:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create a new script called <code class="literal">CreatureAgent</code> in the <code class="literal">Assets/Terrarium/Scripts</code> folder and open it in your editor of choice. Fortunately, we won't need to create a different script for each different type of agent if we generalize things into a single <code class="literal">CreatureAgent</code> script.</li><li>We will cover each section of this script as we build it. Enter the following lines of code:</li></ol></div><pre class="programlisting">      using UnityEngine;
+      public enum CreatureType
+      {
+        Herbivore,
+        Carnivore
+      }
+      public class CreatureAgent : <span class="strong"><strong>Agent</strong></span>
+      {
+       [Header("Creature Type")]
+       public CreatureType CreatureType;
+       [Header("Creature Points (100 Max)")]
+       public float MaxEnergy;
+       public float MatureSize;
+       public float GrowthRate;
+       public float EatingSpeed;
+       public float MaxSpeed;
+       public float AttackDamage;
+       public float DefendDamage;
+       public float Eyesight;
+
+       [Header("Monitoring")]
+       public float Energy;
+       public float Size;
+       public float Age;
+       public string currentAction;
+
+       [Header("Child")]
+       public GameObject ChildSpawn;
+
+       [Header("Species Parameters")] 
+       public float AgeRate = .001f;
+       private GameObject Environment;
+       private Rigidbody agentRB;
+       private float nextAction;
+       private bool died;
+       private RayPerception rayPer; 
+       //private TerrariumAcademy academy;
+       private int count;
+       private Vector2 bounds;
+
+       private void Awake()
+       {
+       AgentReset();
+       }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>All of the preceding code is mostly public and private fields, but notice the <strong class="userinput"><code>CreatureType</code></strong> enumeration at the start. Setting the type of creature will also control special logic that is specific to different creature types. You could, of course, add other creature types later. Then, we will extend <strong class="userinput"><code>CreatureAgent</code></strong> from <strong class="userinput"><code>Agent</code></strong>, since we want the <strong class="userinput"><code>Academy</code></strong> to automatically register and control this agent. At the end is the <code class="literal">Awake</code> method, which is called when the object starts up and will take care of resetting the agent.</li><li>Next, we will add all the methods we need to override an <strong class="userinput"><code>Agent</code></strong>, as follows:</li></ol></div><pre class="programlisting">      public override void AgentReset()
+      {
+        Size = 1;
+        Energy = 1;
+        Age = 0;
+        bounds = GetEnvironmentBounds();
+        var x = Random.Range(-bounds.x, bounds.x);
+        var z = Random.Range(-bounds.y, bounds.y);
+        transform.position = new Vector3(x, 1, z);
+        TransformSize();
+        InitializeAgent();
+      }
+
+      public override void AgentOnDone()
+      {}
+
+      public override void InitializeAgent()
+      {
+        base.InitializeAgent();
+        rayPer = GetComponent&lt;RayPerception&gt;();
+        agentRB = GetComponent&lt;Rigidbody&gt;();
+        currentAction = "Idle";
+      }
+
+      public override void CollectObservations()
+      {
+        float rayDistance = Eyesight;
+        float[] rayAngles = { 20f, 90f, 160f, 45f, 135f, 70f, 110f };
+        string[] detectableObjects = { "plant", "herbivore", "carnivore" };
+        AddVectorObs(rayPer.Perceive(rayDistance, rayAngles, 
+        detectableObjects, 0f, 0f));
+        Vector3 localVelocity = 
+        transform.InverseTransformDirection(agentRB.velocity);
+        AddVectorObs(localVelocity.x);
+        AddVectorObs(localVelocity.z);
+        AddVectorObs(Energy);
+        AddVectorObs(Size);
+        AddVectorObs(Age);
+        AddVectorObs(Float(CanEat));
+        AddVectorObs(Float(CanReproduce));
+      }
+
+      private float Float(bool val)
+      {
+        if (val) return 1.0f;
+        else return 0.0f;
+      }
+
+      public override void AgentAction(float[] vectorAction, 
+      string textAction)
+      {
+        //Action Space 7 float
+        // 0 = Move
+        // 1 = Eat
+        // 2 = Reproduce
+        // 3 = Attack
+        // 4 = Defend
+        // 5 = move orders
+        // 6 = rotation
+        if (vectorAction[0] &gt; .5)
+        {
+          MoveAgent(vectorAction);
+        }
+        else if (vectorAction[1] &gt; .5)
+        {
+          Eat();
+        }
+        else if (vectorAction[2] &gt; .5)
+        {
+          Reproduce();
+        }
+        else if (vectorAction[3] &gt; .5)
+        {
+          //Attack();
+        }
+        else if (vectorAction[4] &gt; .5)
+        {
+          //Defend();
+        }
+      }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>A couple of important things to note about the preceding code is the <code class="literal">CollectObservations</code> and <code class="literal">AgentAction</code> methods. <code class="literal">CollectObservations</code> is where we collect the agent's state using techniques that we have seen before. In <code class="literal">AgentAction</code>, we are checking the seven possible action values to determine what action the agent will take after a decision is made.</li><li>Next, we will add the <code class="literal">Update</code><span>and</span><a id="id324673947" class="indexterm"></a><code class="literal">FixedUpate</code> methods, as follows:</li></ol></div><pre class="programlisting">      void Update()
+      {
+        if (OutOfBounds)
+        {
+          AddReward(-1f);
+          Done();
+          return;
+        }
+        if (Buried)
+        {
+          Done();
+        }
+        if (Dead) return;
+        if (CanGrow) Grow();
+        if (CanReproduce) Reproduce(); 
+        Age += AgeRate; 
+        MonitorLog();
+      }
+
+      public void FixedUpdate()
+      {
+        if (Time.timeSinceLevelLoad &gt; nextAction)
+        {
+          currentAction = "Deciding";
+          RequestDecision();
+        }
+      }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>The <code class="literal">Update</code> method is similar to the <code class="literal">Plant Update</code> method and just covers the agent's life cycle. The <code class="literal">FixedUpdate</code> method checks continually to see if the agent is ready to make another decision. Recall that we do this as a way to simulate decision-making time and improve our simulation performance using on-demand decision-making using the call to <code class="literal">RequestDecsion</code>.</li><li>Next, we add another method called <code class="literal">MonitorLog</code> that will allow us to visualize our creature's stats as they live. Enter the following code:</li></ol></div><pre class="programlisting">      public void MonitorLog()
+      {
+        Monitor.Log("Action", currentAction, MonitorType.text, transform);
+        Monitor.Log("Size", Size / MatureSize, MonitorType.slider, 
+        transform);
+        Monitor.Log("Energy", Energy / MaxEnergy, MonitorType.slider, 
+        transform);
+        Monitor.Log("Age", Age / MatureSize, MonitorType.slider, 
+        transform);
+      }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>The Unity team provide us with a nice way to quickly view stats about our agents with the <code class="literal">Monitor.Log</code>. Check the Unity documents for more information on how to use this monitoring feature.</li><li>Finally, we are going to dump in the rest of the code, as follows:</li></ol></div><pre class="programlisting">      public bool OutOfBounds
+      {
+      get
+        {
+          if (transform.position.y &lt; 0) return true;
+          if (transform.position.x &gt; bounds.x || transform.position.x 
+          &lt; -bounds.x ||             transform.position.y &gt; bounds.y || 
+          transform.position.y &lt; -bounds.y) return 
+          true;
+          else return false;
+        }
+      }
+      void TransformSize()
+      {
+        transform.localScale = Vector3.one * Mathf.Pow(Size,1/2);
+      }
+
+      bool CanGrow
+      {
+        get
+        {
+          return Energy &gt; ((MaxEnergy / 2) + 1);
+        }
+      }
+
+      bool CanEat
+      {
+        get
+        {
+          if(CreatureType == CreatureType.Herbivore)
+          {
+            if (FirstAdjacent("plant") != null) return true;
+          }
+          return false;
+        }
+      }
+
+      private GameObject FirstAdjacent(string tag)
+      {
+        var colliders = Physics.OverlapSphere(transform.position, 1.2f * 
+        Size);
+        foreach (var collider in colliders)
+        {
+          if (collider.gameObject.tag == tag)
+          {
+            return collider.gameObject;
+          }
+        }
+          return null;
+      }
+
+      bool CanReproduce
+      {
+        get
+        {
+          if (Size &gt;= MatureSize &amp;&amp; CanGrow) return true;
+          else return false;
+        }
+      }
+
+      bool Dead
+      {
+        get
+        {
+          if (died) return true;
+          if (Age &gt; MatureSize )
+          {
+            currentAction = "Dead"; 
+            died = true;
+            Energy = Size; //creature size is converted to energy
+            AddReward(.2f);
+            Done();
+            return true;
+           }
+         return false;
+        }
+      }
+
+      bool Buried
+      {
+        get
+        {
+          Energy -= AgeRate;
+          return Energy &lt; 0;
+        }
+      }
+
+      void Grow()
+      {
+        if (Size &gt; MatureSize) return;
+        Energy = Energy / 2;
+        Size += GrowthRate * Random.value;
+        nextAction = Time.timeSinceLevelLoad + (25 / MaxSpeed);
+        currentAction ="Growing";
+        TransformSize();
+      }
+      void Reproduce()
+      {
+        if (CanReproduce)
+        {
+          var vec = Random.insideUnitCircle * 5;
+          var go = Instantiate(ChildSpawn, new Vector3(vec.x, 0, vec.y), 
+          Quaternion.identity, Environment.transform);
+          go.name = go.name + (count++).ToString();
+          var ca = go.GetComponent&lt;CreatureAgent&gt;();
+          ca.AgentReset();
+          Energy = Energy / 2;
+          AddReward(.2f); 
+          currentAction ="Reproducing";
+          nextAction = Time.timeSinceLevelLoad + (25 / MaxSpeed);
+        }
+      }
+
+      public void Eat()
+      {
+        if (CreatureType == CreatureType.Herbivore)
+        {
+          var adj = FirstAdjacent("plant");
+          if (adj != null)
+          {
+            var creature = adj.GetComponent&lt;Plant&gt;();
+            var consume = Mathf.Min(creature.Energy, 5);
+            creature.Energy -= consume;
+            if (creature.Energy &lt; .1) Destroy(adj);
+            Energy += consume;
+            AddReward(.1f);
+            nextAction = Time.timeSinceLevelLoad + (25 / EatingSpeed);
+            currentAction = "Eating";
+          } 
+        }
+      }
+
+      public void MoveAgent(float[] act)
+      { 
+        Vector3 rotateDir = Vector3.zero; 
+        rotateDir = transform.up * Mathf.Clamp(act[6], -1f, 1f);
+        if(act[5] &gt; .5f)
+        { 
+          transform.position = transform.position + transform.forward;
+        }
+        Energy -= .01f;
+        transform.Rotate(rotateDir, Time.fixedDeltaTime * MaxSpeed); 
+        currentAction = "Moving"; 
+        nextAction = Time.timeSinceLevelLoad + (25 / MaxSpeed);
+      }
+      private Vector2 GetEnvironmentBounds()
+      {
+        Environment = transform.parent.gameObject;
+        var xs = Environment.transform.localScale.x;
+        var zs = Environment.transform.localScale.z;
+        return new Vector2(xs, zs) * 10;
+      }</pre><p>This is a big chunk of code, and while it may seem daunting, it is all relatively straightforward. That isn't all the code we will need, but it will do for now.</p><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>The <code class="literal">MoveAgent</code> method was borrowed from the Unity samples, so it may be familiar; the difference is that the physics code was removed to keep things simpler. The <strong class="userinput"><code>Eat</code></strong> and <code class="literal">FirstAdjacent</code> methods are where all the action happens. When a creature decides to eat and it is of type <code class="literal">Herbivore</code>, it will look for the first adjacent object, one that its collider is colliding with. If it detects an adjacent object that is of type <code class="literal">'plant'</code>, it happily eats. The <code class="literal">FirstAdjacent</code> method is the collision detection which uses a <code class="literal">SphereCast</code> to determine any adjacent objects.</li><li>Save the script and return to Unity to make sure that there are no compiler errors.</li></ol></div><p>That completes the Herbivore part of our <code class="literal">CreatureAgent</code>script. Do go over and read the code so that you have a good idea of how it works. In the next section, we will add the Herbivore creature to the scene and start training.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec40"></a>Building the herbivore</h3></div></div></div><p>In the 2002 version of Terrarium, developers had to <span>code</span><a id="id325397717" class="indexterm"></a> the brain on their own and this sometimes grew to thousands of lines of code. We, however, know that with the ML-Agents tools, we can let the <span>creature</span><a id="id325397725" class="indexterm"></a> program or build its own best solution using DRL. Open up Unity to the Terrarium scene and follow along in order to build the herbivore:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Right-click (<span class="emphasis"><em>Command</em></span> click on macOS) the<span class="strong"><strong>Academy</strong></span>object in the<span class="strong"><strong>Hierarchy</strong></span>window. From the context menu, select <span class="strong"><strong>Create Empty</strong></span>. Rename the new object<code class="literal">HerbivoreBrain</code>.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Add a <span class="strong"><strong>Brain</strong></span> component to the object and set the properties as follows:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/cfc67885-437d-4049-95b9-9d185836b4cc.png" /></div><p>Setting the HerbivoreBrain properties</p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Create a new empty <span>object</span><a id="id325397793" class="indexterm"></a> off the <span class="strong"><strong>Environment</strong></span> object and name it <code class="literal">Herbivore</code>.</li><li>Drag the <span class="strong"><strong>Chicken</strong></span> model from the <code class="literal">Assets/_Gloomy_Animal/Meshes</code> folder and drop it as a child of the <span class="strong"><strong>Herbivore</strong></span> object in the <span class="strong"><strong>Hierarchy</strong></span> window.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Add a <span class="strong"><strong>Box Collider</strong></span>, <span class="strong"><strong>Rigid Body</strong></span>, and <span class="strong"><strong>Ray Perception</strong></span> components to the <span class="strong"><strong>Herbivore</strong></span> object and configure, them as shown in the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/0f032c68-a8e3-4a71-90bb-af87785ac043.png" /></div><p>Introducing the chicken to the rules of physics</p><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li><p>This will introduce the <span>chicken</span><a id="id325397872" class="indexterm"></a> to the rules of physics. We <span>are</span><a id="id325397881" class="indexterm"></a> using the <span class="strong"><strong>Kinematic</strong></span> setting for this version in order to keep things simple. Our use of physics in this version is to make our life simpler in determining if objects are next to each other.</p></li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note33"></a>Note</h3><p>In 3Dology speak, Kinematic is another way of saying fixed or stationary in the physical simulation. The object can, of course, be moved in code or out of the Unity physical realm.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Continuing with physics, click the <span class="strong"><strong>Tag</strong></span> dropdown at the top of the <strong class="userinput"><code>Inspector</code></strong> window and create new <span class="strong"><strong>herbivore</strong></span>, <span class="strong"><strong>carnivore</strong></span>, and <span class="strong"><strong>plant</strong></span> tags. Set the <span class="strong"><strong>herbivore</strong></span> tag to on, as shown in the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/e4239a15-6b21-4376-b0d6-082c27996091.png" /></div><p>Adding the tags for the creatures</p><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Tags are used in the physics engine to quickly filter by <span>object</span><a id="id325398018" class="indexterm"></a> types. If we didn't do this, most physics queries would need to run over the entire list of <span>objects</span><a id="id325398026" class="indexterm"></a> for every check, which is not very efficient.</li><li>Add the <span class="strong"><strong>CreatureAgent</strong></span> script to the <span class="strong"><strong>Herbivore</strong></span> and set the properties to those that are shown in the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/374d678d-cfa4-4d39-adc5-6b9b9dd4110d.png" /></div><p>Setting the Creature Agent component properties</p><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>Follow the same steps you did for turning the <span class="strong"><strong>Plant</strong></span> into a prefab for the <span class="strong"><strong>Herbivore</strong></span>, being sure to <strong class="userinput"><code>Apply</code></strong> the prefab again after setting the <span class="strong"><strong>Child Spawn</strong></span> to itself.</li></ol></div><p>That creates the basic herbivore. Now, you can go <span>back</span><a id="id325398081" class="indexterm"></a> and modify this creature later to try different points, models, or whatever else you desire. In the next section, we put the herbivore to training.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec41"></a>Training the herbivore</h3></div></div></div><p>Training at this stage of the book should be second <span>nature</span><a id="id325398131" class="indexterm"></a> to you and we will go over it quickly. Open up Unity to where we last left it and let's get to training:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Make sure your <span class="strong"><strong>Terrarium</strong></span> scene and the <span>project</span><a id="id325398151" class="indexterm"></a> is saved.</li><li>From the menu, select <span class="strong"><strong>File</strong></span> | <span class="strong"><strong>Build Settings...</strong></span>. Make sure that the <span class="strong"><strong>Terrarium</strong></span> scene is the only scene in the build environment for external training. As long as you are using the same Unity ML-Agents project, you should be good to go.</li><li>Build the game for external training to the <code class="literal">'python'</code> folder, as always.</li><li>Open Visual Studio Code or your other favorite text editor to the <code class="literal">trainer_config.yaml</code> file found in the <code class="literal">ml-agents/python</code> folder.</li><li>Add a new brain configuration, <code class="literal">HerbivoreBrain</code>, and add the text shown here to the bottom of the file:</li></ol></div><pre class="programlisting">      HerbivoreBrain:
+use_recurrent: true
+sequence_length: 64
+num_layers: 1
+hidden_units: 128
+memory_size: 512
+beta: 1.0e-2
+gamma: 0.99
+num_epoch: 3
+buffer_size: 1024
+batch_size: 128
+max_steps: 5.0e5
+summary_freq: 500
+time_horizon: 128</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li><strong class="userinput"><code>HerbivoreBrain</code></strong> is essentially a clone of <strong class="userinput"><code>HallwayBrain</code></strong>.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Open your Python or Anaconda prompt and activate <code class="literal">ml-agents</code>. Then, do the same with the <code class="literal">cd ml-agents</code> folder.</li><li>Run the trainer with the following command:</li></ol></div><pre class="programlisting"><span class="strong"><strong>python python/learn.py python/python.exe --run-id=terrarium1 --train 
+      --slow</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Use the <span class="strong"><strong>LookCamera</strong></span>, and those <span>special</span><a id="id325398246" class="indexterm"></a> keys, to move around the scene as the herbivore creatures train. The following is a screenshot showing several chickens and plants in a terrarium:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/fe8d4079-2055-41ad-9a1e-a3ec8da32fd2.png" /></div><p>Looks like we now have a chicken (herbivore) problem</p><p>Depending on how fast you let your plants grow, you could see a real big chicken problem happen quickly. Watch what happens as the herbivores expand and quickly eat themselves into extinction. This would also happen in nature if it weren't for other checks and balances, such as carnivores, disasters, and so on. We will look at adding more natural life balance to the terrarium in the next section when we add carnivores.</p></div></div>

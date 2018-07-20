@@ -1,0 +1,291 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec14"></a>Customization is key</h2></div></div><hr /></div><p>It's time to <a id="id49" class="indexterm"></a>customize our controls! We'll go over a couple of ways to add <a id="id50" class="indexterm"></a>customization to our controls. Unity doesn't allow us to edit the input properties while in-game, so we will create a couple of ways to change the controls ourselves. In our game, we will utilize both these ways.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec24"></a>Swapping control schemes</h3></div></div></div><p>Our first <a id="id51" class="indexterm"></a>method will be to switch between preset control schemes. To start off, we'll add a bunch of variables that we will use for our controls:</p><div class="informalexample"><pre class="programlisting">string ControlScheme;
+public KeyCode pcItem1, pcItem2, pcItem3, pcItem4, pcInv, pcPause, pcAttackUse, pcAim, xInv, xPause;</pre></div><p>Since we can't modify the input properties, some of our controls will not be customized, such as movement, camera rotation, Xbox 360 Controller attack/use, and Xbox 360 Controller item switching. Next, we <a id="id52" class="indexterm"></a>will need to set some default values to these variables; we'll modify our <code class="literal">SetDefaultValues()</code> function<a id="id53" class="indexterm"></a> to look like this:</p><div class="informalexample"><pre class="programlisting">void SetDefaultValues()
+{
+  ControlScheme = "Scheme A";
+  if(!isControllerConnected)
+  {
+    PC_Move = "WASD";
+    PC_Rotate = "Mouse";
+    PC_Item1 = "1";
+    PC_Item2 = "2";
+    PC_Item3 = "3";
+    PC_Item4 = "4";
+    PC_Inv = "I";
+    PC_Pause = "Escape";
+    PC_AttackUse = "Left Mouse Button";
+    PC_Aim = "Right Mouse Button";
+
+    pcItem1 = KeyCode.Alpha1;
+    pcItem2 = KeyCode.Alpha2;
+    pcItem3 = KeyCode.Alpha3;
+    pcItem4 = KeyCode.Alpha4;
+    pcInv = KeyCode.I;
+    pcPause = KeyCode.Escape;
+    pcAttackUse = KeyCode.Mouse0;
+    pcAim = KeyCode.Mouse1;
+  }
+  else
+  {
+    PC_Move = "WASD";
+    PC_Rotate = "Mouse";
+    PC_Item1 = "1";
+    PC_Item2 = "2";
+    PC_Item3 = "3";
+    PC_Item4 = "4";
+    PC_Inv = "I";
+    PC_Pause = "Escape";
+    PC_AttackUse = "Left Mouse Button";
+    PC_Aim = "Right Mouse Button";
+    Xbox_Move = "Left Thumbstick";
+    Xbox_Rotate = "Right Thumbstick";
+    Xbox_Item1 = "D-Pad Up";
+    Xbox_Item2 = "D-Pad Down";
+    Xbox_Item3 = "D-Pad Left";
+    Xbox_Item4 = "D-Pad Right";
+    Xbox_Inv = "A Button";
+    Xbox_Pause = "Start Button";
+    Xbox_AttackUse = "Right Trigger";
+    Xbox_Aim = "Left Trigger";
+
+    pcItem1 = KeyCode.Alpha1;     
+	pcItem2 = KeyCode.Alpha2;
+    pcItem3 = KeyCode.Alpha3;
+    pcItem4 = KeyCode.Alpha4;
+    pcInv = KeyCode.I;
+    pcPause = KeyCode.Escape;
+    pcAttackUse = KeyCode.Mouse0;
+    pcAim = KeyCode.Mouse1;
+    xInv = KeyCode.I;
+    xPause = KeyCode.Escape;
+    }
+  }</pre></div><p>Next, we will <a id="id54" class="indexterm"></a>add a function to our script that will allow the player to switch between control schemes:</p><div class="informalexample"><pre class="programlisting">void SwitchControlScheme(string Scheme)
+{
+  switch(Scheme)
+  {
+  case "Scheme A":
+    SetDefaultValues();
+  break;
+  case "Scheme B":
+    if(!isControllerConnected)
+    {
+      PC_Move = "WASD";
+      PC_Rotate = "Mouse";
+      PC_Item1 = "Numpad 1";
+      PC_Item2 = "Numpad 2";
+      PC_Item3 = "Numpad 3";
+      PC_Item4 = "Numpad 4";
+      PC_Inv = "Numpad +";
+      PC_Pause = "Enter";
+      PC_AttackUse = "Right Mouse Button";
+      PC_Aim = "Left Mouse Button";
+        
+      pcItem1 = KeyCode.Keypad1;
+      pcItem2 = KeyCode.Keypad2;
+      pcItem3 = KeyCode.Keypad3;
+      pcItem4 = KeyCode.Keypad4;
+      pcInv = KeyCode.KeypadPlus;
+      pcPause = KeyCode.Return;
+      pcAttackUse = KeyCode.Mouse1;
+      pcAim = KeyCode.Mouse0;
+    }
+    else
+    {
+      PC_Move = "WASD";
+      PC_Rotate = "Mouse";
+      PC_Item1 = "Numpad 1";
+      PC_Item2 = "Numpad 2";
+      PC_Item3 = "Numpad 3";
+      PC_Item4 = "Numpad 4";
+      PC_Inv = "Numpad +";
+      PC_Pause = "Enter";
+      PC_AttackUse = "Right Mouse Button";
+      PC_Aim = "Left Mouse Button";
+      Xbox_Move = "Left Thumbstick";
+      Xbox_Rotate = "Right Thumbstick";
+      Xbox_Item1 = "D-Pad Up";
+      Xbox_Item2 = "D-Pad Down";
+      Xbox_Item3 = "D-Pad Left";
+      Xbox_Item4 = "D-Pad Right";
+      Xbox_Inv = "B Button";
+      Xbox_Pause = "Back Button";
+      Xbox_AttackUse = "Right Trigger";
+      Xbox_Aim = "Left Trigger";
+        
+      pcItem1 = KeyCode.Keypad1;
+      pcItem2 = KeyCode.Keypad2;
+      pcItem3 = KeyCode.Keypad3;
+      pcItem4 = KeyCode.Keypad4;
+      pcInv = KeyCode.KeypadPlus;
+      pcPause = KeyCode.Return;
+      pcAttackUse = KeyCode.Mouse1;
+      pcAim = KeyCode.Mouse0;
+      xInv = KeyCode.JoystickButton1;
+      xPause = KeyCode.JoystickButton6;
+    }
+  break;
+  }
+}</pre></div><p>As you can see, this function is very similar to our <code class="literal">SetDefaultValues()</code> function; it acts the same way. <code class="literal">SwitchControlScheme()</code><a id="id55" class="indexterm"></a> takes a string that determines which control scheme<a id="id56" class="indexterm"></a> to use and then assigns the appropriate data. The first scheme is the default control scheme, while the other one is a new scheme. The new scheme changes the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Item keys are now on the keypad</p></li><li style="list-style-type: disc"><p>Inventory buttons are now the <span class="emphasis"><em>+</em></span> key and <span class="emphasis"><em>B</em></span> key</p></li><li style="list-style-type: disc"><p>Attack/use inputs are switched on the mouse</p></li><li style="list-style-type: disc"><p>Pause has been changed to the <span class="emphasis"><em>Enter</em></span> key and the Backspace key</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec25"></a>Adding a control switch button to the GUI</h3></div></div></div><p>Lastly, we'll <a id="id57" class="indexterm"></a>need to add a GUI button to our <code class="literal">OnGUI</code> function to allow the player to switch control schemes. Add the following before the line that ends the group:</p><div class="informalexample"><pre class="programlisting">GUI.Label(new Rect(15, 345, 125, 20), "Current Control Scheme");
+if(GUI.Button(new Rect(25, 370, 135, 20), ControlScheme))
+{
+  if(ControlScheme == "Scheme A")
+  {
+    SwitchControlScheme("B");
+    ControlScheme = "Scheme B";
+  }
+  else
+  {
+    SwitchControlScheme("A");
+    ControlScheme = "Scheme A";
+  }
+}</pre></div><p>This button, when<a id="id58" class="indexterm"></a> clicked, will call the <code class="literal">SwitchControlScheme()</code> function and pass it a letter determining the control scheme being used.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec26"></a>Cycling control inputs</h3></div></div></div><p>Our next <a id="id59" class="indexterm"></a>method of customization will let the player click on one of the GUI buttons in our controls, and pick another control to switch it. To start off, we'll add variables that we'll use to hold the original values of our controls. The last two variables will be used to allow us to customize our controls:</p><div class="informalexample"><pre class="programlisting">private KeyCode orig_pcItem1, orig_pcItem2, orig_pcItem3, orig_pcItem4, orig_pcInv, orig_pcPause, orig_xInv, orig_xPause;
+bool ShowPopup = false;
+KeyCode PreviousKey;</pre></div><p>In the <code class="literal">SetDefaultValues</code> function, assign these variables to our previous control variables in both the <code class="literal">if</code> and <code class="literal">else</code> statements:</p><div class="informalexample"><pre class="programlisting">orig_pcItem1 = pcItem1;
+orig_pcItem2 = pcItem2;
+orig_pcItem3 = pcItem3;
+orig_pcItem4 = pcItem4;
+orig_pcInv = pcInv;
+orig_pcPause = pcPause;</pre></div><p>Assign the Xbox 360 Controller controls in the <code class="literal">else</code> statement:</p><div class="informalexample"><pre class="programlisting">orig_xInv = xInv;
+orig_xPause = xPause;</pre></div><p>Next, we are going to add a function that we'll call to switch our keys:</p><div class="informalexample"><pre class="programlisting">void SetNewKey(KeyCode KeyToSet, KeyCode SetTo)
+{
+  switch(KeyToSet)
+  {
+  case KeyCode.Alpha1:
+    pcItem1 = SetTo;
+    PC_Item1 = SetString(pcItem1.ToString());
+    break;
+  case KeyCode.Alpha2:
+    pcItem2 = SetTo;
+    PC_Item2 = SetString(pcItem2.ToString());
+    break;
+  case KeyCode.Alpha3:
+    pcItem3 = SetTo;
+    PC_Item3 = SetString(pcItem3.ToString());
+    break;
+  case KeyCode.Alpha4:
+    pcItem4 = SetTo;
+    PC_Item4 = SetString(pcItem4.ToString());
+    break;
+  case KeyCode.I:
+    pcInv = SetTo;
+    PC_Inv = SetString(pcInv.ToString());
+    break;
+  case KeyCode.Escape:
+    pcPause = SetTo;
+    PC_Pause = SetString(pcPause.ToString());
+    break;
+  case KeyCode.JoystickButton1:
+    xInv = SetTo;
+    Xbox_Inv = SetString(xInv.ToString());
+    break;
+  case KeyCode.JoystickButton6:
+    xPause = SetTo;
+    Xbox_Pause = SetString(xPause.ToString());
+    break;
+  }
+}</pre></div><p>This new function takes in two properties: the first one will be what <code class="literal">KeyCode</code> we set and the second one <a id="id60" class="indexterm"></a>will be what <code class="literal">KeyCode</code> we are setting the key to. You can see that we also set our string variables, which are used in the GUI with another function. We'll create that function now:</p><div class="informalexample"><pre class="programlisting">string SetString(string SetTo)
+{
+  switch(SetTo)
+  {
+  case "Alpha1":
+    SetTo = "1";
+    break;
+  case "Alpha2":
+    SetTo = "2";
+    break;
+  case "Alpha3":
+    SetTo = "3";
+    break;
+  case "Alpha4":
+    SetTo = "4";
+    break;
+  case "Return":
+    SetTo = "Enter";
+    break;
+  case "Escape":
+    SetTo = "Escape";
+    break;
+  case "I":
+    SetTo = "I";
+    break;
+  case "JoystickButton6":
+    SetTo = "Start Button";
+    break;
+  case "JoystickButton1":
+    SetTo = "A Button";
+    break;
+  }
+  return SetTo;
+}</pre></div><p>Now in our <code class="literal">OnGUI</code> function, we'll need to adjust some of our code. Before we start our controls group, we<a id="id61" class="indexterm"></a> will check whether our controls pop up is activated. Add the <code class="literal">if</code> statement to our code and encapsulate the Controls Group:</p><div class="informalexample"><pre class="programlisting">if(!ShowPopup)
+{</pre></div><p>Next, we'll edit some of our GUI buttons to allow customization. Start with the <code class="literal">PC_Item1</code> button and change it to this code:</p><div class="informalexample"><pre class="programlisting">if(GUI.Button(new Rect(150, 125, 135, 20), PC_Item1))
+{
+  ShowPopup = true;
+  PreviousKey = pcItem1;
+}</pre></div><p>Do the same thing for the following buttons:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">PC_Item2</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">PC_Item3</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">PC_Item4</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">PC_Pause</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">PC_Inv</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Xbox_Inv</code>
+</p></li><li style="list-style-type: disc"><p>
+<code class="literal">Xbox_Pause</code>
+</p></li></ul></div><p>Set <span class="strong"><strong>ShowPopup</strong></span> to <code class="literal">true</code> and <code class="literal">PreviousKey</code> to its expected value, accordingly, such as <code class="literal">pcItem2</code>, <code class="literal">pcItem3</code>, <code class="literal">pcItem4</code>, and so on. Place a closing bracket afterwards to close the <code class="literal">if</code> statement that we created earlier.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec27"></a>Adding the controls pop up to the GUI</h3></div></div></div><p>It's time to add our <a id="id62" class="indexterm"></a>controls pop up to the GUI. This is where the player will select what control to swap. To do this, we will add an <code class="literal">else</code> statement, extending our <code class="literal">if</code> statement, to create the pop up:</p><div class="informalexample"><pre class="programlisting">else
+{
+  GUI.BeginGroup(new Rect(Screen.width/2 - 300, Screen.height / 2 - 300, 600, 400));
+  GUI.Box(new Rect(0,0,600,400), "Pick A Control to Switch");
+  if(GUI.Button(new Rect(150, 125, 135, 20), "1"))
+  {
+    SetNewKey(PreviousKey, orig_pcItem1);
+    ShowPopup = false;
+  }
+  if(GUI.Button(new Rect(150, 150, 135, 20), "2"))
+  {
+    SetNewKey(PreviousKey, orig_pcItem2);
+    ShowPopup = false;
+  }
+  if(GUI.Button(new Rect(150, 175, 135, 20), "3"))
+  {
+    SetNewKey(PreviousKey, orig_pcItem3);
+    ShowPopup = false;
+  }
+  if(GUI.Button(new Rect(150, 200, 135, 20), "4"))
+  {
+    SetNewKey(PreviousKey, orig_pcItem4);
+    ShowPopup = false;
+  }
+  if(GUI.Button(new Rect(150, 225, 135, 20), "I"))
+  {
+    SetNewKey(PreviousKey, orig_pcInv);
+    ShowPopup = false;
+  }
+  if(GUI.Button(new Rect(150, 250, 135, 20), "Escape"))
+  {
+    SetNewKey(PreviousKey, orig_pcPause);
+    ShowPopup = false;
+  }
+  if(GUI.Button(new Rect(325, 225, 135, 20), "A Button"))
+  {
+    SetNewKey(PreviousKey, orig_xInv);
+    ShowPopup = false;
+  }
+  if(GUI.Button(new Rect(325, 250, 135, 20), "Start Button"))
+  {
+    SetNewKey(PreviousKey, orig_xPause);
+    ShowPopup = false;
+  }
+  GUI.EndGroup();
+}</pre></div><p>When the player clicks on one of these new buttons, the <a id="id63" class="indexterm"></a>
+<code class="literal">SetNewKey</code> function is called. When called, we <a id="id64" class="indexterm"></a>pass <code class="literal">PreviousKey</code>, which is the key the player is customizing, as well as the key they select, which is the new value of <code class="literal">PreviousKey</code>. This is a great and simple way to change controls, which makes it simple for the player.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec28"></a>Resetting the controls</h3></div></div></div><p>In this <a id="id65" class="indexterm"></a>section, we will add the ability to allow the player to reset the controls to their default values.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec29"></a>Adding the Reset function</h3></div></div></div><p>The reset function<a id="id66" class="indexterm"></a> will use our <code class="literal">SetDefaultValues()</code> function as well as reset a couple of our other variables:</p><div class="informalexample"><pre class="programlisting">void Reset()
+{
+  SetDefaultValues();
+  ShowPopup = false;
+  PreviousKey = KeyCode.None;
+}</pre></div><p>Here, we call our <code class="literal">SetDefaultValues()</code> function, and then reset some other variables. Resetting the <code class="literal">ShowPopup</code> Boolean and our <code class="literal">PreviousKey</code> <code class="literal">KeyCode</code> will ensure that everything related to customization of controls has been reset.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec30"></a>Adding the Reset input</h3></div></div></div><p>Now, we'll make a <a id="id67" class="indexterm"></a>GUI button that will call the <code class="literal">Reset</code> function. Add this just before the line of code that ends the GUI group in the <code class="literal">OnGUI()</code> function's <code class="literal">if</code> statement:</p><div class="informalexample"><pre class="programlisting">if(GUI.Button(new Rect(230, 370, 135, 20), "Reset Controls"))
+{
+  Reset();
+}</pre></div><p>When the player clicks on this button, the controls will be set to their default values. Here is the finished product of the script that you just created:</p><div class="mediaobject"><img src="/graphics/9781783553631/graphics/3631OT_01_03.jpg" /></div></div></div>

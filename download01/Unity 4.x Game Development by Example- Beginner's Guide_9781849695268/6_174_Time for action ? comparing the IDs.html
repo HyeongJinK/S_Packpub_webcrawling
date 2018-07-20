@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec177"></a>Time for action – comparing the IDs</h2></div></div><hr /></div><p>To compare the IDs, we need<a id="id490" class="indexterm"></a> to make some changes to the <code class="literal">FlipCardFaceUp</code> function.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Note that we're folding two existing lines of code inside a new conditional statement:</p><div class="informalexample"><pre class="programlisting">   function FlipCardFaceUp(card:Card)
+   {
+     card.isFaceUp = true;
+      
+     if(aCardsFlipped.IndexOf(card) &lt; 0)
+     {
+       aCardsFlipped.Add(card);
+   
+       if(aCardsFlipped.Count == 2)
+       {
+         playerCanClick = false;
+            
+         yield WaitForSeconds(1);
+            
+   <span class="strong"><strong>      if(aCardsFlipped[0].id == aCardsFlipped[1].id)</strong></span>
+   <span class="strong"><strong>      {</strong></span>
+   <span class="strong"><strong>           // Match!</strong></span>
+   <span class="strong"><strong>           aCardsFlipped[0].isMatched = true;</strong></span>
+<span class="strong"><strong> </strong></span>     <span class="strong"><strong>        aCardsFlipped[1].isMatched = true;</strong></span>
+                           
+<span class="strong"><strong> </strong></span>   <span class="strong"><strong>     } else </strong></span>
+<span class="strong"><strong>{</strong></span>
+             aCardsFlipped[0].isFaceUp = false;
+             aCardsFlipped[1].isFaceUp = false;
+         <span class="strong"><strong>}</strong></span>   
+            
+         aCardsFlipped = new List.&lt;Card&gt;();
+            
+         playerCanClick = true;
+       }
+     }
+   }</pre></div><p>Here, we check to see if the two flipped-over cards have the same ID value. If they do, we set each card's <code class="literal">isMatched</code> flag to <code class="literal">true</code>. If they don't match, we just flip the cards back over as before.</p></li><li><p>We should add a<a id="id491" class="indexterm"></a> little bit of logic to our <code class="literal">BuildGrid</code> function to make sure the player can't flip over a card that's been matched:</p><div class="informalexample"><pre class="programlisting">   function BuildGrid()
+   {
+      // (some stuff was omitted here for clarity)
+      var card:Object = aGrid[i][j];   
+      var img:String
+   <span class="strong"><strong>   if(card.isMatched)</strong></span>
+<span class="strong"><strong>      {</strong></span>
+   <span class="strong"><strong>    img = "blank";</strong></span>
+   <span class="strong"><strong>   } else {</strong></span>
+        if(card.isFaceUp)
+        {
+          img = card.img;
+        }
+        else
+        {
+          img = "wrench";
+        }
+      }
+   
+<span class="strong"><strong>   </strong></span>   <span class="strong"><strong>GUI.enabled = !card.isMatched;</strong></span>
+   if(GUILayout.Button(Resources.Load(img), GUILayout.Width(cardW)))
+   {
+     if(playerCanClick)
+     {
+       FlipCardFaceUp(card);
+       Debug.Log(card.img);
+     }
+   }
+   <span class="strong"><strong>GUI.enabled = true;</strong></span>
+</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec72"></a>
+<span class="emphasis"><em>What just happened?</em></span>
+</h3></div></div></div><p>We wrapped our first <a id="id492" class="indexterm"></a>piece of logic in a conditional check that says "if the card is matched, set its image to some blank white picture".</p><p>The next new lines are pretty interesting. We're setting <code class="literal">GUI.enabled</code>, which is a Boolean value, to whatever <code class="literal">card.isMatched</code> is NOT. The exclamation mark operator means "is not". So, if <code class="literal">card.isMatched</code> is <code class="literal">true</code>, then <code class="literal">GUI.enabled</code> is <code class="literal">false</code>. If <code class="literal">card.isMatched</code> is <code class="literal">false</code>, then <code class="literal">GUI.enabled</code> is <code class="literal">true</code>. <code class="literal">GUI.enabled</code>, as you probably guessed, enables or disables GUI control functionality.</p><p>When we're finished drawing our card button and setting its click behavior (which is ignored if <code class="literal">GUI.enabled</code> is <code class="literal">false</code>), we need to remember to re-enable the GUI—otherwise, none of our other cards will be clickable!</p><p>Save the script and repair some robots. Just like the second <span class="strong"><strong>Death Star</strong></span>, your game is fully operational, baby!</p><div class="mediaobject"><img src="/graphics/9781849695268/graphics/5268OT_06_07.jpg" /></div></div></div>

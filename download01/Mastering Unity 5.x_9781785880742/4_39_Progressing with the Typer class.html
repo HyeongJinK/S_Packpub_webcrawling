@@ -1,0 +1,120 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec40"></a>Progressing with the Typer class</h2></div></div><hr /></div><p>The Typer object (the root object) will be associated with a new class, defining its functionality. This class (the <code class="literal">Typer</code> class) will accept keyboard input and link that to a combat mechanic. We haven't yet developed any enemies to fight (like zombies), but this will be dealt with in forthcoming chapters. Consequently, we'll have reason to return to the Typer class later. As it stands, we can still link player input to important functionality already in place, such as UI animations and sound effects too. Let's begin with a new, empty class, as follows:</p><pre class="programlisting">using System.Collections; &#13;
+ &#13;
+public class Typer: MonoBehaviour  &#13;
+{ &#13;
+} &#13;
+</pre><p>The first step in developing the <code class="literal">Typer</code> class is to build an extensible event framework. <code class="literal">Events</code> are critically important for the <code class="literal">Typer</code> because it must listen for a keypress (<code class="literal">Events</code>) and then relay those to other processes, which should respond as needed. There are multiple solutions for developing an integrated event system. One method, which I've covered in other titles, such as <span class="emphasis"><em>Mastering Unity Scripting</em></span>, <span class="emphasis"><em>Packt</em></span>, is to use a notifications manager. You can download and use a free notifications class, if preferred, from here: <a class="ulink" href="http://wiki.unity3d.com/index.php?title=CSharpNotificationCenter" target="_blank">http://wiki.unity3d.com/index.php?title=CSharpNotificationCenter</a>.</p><p>However, for <span class="emphasis"><em>Dead Keys</em></span>, we'll use a different approach. Specifically, we'll use a dedicated <code class="literal">UnityEvent</code> class, which enables us to customize what happens on specific events through visual scripting, directly in the object <span class="strong"><strong>Inspector</strong></span>, so that there is no need to recompile code. To get started with this, include both the <code class="literal">UnityEngine.EventSystems</code> and <code class="literal">UnityEngine.Events</code> namespaces into the source file, as follows:</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note32"></a>Note</h3><p>In C#, a namespace refers to a collection of related classes. By using namespaces, you can avoid naming conflicts that commonly arise when working on complex projects with many source files. Namespaces let you group classes into a larger unit, which can be selectively included and excluded like libraries from other source files. More information on namespaces in Unity can be found online here: <a class="ulink" href="https://docs.unity3d.com/Manual/Namespaces.html" target="_blank">https://docs.unity3d.com/Manual/Namespaces.html</a>.</p></div><pre class="programlisting">using UnityEngine; &#13;
+using System.Collections; &#13;
+using UnityEngine.EventSystems; &#13;
+using UnityEngine.Events; &#13;
+ &#13;
+public class Typer : MonoBehaviour  &#13;
+{ &#13;
+} &#13;
+</pre><p>Next, we'll add a <code class="literal">UnityEvent</code> to the class, called <code class="literal">OnTypingChanged</code>. This is a special object type that we'll invoke when a typing event happens (a keypress), to run specific behaviors and functions that we specify from the object <span class="strong"><strong>Inspector</strong></span>. See the following code:</p><pre class="programlisting">using UnityEngine; &#13;
+using System.Collections; &#13;
+using UnityEngine.EventSystems; &#13;
+using UnityEngine.Events; &#13;
+public class Typer : MonoBehaviour  &#13;
+{ &#13;
+   //Typing changed event &#13;
+<span class="strong"><strong>   public UnityEvent OnTypingChanged;</strong></span> &#13;
+} &#13;
+</pre><p>When this variable is added as public to the <code class="literal">Typer</code> class, it appears in the object <span class="strong"><strong>Inspector</strong></span> as a customizable field.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_04_027.jpg" /></div><p>
+</p><p>Adding a Unity event to the class</p><p>Unity events can be customized easily from the object <span class="strong"><strong>Inspector</strong></span>. You simply click the <span class="strong"><strong>+</strong></span> button to add an action to the event and there's no limit to the number of actions that may be added or combined. In our case, when a typing event occurs, we'll play the text animation on the UI panel to express an attack. To achieve this, drag and drop the text object in the UI from the <span class="strong"><strong>Hierarchy</strong></span> panel into the <span class="strong"><strong>Object</strong></span> field for the event inside the object <span class="strong"><strong>Inspector</strong></span>. This indicates the target or subject of action. In this case, the text animation should play on the text object (this object has the animator component); thus, it should be added to the <span class="strong"><strong>Object</strong></span> field.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_04_028.jpg" /></div><p>
+</p><p>Specifying the action target</p><p>With the target object specified, indicate the function to run from the Function drop-down list. In our case, we should call the <span class="strong"><strong>Animator</strong></span> | <span class="strong"><strong>SetTrigger</strong></span> (string) function. For the string argument field, we need to specify the name of the trigger to invoke for a typing event. This should be <span class="strong"><strong>ThrowText</strong></span>, matching the name of the trigger parameter in the animator graph.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_04_029.jpg" /></div><p>
+</p><p>Running the SetTrigger function from the object Inspector</p><p>By configuring the<code class="literal"> OnTypingChanged</code> event with visual scripting from the <span class="strong"><strong>Inspector</strong></span>, we always activate the <code class="literal">ThrowText</code> trigger, playing the text animation. We didn't even need to type a line of code, which is convenient. Plus, we don't need to rely on expensive and slow functions, like <code class="literal">SendMessage</code> or <code class="literal">BroadcastMessage</code> for dispatching event notifications. In addition to activating the <code class="literal">ThrowText</code> trigger, we also want to play a punch sound. </p><p>Again, this is to emphasize the attack and the impact on our enemies. The <span class="emphasis"><em>Dead Keys</em></span> project contains punch sound effects, as well as an <span class="emphasis"><em>AudioMixer</em></span> asset configured to play sounds across three main groups (channels): <span class="strong"><strong>Music</strong></span>, <span class="strong"><strong>SFX</strong></span> and <span class="strong"><strong>Voice</strong></span>. This was configured in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Level Design and Structure</em></span>.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_04_030.jpg" /></div><p>
+</p><p>Accessing punch sound effects</p><p>Now, we could configure the Typer as it stands to play the same punch sound on every type event, but ideally we want some randomization to enhance credibility and to avoid annoying the player with too much repetition. Specifically, for each keypress event, we should select and play a random punch sound from a larger collection of punch sounds. We can do this easily using only two lines of code. First, we need an array of sounds to choose from. For this, add an array of audio clips to the class as a public variable with the following code:</p><pre class="programlisting">//Collection of combat sounds &#13;
+public AudioClip[] CombatSounds;  &#13;
+</pre><p>Next, a clip can be randomly selected using the <code class="literal">Random.Range</code> function, as follows. This code should feature wherever sounds are selected at random (see the sample project in the course companion files).</p><pre class="programlisting">SelectedClip = CombatSounds [Random.Range (0, CombatSounds.Length)];  &#13;
+</pre><p>Working from this, we can now assign all punch audio clips from the project panel to the array variable, dragging and dropping them into the array slots.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_04_031.jpg" /></div><p>
+</p><p>Building an array of combat sounds</p><p>In addition to the combat sound array, the Typer object will also need an <span class="strong"><strong>Audio Source</strong></span> component to play the selected sound. To add this, select the Typer object and choose <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Audio</strong></span> | <span class="strong"><strong>Audio Source</strong></span>. Once added, route the <span class="strong"><strong>Audio Source</strong></span> component through the configured <span class="strong"><strong>AudioMixer</strong></span> | <span class="strong"><strong>SFX</strong></span> channel for the project by using the <span class="strong"><strong>AudioMixer</strong></span> field from the object <span class="strong"><strong>Inspector</strong></span>.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_04_032.jpg" /></div><p>
+</p><p>Setting the Audio Mixer output for the Typer Audio Source</p><p>Now the Typer object is configured in terms of components and setup, let's complete the code for the <code class="literal">Typer</code> class overall with the following code. A more detailed exploration of the class and its functionality follows this:</p><pre class="programlisting">//------------------------------------ &#13;
+using UnityEngine; &#13;
+using UnityEngine.UI; &#13;
+using UnityStandardAssets.CrossPlatformInput; &#13;
+using System.Collections; &#13;
+using UnityEngine.EventSystems; &#13;
+using UnityEngine.Events; &#13;
+//------------------------------------ &#13;
+public class Typer : MonoBehaviour &#13;
+{ &#13;
+    //Reference to typed word &#13;
+    public static string TypedWord = string.Empty; &#13;
+ &#13;
+    //Text object for showing type &#13;
+    private Text TyperText = null; &#13;
+ &#13;
+    //Reference to audio source component &#13;
+    private AudioSource ThisAS = null; &#13;
+ &#13;
+    //Typing changed event &#13;
+    public UnityEvent OnTypingChanged; &#13;
+ &#13;
+    //Time elapsed since last reset &#13;
+    public static float ElapsedTime = 0.0f; &#13;
+ &#13;
+    //Record words per second &#13;
+    public static float RecordLettersPerSecond = 2f; &#13;
+    //------------------------------------ &#13;
+    //Collection of combat sounds &#13;
+    public AudioClip[] CombatSounds; &#13;
+    // Use this for initialization &#13;
+    void Awake ()  &#13;
+    { &#13;
+ &#13;
+        //Get audio source &#13;
+        ThisAS = GetComponent&lt;AudioSource&gt;(); &#13;
+        ThisAS.clip = CombatSounds[0]; &#13;
+ &#13;
+        TyperText = GetComponentInChildren&lt;Text&gt;(); &#13;
+    } &#13;
+    //------------------------------------ &#13;
+    // Update is called once per frame &#13;
+    void Update () &#13;
+    { &#13;
+ &#13;
+        //Update types string &#13;
+        if (Input.inputString.Length &gt; 0)  &#13;
+        { &#13;
+            TypedWord += Input.inputString.ToLower(); &#13;
+            UpdateTyping (); &#13;
+        } &#13;
+    } &#13;
+    //------------------------------------ &#13;
+    //Update enemy type event &#13;
+    private void UpdateTyping() &#13;
+    { &#13;
+        //Update GUI Typer &#13;
+        OnTypingChanged.Invoke(); &#13;
+ &#13;
+        Reset (); &#13;
+    } &#13;
+    //------------------------------------ &#13;
+    public void Reset() &#13;
+    { &#13;
+        //Reset typing &#13;
+        TypedWord = string.Empty; &#13;
+ &#13;
+        //Reset time &#13;
+        ElapsedTime = 0.0f; &#13;
+    } &#13;
+    //------------------------------------ &#13;
+    // Update is called once per frame &#13;
+    public void UpdateTyperText()  &#13;
+    { &#13;
+        TyperText.text = Input.inputString; &#13;
+        ThisAS.clip = CombatSounds [Random.Range (0, CombatSounds.Length)]; &#13;
+    } &#13;
+    //------------------------------------ &#13;
+} &#13;
+//------------------------------------  &#13;
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec49"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">TypedWord</code> static variable will reference the complete word being typed as a string; that is, an accumulation of the letters typed, letter by letter, until a word match is found with a zombie or a mistake is made which resets the typing.</p></li><li style="list-style-type: disc"><p>The <code class="literal">TyperText</code> variable references the <code class="literal">Text</code> UI object for displaying the text animation. This variable is automatically assigned in the <code class="literal">Awake</code> event. There, the <code class="literal">GetComponentInChildren</code> function is called, which searches downwards in the hierarchy for the first matching component. In this way, the text component on the child object can be found. More information on <code class="literal">GetComponentinChildren</code> can be found in the Unity online documentation at: <a class="ulink" href="https://docs.unity3d.com/ScriptReference/Component.GetComponentInChildren.html" target="_blank">https://docs.unity3d.com/ScriptReference/Component.GetComponentInChildren.html</a>.</p></li><li style="list-style-type: disc"><p>The variable <code class="literal">ThisAS</code> references the <code class="literal">AudioSource</code> component on the object. This is needed for playing sounds when keys are pressed.</p></li><li style="list-style-type: disc"><p>The <code class="literal">ElapsedTime</code> and <code class="literal">RecordLettersPerSecond</code> variables are currently place-holders for functionality to be implemented later. They'll determine the fastest typed words and phrases for bonus points and rewards.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Update</code> function (called once per frame) references the <code class="literal">Input.InputString</code> variable to determine which keys, if any, have been pressed since the last update cycle.</p></li><li style="list-style-type: disc"><p>All input strings are converted to lowercase to make string matching simpler. This also means <span class="emphasis"><em>Dead Keys</em></span> is not case-sensitive.</p></li><li style="list-style-type: disc"><p>The <code class="literal">UpdateTyping</code> event is called when new keys are pressed. This calls the <code class="literal">OnTypingChanged.Invoke</code> method, which activates all visually scripted behavior for the typing event inside the object <span class="strong"><strong>Inspector</strong></span>.</p></li><li style="list-style-type: disc"><p>The <code class="literal">UpdateTyperText</code> method is responsible for selecting and playing a random attack sound.</p></li></ul></div><p>The <code class="literal">Typer</code> script should be attached to the root Typer object, and that's it! We now have a class that can type text, throwing it inwards into the scene, ready to whack a zombie!</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_04_033.jpg" /></div><p>
+</p><p>Testing the Typer class</p></div></div>

@@ -1,0 +1,48 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec17"></a>Classes and object-oriented programming</h2></div></div><hr /></div><p>A class is an amalgam of many related variables and functions, all brought together into a self-contained unit or "thing". To put it another way, if you think about a game (such as a fantasy RPG), it's filled <a id="id81" class="indexterm"></a>with many independent things such as wizards, orcs, trees, houses, the player, quests, inventory items, weapons, spells, doorways, bridges, force fields, portals, guards, and so on. Many of these objects parallel <a id="id82" class="indexterm"></a>objects in the real world too. However, crucially, each of these things is an independent object; a wizard is different and separate from a force field, and a guard is different and separate from a tree. Each of these things, then, can be thought of as an object—a custom type. If we focus our attention on one specific object, an orc enemy, for example, we can identify the properties and behaviors in this object. The orc will have a position, rotation, and scale; these correspond to variables.</p><p>The orc might have several kinds of attacks too, such as a melee attack with an axe and a ranged attack with a crossbow. These attacks are performed through functions. In this way, a collection of variables and functions are brought together into a meaningful relationship. The process of bringing these things together is known as encapsulation. In this example, an orc has been encapsulated into a class. The class, in this case, represents the template for a general, abstract orc (the concept of an orc). Objects, in<a id="id83" class="indexterm"></a> contrast, are particular, concrete instantiations of the <code class="literal">Orc</code> class in the level. In Unity, script files define a class. To instantiate the class<a id="id84" class="indexterm"></a> as an object in the level, add it to <code class="literal">GameObject</code>. As we've seen, classes are attached to game objects as components. Components are objects, and multiple components together form a <code class="literal">GameObject</code>. Refer to code sample 1-10 for a sample <code class="literal">Orc</code> class stub:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 
+04 public class Orc : MonoBehaviour 
+05 {
+06 //Reference to the transform component of orc (position, rotation, scale)
+07 private Transform ThisTransform = null;
+08 
+09 //Enum for states of orc
+10 public enum OrcStates {NEUTRAL, ATTACK_MELEE, ATTACK_RANGE};
+11 
+12 //Current state of orc
+13 public OrcStates CurrentState = OrcStates.NEUTRAL;
+14 
+15 //Movement speed of orc in meters per second
+16 	public float OrcSpeed = 10.0f;
+17 
+18 //Is orc friendly to player
+19 public bool isFriendly = false;
+20 
+21 //--------------------------------------------------
+22 // Use this for initialization
+23 void Start ()
+24 {
+25       //Get transform of orc
+26       ThisTransform = transform;
+27 }
+28 //--------------------------------------------------
+29 // Update is called once per frame
+30 void Update ()
+31 {
+32 }
+33 //--------------------------------------------------
+34 //State actions for orc
+35 public void AttackMelee()
+36 {
+37        //Do melee attack here
+38 }
+39 //--------------------------------------------------
+40 public void AttackRange()
+41 {
+42        //Do range attack here
+43 }
+44 //--------------------------------------------------
+45 }</pre></div><p>The following are<a id="id85" class="indexterm"></a> the comments for code sample 1-10:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 04</strong></span>: Here, the class <code class="literal">keyword</code> is used to define a class named <code class="literal">Orc</code>. This class derives from <code class="literal">MonoBehaviour</code>. The next section of this chapter will consider inheritance<a id="id86" class="indexterm"></a> and derived classes further.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 09-19</strong></span>: Several variables and an enum are added to the <code class="literal">Orc</code> class. The variables are of different types, but all are related to the concept of an orc.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 35-45</strong></span>: The orc has two methods: <code class="literal">AttackMelee</code> and <code class="literal">AttackRange</code>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip10"></a>Tip</h3><p>More information <a id="id87" class="indexterm"></a>on classes and their usage in C# can be found at <a class="ulink" href="http://msdn.microsoft.com/en-gb/library/x9afc042.aspx" target="_blank">http://msdn.microsoft.com/en-gb/library/x9afc042.aspx</a>.</p></div></li></ul></div></div>

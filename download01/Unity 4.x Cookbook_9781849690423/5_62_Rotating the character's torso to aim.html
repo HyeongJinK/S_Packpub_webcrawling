@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec64"></a>Rotating the character's torso to aim</h2></div></div><hr /></div><p>When you're <a id="id420" class="indexterm"></a>playing a third person character, <a id="id421" class="indexterm"></a>you might want your character to aim his weapon at a target that is not directly in front of him, without making him change his direction. In those cases, you will need to apply what is known as <span class="emphasis"><em>procedural animation</em></span>; it does not rely on pre-made animation clips, but rather on the processing of other data such as player input, to animate the character. In this recipe, we will use this technique to rotate the character's torso.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec220"></a>Getting ready</h3></div></div></div><p>For this recipe, we have prepared a project named <code class="literal">MixamoProject</code>, containing several assets such as levels, animated characters, and props. You can find it inside the <code class="literal">0423_05_codes</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec221"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open the <span class="strong"><strong>MixamoProject</strong></span> project, and then open the level named <span class="strong"><strong>05_08</strong></span> (under the <span class="strong"><strong>Levels</strong></span> folder).</p></li><li><p>You should see Mixamo's animated S.W.A.T. soldier. We have included three different cameras for you to experiment with (they are children of the Character game object).</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, create a new C# script named <code class="literal">MouseAim.cs</code>.</p></li><li><p>Open the script and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class MouseAim : MonoBehaviour {
+
+    public Transform spine;
+    public Transform armedHand;
+    public bool lockY = false;
+    public float compensationYAngle = 20.0f;
+    public float minAngle = 308.0f;
+    public float maxAngle = 31.0f;
+    public Texture2D targetAim;
+    private Vector2 aimLoc;
+    private bool onTarget = false;
+
+    public void LateUpdate(){
+        Vector3 point = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Camera.main.farClipPlane));
+        if(lockY)
+            point.y = spine.position.y;
+        Vector3 relativePoint = transform.InverseTransformPoint(point.x, point.y, point.z);
+        if(relativePoint.z &lt; 0){
+            Vector3 inverseZ = transform.InverseTransformPoint(relativePoint.x,relativePoint.y,-relativePoint.z);
+            point = inverseZ;
+        }
+        spine.LookAt(point, Vector3.up);
+        Vector3 comp = spine.localEulerAngles;
+        comp.y = spine.localEulerAngles.y + compensationYAngle;
+        spine.localEulerAngles = comp;
+        if(spine.localEulerAngles.y &gt; maxAngle &amp;&amp; spine.localEulerAngles.y &lt; minAngle){
+            if(Mathf.Abs((spine.localEulerAngles.y - minAngle)) &lt; Mathf.Abs((spine.localEulerAngles.y - maxAngle))){
+                Vector3 min = spine.localEulerAngles;
+                min.y = minAngle;
+                spine.localEulerAngles = min;
+            } else {
+                Vector3 max = spine.localEulerAngles;
+                max.y = maxAngle;
+                spine.localEulerAngles = max;
+            }
+        }
+        RaycastHit hit;
+        if (Physics.Raycast (armedHand.position, point, out hit)) {
+            onTarget = true;
+            aimLoc =  Camera.main.WorldToViewportPoint(hit.point);
+        } else {
+            onTarget = false;
+            aimLoc = Camera.main.WorldToViewportPoint(point);
+        }
+        //Debug.DrawRay (armedHand.position, point, Color.red);
+    }
+
+    void OnGUI(){
+        int sw = Screen.width;
+        int sh = Screen.height;
+        GUI.DrawTexture(new Rect(aimLoc.x * sw - 8, sh-(aimLoc.y * sh) -8, 16, 16), targetAim, ScaleMode.StretchToFill, true, 10.0F);
+    }
+}</pre></div></li><li><p>Save and<a id="id422" class="indexterm"></a> close the script.</p></li><li><p>Attach <a id="id423" class="indexterm"></a>the <span class="strong"><strong>MouseAim.cs</strong></span> script by dragging it from the <span class="strong"><strong>Project</strong></span> view into the <span class="strong"><strong>Swat</strong></span> game object.</p></li><li><p>Select the character, and in the <span class="strong"><strong>Mouse Aim</strong></span> component (located in the <span class="strong"><strong>Inspector</strong></span> view), fill in or assign the variables as follows: <span class="strong"><strong>Spine</strong></span>: <span class="strong"><strong>swat:Spine</strong></span>; <span class="strong"><strong>Armed Hand</strong></span>: <span class="strong"><strong>swat:RightHand</strong></span>; <span class="strong"><strong>Lock Y</strong></span>: leave it deselected (unless you're using <span class="strong"><strong>Camera_top</strong></span>); <span class="strong"><strong>Compensation Y Angle</strong></span>: <code class="literal">20</code>; <span class="strong"><strong>Min Angle</strong></span>: <code class="literal">308</code>; <span class="strong"><strong>Max Angle</strong></span>: <code class="literal">31</code>. Also, drag the <span class="strong"><strong>crossAim</strong></span> texture from the <span class="strong"><strong>GUI</strong></span> folder in the <span class="strong"><strong>Project</strong></span> view, into the <span class="strong"><strong>Target Aim</strong></span> field.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_05_43.jpg" /></div></li><li><p>Play the scene. You should now be able to rotate the character's torso by moving the mouse cursor around the screen. Even better, a GUI texture will be displayed wherever he is aiming at.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_05_44.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec222"></a>How it works...</h3></div></div></div><p>Our script starts by converting our bi-dimensional mouse cursor screen's coordinates to three-dimensional<a id="id424" class="indexterm"></a> world space coordinates (stored in the <code class="literal">point</code> variable). Then, it rotates the character's torso towards the point's location using the <code class="literal">LookAt()</code> command<a id="id425" class="indexterm"></a>. Additionally, it<a id="id426" class="indexterm"></a> makes sure the spine does not extrapolate <span class="strong"><strong>Min Angle</strong></span> and <span class="strong"><strong>Max Angle</strong></span>, which could cause distortions to the character model.</p><p>In the process, we convert the target point from its absolute world coordinates to its position in relation to the character, and vice-versa. This is done so that we can detect whether the target point is located behind the character, and if it is, manipulate the point so that the character keeps aiming forwards.</p><p>Also, we have included a <code class="literal">Compensation YAngle</code> variable that makes it possible for us to fine-tune the character's alignment with the mouse cursor.</p><p>Please note that all the commands are inside the <code class="literal">LateUpdate()</code> method<a id="id427" class="indexterm"></a>. This is done to make sure that our transform manipulations override the character's animation clips.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec223"></a>There's more...</h3></div></div></div><p>In case you want to implement shooting, we have provided you with a place to start by casting a ray from the character's armed hand to the target point. To see it as you test the scene, uncomment the line <code class="literal">Debug.DrawRay (armedHand.position, point, Color.red);</code>.</p><p>The ray cast detects collisions with surrounding objects for which the <span class="strong"><strong>targetAim</strong></span> texture map, usually drawn over the mouse cursor location, should snap.</p></div></div>

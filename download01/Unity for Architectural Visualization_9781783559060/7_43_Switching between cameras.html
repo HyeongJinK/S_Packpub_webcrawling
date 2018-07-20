@@ -1,0 +1,37 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec43"></a>Switching between cameras</h2></div></div><hr /></div><p>While previous examples always used a single camera, apart from the mini-map, you can dynamically change cameras using scripts. You could modify their <code class="literal">Depth</code> parameters, so another camera is <a id="id429" class="indexterm"></a>drawn above the others, but you <a id="id430" class="indexterm"></a>could also toggle their state. In a more elaborate setup, you could switch between different cameras, for example from first person to third person perspective or to a dedicated <span class="strong"><strong>Point-of-View</strong></span> (<span class="strong"><strong>POV</strong></span>) camera<a id="id431" class="indexterm"></a> to display a particular viewpoint. It is also a way to toggle between user-driven navigation and a pre-animated camera. The following steps show how to perform this:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Prepare your scene with a few camera objects created and positioned in different places. Ensure that only one camera has an active Audio Listener component, to avoid warnings in the console log.</p></li><li><p>Create a new C# script and name it <code class="literal">switchCamera</code>. Add a public variable, <code class="literal">cameraList</code>, to contain a list of available cameras, using an <code class="literal">array</code>. An <code class="literal">index</code> variable is used to keep track of which camera to enable. This is shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class switchCamera : MonoBehaviour {
+  public Camera[] cameraList;
+  private int index = 0;</pre></div></li><li><p>Within <code class="literal">Start</code>, step through the list of cameras with a <code class="literal">foreach</code> command to disable them one by one. Only enable the first one (indicated by <code class="literal">index</code>). This is shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">  void Start () {
+    foreach (Camera cam in cameraList){
+      cam.enabled = false;
+    }
+    cameraList[index].enabled = true;
+  }</pre></div></li><li><p>We don't need the <code class="literal">Update()</code> method<a id="id432" class="indexterm"></a>, but there is no harm in leaving it in.</p></li><li><p>The <code class="literal">OnGUI()</code> method<a id="id433" class="indexterm"></a> displays a button to toggle the next camera and disable the current one. To right-align the button, use <code class="literal">Screen.width</code>. This is shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">  void OnGUI(){
+    if (GUI.Button(new Rect (Screen.width - 105, 5,100, 20), "Next Camera")){
+      cameraList[index].enabled = false;
+      index = (index + 1) % cameraList.Length;
+      cameraList[index].enabled = true;
+    }
+  }</pre></div></li><li><p>To use this script, attach it to an empty GameObject and fold out the <span class="strong"><strong>Camera List</strong></span> parameter. Set its <span class="strong"><strong>Size</strong></span> to the number of cameras you want to manage and drag your scene cameras into the slots that become available.</p><div class="mediaobject"><img src="/graphics/9781783559060/graphics/7500_07_08.jpg" /></div></li><li><p>When you press play, a button is visible to toggle the active camera.</p></li></ol></div><p>This script can be improved with <span class="emphasis"><em>easing</em></span>. An additional <code class="literal">private</code> camera gets smoothly translated and rotated towards the position and rotation of the camera indicated by <code class="literal">index</code>. In this script (<code class="literal">switchCameraEasing</code>), all cameras in the list are actually toggled off. This is shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class switchCameraEasing : MonoBehaviour {
+  public Camera[] cameraList;
+  public Camera   cameraMaster;
+  private float easeSpeed = 0.125f;
+  private int index = 0;
+  void Start () {
+    foreach (Camera cam in cameraList){
+      cam.enabled = false;
+    }
+    cameraMaster.enabled = true;
+  }</pre></div><p>The easing occurs in the <a id="id434" class="indexterm"></a>
+<code class="literal">Update()</code> method. Instead of the previous technique, we use the <code class="literal">Lerp</code> function, which stands for <span class="emphasis"><em>Linear Interpolation</em></span>. This technique is shown in the following piece of code:</p><div class="informalexample"><pre class="programlisting">  void Update () {
+    cameraMaster.transform.position = Vector3.Lerp(cameraMaster.transform.position,cameraList[index].transform.position,easeSpeed);
+    cameraMaster.transform.rotation = Quaternion.Lerp(cameraMaster.transform.localRotation,cameraList[index].transform.localRotation,easeSpeed);
+  }</pre></div><p>Since we disabled all cameras initially and only move <code class="literal">cameraMaster</code> around, there is no need to further enable or disable other cameras. This is done in the following piece of code:</p><div class="informalexample"><pre class="programlisting">  void OnGUI(){
+    if (GUI.Button(new Rect (Screen.width - 105, 5,100, 20), "Next Camera")){
+      index = (index + 1) % cameraList.Length;
+    }
+  }
+} // closing bracket</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note18"></a>Note</h3><p>If one of the cameras is the main camera from the Character Controller, you get errors in the console log when disabling it. Instead of toggling it completely off, you could lower the <code class="literal">Depth</code> parameter instead and keep it activated.</p></div></div>

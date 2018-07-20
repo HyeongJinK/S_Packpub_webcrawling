@@ -1,0 +1,114 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec15"></a>Following a path</h2></div></div><hr /></div><p>There are times when <a id="id24" class="indexterm"></a>we need scripted routes, and it's just inconceivable to do this entirely by code. Imagine you're working on a stealth game. Would you code a route for every single guard? This technique will help you build a flexible path system for those situations:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec29"></a>Getting ready</h3></div></div></div><p>We need to define a custom data type called <code class="literal">PathSegment</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PathSegment
+{
+    public Vector3 a;
+    public Vector3 b;
+
+    public PathSegment () : this (Vector3.zero, Vector3.zero){}
+    public PathSegment (Vector3 a, Vector3 b)
+    {
+        this.a = a;
+        this.b = b;
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec30"></a>How to do it...</h3></div></div></div><p>This is a long recipe that could be seen as a big two-step process. First, we build the <code class="literal">Path</code> class, which abstracts points in the path from their specific spatial representations, and then we build the <code class="literal">PathFollower</code> behavior, which makes use of that abstraction in order to get actual spatial points to follow:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Path</code> class, which consists of nodes and segments but only the nodes are public and assigned manually:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Path : MonoBehaviour
+{
+    public List&lt;GameObject&gt; nodes;
+    List&lt;PathSegment&gt; segments;
+}</pre></div></li><li><p>Define the <code class="literal">Start</code> function to set the segments when the scene starts:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+    segments = GetSegments();
+}</pre></div></li><li><p>Define the <a id="id25" class="indexterm"></a>
+<code class="literal">GetSegments</code> function to build the segments from the nodes:</p><div class="informalexample"><pre class="programlisting">public List&lt;PathSegment&gt; GetSegments ()
+{
+    List&lt;PathSegment&gt; segments = new List&lt;PathSegment&gt;();
+    int i;
+    for (i = 0; i &lt; nodes.Count - 1; i++)
+    {
+        Vector3 src = nodes[i].transform.position;
+        Vector3 dst = nodes[i+1].transform.position;
+        PathSegment segment = new PathSegment(src, dst);
+        segments.Add(segment);
+    }
+    return segments;
+}</pre></div></li><li><p>Define the first function for abstraction, called <code class="literal">GetParam</code>:</p><div class="informalexample"><pre class="programlisting">public float GetParam(Vector3 position, float lastParam)
+{
+    // body
+}</pre></div></li><li><p>We need to find out which segment the agent is closest to:</p><div class="informalexample"><pre class="programlisting">float param = 0f;
+PathSegment currentSegment = null;
+float tempParam = 0f;
+foreach (PathSegment ps in segments)
+{
+    tempParam += Vector3.Distance(ps.a, ps.b);
+    if (lastParam &lt;= tempParam)
+    {
+        currentSegment = ps;
+        break;
+    }
+}
+if (currentSegment == null)
+    return 0f;</pre></div></li><li><p>Given the current position, we need to work out the direction to go to:</p><div class="informalexample"><pre class="programlisting">Vector3 currPos = position - currentSegment.a;
+Vector3 segmentDirection = currentSegment.b - currentSegment.a;
+segmentDirection.Normalize();</pre></div></li><li><p>Find the <a id="id26" class="indexterm"></a>point in the segment using vector projection:</p><div class="informalexample"><pre class="programlisting">Vector3 pointInSegment = Vector3.Project(currPos, segmentDirection);</pre></div></li><li><p>Finally, <code class="literal">GetParam</code> returns the next position to go to along the path:</p><div class="informalexample"><pre class="programlisting">param = tempParam - Vector3.Distance(currentSegment.a, currentSegment.b);
+param += pointInSegment.magnitude;
+return param;</pre></div></li><li><p>Define the <code class="literal">GetPosition</code> function:</p><div class="informalexample"><pre class="programlisting">public Vector3 GetPosition(float param) 
+{
+    // body
+}</pre></div></li><li><p>Given the current location along the path, we find the corresponding segment:</p><div class="informalexample"><pre class="programlisting">Vector3 position = Vector3.zero;
+PathSegment currentSegment = null;
+float tempParam = 0f;
+foreach (PathSegment ps in segments)
+{
+    tempParam += Vector3.Distance(ps.a, ps.b);
+    if (param &lt;= tempParam)
+    {
+        currentSegment = ps;
+        break;
+    }
+}
+if (currentSegment == null)
+    return Vector3.zero;</pre></div></li><li><p>Finally, <code class="literal">GetPosition</code> converts the parameter as a spatial point and returns it:</p><div class="informalexample"><pre class="programlisting">Vector3 segmentDirection = currentSegment.b - currentSegment.a;
+segmentDirection.Normalize();
+tempParam -= Vector3.Distance(currentSegment.a, currentSegment.b);
+tempParam = param - tempParam;
+position = currentSegment.a + segmentDirection * tempParam;
+return position;</pre></div></li><li><p>Create the <a id="id27" class="indexterm"></a>
+<code class="literal">PathFollower</code> behavior, which derives from <code class="literal">Seek</code> (remember to set the order of execution):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PathFollower <span class="strong"><strong>: Seek</strong></span>
+{
+    public Path path;
+    public float pathOffset = 0.0f;
+    float currentParam;
+}</pre></div></li><li><p>Implement the <code class="literal">Awake</code> function to set the target:</p><div class="informalexample"><pre class="programlisting">public override void Awake()
+{
+    base.Awake();
+    target = new GameObject();
+    currentParam = 0f;
+}</pre></div></li><li><p>The final step is to define the <code class="literal">GetSteering</code> function, which relies on the abstraction created by the <code class="literal">Path</code> class to set the target position and apply <code class="literal">Seek</code>:</p><div class="informalexample"><pre class="programlisting">public override Steering GetSteering()
+{
+    currentParam = path.GetParam(transform.position, currentParam);
+    float targetParam = currentParam + pathOffset;
+    target.transform.position = path.GetPosition(targetParam);
+    return base.GetSteering();
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec31"></a>How it works...</h3></div></div></div><p>We use the <code class="literal">Path</code> class in order to have a movement guideline. It is the cornerstone, because it relies on <code class="literal">GetParam</code> to map an offset point to follow in its internal guideline, and it also uses <code class="literal">GetPosition</code> to convert that referential point to a position in the three-dimensional space along the segments.</p><p>The path-following algorithm just makes use of the path's functions in order to get a new position, update the <a id="id28" class="indexterm"></a>target, and apply the <code class="literal">Seek</code> behavior.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec32"></a>There's more...</h3></div></div></div><p>It's important to take into account the order in which the nodes are linked in the Inspector for the path to work as expected. A practical way to achieve this is to manually name the nodes with a reference number.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3561_01_04.jpg" /><div class="caption"><p>An example of a path set up in the Inspector window</p></div></div><p>Also, we could <a id="id29" class="indexterm"></a>define the <code class="literal">OnDrawGizmos</code> function in order to have a better visual reference of the path:</p><div class="informalexample"><pre class="programlisting">void OnDrawGizmos ()
+{
+    Vector3 direction;
+    Color tmp = Gizmos.color;
+    Gizmos.color = Color.magenta;//example color
+    int i;
+    for (i = 0; i &lt; nodes.Count - 1; i++)
+    {
+        Vector3 src = nodes[i].transform.position;
+        Vector3 dst = nodes[i+1].transform.position;
+        direction = dst - src;
+        Gizmos.DrawRay(src, direction);
+    }
+    Gizmos.color = tmp;
+}</pre></div></div></div>

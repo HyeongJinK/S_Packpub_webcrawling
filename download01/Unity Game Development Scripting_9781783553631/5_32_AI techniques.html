@@ -1,0 +1,64 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec35"></a>AI techniques</h2></div></div><hr /></div><p>There are <a id="id266" class="indexterm"></a>two very common techniques used to create AI: the finite state <a id="id267" class="indexterm"></a>machine and the behavior tree. Depending on the game that you are making and the complexity of the AI that you want, the technique you use will vary. In this chapter, we'll utilize both the techniques in our AI script to maximize the potential of our AI.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec69"></a>Finite state machines</h3></div></div></div><p>Finite <a id="id268" class="indexterm"></a>state machines are one of the most common AI <a id="id269" class="indexterm"></a>systems used throughout computer programming. To define the term itself, a finite state machine breaks down to a system, which controls an object that has a limited number of states to exist in. Some real-world examples of a finite state machine are traffic lights, television, and a computer. Let's look at an example of a computer finite state machine to get a better understanding.</p><p>A computer can be in various states. To keep it simple, we will list three main states. These states are <code class="literal">On</code>, <code class="literal">Off</code>, and <code class="literal">Active</code>. The <code class="literal">Off</code> state<a id="id270" class="indexterm"></a> is when the computer does not have power running it, the <code class="literal">On</code> state is when the computer does have power running it, and<a id="id271" class="indexterm"></a> the <code class="literal">Active</code> state is when someone is using the computer. Let's take <a id="id272" class="indexterm"></a>a further look into our computer finite state machine and explore the functions of each of its states:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>State</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Functions</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">On</code>
+</p>
+</td><td style="" align="left" valign="top">
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Can be used by anyone</p></li><li style="list-style-type: disc"><p>Can turn off the computer</p></li></ul></div>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Off</code>
+</p>
+</td><td style="" align="left" valign="top">
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Can turn on the computer</p></li><li style="list-style-type: disc"><p>Computer parts can be operated on</p></li></ul></div>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Active</code>
+</p>
+</td><td style="" align="left" valign="top">
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Can access the Internet and various programs</p></li><li style="list-style-type: disc"><p>Can communicate with other devices</p></li><li style="list-style-type: disc"><p>Can turn off the computer</p></li></ul></div>
+</td></tr></tbody></table></div><p>Each state has its own functions. Some of the functions of each state affect each other, while some do not. The functions that do affect each other are the functions that control what state the finite state machine is in. If you press the power button on your computer, it will turn on and change the state of your computer to <code class="literal">On</code>. While the state of your computer is <code class="literal">On</code>, you can use the Internet and possibly some other programs, or communicate to other devices such as a router or printer. Doing so will change the state of your computer to <code class="literal">Active</code>. When you are using the computer, you can also turn off the computer by its software or by pressing the power button, therefore changing the state to <code class="literal">Off</code>.</p><p>In video games, you can use a finite state machine to create AI with a simple logic. You can also combine finite state machines with other types of AI systems to create a unique and perhaps more complex AI system. In this chapter, we will be using finite state machines as <a id="id273" class="indexterm"></a>well as what is known as a <span class="strong"><strong>behavior tree</strong></span>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec70"></a>The behavior tree form of the AI system</h3></div></div></div><p>A<a id="id274" class="indexterm"></a> behavior tree is another kind of AI <a id="id275" class="indexterm"></a>system that works in a very similar way to finite state machines. Actually, behavior trees are made up of finite state machines that work in a hierarchical system. This system of hierarchy gives us great control over an individual, and perhaps many finite state systems within the behavior tree, allowing us to have a complex AI system.</p><p>Taking a look back at the table explaining a finite state machine, a behavior tree works the same way. Instead of states, you have behaviors, and in place of the state functions, you have various finite state machines that determine what is done while the AI is in a specific behavior. Let's take a look at the behavior tree that we will be using in this chapter to create our AI:</p><div class="mediaobject"><img src="/graphics/9781783553631/graphics/3631OT_05_01.jpg" /></div><p>On the left-hand side, we have four behaviors: <span class="strong"><strong>Idle</strong></span>, <span class="strong"><strong>Guard</strong></span>, <span class="strong"><strong>Combat</strong></span>, and <span class="strong"><strong>Flee</strong></span>. To the right are the finite state machines that make up each of the behaviors. <span class="strong"><strong>Idle</strong></span> and <span class="strong"><strong>Flee</strong></span> only have one finite state machine, while <span class="strong"><strong>Guard</strong></span> and <span class="strong"><strong>Combat</strong></span> have multiple. Within the <span class="strong"><strong>Combat</strong></span> behavior, two of its finite state machines even have a couple of their own finite state machines.</p><p>As you can see, this hierarchy-based system of finite state machines allows us to use a basic form of logic to create an even more complex AI system. At the same time, we are also getting a lot of control by separating our AI into various behaviors. Each behavior will run its<a id="id276" class="indexterm"></a> own silo of code, oblivious<a id="id277" class="indexterm"></a> to the other behaviors. The only time we want a behavior to notice another behavior is either when an internal or external action occurs that forces the behavior of our AI to change.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec11"></a>Combining the techniques</h4></div></div></div><p>In this <a id="id278" class="indexterm"></a>chapter, we will take<a id="id279" class="indexterm"></a> both of the AI techniques and combine them to create a great AI package. Our behavior tree will utilize finite state machines to run the individual behaviors, creating a unique and complex AI system. This AI package can be used for an enemy AI as well as a friendly AI.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec12"></a>Let's start scripting!</h4></div></div></div><p>Now, let's begin<a id="id280" class="indexterm"></a> scripting our AI! To start off, create <a id="id281" class="indexterm"></a>a new C# file and name it <code class="literal">AI_Agent</code>. Upon opening it, delete any functions within the main class, leaving it empty. Just after the <code class="literal">using</code> statements, add this enum to the script:</p><div class="informalexample"><pre class="programlisting">public enum Behaviors {Idle, Guard, Combat, Flee};</pre></div><p>This enum will be used throughout our script to determine what behavior our AI is in. Now let's add it to our class. It is time to declare our first variable:</p><div class="informalexample"><pre class="programlisting">public Behaviors aiBehaviors = Behaviors.Idle;</pre></div><p>This variable, <code class="literal">aiBehaviors</code>, will be the deciding factor of what our AI does. Its main purpose is to have its value checked and changed when needed. Let's create our first function, which will utilize one of this variable's purposes:</p><div class="informalexample"><pre class="programlisting">void RunBehaviors()
+{
+  switch(aiBehaviors)
+  {
+  case Behaviors.Idle:
+    RunIdleNode();
+    break;
+  case Behaviors.Guard:
+    RunGuardNode();
+    break;
+  case Behaviors.Combat:
+    RunCombatNode();
+    break;
+  case Behaviors.Flee:
+    RunFleeNode();
+    break;
+  }
+}</pre></div><p>What this<a id="id282" class="indexterm"></a> function will do is check the <a id="id283" class="indexterm"></a>value of our <code class="literal">aiBehaviors</code> variable in a switch statement. Depending on what the value is, it will then call a function to be used within that behavior. This function is actually going to be a finite state machine, which will decide what that behavior does at that point. Now, let's add another function to our script, which will allow us to change the behavior of our AI:</p><div class="informalexample"><pre class="programlisting">void ChangeBehavior(Behaviors newBehavior)
+{
+  aiBehaviors = newBehavior;
+
+  RunBehaviors();
+  
+}</pre></div><p>As you can see, this function works very similarly to the <code class="literal">RunBehaviors</code> function. When this function is called, it will take a new <code class="literal">behaviors</code> variable and assign its value to <code class="literal">aiBehaviors</code>. By doing this, we changed the behavior of our AI. Now let's add the final step to running our behaviors; for now, they will be empty functions that act as placeholders for our internal and external actions. Add these functions to the script:</p><div class="informalexample"><pre class="programlisting">void RunIdleNode()
+{
+
+}
+
+void RunGuardNode()
+{
+
+}
+  
+void RunCombatNode()
+{
+
+}
+  
+void RunFleeNode()
+{
+
+}</pre></div><p>Each of these functions will run the finite state machines that make up the behaviors. These functions are essentially a <span class="emphasis"><em>middleman</em></span> between the behavior and the behavior's action. Using <a id="id284" class="indexterm"></a>these functions is the beginning<a id="id285" class="indexterm"></a> of having more control over our behaviors, something that can't be done with a simple finite state machine.</p></div></div></div>

@@ -1,0 +1,59 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec62"></a>Making an animated character throw an object</h2></div></div><hr /></div><p>Now that your animated character is ready, you might want to coordinate his actions with his animation states. <a id="id401" class="indexterm"></a>In this recipe, we will exemplify this by making the character throw an object when the player presses the appropriate button. Also, we will make sure that the action corresponds to the character's animation.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec213"></a>Getting ready</h3></div></div></div><p>For this recipe, we have prepared a project named <code class="literal">MixamoProject</code>, containing several assets such as levels, animated characters, and props. You can find it inside the <code class="literal">0423_05_codes</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec214"></a>How to do it...</h3></div></div></div><p>To make an animated character throw an Easter egg(!), follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open the <span class="strong"><strong>MixamoProject</strong></span> project, and then open the level named <span class="strong"><strong>05_06</strong></span> (in the <span class="strong"><strong>Levels</strong></span> folder).</p></li><li><p>Play the level and press the <span class="emphasis"><em>F</em></span> key on your keyboard. The character will move as if he's throwing something with his right hand.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, create a new C# script named <code class="literal">ThrowObject.cs</code>.</p></li><li><p>Open the script and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ThrowObject : MonoBehaviour {
+    public GameObject projectile;
+    public Vector3 projectileOffset;
+    public Vector3 projectileForce;
+    public Transform charactersHand;
+    public float lenghtPrepare;
+    public float lenghtThrow;
+    public float compensationYAngle = 20.0f;
+    private bool prepared = false;
+    private bool threw = false;
+    private Animator animator;
+    public void Start(){
+        animator = GetComponent&lt;Animator&gt;();
+    }
+    public void LateUpdate(){
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(1);
+
+        if(stateInfo.IsName("UpperBody.Grenade")){
+
+            if(stateInfo.normalizedTime &gt;= lenghtPrepare * 0.01 &amp;&amp; !prepared)
+                Prepare();
+
+            if(stateInfo.normalizedTime &gt;= lenghtThrow * 0.01 &amp;&amp; !threw)
+                Throw();
+
+        } else {
+        prepared = false;
+        threw = false;
+    }
+}
+
+    public void Prepare () {
+        prepared = true;
+        projectile = Instantiate(projectile, charactersHand.position, charactersHand.rotation) as GameObject;
+        if(projectile.GetComponent&lt;Rigidbody&gt;())
+            Destroy(projectile.rigidbody);
+
+        projectile.GetComponent&lt;SphereCollider&gt;().enabled = false;
+        projectile.name = "projectile";
+        projectile.transform.parent = charactersHand;
+        projectile.transform.localPosition = projectileOffset;
+        projectile.transform.localEulerAngles = Vector3.zero;
+    }
+    public void Throw () {
+        threw = true;
+        Vector3 dir = transform.rotation.eulerAngles;
+        dir.y += compensationYAngle;
+        projectile.transform.rotation = Quaternion.Euler(dir);
+        projectile.transform.parent = null;
+        projectile.GetComponent&lt;SphereCollider&gt;().enabled = true;
+        projectile.AddComponent&lt;Rigidbody&gt;();
+        Physics.IgnoreCollision(projectile.collider, collider);
+        projectile.rigidbody.AddRelativeForce(projectileForce);
+    }
+}</pre></div></li><li><p>Save<a id="id402" class="indexterm"></a> and close the script.</p></li><li><p>Attach the <span class="strong"><strong>ThrowObject.cs</strong></span> script to the game object named <span class="strong"><strong>Swat</strong></span>.</p></li><li><p>Select the <span class="strong"><strong>Swat</strong></span> object. In the <span class="strong"><strong>Inspector</strong></span> view, check out its <span class="strong"><strong>Throw Object</strong></span> component. From the <span class="strong"><strong>Project</strong></span> view, drag the Prefab named <span class="strong"><strong>EasterEgg</strong></span> (available in the <span class="strong"><strong>Props</strong></span> folder) into the <span class="strong"><strong>Projectile</strong></span> field.</p></li><li><p>In the <span class="strong"><strong>Characters Hand</strong></span> field, select the <span class="strong"><strong>swat:RightHand</strong></span> transform.</p></li><li><p>As we are still on the <span class="strong"><strong>Throw Object</strong></span> component, fill in the variables as follows: <span class="strong"><strong>Projectile Offset</strong></span>: <span class="strong"><strong>X</strong></span>: <code class="literal">-0.07</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-0.04</code>, <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>; <span class="strong"><strong>Projectile Force</strong></span>: <span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">200</code>, <span class="strong"><strong>Z</strong></span>: <code class="literal">500</code>.</p></li><li><p>We need to find out the values that should go into the <span class="strong"><strong>Length Prepare</strong></span> and <span class="strong"><strong>Length Throw</strong></span> fields. In the <span class="strong"><strong>Project</strong></span> view, select <span class="strong"><strong>Swat@toss_grenade</strong></span>.</p></li><li><p>In the <span class="strong"><strong>Inspector</strong></span> view, select the clip <span class="strong"><strong>toss_grenade</strong></span> and drag the playhead through the timeline. Observe how the character starts preparing for the throw by grabbing the grenade at 11 seconds (12 percent of the length). This is shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_05_39.jpg" /></div><p>Likewise, it finishes<a id="id403" class="indexterm"></a> the throw movement around 1:24 (57 percent of the length), as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_05_40.jpg" /></div></li><li><p>Again, in the <span class="strong"><strong>Hierarchy</strong></span> view, select the <span class="strong"><strong>Swat</strong></span> game object.</p></li><li><p>In the <a id="id404" class="indexterm"></a>
+<span class="strong"><strong>Inspector</strong></span> view, change the values in the <span class="strong"><strong>Length Prepare</strong></span> and <span class="strong"><strong>Length Throw</strong></span> fields to <code class="literal">12</code> and <code class="literal">57</code> respectively.</p></li><li><p>Finally, change the value of <span class="strong"><strong>Compensation YAngle</strong></span> to <code class="literal">-45</code>.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_05_41.jpg" /></div></li><li><p>Play your scene.<a id="id405" class="indexterm"></a> Your character should now be able to throw an Easter egg when you press the <span class="emphasis"><em>F</em></span> key.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec215"></a>How it works...</h3></div></div></div><p>Once the <span class="strong"><strong>toss_grenade</strong></span> animation<a id="id406" class="indexterm"></a> reaches 12 percent of its length, our script detects it and calls the function named <code class="literal">Prepare()</code>.This function instantiates a Prefab, now named projectile, into the character's hand. The values specified under <span class="strong"><strong>Projectile Offset</strong></span> are used to fine-tune its position, making it respect the character's hierarchy. Also, it disables the Prefab's collider and destroys its Rigidbody component, provided it has one.</p><p>Later, when the <span class="strong"><strong>toss_grenade</strong></span> animation reaches 57 percent of its length, the <code class="literal">Throw()</code> function is called, which enables the projectile's collider, adds a Rigidbody component to it, and makes it independent of the Character object. Finally, it adds a relative force to the projectile's Rigidbody component so it behaves as if it was thrown by the character. <span class="strong"><strong>Compensation YAngle</strong></span> is used to adjust the direction of the grenade.</p></div></div>

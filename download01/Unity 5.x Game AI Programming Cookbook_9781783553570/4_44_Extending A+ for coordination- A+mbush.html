@@ -1,0 +1,84 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec48"></a>Extending A* for coordination: A*mbush</h2></div></div><hr /></div><p>After learning <a id="id189" class="indexterm"></a>how to implement A* for path finding, we will now use its power and flexibility to develop some kind of coordinated behavior in order <a id="id190" class="indexterm"></a>to ambush the player. This algorithm is especially useful when we want a non-expensive solution for the aforementioned problem, and one that is also easy to implement.</p><p>This recipe sets the path for every agent to be taken into account when it comes to ambushing a given vertex or point in the graph.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec160"></a>Getting ready</h3></div></div></div><p>We need a special component for the agents called <code class="literal">Lurker</code>. This class will hold the paths that are to be used later in the navigation process.</p><p>The following is the code for <code class="literal">Lurker</code>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Lurker : MonoBehaviour
+{
+    [HideInInspector]
+    public List&lt;int&gt; pathIds;
+    [HideInInspector]
+    public List&lt;GameObject&gt; pathObjs;
+
+    void Awake()
+    {
+        if (pathIds == null)
+            pathIds = new List&lt;int&gt;();
+        if (pathObjs == null)
+            pathObjs = new List&lt;GameObject&gt;();
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec161"></a>How to do it…</h3></div></div></div><p>We will create the main function for setting the ambush path for all the agents and then the function for setting each agent's path.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Define the main function for the ambush:</p><div class="informalexample"><pre class="programlisting">public void SetPathAmbush(GameObject dstObj, List&lt;Lurker&gt; lurkers)
+{
+    Vertex dst = GetNearestVertex(dstObj.transform.position);
+    foreach (Lurker l in lurkers)
+    {
+        Vertex src = GetNearestVertex(l.transform.position);
+        l.path = AStarMbush(src, dst, l, lurkers);
+    }
+}</pre></div></li><li><p>Declare <a id="id191" class="indexterm"></a>the function for finding each path:</p><div class="informalexample"><pre class="programlisting">public List&lt;Vertex&gt; AStarMbush(
+        Vertex src,
+        Vertex dst,
+        Lurker agent,
+        List&lt;Lurker&gt; lurkers,
+        Heuristic h = null)
+{    // next steps
+}</pre></div></li><li><p>Declare the <a id="id192" class="indexterm"></a>necessary members for handling the extra cost of computations:</p><div class="informalexample"><pre class="programlisting">int graphSize = vertices.Count;
+float[] extra = new float[graphSize];
+float[] costs = new float[graphSize];
+int i;</pre></div></li><li><p>Initialize the regular cost and the extra cost variables:</p><div class="informalexample"><pre class="programlisting">for (i = 0; i &lt; graphSize; i++)
+{
+    extra[i] = 1f;
+    costs[i] = Mathf.Infinity;
+}</pre></div></li><li><p>Add extra cost to each vertex that is contained in another agent's path:</p><div class="informalexample"><pre class="programlisting">foreach (Lurker l in lurkers)
+{
+    foreach (Vertex v in l.path)
+    {
+        extra[v.id] += 1f;
+    }
+}</pre></div></li><li><p>Declare and initialize the variables for computing A*:</p><div class="informalexample"><pre class="programlisting">Edge[] successors;
+int[] previous = new int[graphSize];
+for (i = 0; i &lt; graphSize; i++)
+    previous[i] = -1;
+previous[src.id] = src.id;
+float cost = 0;
+Edge node = new Edge(src, 0);
+GPWiki.BinaryHeap&lt;Edge&gt; frontier = new GPWiki.BinaryHeap&lt;Edge&gt;();</pre></div></li><li><p>Start <a id="id193" class="indexterm"></a>implementing the A* main loop:</p><div class="informalexample"><pre class="programlisting">frontier.Add(node);
+while (frontier.Count != 0)
+{
+    if (frontier.Count == 0)
+        return new List&lt;GameObject&gt;();
+    // next steps
+}
+return new List&lt;Vertex&gt;();</pre></div></li><li><p>Validate that the goal has already been reached; otherwise it's not worth computing the costs, and it would be better to continue with the usual A* algorithm:</p><div class="informalexample"><pre class="programlisting">node = frontier.Remove();
+if (ReferenceEquals(node.vertex, dst))
+    return BuildPath(src.id, node.vertex.id, ref previous);
+int nodeId = node.vertex.id;
+if (node.cost &gt; costs[nodeId])
+    continue;</pre></div></li><li><p>Traverse the <a id="id194" class="indexterm"></a>neighbors and check whether they have been visited:</p><div class="informalexample"><pre class="programlisting">successors = GetEdges(node.vertex);
+foreach (Edge e in successors)
+{
+    int eId = e.vertex.id;
+    if (previous[eId] != -1)
+        continue;
+    // next step
+}</pre></div></li><li><p>If they haven't been visited, add them to the frontier:</p><div class="informalexample"><pre class="programlisting">cost = e.cost;
+cost += costs[dst.id];
+cost += h(e.vertex, dst);
+if (cost &lt; costs[e.vertex.id])
+{
+    Edge child;
+    child = new Edge(e.vertex, cost);
+    costs[eId] = cost;
+    previous[eId] = nodeId;
+    frontier.Remove(e);
+    frontier.Add(child);
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec162"></a>How it works…</h3></div></div></div><p>The A*mbush <a id="id195" class="indexterm"></a>algorithm analyses the path of every agent and increases the cost of that node. That way, when an agent computes its path using A*, it is <a id="id196" class="indexterm"></a>better to choose a different route than the one chosen by other agents, thus, creating the perception of an ambush among the target positions.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec163"></a>There is more…</h3></div></div></div><p>There is an easy-to-implement improvement over the algorithm, which leads to the P-A*mbush variation. Simply ordering the lurkers' list from the closest to the farthest might provide a better result at almost no extra cost in computation. This is due to the fact that the ordering operation is handled just once, and could be easily implemented via a priority queue, and then retrieves it as a list to the main A*mbush algorithm with no extra changes.</p></div></div>

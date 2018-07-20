@@ -1,0 +1,131 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec26"></a>Creating an Options menu</h2></div></div><hr /></div><p>Something that many games also <a id="id142" class="indexterm"></a>need is an <span class="strong"><strong>Options</strong></span> menu, so let's create it by <a id="id143" class="indexterm"></a>performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go back into our <code class="literal">PauseMenu</code> script.</p><p>The first thing we're going to want to do is add an additional variable, but we can't use a Boolean value (<code class="literal">true</code>/<code class="literal">false</code>) because we want an option of one of three constant things. We could create an integer and do something if the value is <code class="literal">0</code>, something else if <code class="literal">1</code>, and something else if it is <code class="literal">2</code>. However, that wouldn't look very elegant and would require us to memorize the values we associate with a particular thing. To solve these issues, we will instead create an <span class="strong"><strong>enumeration</strong></span>. Enumerations, often referred to as enums, are a distinct type that we create, that is, they are themselves a collection of constant values. Place the following two lines after you enter the class:</p><div class="informalexample"><pre class="programlisting">enum Menu{None, Pause, Options};
+private Menu currentMenu;</pre></div><p>Notice how we are able to create a variable of the type <code class="literal">Menu</code> here; that's because we used the <code class="literal">enum</code> keyword to define a type called <code class="literal">Menu</code>, which can have one of the three values: <code class="literal">Menu.None</code>, <code class="literal">Menu.Pause</code>, and <code class="literal">Menu.Options</code>.</p><p>We will be using this value to determine whether we should show which menu we currently want to be at: the normal pause menu, the <span class="strong"><strong>Options</strong></span> screen, or nothing when we enter each <code class="literal">OnGUI</code> call.</p><p>Under the hood, <code class="literal">currentMenu</code> is actually an integer with a value of <code class="literal">0</code> for <code class="literal">Menu.None</code>, <code class="literal">1</code> for <code class="literal">Menu.Pause</code>, and so on. However, it is much easier to read and understand what it is doing.</p></li><li><p>After this, we need to <a id="id144" class="indexterm"></a>initialize the variable inside <a id="id145" class="indexterm"></a>our Start function:</p><div class="informalexample"><pre class="programlisting">currentMenu = Menu.None;</pre></div><p>The following screenshot shows the code:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_02_9.jpg" /></div><p>One of the neat things about using an enum is the fact that when you use it inside MonoDevelop, it will display all the possible options that you want to pick. Using this system, we will make it quite easy to add additional menus of your own!</p></li><li><p>After this, we will need to rewrite the <code class="literal">OnGUI</code> function to reflect our new state:</p><div class="informalexample"><pre class="programlisting">void OnGUI() 
+  {
+    GUI.skin = newSkin;
+
+    if(isPaused  &amp;&amp; currentMenu == Menu.None) 
+    {
+      currentMenu = Menu.Pause;		
+    }
+
+    //Check if we are at a menu
+    if (currentMenu == Menu.None) 
+    {
+      Time.timeScale = 1.0f;
+      return;
+    }
+
+    //We're at a menu, so let's pause the game
+    Time.timeScale = 0.0f;
+
+    switch (currentMenu) 
+    {
+      case Menu.Options:
+        ShowOptionsMenu();
+        break;
+      case Menu.Pause:
+        ShowPauseMenu();
+        break;
+    }
+
+  }</pre></div><p>The first change<a id="id146" class="indexterm"></a> you'll notice is the fact that <a id="id147" class="indexterm"></a>now we check to see if we are currently not at a menu and paused before going to the <code class="literal">Pause</code> menu. This will ensure we can go to any other menu that you'd want to go to and the game would still be paused.</p><p>Next, you'll see the other new aspect of C# that we'll talk about now: a <code class="literal">switch</code> statement:</p><div class="informalexample"><pre class="programlisting">int caseSwitch = 1;
+switch (caseSwitch)
+{
+    case 1:
+        print("Case 1");
+        break;
+    case 2:
+        print("Case 2");
+        break;
+    default:
+        print("Default case");
+        break;
+}</pre></div><p>A <code class="literal">switch</code> statement (as seen in the preceding code) is used when we want to do something based on a number of single values, and doing something different based on the values (going to the default value if none of the other values are valid). These are commonly used with enumerations. Based on the value that <code class="literal">currentMenu</code> has, it will either return in the first <code class="literal">if</code> check <a id="id148" class="indexterm"></a>or show the <a id="id149" class="indexterm"></a>
+<span class="strong"><strong>Options</strong></span> or <span class="strong"><strong>Pause</strong></span> menu.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note31"></a>Note</h3><p>Unlike some other programming languages, C# requires the end of the <code class="literal">switch</code> sections, including the final one, to be unreachable. That is, your code may not fall through into the next part of code. Typically, we solve this by adding a break to exit outside a <code class="literal">switch</code> statement.</p><p>For more information<a id="id150" class="indexterm"></a> about <code class="literal">switch</code> statements, check out <a class="ulink" href="http://msdn.microsoft.com/en-us/library/06tc147t.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/06tc147t.aspx</a>.</p></div></li><li><p>Now, at this point, we need to write the <code class="literal">ShowOptionsMenu</code> function and update the <code class="literal">ShowPauseMenu</code> function to add access to the <span class="strong"><strong>Options</strong></span> menu. Since both of these functions need to draw a window, the first thing I'm going to do is create a new function called <code class="literal">BuildWindow</code>:</p><div class="informalexample"><pre class="programlisting">void BuildWindow()
+  {
+    float windowX = ( Screen.width - windowWidth ) / 2;
+    float windowY = ( Screen.height - windowHeight ) / 2;
+    
+    
+    GUILayout.BeginArea(new Rect( windowX, windowY, 
+                                 windowWidth, windowHeight ));
+  }</pre></div></li><li><p>Next, we will need to<a id="id151" class="indexterm"></a> rewrite the <code class="literal">ShowPauseMenu</code> function to add access to the <span class="strong"><strong>Options</strong></span> menu:</p><div class="informalexample"><pre class="programlisting">void ShowPauseMenu()
+  {
+    BuildWindow ();
+
+    GUILayout.BeginHorizontal();
+
+    if (GUILayout.Button ("Resume")) 
+    {
+      //resume the game
+      isPaused = false;
+      currentMenu = Menu.None;
+    }
+
+    if (GUILayout.Button ("Restart")) 
+    {
+      Application.LoadLevel(Application.loadedLevelName);
+    }
+
+    GUILayout.EndHorizontal();
+
+    if (GUILayout.Button ("Options")) 
+    {
+      currentMenu = Menu.Options;
+    }
+    GUILayout.BeginHorizontal();
+
+    if (GUILayout.Button ("Main Menu")) 
+    {
+      Application.LoadLevel("Main_Menu");
+    }
+
+    if (GUILayout.Button ("Exit Game")) 
+    {
+      // Only works when published
+      Application.Quit();
+    }
+
+    GUILayout.EndHorizontal();
+
+    GUILayout.EndArea ();
+  }</pre></div></li><li><p>Now, let's implement our new function, <code class="literal">ShowOptionsMenu</code>:</p><div class="informalexample"><pre class="programlisting">void ShowOptionsMenu()
+  {
+    BuildWindow ();
+
+    // Instead of the default blank background, 
+    // we will use what the GUISkin uses for the box properties
+    GUILayout.BeginVertical("box");
+    
+    // Set our volume
+    GUILayout.Label("Master Volume - (" + AudioListener.volume.ToString ("f2") + ")");
+    AudioListener.volume = GUILayout.HorizontalSlider (AudioListener.volume, 0.0f, 1.0f);
+    
+    // Display and add the ability to change graphics quality
+int currentQuality = QualitySettings.GetQualityLevel ();
+string qualityName = QualitySettings.names[currentQuality];
+GUILayout.Label ("Quality - " + qualityName);
+
+    
+    GUILayout.BeginHorizontal();
+    
+    if (GUILayout.Button("Decrease")) 
+    {
+      QualitySettings.DecreaseLevel();
+    }
+    if (GUILayout.Button("Increase")) 
+    {
+      QualitySettings.IncreaseLevel();
+    }
+    
+    GUILayout.EndHorizontal();
+    
+    if (GUILayout.Button ("Back")) 
+    {
+      currentMenu = Menu.Pause;
+    }
+    
+    GUILayout.EndVertical();
+
+    GUILayout.EndArea ();
+  }</pre></div><p>If we go to the <span class="strong"><strong>Options</strong></span> screen, then the first thing I do is create a vertical group passing in a parameter. This parameter is a string that tells the group to use that following type's properties for this group. Since we are using <code class="literal">box</code>, it looks at our GUISkin and grabs whatever background texture was used for it. Note that this is a texture provided to us by<a id="id152" class="indexterm"></a> Unity, which you should feel free to replace on your own.</p><p>The first item that we add to the GUI is a label displaying the value of <code class="literal">AudioListener.volume</code>, the master volume of our scene. To do so, use the <code class="literal">ToString</code> function to convert the float to a string. The <code class="literal">f2</code> parameter stands for fixed point 2. It rounds the number into a fixed-point value with two decimal places.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note32"></a>Note</h3><p>If you want to convert a float to an integer, you may consider using the <code class="literal">Mathf.Round</code> function, which will round a number to the nearest integer.</p></div><p>The next section has us using horizontal sliders. The <code class="literal">GUI.HorizontalSlider</code> and <code class="literal">GUI.VerticalSlider</code> functions are used to draw horizontal <a id="id153" class="indexterm"></a>and vertical sliders respectively. This <a id="id154" class="indexterm"></a>slider can be used to specify a number within a certain range. In the preceding example, we have a horizontal slider that we used for the volume of our game in the range of <code class="literal">0</code> to <code class="literal">1</code>. <code class="literal">AudioListener.volume</code> is a static variable, so it will keep whatever value you have set for it as long as the game is going on.</p><p>The slider functions take the current value of the slider and the minimum and maximum values of the slider. The preceding example shows how to use a horizontal slider, but a vertical slider uses exactly the same parameters except the slider is drawn vertically instead of horizontally.</p></li><li><p>After this, we save all of our files and then go back into Unity and run the game, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_02_10.jpg" /></div></li></ol></div><p>Over the course of this <a id="id155" class="indexterm"></a>section, we've done two things. First of all we changed the pause menu to now have an additional <span class="strong"><strong>Options</strong></span> menu.</p><p>And when we click on the <span class="strong"><strong>Options</strong></span> button, we will see a separate menu that will allow users to modify the <span class="strong"><strong>Master Volume</strong></span> value as well as the <span class="strong"><strong>Graphics Quality</strong></span> value of their project. This is shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_02_11.jpg" /></div><p>For more information on the UnityGUI system<a id="id156" class="indexterm"></a>, there is a GUI scripting guide available at <a class="ulink" href="http://docs.unity3d.com/Manual/GUIScriptingGuide.html" target="_blank">http://docs.unity3d.com/Manual/GUIScriptingGuide.html</a>.</p></div>

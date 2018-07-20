@@ -1,0 +1,74 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec68"></a>Selecting an attack</h2></div></div><hr /></div><p>The player will select an attack and then select the enemy to perform the attack. To allow the player to select various attacks from the HUD, we will create a new script called <code class="literal">Attack</code> in the <code class="literal">Assets/Scripts</code> folder, as follows:</p><pre class="programlisting">using UnityEngine; &#13;
+using System.Collections; &#13;
+ &#13;
+public class Attack : MonoBehaviour { &#13;
+ &#13;
+    public bool attackSelected=false; &#13;
+    public int hitAmount=0; &#13;
+ &#13;
+    public void Smack(){ &#13;
+        hitAmount=5; &#13;
+        AttackTheEnemy(); &#13;
+    } &#13;
+ &#13;
+    public void Wack(){ &#13;
+        hitAmount=10; &#13;
+        AttackTheEnemy(); &#13;
+    } &#13;
+ &#13;
+    public void Kick(){ &#13;
+        hitAmount=15; &#13;
+        AttackTheEnemy(); &#13;
+    } &#13;
+ &#13;
+    public void Chop(){ &#13;
+        hitAmount=20; &#13;
+        AttackTheEnemy(); &#13;
+    } &#13;
+ &#13;
+    public void AttackTheEnemy(){ &#13;
+        attackSelected=true; &#13;
+    } &#13;
+}  &#13;
+</pre><p>Essentially, when each button is hit, it will reference a different attack with a different hit amount. For this to work, we will need to have each button run is specified function when clicked. Attach this script to the <span class="strong"><strong>BattleManager</strong></span> GameObject.</p><p>Now that it is attached to the <span class="strong"><strong>BattleManager</strong></span> GameObject, we can easily set up the correct buttons to run the function <code class="literal">OnClick()</code>.</p><p>Select the first button, <code class="literal">Smack</code>, from the hierarchy and add a new <code class="literal">OnClick()</code> event. Drag the <code class="literal">BattleMananger</code> GameObject in to the <span class="strong"><strong>Object</strong></span> slot and select <span class="strong"><strong>Attack</strong></span> | <span class="strong"><strong>Smack</strong></span> from the function list, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_003.jpg" /></div><p>
+</p><p>Complete the same process for the other three attack buttons, by assigning their appropriate functions.</p><p>This doesn't really do anything in particular yet, but sets the value of the attack that will be performed. In the <code class="literal">Attack</code> script, we have a function called <code class="literal">AttackTheEnemy()</code> that gets called whenever one of the buttons are selected. Within it, a Boolean variable, <code class="literal">attackSelected</code>, is set to <code class="literal">true</code>. This value will be used to turn on and off the player's ability to actually select an enemy to perform the attack. We will utilize this variable soon when we set up the player's ability to select an enemy.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec122"></a>Adding a visual effect to attack selection</h3></div></div></div><p>Now that we can select the attack, we want to provide some sort of feedback to the player to let him or her know what attack is currently selected. We'll do this by adding an outline to the button that represents the current attack.</p><p>For each of the attack buttons, add an <span class="strong"><strong>Outline</strong></span> component to the button's Inspector. You can do this all at once by selecting all of the buttons.</p><p>To select all of the buttons, click on the first one in the Hierarchy, and then while holding down <span class="emphasis"><em>Shift</em></span> click on the last one.</p><p>Make sure you do not select the <code class="literal">Back</code> button and only select the ones that designate attacks. With all attack buttons selected in the Hierarchy, select <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>UI</strong></span> | <span class="strong"><strong>Effects</strong></span> | <span class="strong"><strong>Outline</strong></span>, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_004.jpg" /></div><p>
+</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip118"></a>Tip</h3><p>Instead of navigating through the <span class="strong"><strong>Add Component</strong></span> menus, you can also just type <span class="strong"><strong>Outline</strong></span> in the search bar after selecting <span class="strong"><strong>Add Component</strong></span>.</p></div><p>Now that the <code class="literal">Outline</code> component has been added, change the <span class="strong"><strong>Effect Distance</strong></span> to <code class="literal">2</code> and <code class="literal">-2</code>, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_005.jpg" /></div><p>
+</p><p>Now disable the <span class="strong"><strong>Outline</strong></span> component from each button by deselecting the check box next to <span class="strong"><strong>Outline (Script)</strong></span>.</p><p>Now, update the <code class="literal">Attack</code> script by including the following <code class="literal">using</code> statement:</p><pre class="programlisting">using UnityEngine.UI;  &#13;
+</pre><p>And add the following variable declarations:</p><pre class="programlisting">public Button smack; &#13;
+public Button wack; &#13;
+public Button kick; &#13;
+public Button chop; &#13;
+</pre><p>Now create the following function:</p><pre class="programlisting">void HighlightTheButton(){ &#13;
+    if(hitAmount==5){ &#13;
+       smack.GetComponent&lt;Outline&gt;().enabled=true; &#13;
+    }else{ &#13;
+       smack.GetComponent&lt;Outline&gt;().enabled=false; &#13;
+    } &#13;
+ &#13;
+    if(hitAmount==10){ &#13;
+       wack.GetComponent&lt;Outline&gt;().enabled=true; &#13;
+    }else{ &#13;
+       wack.GetComponent&lt;Outline&gt;().enabled=false; &#13;
+    } &#13;
+ &#13;
+    if(hitAmount==15){ &#13;
+       kick.GetComponent&lt;Outline&gt;().enabled=true; &#13;
+    }else{ &#13;
+       kick.GetComponent&lt;Outline&gt;().enabled=false; &#13;
+    } &#13;
+ &#13;
+    if(hitAmount==20){ &#13;
+       chop.GetComponent&lt;Outline&gt;().enabled=true; &#13;
+    }else{ &#13;
+       chop.GetComponent&lt;Outline&gt;().enabled=false; &#13;
+    } &#13;
+}  &#13;
+</pre><p>Lastly, add the following line to each of the attack functions:</p><pre class="programlisting">HighlightTheButton();  &#13;
+</pre><p>The preceding code will highlight or unhighlight the appropriate button based on the current value of <code class="literal">hitAmount</code>. We could have used a new variable for this, but since the <code class="literal">hitAmount</code> is directly tied to which button was pressed, this seemed like a quicker solution.</p><p>Before this code will work, we need to assign the correct buttons to the <code class="literal">Attack</code> script in the <code class="literal">BattleManager</code> class' Inspector. So, drag and drop the buttons to their appropriate slots, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_006.jpg" /></div><p>
+</p><p>Now you can select the various attacks and they will remain highlighted with an outline until you select a different attack. The following screenshot demonstrates the <span class="strong"><strong>Wack</strong></span> attack selected, because it has a thicker outline:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463456/graphics/image_10_007.jpg" /></div><p>
+</p></div></div>

@@ -1,0 +1,90 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec26"></a>Animating triggers - creating a death trap</h2></div></div><hr /></div><p>In this recipe, we will animate a <span>trigger position</span><a id="id325289099" class="indexterm"></a> and use it to create a <span>death trap</span><a id="id325289108" class="indexterm"></a>. You can use Unity's Animation View to create various game play mechanisms with minimum scripting.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec68"></a>Getting ready</h3></div></div></div><p>Before we start, you should prepare a death trap model. We are using a "press trap" as an example. It contains two identical moving elements. See the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785883910/graphics/be9477c3-c4a2-4cdd-be96-d12cc2552445.png" /></div><p>The model is not skinned and has no rig; instead, the moving elements are separate objects. We will animate them with Unity's <strong class="userinput"><code>Animation</code></strong> View. You can also use the example Unity project provided and go to the <code class="literal">Chapter 02 Working with the animation view\Recipe 06 Animating triggers - creating a death trap</code> directory. You will find an <code class="literal">Example.unity</code> scene there. If you play the game, you can see the trap working. If you open the scene, you will find the <strong class="userinput"><code>Trap</code></strong> game object with the <strong class="userinput"><code>LeftTrap</code></strong> and <strong class="userinput"><code>RightTrap</code></strong> game objects as its children. Those child objects are the only ones animated in this example. They have trigger objects as their children. Those trigger objects kill the player when he enters them. All other child objects of the <strong class="userinput"><code>Trap</code></strong> game object are only decorations and are optional.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec69"></a>How to do it...</h3></div></div></div><p>To animate the <span>trigger position</span><a id="id325289264" class="indexterm"></a> and create a <span>death trap</span><a id="id325289362" class="indexterm"></a>, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create an empty object in the scene and name it <strong class="userinput"><code>Trap</code></strong>. It will be a parent object for our moving parts.</li><li>Put your models into the scene and parent them to the <strong class="userinput"><code>Trap</code></strong> game object. The models should have descriptive names, for instance, <strong class="userinput"><code>LeftTrap</code></strong> and <strong class="userinput"><code>RightTrap</code></strong>.</li><li>Add an Animator component to your <strong class="userinput"><code>Trap</code></strong> game object (the root object of our death trap). Set the <strong class="userinput"><code>Update Mode</code></strong> to <strong class="userinput"><code>Animate Physics</code></strong>.</li><li>Go to <strong class="userinput"><code>Window | Animation</code></strong> and open the <strong class="userinput"><code>Animation</code></strong> View.</li><li>Create a new Animation Clip by clicking on the <strong class="userinput"><code>Create</code></strong> button.</li><li>Select the <strong class="userinput"><code>LeftTrap</code></strong> game object and make sure the record button is pressed (in the upper-left corner of the <strong class="userinput"><code>Animation</code></strong> View).</li><li>Move the <strong class="userinput"><code>LeftTrap</code></strong> game object to the open position.</li><li>Adjust the timeline a few seconds forward and move the <strong class="userinput"><code>LeftTrap</code></strong> game object to the closed position.</li><li>Adjust the timeline a few seconds again and move the <strong class="userinput"><code>LeftTrap</code></strong> game object to the open position again to create a looping animation.</li><li>Repeat steps 7-9 for the <strong class="userinput"><code>RightTrap</code></strong> game object.</li><li>You should have a looping animation of the trap opening and closing. You can adjust the animation until you're happy with it. You can add a pause in the open position to make it easier for the player to go through the trap without being killed.</li><li>Close the <strong class="userinput"><code>Animation</code></strong> View.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="13" type="1"><li>We need to write a script for our character to be able to harm them with our death trap. Create a new C# script and call it <code class="literal">Character.cs</code>. Write the following code:</li></ol></div><pre class="programlisting">     using UnityEngine; 
+     using System.Collections; 
+ 
+     public class Character : MonoBehaviour 
+     { 
+ 
+     /*We are going to store the reference to a blood effect prefab 
+       in this variable*/ 
+         public GameObject bloodEffect; 
+ 
+       /*This variable is set to true when the character object was 
+         already killed*/ 
+         bool isKilled = false; 
+ 
+         /*This function is called by the death 
+         trap, when we enter it*/ 
+         public void Kill () 
+         { 
+             /*If the character was already killed by the trap, 
+             we don't want to do anything*/ 
+             if (isKilled) { 
+                 return; 
+             } 
+             /*If it was not killed, we set the isKilled 
+             variable to true*/ 
+             isKilled = true; 
+ 
+            /*We check if the character has a Rigidbody component*/ 
+             Rigidbody rb = GetComponent&lt;Rigidbody&gt; (); 
+ 
+             if (rb != null) { 
+ 
+                 /*If we find the component, we need to set it to 
+                 kinematic to prevent our character from being 
+                 launched in the air by the collision with our 
+                 trap*/ 
+                 rb.isKinematic = true; 
+             } 
+ 
+             /*Here we spawn a blood effect prefab stored in the 
+             bloodEffect variable*/ 
+         
+            GameObject.Instantiate (bloodEffect, transform.position 
+                     + Vector3.up * 2f, Quaternion.identity); 
+ 
+             /*We are getting all the Renderer components of our 
+             character*/ 
+ 
+             Renderer[] r = GetComponentsInChildren&lt;Renderer&gt; (); 
+ 
+             for (int i = 0; i &lt; r.Length; i++) { 
+                 /*We are turning all the renderers of, making the 
+                 object dissapear*/ 
+                 r [i].enabled = false; 
+             } 
+ 
+             /*We are also checking if our character uses our 
+             SimpleMove script if so, we are turning it off to 
+             prevent player from moving the character after death*/ 
+         
+             SimpleMove move = GetComponent&lt;SimpleMove&gt; (); 
+ 
+             if (move != null) { 
+                 move.enabled = false; 
+             } 
+ 
+         } 
+     } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="14" type="1"><li>Select the <strong class="userinput"><code>LeftTrap</code></strong><span>game object</span><a id="id325509832" class="indexterm"></a> and add a <strong class="userinput"><code>Box Collider</code></strong> component to it.</li><li>Adjust the collider shape so that it will not cover the spikes section (we plan to add a trigger there). To do so, click on the <strong class="userinput"><code>Edit Shape</code></strong> button in the <strong class="userinput"><code>Box Collider</code></strong> component. Shapes <span>handles</span><a id="id325509852" class="indexterm"></a> will appear on every face of the <strong class="userinput"><code>Box Collider</code></strong> in the <strong class="userinput"><code>Scene</code></strong> View. You can click on the handle and move it to adjust the shape.</li><li>Add a <strong class="userinput"><code>Rigidbody</code></strong> component to the <strong class="userinput"><code>LeftTrap</code></strong> game object and set it to <strong class="userinput"><code>Is Kinematic</code></strong>.</li><li>Right-click on the <strong class="userinput"><code>LeftTrap</code></strong> game object and choose <strong class="userinput"><code><strong class="userinput"><code>3</code></strong>D Object | Cube</code></strong> to add a Cube child object to it. It will become our trigger.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="18" type="1"><li>Scale the Cube to cover the spikes with it. See the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781785883910/graphics/b52acfdf-ec1d-48ad-a0b5-f526a9929406.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="19" type="1"><li>Remove the <strong class="userinput"><code>MeshRenderer</code></strong> and <strong class="userinput"><code>MeshFilter</code></strong> components from the <strong class="userinput"><code>Cube</code></strong>. Give the <strong class="userinput"><code>Cube</code></strong> a descriptive name, for instance, <strong class="userinput"><code>LeftTrapTrigger</code></strong>.</li><li>Check the <strong class="userinput"><code>Is Trigger</code></strong><span>option</span><a id="id325526656" class="indexterm"></a> in the <strong class="userinput"><code>Box Collider</code></strong> of the <strong class="userinput"><code>LeftTrapTrigger</code></strong>.</li><li>Repeat steps 14-20 for the <strong class="userinput"><code>RightTrap</code></strong>.</li><li>Now we need to write a script for the death trap itself. Create a new C# script and call it <code class="literal">DeathTrap.cs</code>. Open the script and write the following code:</li></ol></div><pre class="programlisting">     using UnityEngine; 
+     using System.Collections; 
+ 
+     public class DeathTrap : MonoBehaviour 
+     { 
+ 
+         /*This function is called when a Rigidbody 
+         enters the trigger object*/ 
+         void OnTriggerEnter (Collider other) 
+         { 
+ 
+       /*We are checking if the object which entered the                      trigger has a Character script, if so we are calling the 
+         Kill() method on it*/ 
+         
+             Character characterScript = 
+             other.gameObject.GetComponent&lt;Character&gt; (); 
+ 
+             if (characterScript != null) { 
+                 characterScript.Kill (); 
+             } 
+         } 
+     } </pre><div class="orderedlist"><ol class="orderedlist arabic" start="23" type="1"><li>Attach the <code class="literal">DeathTrap.cs</code> script to the <strong class="userinput"><code>LeftTrapTrigger</code></strong> game object and the <strong class="userinput"><code>RightTrapTrigger</code></strong> game object.</li><li>Make sure your character has a <strong class="userinput"><code>Rigidbody</code></strong> component (the <strong class="userinput"><code>ThirdPersonCharacter</code></strong> prefab from Unity's Standard assets will work).</li><li>Add the <code class="literal">Character.cs</code> script to your character.</li><li>Create a blood particle effect and save it as a prefab. Name it <strong class="userinput"><code>BloodSplash</code></strong>.</li><li>Assign the <strong class="userinput"><code>BloodSplash</code></strong> prefab to the <strong class="userinput"><code>Blood Effect</code></strong> field of the <strong class="userinput"><code>Character</code></strong> script component in your character.</li><li>Play the game and enter the trap to see the effect. Your character should disappear and the <strong class="userinput"><code>BloodSplash</code></strong> effect should be spawned.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec70"></a>How it works...</h3></div></div></div><p>In this recipe, we attach triggers (game objects with <strong class="userinput"><code>Box Collider</code></strong> components set to <strong class="userinput"><code>Is Trigger</code></strong>) as child objects of our trap's moving parts. The <code class="literal">OnTriggerEnter()</code> method in our <code class="literal">DeathTrap.cs</code> script is called whenever an object with a <strong class="userinput"><code>Rigidbody</code></strong> component enters one of our trigger objects. It does not matter if the object or the <span>trigger</span><a id="id325533035" class="indexterm"></a> is moving. The animation of the moving parts of our trap also moves the child trigger objects. You can use it to create some really spectacular traps in your games.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec71"></a>There's more...</h3></div></div></div><p>In our example, the character will die whenever it touches the spikes of our trap. We can add some more realism by using Animation Events to enable the triggers when the trap is closing and disable them when it opens. It would prevent us from killing the character when the trap is not closing on them. You can learn more about Animation Events in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em><span>Handling Combat</span></em></span>.</p><p>Remember that you can also rotate the triggers, similar to how we did it in the <span class="emphasis"><em>Using the Hierarchy to animate local rotation - creating an orbiting planet</em></span><span> </span>recipe. Scaling the triggers is also possible.</p><p>You should not use this concept for moving normal colliders. Always try to use a Rigid body set to <strong class="userinput"><code>Is Kinematic</code></strong> when you want to move a collider (for optimization reasons).
+</p></div></div>

@@ -1,0 +1,74 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec65"></a>Making video configurations</h2></div></div><hr /></div><p>One of the<a id="id530" class="indexterm"></a> first aspects of the game that we will be editing is the video configuration. When it comes to performance, the video settings are perhaps the most important. Changing something as simple as the shadows can greatly change how a player can smoothly play the game. So let's get started by creating a new C# script and naming it <code class="literal">Video_Config</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec119"></a>Setting the values</h3></div></div></div><p>Our first<a id="id531" class="indexterm"></a> step in creating video configurations<a id="id532" class="indexterm"></a> is to create a function that will set a default value for the video settings. For this, we will set the video settings to moderate values that aren't too low or too high. This will give the player a good idea of what they need to modify if they need or want to modify anything:</p><div class="informalexample"><pre class="programlisting">public void SetDefaults()
+{
+  SetSettings("Medium");
+  ToggleShadows(1);
+  SetFOV(90.00f);
+  SetResolution(0, 1);
+  SetAA(2);
+  SetVsync(1);
+}</pre></div><p>What this function does is call all of the functions that we create, which will configure the video settings. The values that we send to each of the functions are default settings that aren't too high or too low.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec120"></a>Toggling the shadows</h3></div></div></div><p>The first <a id="id533" class="indexterm"></a>video settings that will be affected<a id="id534" class="indexterm"></a> are the shadows and how they render. In Unity, there are three shadow settings: <span class="emphasis"><em>None</em></span>, <span class="emphasis"><em>Hard</em></span>, and <span class="emphasis"><em>Soft</em></span>. For our game, we'll just use the <span class="emphasis"><em>None</em></span> and <span class="emphasis"><em>Hard</em></span> settings. When we set the shadows to <span class="emphasis"><em>None</em></span>, the shadows will no longer be rendered. When the shadows are set to <span class="emphasis"><em>Hard</em></span>, the shadows will have a hard edge to them; they won't have a fading edge. In the next screenshot, you will see the results of the effects that we used in our game. The image on the left shows the <span class="emphasis"><em>Hard</em></span> shadows and the image on the right shows the shadows turned off.</p><div class="mediaobject"><img src="/graphics/9781783553631/graphics/3631OT_09_01.jpg" /></div><p>Now that<a id="id535" class="indexterm"></a> you've seen the resulting effects <a id="id536" class="indexterm"></a>of our shadow options, let's code these options. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">public void ToggleShadows(int newToggle)
+{
+  Light[] lights = GameObject.FindObjectsOfType&lt;Light&gt;();
+    
+  foreach(Light light in lights)
+  {
+    if(newToggle == 0)
+      light.shadows = LightShadows.None;
+    else
+      light.shadows = LightShadows.Hard;
+  }
+}</pre></div><p>This function takes an <code class="literal">int</code> value, which will be used to toggle the shadows on or off. Inside the function, we first grab all of the lights within the scene and assign them to an array. Then, for each of the lights, we toggle their shadow's value to <span class="emphasis"><em>None</em></span> or <span class="emphasis"><em>Hard</em></span>. This is how we turn the shadows on or off.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec121"></a>Setting the field of view</h3></div></div></div><p>The field <a id="id537" class="indexterm"></a>of view is a video setting that doesn't really<a id="id538" class="indexterm"></a> affect performance that much, but it is an option that many PC gamers like to modify. The field of view literally means what it's called; it determines how big the view port is for the player to see the game. It's measured by angle degrees and can also be measured vertically, horizontally, or diagonally. Typically, the field of view is measured diagonally for video games.</p><p>Add this function to your script:</p><div class="informalexample"><pre class="programlisting">public void SetFOV(float newFOV)
+{
+  Camera.main.fieldOfView = newFOV;
+}</pre></div><p>The way<a id="id539" class="indexterm"></a> that cameras in Unity measure the <a id="id540" class="indexterm"></a>field of view is by using a float variable. So in the preceding function, we receive a float, which will be the new field of view. To change the field of view, we find the main camera, access it's <code class="literal">fieldofView</code> property, and assign it to the new field of the <code class="literal">view</code> variable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec122"></a>Setting the resolution</h3></div></div></div><p>Next, we'll<a id="id541" class="indexterm"></a> allow the player to modify the resolution <a id="id542" class="indexterm"></a>of the game as well as decide whether the game will be full screen or windowed. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">public void SetResolution(int Res, int Full)
+{
+  bool fs = Convert.ToBoolean(Full);
+    
+  switch(Res)
+  {
+  case 0:
+    Screen.SetResolution(1920, 1080, fs);
+    break;
+  case 1:
+    Screen.SetResolution(1600, 900, fs);
+    break;
+  case 2:
+    Screen.SetResolution(1280, 1024, fs);
+    break;
+  case 3:
+    Screen.SetResolution(1280, 800, fs);
+    break;
+  case 4:
+    Screen.SetResolution(640, 400, fs);
+    break;
+  }
+}</pre></div><p>For this function, we receive two values. The first <code class="literal">int</code> value decides which resolution we will use and the next <code class="literal">int</code> value determines whether the game will be full screen or not. Inside the function, we<a id="id543" class="indexterm"></a> create a <code class="literal">bool</code> variable, which will be used to determine the fullscreen option. To use the <code class="literal">int</code> value we passed to the function, we convert the <code class="literal">int</code> value to<a id="id544" class="indexterm"></a> a Boolean by using the <code class="literal">Convert</code> function.</p><p>Next, we use a <code class="literal">switch</code> statement to decide which resolution to set the game to. Which resolutions you want your game to support is up to you, but you should try to support various <a id="id545" class="indexterm"></a>resolutions because everyone has their <a id="id546" class="indexterm"></a>own preferences. To set the resolution, we access the <code class="literal">SetResolution</code> function on the screen, set the resolution values, and then set the <code class="literal">fullscreen</code> value.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec123"></a>Toggling the anti-aliasing property</h3></div></div></div><p>The next <a id="id547" class="indexterm"></a>video setting that we'll modify<a id="id548" class="indexterm"></a> is the anti-aliasing property. Aliasing in a game is where the models being rendered have jagged edges. Anti-aliasing is what the game renderer does to smooth out those jagged edges. To do this, the renderer will blur the edges slightly to make them smooth. This is one of the options that will make your game look great, but will also slow down the performance. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">public void SetAA(int Samples)
+{
+  if(Samples == 0 || Samples == 2 || Samples == 4 || Samples == 8)
+    QualitySettings.antiAliasing = Samples;
+}</pre></div><p>The way anti-aliasing works is that it will blur the edges by a number of samples. If the number of samples is zero, no anti-aliasing will happen. So for this function, we access the <code class="literal">antiAliasing</code> property of <code class="literal">QualitySettings</code> and set it to the <code class="literal">int</code> value that we pass to the function.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec124"></a>Setting vsync</h3></div></div></div><p>Vsync <a id="id549" class="indexterm"></a>affects how the frames are rendered. With <a id="id550" class="indexterm"></a>vsync <span class="emphasis"><em>on</em></span>, the game will wait until the frame has finished rendering before starting the next frame. With vsync <span class="emphasis"><em>off</em></span>, the game will start to render the next frame while the current frame is still being rendered. The bonus of vsync being off is that the game will render faster but could cause an effect called screen tear, which shows an obvious line on the screen caused by the frames overlapping each other. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">public void SetVsync(int Sync)
+{
+  QualitySettings.vSyncCount = Sync;
+}</pre></div><p>This function is very similar to the anti-aliasing function. We access the <code class="literal">vSyncCount</code> property<a id="id551" class="indexterm"></a> of <code class="literal">QualitySettings</code> and <a id="id552" class="indexterm"></a>set it to the <code class="literal">int</code> value that we pass.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec125"></a>Changing the quality settings</h3></div></div></div><p>The final <a id="id553" class="indexterm"></a>video configuration that we'll edit <a id="id554" class="indexterm"></a>will simply affect the native Unity quality settings. This will be used to quickly change the overall quality settings of the game. Add this function to the script:</p><div class="informalexample"><pre class="programlisting">public void SetSettings(string Name)
+{
+  switch(Name)
+  {
+  case "Low":
+    QualitySettings.SetQualityLevel(0);
+    break;
+  case "Medium":
+    QualitySettings.SetQualityLevel(1);
+    break;
+  case "High":
+    QualitySettings.SetQualityLevel(2);
+    break;
+  }
+}</pre></div><p>For this function, we run a <code class="literal">switch</code> statement on the string that we passed to determine the quality setting. To set the quality setting, we access the <code class="literal">SetQualityLevel</code> function of <code class="literal">QualitySettings</code> and set it to the associating quality level.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec126"></a>Loading the settings</h3></div></div></div><p>The final <a id="id555" class="indexterm"></a>function that we will add will allow us <a id="id556" class="indexterm"></a>to load all of the settings that we saved and set them in our game; this function will be used the most. Add this function to the bottom of the script:</p><div class="informalexample"><pre class="programlisting">public void LoadAll()
+{
+  SetSettings(PlayerPrefs.GetString("Custom_Settings"));
+  ToggleShadows(PlayerPrefs.GetInt("Custom_Shadows"));
+  SetFOV(PlayerPrefs.GetFloat("Custom_FOV"));
+  SetResolution(PlayerPrefs.GetInt("Custom_Resolution"), PlayerPrefs.GetInt("Custom_Full"));
+  SetAA(PlayerPrefs.GetInt("Custom_AA"));
+  SetVsync(PlayerPrefs.GetInt("Custom_Sync"));
+}</pre></div><p>In this <a id="id557" class="indexterm"></a>function, we call each of the functions<a id="id558" class="indexterm"></a> that we created and set them to the saved values. Since we use <code class="literal">PlayerPrefs</code> to save our configurations, we get the values from them.</p></div></div>

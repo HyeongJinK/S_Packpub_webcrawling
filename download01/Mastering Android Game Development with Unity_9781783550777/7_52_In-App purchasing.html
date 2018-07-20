@@ -1,0 +1,168 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec51"></a>In-App purchasing</h2></div></div><hr /></div><p>In the <code class="literal">Services</code> tab in Unity, click on <code class="literal">In- App Purchasing</code> component:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_044.png" /></div><p>Once again flip the switch on the top right against the <strong class="userinput"><code>IN-APP PURCHASING</code></strong> to enable it:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_045.png" /></div><p>Click on the <strong class="userinput"><code>Import</code></strong> button to import the IAP library:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_046.png" /></div><p>Next, we create a new class that will handle In-App purchases; we will call this class <code class="literal">IAPManager</code>.</p><p>In this add the following code. The code has been taken from the Unity example site, which has a detailed and commented code showing what each function does. The code can be accessed from <a class="ulink" href="https://unity3d.com/learn/tutorials/topics/ads-analytics/integrating-unity-iap-your-game" target="_blank">https://unity3d.com/learn/tutorials/topics/ads-analytics/integrating-unity-iap-your-game</a>:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_047.png" /></div><p>The code has been modified for our purpose. As this is a long code, I have added comments with numbers, which I will explain later:</p><pre class="programlisting">    using System; 
+    using System.Collections.Generic; 
+    using UnityEngine; 
+    using UnityEngine.Purchasing; 
+
+    public class IAPManager : MonoBehaviour, IStoreListener 
+    { 
+        public static IAPManager instance { set; get; } 
+
+        private static IStoreController m_StoreController;              
+        private static IExtensionProvider m_StoreExtensionProvider;  
+
+        public static string kRemoveAds = "removeads"; // 1 
+
+        void Awake() { 
+            instance = this; 
+        } 
+
+        void Start(){ 
+            if (m_StoreController == null){ 
+                InitializePurchasing(); 
+            } 
+        } 
+
+        public void InitializePurchasing(){ 
+            if (IsInitialized()){ 
+                return; 
+            } 
+            var builder = ConfigurationBuilder.Instance (StandardPurchasingModule.Instance()); 
+            builder.AddProduct(kRemoveAds, ProductType.Consumable);// 2 
+            UnityPurchasing.Initialize(this, builder);  
+        } 
+
+        private bool IsInitialized(){ 
+            return m_StoreController != null &amp;&amp; m_StoreExtensionProvider != null; 
+        } 
+
+        public void BuyRemoveAds(){ 
+            BuyProductID(kRemoveAds); 
+        } //3 
+
+        void BuyProductID(string productId){ 
+            // If Purchasing has been initialized ... 
+            if (IsInitialized()){ 
+                Product product = m_StoreController. 
+                products.WithID(productId); 
+            
+                if (product != null &amp;&amp; product.availableToPurchase){ 
+                    Debug.Log(string.Format("Purchasing product 
+                    asychronously: '{0}'", product.definition.id)); 
+                    m_StoreController.InitiatePurchase(product); 
+                } 
+                else { 
+                    Debug.Log("BuyProductID: FAIL. Not purchasing product, either is not found or is not available for purchase"); 
+                } 
+            } else { 
+                Debug.Log("BuyProductID FAIL. Not initialized."); 
+            } 
+        } 
+
+        public void RestorePurchases() 
+        { 
+            // If Purchasing has not yet been set up ... 
+            if (!IsInitialized()){ 
+                Debug.Log("RestorePurchases FAIL. Not initialized."); 
+                return; 
+            } 
+
+            if (Application.platform == RuntimePlatform.IPhonePlayer || 
+                Application.platform == RuntimePlatform.OSXPlayer) { 
+
+                Debug.Log("RestorePurchases started ..."); 
+                var apple = m_StoreExtensionProvider. GetExtension&lt;IAppleExtensions&gt;(); 
+                apple.RestoreTransactions((result) =&gt; { 
+
+                Debug.Log("RestorePurchases continuing: " + result + ". If no further messages, no purchases available to restore."); 
+            }); 
+        } else { 
+            Debug.Log("RestorePurchases FAIL. Not supported on this 
+                       platform. Current = " + Application.platform); 
+        } 
+    } 
+
+    // --- IStoreListener 
+    public void OnInitialized (IStoreController controller, 
+                               IExtensionProvider extensions) { 
+        Debug.Log("OnInitialized: PASS"); 
+        m_StoreController = controller; 
+        m_StoreExtensionProvider = extensions; 
+    } 
+    public void OnInitializeFailed(InitializationFailureReason error){ 
+        Debug.Log("OnInitializeFailed InitializationFailureReason:" + 
+                   error); 
+    } 
+
+    public PurchaseProcessingResult ProcessPurchase (PurchaseEventArgs args) { 
+        if (String.Equals(args.purchasedProduct.definition.id, kRemoveAds, StringComparison.Ordinal)){ 
+            Debug.Log(string.Format("ProcessPurchase: PASS. Product: '{0}'", args.purchasedProduct.definition.id)); 
+
+            PlayerPrefs.SetInt("noads", 1); //4 
+            mainMenuScript.noAdsButton.gameObject.SetActive(false); 
+        } else { 
+            Debug.Log(string.Format("ProcessPurchase: FAIL. Unrecognized product: '{0}'", args.purchasedProduct.definition.id)); 
+        } 
+        return PurchaseProcessingResult.Complete; 
+    } 
+
+    public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason) { 
+        Debug.Log(string.Format("OnPurchaseFailed: FAIL. Product: 
+                                 '{0}', PurchaseFailureReason: {1}", 
+                                  0 product.definition.storeSpecificId, 
+                                  failureReason)); 
+        } 
+    } </pre><p>Products can be of three types: consumable, nonconsumable, and subscription:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Consumables can be used only once after which you cannot purchase it again</li><li style="list-style-type: disc">Nonconsumables can be purchased again and again</li><li style="list-style-type: disc">A subscription product is subscription-based like Netflix, which you pay for every month</li></ul></div><p>There are four key steps to remember when setting the product. They are commented in the code as 1, 2, 3, and 4.</p><p>First, we set a string that should be the same as what we set in the Android store.</p><p>In the initialized <code class="literal">Purchasing</code> function we have to specify our product as the product needs to be present when the store is built. The store is built every time you click on the store icon.</p><p>The Builder will add the product to the store. Specify the product name and type of product here:</p><pre class="programlisting">    builder.AddProduct(kRemoveAds, ProductType.Consumable); </pre><p>We will create our own function, which will called when we want to buy a product:</p><pre class="programlisting">    public void BuyRemoveAds() { 
+        BuyProductID(kRemoveAds); 
+    }  </pre><p>This intern will call the BuyProductID function in which we pass the product name that will initiate the purchase of the product.</p><p>Finally in the initiated function we check if the product was purchased. We set a key so that if the product was purchased the no ads button doesn't show any more:</p><pre class="programlisting">    if (String.Equals(args.purchasedProduct.definition.id, kRemoveAds, 
+                      StringComparison.Ordinal)) { 
+        Debug.Log(string.Format("ProcessPurchase: PASS. Product: 
+        '{0}'", args.purchasedProduct.definition.id)); 
+
+        PlayerPrefs.SetInt("noads", 1); //4 
+        mainMenuScript.noAdsButton.gameObject.SetActive(false); 
+    }</pre><p>Now on the MainMenu scene, create a new button on top-right and in the <code class="literal">buttonClick</code> script, add a function that will call the <code class="literal">BuyRemoveAds</code> function in the <code class="literal">IAPManager</code> class:</p><pre class="programlisting">    public void noAdsButton() { 
+        IAPManager.instance.BuyRemoveAds(); 
+    } </pre><p>Also on the <code class="literal">mainMenu</code> class add a button object for the Ad remove button and disable it if the <code class="literal">noads</code> key is equal to 1.</p><p>The <code class="literal">mainMenu</code> script should look as follows:</p><pre class="programlisting">    using System.Collections; 
+    using System.Collections.Generic; 
+    using UnityEngine; 
+
+    using GooglePlayGames; 
+    using UnityEngine.SocialPlatforms; 
+    using GooglePlayGames.BasicApi; 
+
+    using UnityEngine.UI; 
+
+    public class mainMenuScript : MonoBehaviour 
+    { 
+        bool isUserAuthenticated = false;  
+        public static Button noAdsButton; 
+
+        // Use this for initialization 
+        void Start() 
+        { 
+            Debug.Log("[Application Launch] Awake"); 
+
+            PlayGamesPlatform.Activate(); 
+            PlayGamesPlatform.DebugLogEnabled = true; 
+
+            int value = PlayerPrefs.GetInt("noads"); 
+            if (value == 1) { 
+                noAdsButton.gameObject.SetActive(false); 
+            } 
+
+        } 
+
+        // Update is called once per frame 
+        void Update() 
+        { 
+            if (!isUserAuthenticated) { 
+                Social.localUser.Authenticate((bool success) =&gt; { 
+                    if (success){ 
+                        Debug.Log("You've successfully logged in"); 
+                        isUserAuthenticated = true; 
+                    } else { 
+                        Debug.Log("Login failed for some reason"); 
+                    } 
+                }); 
+            } 
+        } </pre><p>We have to do one final thing. We actually need to add the product in the Developer Console. Go to <strong class="userinput"><code>All Application</code></strong> | <strong class="userinput"><code>PunchyPunch</code></strong> and click on <strong class="userinput"><code>In-app products</code></strong> option in the list. Now click on <strong class="userinput"><code>+ Add new product</code></strong> button:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_048.png" /></div><p>In the box, select <strong class="userinput"><code>Managed product</code></strong> option and in the <strong class="userinput"><code>Product ID</code></strong> field, add <strong class="userinput"><code>removeads</code></strong>. This is the same as the string we set in the <code class="literal">IAPManager</code> class:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_049.png" /></div><p>Next, add a title and description in the <strong class="userinput"><code>Title</code></strong> and <strong class="userinput"><code>Description</code></strong> fields respectively:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_050.png" /></div><p>Next, click on <strong class="userinput"><code>Add a price</code></strong> button at the bottom and in the <strong class="userinput"><code>Default price</code></strong> field, type in the price. In my case it is <strong class="userinput"><code>INR</code></strong>, so I will add an appropriate value and click on the <strong class="userinput"><code>Apply</code></strong> button:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_051.png" /></div><p>Now the app will show up on the <strong class="userinput"><code>In-App products</code></strong>:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_052.png" /></div><p>You can build and run the app now, but in-app purchases can only be tested once the app has been published. So we will see how it works in the next chapter.</p></div>

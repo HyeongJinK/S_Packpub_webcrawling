@@ -1,0 +1,111 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch14lvl1sec97"></a>Handling platform differences</h2></div></div><hr /></div><p>Unity does a lot for developers to abstract us from the many platforms you can deploy to. Most of the common functions, such as memory management, audio, controller inputs, purchasing, and so on, are all implemented with a single generic interface with Unity3D. This means you do not need to write separate code to play an audio file, or draw to the screen for each and every device or platform that you want to support and deploy to. It really is a big time-saver (ask anyone who has written their own engine just how much fun they had doing everything multiple times for each platform).</p><p>Unity does a lot, but it doesn't do everything. For the following fringe areas, you will have to do the leg work to get these features implemented:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Social integration (Facebook and others)</p></li><li style="list-style-type: disc"><p>In-app purchasing</p></li><li style="list-style-type: disc"><p>Alternate physics or networking implementations</p></li></ul></div><p>The list goes on. In a lot of cases, there are already pre-made assets on the Unity store that have done the hard work to build these implementations. A fair few, you will note, do not support all platforms. In these cases, it will get you most of the way, but you will either have to wait for them to support platform <span class="emphasis"><em>X</em></span> or write it yourself.</p><p>In all cases, assets need to integrate tightly with the underlying platform. Some are simple to perform, others not so much. Also, in some cases, you will have to work with the Unity platform build system to push your changes onto the platform (though not absolutely necessary, this will save you from having to repeat every build or if you want to create your assets).</p><p>In general, the patterns you need to support are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Using different code paths with directives</p></li><li style="list-style-type: disc"><p>Accessing native platforms from Unity</p></li><li style="list-style-type: disc"><p>Calling platforms from Unity</p></li><li style="list-style-type: disc"><p>Implementing reusable libraries that are natively compiled to work on all platforms</p></li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec163"></a>Preprocessor directives</h3></div></div></div><p>When you want the code to run in a particular way on one platform and in a different way on another, you can use the pre-compiler directives to tell Unity to pick one section of code over another (when it builds the project), or to simply ignore the sections of the code. This is also true for the editor, which Unity considers a platform, just like any other. So, we can have code to run and deploy in the editor, but restrict its execution when it's deployed to another platform. You could use the special editor classes to do this, but you may also want to do this with any other code.</p><p>A few of the preprocessor directives (or the platform defines) that Unity recognizes are listed in the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /></colgroup><thead><tr><th style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<span class="strong"><strong>Statement</strong></span>
+</p>
+</th><th style="border-bottom: 0.5pt solid ; ">
+<p>
+<span class="strong"><strong>Description</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_EDITOR</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p><span class="strong"><strong>This code will run only in the editor, not on a platform</strong></span></p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_EDITOR_WIN</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code specifically targets the editor on Windows (if you have the code that runs differently than on a Mac)</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_EDITOR_OSX</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code specifically targets the editor on Mac (if you have the code that runs differently than on a PC)</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_STANDALONE</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets desktop platforms (Windows/Mac/Linux)</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_STANDALONE_OSX</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets Mac OS X only (this includes Universal, PPC, and Intel architectures)</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_STANDALONE_WIN</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets Windows desktop only (excluding Windows 8)</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_STANDALONE_LINUX</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets Linux desktop clients only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_WEBGL</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets WebGL</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_IOS</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the iOS platform only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_ANDROID</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the Android platform only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_WP_8</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the Windows Phone 8 platform only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_WP_8_1</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the Windows Phone 8.1 app or Universal projects on Windows Phone 8</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_WII</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the Wii platform only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_PS3</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the PlayStation 3 platform only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_PS4</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the PlayStation 4 platform only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_XBOX360</code>
+</p>
+</td><td style="border-bottom: 0.5pt solid ; ">
+<p>This code targets the Xbox 360 platform only</p>
+</td></tr><tr><td style="border-right: 0.5pt solid ; ">
+<p>
+<code class="literal">UNITY_XBOXONE</code>
+</p>
+</td><td style="">
+<p>This code targets the Xbox One platform only</p>
+</td></tr></tbody></table></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note157"></a>Note</h3><p>For a full list of platform directives, visit: <a class="ulink" href="http://docs.unity3d.com/Manual/PlatformDependentCompilation.html" target="_blank">http://docs.unity3d.com/Manual/PlatformDependentCompilation.html</a>.</p><p>It's worth noting that you are not limited to just the Unity preprocessor directives. You can use Visual Studio's directives or even create your own by adding the following class to the top of your <code class="literal">#define MyDirective</code> class (no semicolon). Then, you can block out sections of your code by enabling or disabling this line. If a directive does not exist, it will always be skipped.</p></div><p>To use these directives, we will simply declare them with an <code class="literal">#if</code> statement to surround the code we want to target.</p></div></div>

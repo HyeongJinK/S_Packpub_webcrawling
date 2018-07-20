@@ -1,0 +1,116 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec54"></a>Saving data with XML</h2></div></div><hr /></div><p>Now, you<a id="id444" class="indexterm"></a> will learn how to save to your XML files and use the nodes we created within the XML files that we just created.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec105"></a>Adding the required variables</h3></div></div></div><p>Before <a id="id445" class="indexterm"></a>we start adding variables, we need to make sure <a id="id446" class="indexterm"></a>that we have all the <code class="literal">using</code> statements required. Add these to your script if you don't have them already:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Xml;
+using System.Xml.Serialization;
+using System.IO;
+using System.Text;</pre></div><p>Next, we will add our variables to the script. For an XML-saving system, we will use more variables than we did while using a flat file. This is because, to test our XML system, we will save the player's transform data as well as the transform data for multiple enemies. Add these variables to your script:</p><div class="informalexample"><pre class="programlisting">XmlDocument xPlayer = new XmlDocument();
+XmlDocument xEnemy = new XmlDocument();
+public string pFileName = "";
+public string eFileName = "";
+public GameObject Player;
+public GameObject[] Enemies;</pre></div><p>Our first two variables are XML documents; these variables hold the data from our XML files in our computer. The next two strings hold the directory and filename with the extension <a id="id447" class="indexterm"></a>of the XML files that we are using. Finally, we<a id="id448" class="indexterm"></a> have two <code class="literal">GameObject</code> variables, with the first one being for our player and the other one being an array of <code class="literal">GameObjects</code> to hold our enemies.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec106"></a>Saving the player data</h3></div></div></div><p>Now, we <a id="id449" class="indexterm"></a>will add the function we will call to save our player<a id="id450" class="indexterm"></a> data. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">void SavePlayer()
+{
+  if(Player != null)
+  {
+    XmlNode root = xPlayer.FirstChild;
+      
+    foreach(XmlNode node in root.ChildNodes)
+    {
+      switch(node.Name)
+      {
+      case "xPos":
+        node.InnerText = Player.transform.position.x.ToString();
+        break;
+      case "yPos":
+        node.InnerText = Player.transform.position.y.ToString();
+        break;
+      case "zPos":
+        node.InnerText = Player.transform.position.z.ToString();
+        break;
+      case "xRot":
+        node.InnerText = Player.transform.rotation.x.ToString();
+        break;
+      case "yRot":
+        node.InnerText = Player.transform.rotation.y.ToString();
+        break;
+      case "zRot":
+        node.InnerText = Player.transform.rotation.z.ToString();
+        break;
+      case "xScale":
+        node.InnerText = Player.transform.localScale.x.ToString();
+        break;
+      case "yScale":
+        node.InnerText = Player.transform.localScale.y.ToString();
+        break;
+      case "zScale":
+        node.InnerText = Player.transform.localScale.z.ToString();
+        break;
+      }
+    }
+    xPlayer.Save(pFileName);
+  }
+}</pre></div><p>When we<a id="id451" class="indexterm"></a> call this function, we first check whether there is <a id="id452" class="indexterm"></a>actually a GameObject in our <code class="literal">Player</code> variable. If there isn't, then no saving will be done. Next, we declare an <code class="literal">XmlNode</code> variable, which will be our root node from the XML document. After this, we run a <code class="literal">foreach</code> loop that will find all of our child nodes within that root node.</p><p>To find specific nodes, we check the name property of that node, which actually is what we typed to create that node. In the switch statement, we look for each node that we want to save data to. For every node in XML, we set its <code class="literal">InnerText</code> value to its associating value from our player's GameObject. The <code class="literal">InnerText</code> property of a node is the data <a id="id453" class="indexterm"></a>it holds and is what we will save to and load from.</p><p>Finally, we call the <code class="literal">Save</code> function from our <code class="literal">xPlayer XmlDocument</code> variable and pass it to the directory and filename we set in our <code class="literal">pFileName</code> variable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec107"></a>Saving the enemy data</h3></div></div></div><p>We will <a id="id454" class="indexterm"></a>add the function to save our enemy data. This function<a id="id455" class="indexterm"></a> will look similar to our function to save player data, except with a little more complication since we will be intending this function to save for multiple enemies. Add this function to your script now, just below the <code class="literal">SavePlayer</code> function:</p><div class="informalexample"><pre class="programlisting">void SaveEnemies()
+{
+  xEnemy.RemoveAll();
+
+  XmlNode eRoot = xEnemy.CreateNode(XmlNodeType.Element, "eData", "");
+  string[] nodes = {"name", "xPos", "yPos", "zPos", "xRot", "yRot", "zRot", "xScale", "yScale", "zScale"};
+
+  for(int e = 0; e &lt; Enemies.Length; e++)
+  {
+    if(Enemies[e] != null)
+    {
+      XmlNode eBase = xEnemy.CreateNode(XmlNodeType.Element, "enemy", "");
+
+      for(int n = 0; n &lt; nodes.Length; n++)
+      {
+        XmlNode newNode = xEnemy.CreateNode(XmlNodeType.Element, nodes[n], "");
+
+        eBase.AppendChild(newNode);
+      }
+
+      foreach(XmlNode node in eBase.ChildNodes)
+      {
+        switch(node.Name)
+        {
+        case "name":
+          node.InnerText = Enemies[e].name;
+          break;
+        case "xPos":
+          node.InnerText = Enemies[e].transform.position.x.ToString();
+          break;
+        case "yPos":
+          node.InnerText = Enemies[e].transform.position.y.ToString();
+          break;
+        case "zPos":
+          node.InnerText = Enemies[e].transform.position.z.ToString();
+          break;
+        case "xRot":
+          node.InnerText = Enemies[e].transform.rotation.x.ToString();
+          break;
+        case "yRot":
+          node.InnerText = Enemies[e].transform.rotation.y.ToString();
+          break;
+        case "zRot":
+          node.InnerText = Enemies[e].transform.rotation.z.ToString();
+          break;
+        case "xScale":
+          node.InnerText = Enemies[e].transform.localScale.x.ToString();
+          break;
+        case "yScale":
+          node.InnerText = Enemies[e].transform.localScale.y.ToString();
+          break;
+        case "zScale":
+          node.InnerText = Enemies[e].transform.localScale.z.ToString();
+          break;
+        }
+
+        eRoot.AppendChild(eBase);
+      }
+      xEnemy.AppendChild(eRoot);
+    }
+  }  
+  xEnemy.Save(eFileName);
+}</pre></div><p>In the first <a id="id456" class="indexterm"></a>line, we call the <code class="literal">RemoveAll</code> function from the <code class="literal">xEnemy XmlDocument</code> variable. This deletes all of the nodes from the XML document. We <a id="id457" class="indexterm"></a>do this for simplicity's sake, this allows us to avoid<a id="id458" class="indexterm"></a> the hassle of searching for specific enemy nodes to save data from a specific enemy. Next, we create a couple of variables. The first one will be our root node that holds all of our enemies. The next one is a string array, which will hold the names of nodes we will use later on.</p><p>The next step in this function is to use a <code class="literal">for</code> loop to iterate through our enemies' <code class="literal">GameObject</code> array; this is to check whether we actually have an enemy <code class="literal">GameObject</code> in our array. If it runs into a null, it won't save any data for that spot.</p><p>Once we check to see that we don't have a null GameObject, we start creating our XML data. First, we create a new <code class="literal">XmlNode</code> variable, which will be the root node for our enemy data. Next, we run a <code class="literal">for</code> loop to create new nodes for each of the variables that we want to save. We do this by creating a new node and setting its name to one of the strings in our nodes string array. Finally, we append it as a child to our enemy root node.</p><p>Now that we have created the enemy node and added all of the child nodes that we want to save to, let's iterate through those nodes and start saving our data. To check each node, we create a <code class="literal">foreach</code> loop like we did to save the player data and check the names for each of the <code class="literal">eBase</code> child nodes.</p><p>After finding each of the specific nodes, we assign <code class="literal">InnerText</code> with the value associating nodes with the current enemy GameObject. Once all the nodes have been assigned, we append the <code class="literal">eBase</code> node to the root node. We do this process for each of the GameObjects within the enemies' <code class="literal">GameObject</code> array, saving the data for each of them.</p><p>Finally, to end the function, we call the <code class="literal">Save</code> function of our <code class="literal">xEnemy</code> XML document and<a id="id459" class="indexterm"></a> save the data to our <code class="literal">EnemyData</code> XML document.</p></div></div>

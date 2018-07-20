@@ -1,0 +1,74 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec164"></a>Time for action – building the deck</h2></div></div><hr /></div><p>The strategy we'll use to <a id="id459" class="indexterm"></a>build our deck is to create a list of possibilities, randomly choose one of those possibilities, and then remove that possibility as an option. Let's see how that works.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <code class="literal">BuildDeck</code> function, start off by declaring a few temporary variables:</p><div class="informalexample"><pre class="programlisting">    function BuildDeck()
+    {
+    
+    <span class="strong"><strong>   var totalRobots:int = 4;  // we've got four robots to work with</strong></span>
+    <span class="strong"><strong>   var card:Card; // this stores a reference to a card</strong></span>
+    }</pre></div></li><li><p>Next, build a loop to step through each of the four colored robot types:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>    var card:Card; // this stores a reference to a card</strong></span>
+
+<span class="strong"><strong>    for(var i:int=0; i&lt;totalRobots; i++)</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>    }</strong></span>
+</pre></div><p>That loop will run four times because <code class="literal">totalRobots</code> is set to <code class="literal">4</code>. Next, create a Generic List of type <code class="literal">string</code> called <code class="literal">aRobotParts</code> that will house the names of the body parts we can knock off:</p><div class="informalexample"><pre class="programlisting">   for(i=0; i&lt;totalRobots; i++)
+   {
+   <span class="strong"><strong>   var aRobotParts:List.&lt;String&gt; = new List.&lt;String&gt;();</strong></span>
+<span class="strong"><strong>  </strong></span>   <span class="strong"><strong> aRobotParts.Add("Head");</strong></span>
+<span class="strong"><strong>   </strong></span>   <span class="strong"><strong>aRobotParts.Add("Arm");</strong></span>
+<span class="strong"><strong>   </strong></span>   <span class="strong"><strong>aRobotParts.Add("Leg");</strong></span>
+   }</pre></div></li><li><p>Now, we'll set up a<a id="id460" class="indexterm"></a> nested loop to run twice. So, for all four robot types, we'll create two busted robots (in order to fill our 16-card quota):</p><div class="informalexample"><pre class="programlisting">for(var i:int=0; i&lt;totalRobots; i++)
+{
+   var aRobotParts:List.&lt;String&gt; = new List.&lt;String&gt;();
+   aRobotParts.Add("Head");
+   aRobotParts.Add("Arm");
+   aRobotParts.Add("Leg");
+<span class="strong"><strong>   for(var j:int=0; j&lt;2; j++)</strong></span>
+<span class="strong"><strong>   {</strong></span>
+<span class="strong"><strong>   }   </strong></span>
+}</pre></div><p>The meat of the <code class="literal">BuildDeck</code> code goes inside that inner loop:</p><div class="informalexample"><pre class="programlisting">  for(var j:int=0; j&lt;2; j++)
+  {
+<span class="strong"><strong>    var someNum:int = Random.Range(0, aRobotParts.Count);</strong></span>
+<span class="strong"><strong>    var theMissingPart:String = aRobotParts[someNum];</strong></span>
+   
+<span class="strong"><strong>    aRobotParts.RemoveAt(someNum);</strong></span>
+      
+<span class="strong"><strong>    card = new Card("robot" + (i+1) + "Missing" + theMissingPart);</strong></span>
+<span class="strong"><strong>    aCards.Add(card);</strong></span>
+<span class="strong"><strong>         </strong></span>
+<span class="strong"><strong>    card= new Card("robot" + (i+1) + theMissingPart);</strong></span>
+<span class="strong"><strong>    aCards.Add(card); </strong></span>
+  }</pre></div><p>Here's how the BuildDeck function looks when you're finished:</p><div class="informalexample"><pre class="programlisting">  function BuildDeck()
+  {
+    var totalRobots:int = 4;  // we've got four robots to work with
+    var card:Card; // this stores a reference to a card
+  
+    for(var i:int=0; i&lt;totalRobots; i++)
+    {
+      var aRobotParts:List.&lt;String&gt; = new List.&lt;String&gt;();
+      
+      aRobotParts.Add("Head");
+      aRobotParts.Add("Arm");
+      aRobotParts.Add("Leg");
+      
+      for(var j:int=0; j&lt;2; j++)
+      {
+        var someNum:int = Random.Range(0, aRobotParts.Count);
+        var theMissingPart:String = aRobotParts[someNum];
+        
+        aRobotParts.RemoveAt(someNum);
+          
+        card = new Card("robot" + (i+1) + "Missing" + theMissingPart);
+        aCards.Add(card);
+             
+        card= new Card("robot" + (i+1) + theMissingPart);
+        aCards.Add(card);     
+      }       
+    }
+  }</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec66"></a>
+<span class="emphasis"><em>What just happened – dissecting the bits</em></span>
+</h3></div></div></div><p>Let's step through that last <a id="id461" class="indexterm"></a>chunk of code and figure out what it does:</p><div class="informalexample"><pre class="programlisting">var someNum:int = Random.Range(0, aRobotParts.Count);</pre></div><p>First, we're declaring a variable called <code class="literal">someNum</code> (short for "some crazy old random number"), which will be an integer type. We're going to use this number to randomly refer to one of the body parts in the <code class="literal">aRobotParts</code> Generic List. So we use the <code class="literal">Range()</code> method of the <code class="literal">Random</code> class to pull that random number.</p><p>We supply the minimum and maximum ends of the range to pull from—in this case, the low end is <code class="literal">0</code> (because arrays are 0-based), and the high end is the length of the <code class="literal">aRobotParts</code> Generic List. The first time through the loop, <code class="literal">aRobotParts.length</code> is 3 ("Head", "Arm", and "Leg"). Our minimum and maximum values are 0 and 3. So, the first time through this loop, <code class="literal">someNum</code> will be a random number from 0-2.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip29"></a>Tip</h3><p>
+<span class="strong"><strong>Exclusive to the max</strong></span>
+</p><p>When using <code class="literal">Random.Range</code> with <code class="literal">int</code> data types, note that the minimum value is <span class="emphasis"><em>inclusive</em></span>, while the maximum value is <span class="emphasis"><em>exclusive</em></span>. That means that unless you supply the same number for your minimum and maximum values, <code class="literal">Random.Range()</code> will never pull your maximum value. In the previous example, you'll never get 3 from <code class="literal">Random.Range()</code>, even though we're supplying 3 as the maximum value.</p><p>
+<span class="strong"><strong>Floats</strong></span> work a little differently than <span class="strong"><strong>ints</strong></span>. When randomizing with <span class="strong"><strong>floats</strong></span>, the maximum value is inclusive.</p></div><p>Here, we use our<a id="id462" class="indexterm"></a> random number to pull a body part out of the <code class="literal">aRobotParts</code> leneric list.</p><div class="informalexample"><pre class="programlisting">var theMissingPart:String = aRobotParts[someNum];</pre></div><p>If <code class="literal">someNum</code> is <code class="literal">0</code>, we get "Head". If <code class="literal">someNum</code> is <code class="literal">1</code>, we get "Arm". If <code class="literal">someNum</code> is <code class="literal">2</code>, we get "Leg". We store this result in a <code class="literal">String</code> variable called <code class="literal">theMissingPart</code>.</p><div class="informalexample"><pre class="programlisting">aRobotParts.RemoveAt(someNum);</pre></div><p>The <code class="literal">RemoveAt()</code> method of the <code class="literal">Array</code> class rips an element out of the List at the specified index. We specify the <code class="literal">someNum</code> index we just used to grab a body part. This removes that body part from the List, so that it's no longer an option to the next robot. This is how we avoid ever having two green robots, each with a missing head—by the time we choose a missing body part for the second robot, "Head" has been removed from our list of options. Note that because it's declared and defined inside the loop, the <code class="literal">aRobotParts</code> array is "reborn" with each new robot type, so the first of each pair of robots gets its pick of a new batch of body parts. The second robot of each type always has one less option to choose from.</p><div class="informalexample"><pre class="programlisting">card = new Card("robot" + (i+1) + "Missing" + theMissingPart);
+aCards.Add(card);
+card= new Card("robot" + (i+1) + theMissingPart);
+aCards.Add(card);</pre></div><p>With these final lines, we create two new instances of the <code class="literal">Card</code> class, and add references to those cards to the <code class="literal">aCards</code> array using the Add method of the Generic List. The <code class="literal">aCards</code> Generic List is the deck of cards we'll use to deal out the game.</p><p>Each time we create a new card instance, we're passing a new argument between those round brackets—the name of the image we want displayed on the card. The first time through the nested loop, for the first (yellow) robot type, let's say we randomly choose to break its head.</p><p>This <code class="literal">String</code>:</p><div class="informalexample"><pre class="programlisting">"robot" + (i+1) + "Missing" + theMissingPart</pre></div><p>resolves to:</p><div class="informalexample"><pre class="programlisting">"robot1MissingHead"</pre></div><p>and</p><div class="informalexample"><pre class="programlisting">"robot" + (i+1) + theMissingPart</pre></div><p>resolves to:</p><div class="informalexample"><pre class="programlisting">"robot1Head"</pre></div><p>Take a quick look at the <a id="id463" class="indexterm"></a>images in the <code class="literal">Resources</code> folder of the <span class="strong"><strong>Project</strong></span> panel. <code class="literal">"robot1MissingHead"</code> and <code class="literal">"robot1Head"</code> just so happen to be the names of two of our images!</p></div></div>

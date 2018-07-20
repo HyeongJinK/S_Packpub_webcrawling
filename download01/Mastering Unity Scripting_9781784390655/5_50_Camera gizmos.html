@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec52"></a>Camera gizmos</h2></div></div><hr /></div><p>When a camera is<a id="id376" class="indexterm"></a> selected in the <span class="strong"><strong>Scene</strong></span> tab and the <span class="strong"><strong>Gizmo</strong></span> display is enabled, it displays a frustum gizmo that indicates clearly where the camera is positioned in the scene and what the camera can see from that view, given its other properties such as field of view, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_05_01.jpg" /><div class="caption"><p>Camera displays the frustum when selected in the Scene view</p></div></div><p>This gizmo is especially helpful to position selected cameras to get the best possible view of the scene. However, there are times when you want to achieve almost the reverse, that is, to position objects in the view of unselected cameras. Specifically, you'll want to move particular objects in the frustum of a camera and make sure it's visible to that camera. This can be tedious<a id="id377" class="indexterm"></a> to achieve under normal circumstances, because, by default, cameras don't display their frustum gizmo when deselected. This means that as you move objects around, you'll need to continually select and reselect your cameras to check whether the moved objects are really in the camera frustum, and adjust and tweak their positions if required. To solve this issue, it'd be great if Unity allowed you to view the frustum gizmo permanently, even when the camera was deselected, but it doesn't, at least, not at the time of writing this book. To work around this, however, you can write a script, as shown in the following code sample 5-1:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 //-------------------------------------------------------
+04 [ExecuteInEditMode]
+05 [RequireComponent(typeof(Camera))]
+06 //-------------------------------------------------------
+07 public class DrawFrustumRefined : MonoBehaviour 
+08 {
+09 //-------------------------------------------------------
+10 private Camera Cam = null;
+11 public bool ShowCamGizmo = true;
+12 //-------------------------------------------------------
+13 void Awake()
+14 {
+15       Cam = GetComponent&lt;Camera&gt;();
+16 }
+17 //-------------------------------------------------------
+18 void OnDrawGizmos()
+19 {
+20       //Should we show gizmo?
+21       if(!ShowCamGizmo) return;
+22       //Get size (dimensions) of Game Tab
+23       Vector2 v = DrawFrustumRefined.GetGameViewSize();
+24       float GameAspect = v.x/v.y; //Calculate tab aspect ratio
+25       float FinalAspect = GameAspect / Cam.aspect; 
+26 
+27       Matrix4x4 LocalToWorld = transform.localToWorldMatrix;
+28       Matrix4x4 ScaleMatrix = Matrix4x4.Scale(new Vector3(Cam.aspect * (Cam.rect.width / Cam.rect.height), FinalAspect,1)); 
+
+29       Gizmos.matrix = LocalToWorld * ScaleMatrix;
+30       Gizmos.DrawFrustum(transform.position, Cam.fieldOfView, Cam.nearClipPlane, Cam.farClipPlane, FinalAspect); 
+
+31       Gizmos.matrix = Matrix4x4.identity; //Reset gizmo matrix
+32 }
+33 //-------------------------------------------------------
+34 //Function to get dimensions of game tab
+35 public static Vector2 GetGameViewSize()
+36 {
+37       System.Type T = System.Type.GetType("UnityEditor.GameView,UnityEditor");
+38        System.Reflection.MethodInfo GetSizeOfMainGameView = T.GetMethod("GetSizeOfMainGameView",System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+39        return (Vector2)GetSizeOfMainGameView.Invoke(null,null);
+40 }
+41 //-------------------------------------------------------
+42 }
+43 //-------------------------------------------------------</pre></div><p>The following are the <a id="id378" class="indexterm"></a>comments in code sample 5-1:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 27-31</strong></span>: The <code class="literal">Gizmos.DrawFrustum</code> function<a id="id379" class="indexterm"></a> accepts arguments such as position and rotation in world space and not local space. This means all positional arguments must first be transformed using a matrix from local space to world space. This is achieved with the <code class="literal">localToWorldMatrix</code> member of the <code class="literal">Transform</code> class. Additionally, the aspect argument requires further calculation between the actual viewport height and width, and the size of the game window in width and height.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 35-40</strong></span>: The <a id="id380" class="indexterm"></a>
+<code class="literal">GetGameViewSize</code> function returns a 2D vector that express the actual pixel dimensions of the <span class="strong"><strong>Game</strong></span> tab view. It retrieves these values using <a id="id381" class="indexterm"></a>undocumented editor features. The "undocumented" nature of the function call should be emphasized; this means that the code can easily be broken or invalidated by future and even minor releases.</p></li></ul></div><p>The following screenshot shows the frustum:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_05_02.jpg" /><div class="caption"><p>Frustum is shown even when the camera is deselected</p></div></div></div>

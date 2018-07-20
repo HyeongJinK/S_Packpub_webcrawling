@@ -1,0 +1,352 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec50"></a>Creating the Waypoint and WaypointsContainer scripts</h2></div></div><hr /></div><p>In the first section, we will create the <code class="literal">Waypoint</code> and <code class="literal">WaypointsContainer</code> script to place<a id="id938" class="indexterm"></a> the <a id="id939" class="indexterm"></a>waypoint for our AI movement direction, which <a id="id940" class="indexterm"></a>can be edited in the editor.</p><p>First, we <a id="id941" class="indexterm"></a>will create the <code class="literal">Waypoint</code> script and use the <code class="literal">Gizmos</code> object<a id="id942" class="indexterm"></a> to draw an image icon (<code class="literal">Gizmos.DrawIcon()</code>) and the wire sphere (<code class="literal">Gizmos.DrawWireSphere()</code>) by putting it in <code class="literal">OnDrawGizmos()</code>. Both functions are used to draw the image icon and the radius of waypoint, which is used to display the position of waypoint and the radius that the character should start turning to the next waypoint.</p><p>Then, we will create <code class="literal">WaypointsContainer</code> that will contain all necessary functions to get the direction of the current waypoint to the next one. We also use the line color (<code class="literal">Gizmos.DrawLine()</code>) to create the link of each waypoint in <code class="literal">OnDrawGizmos()</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec103"></a>Prepare for lift off</h3></div></div></div><p>We will begin with importing the package, preparing the <code class="literal">Assets</code> folder, and making sure that we have everything ready to start. Let's create a new project and import the package:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the assets package by going to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>Custom Package…</strong></span>, choose <code class="literal">Chapter6.unityPackage</code>, which we downloaded earlier, and then click on the <span class="strong"><strong>Import</strong></span> button in the pop-up window, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_01.jpg" /></div></li><li><p>Wait<a id="id943" class="indexterm"></a> until it's<a id="id944" class="indexterm"></a> done, and <a id="id945" class="indexterm"></a>you will see the <span class="strong"><strong>Chapter6</strong></span> and <span class="strong"><strong>Resources</strong></span> folders in the Window view, then go to the <span class="strong"><strong>Chapter6</strong></span> folder <a id="id946" class="indexterm"></a>and drag the <span class="strong"><strong>Gizmos</strong></span> folder outside the <span class="strong"><strong>Chapter6</strong></span> folder, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_02.jpg" /></div><p>Why did we move the <span class="strong"><strong>Gizmos</strong></span> folder outside the <span class="strong"><strong>Chapter6</strong></span> folder? Refer to the <a id="id947" class="indexterm"></a>following Unity document: <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/Gizmos.DrawIcon.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/Gizmos.DrawIcon.html</a>
+</p><p>We <a id="id948" class="indexterm"></a>will see that the<a id="id949" class="indexterm"></a> function <code class="literal">Gizmos.DrawIcon()</code> takes<a id="id950" class="indexterm"></a> three parameters, which are <code class="literal">Vector3</code> for the position that the object will be drawn, <code class="literal">string</code> for the name of the icon image, and <code class="literal">boolean</code> to allow scaling. Then, the last sentence said the following:</p><div class="blockquote"><blockquote class="blockquote"><p>
+<span class="emphasis"><em>"The image file should be placed in the </em></span>
+<span class="strong"><strong>Assets/Gizmos</strong></span>
+<span class="emphasis"><em> folder"</em></span>
+</p></blockquote></div><p>This simply means that if we want to have our custom icon image, we basically need to put our image inside the folder mentioned earlier.</p><p>We can also show the gizmos icon in the <span class="strong"><strong>Scene</strong></span> view by going to the <span class="strong"><strong>Inspector</strong></span> view and clicking on the <span class="strong"><strong>Color Cube</strong></span> image to choose the type of icon for that game object, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_03.jpg" /></div></li><li><p>Next, go<a id="id951" class="indexterm"></a> to <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span>; double-click on the scene (for C# users, double-click on <span class="strong"><strong>AI_C#</strong></span>, and for JavaScript users, double-click on <span class="strong"><strong>AI_JS</strong></span>) as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_04.jpg" /></div></li><li><p>Then, go to <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span>; we will see the <span class="strong"><strong>C#</strong></span> and <span class="strong"><strong>JavaScript</strong></span> folder, (for C# users, we will go to <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>Waypoint</strong></span>, and for JavaScript users, we will go to <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>JavaScript</strong></span> | <span class="strong"><strong>Waypoint</strong></span>). Now, we are ready to start.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec104"></a>Engage thrusters</h3></div></div></div><p>Let's get started:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to the folder (for C# users, go to <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>Waypoint</strong></span> and for JavaScript users, go to <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>JavaScript</strong></span> | <span class="strong"><strong>Waypoint</strong></span>) in the <span class="strong"><strong>Project</strong></span> view, and then right-click and choose (for C# users) <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span> or (for JavaScript users) <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>JavaScript</strong></span> and rename it to <code class="literal">Waypoint</code>.</p></li><li><p>Double-click on the <span class="strong"><strong>Waypoint</strong></span> script to open it in <span class="strong"><strong>MonoDevelop</strong></span> and <a id="id952" class="indexterm"></a>start<a id="id953" class="indexterm"></a> creating the waypoint, which<a id="id954" class="indexterm"></a> will only have the <code class="literal">OnGizmos()</code> function to show the icon image and the wire sphere for the <a id="id955" class="indexterm"></a>radius of the waypoint <a id="id956" class="indexterm"></a>as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+#pragma strict
+
+private var _radius : float;
+private var _showGizmos : boolean;
+
+function OnDrawGizmos ()
+{
+  
+  if (transform.parent != null) {
+     if (transform.parent.GetComponent.&lt;WaypointsContainer&gt;() != null) {
+       _showGizmos = transform.parent.GetComponent.&lt;WaypointsContainer&gt;().showPath;
+       if (_showGizmos) {
+         _radius = transform.parent.GetComponent.&lt;WaypointsContainer&gt;().radius;
+         Gizmos.color = Color.green;
+         Gizmos.DrawIcon(transform.position, "wayIcon.psd");
+         Gizmos.DrawWireSphere (transform.position, _radius);
+       }
+     }
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class Waypoint : MonoBehaviour
+{
+  float _radius;
+  bool _showGizmos;
+
+  void OnDrawGizmos ()
+  {
+    if (transform.parent != null) {
+       if (transform.parent.GetComponent&lt;WaypointsContainer&gt;() != null) {
+        _showGizmos = transform.parent.GetComponent&lt;WaypointsContainer&gt;().showPath;
+        if (_showGizmos) {
+          _radius = transform.parent.GetComponent&lt;WaypointsContainer&gt;().radius;
+          Gizmos.color = Color.green;
+          Gizmos.DrawIcon(transform.position, "wayIcon.psd");
+          Gizmos.DrawWireSphere (transform.position, _radius);
+        }
+      }
+    }
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note73"></a>Note</h3><p>
+<code class="literal">OnDrawGizmos()</code> lets<a id="id957" class="indexterm"></a> us draw the gizmos<a id="id958" class="indexterm"></a> object, which will allow us to see<a id="id959" class="indexterm"></a> the visual of the<a id="id960" class="indexterm"></a> empty game object while in the <a id="id961" class="indexterm"></a>editor. In this case, we use the <code class="literal">Gizmos.DrawIcon()</code> function to draw the icon image for each waypoint to make<a id="id962" class="indexterm"></a> it easier to edit. Then, we use <code class="literal">Gizmos.DrawWireSphere()</code> to draw and calculate the<a id="id963" class="indexterm"></a> area of each waypoint related to the radius of <code class="literal">WaypointContainer</code>.</p></div><p>We will see the error on the console that <code class="literal">WaypointsContainer</code> cannot be found, but don't worry, we will add it in the next step.</p></li><li><p>Next, we will create the script in the same folder and name it <code class="literal">WaypointsContainer</code>. This script will have the basic function that checks for the direction, distance, and draws the gizmos line between each waypoint. First, let's add the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+#pragma strict
+
+var showPath : boolean = true;
+var isRandom : boolean = false;
+var radius : float = 1.0f;
+var waypoints : Waypoint[];
+
+private var _lastWaypoint : Waypoint;
+private var _nextIndex : int;
+private var _wayIndex : int;
+private var _wayLength : int;
+private var _isHitRadius : boolean;
+private var _direction : Vector3;
+
+function Awake ()
+{
+  showPath = false;
+  _isHitRadius = false;
+  _wayIndex = 0;
+  _nextIndex = _wayIndex + 1;
+  _wayLength = waypoints.Length;
+  _direction = Vector3.zero;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class WaypointsContainer : MonoBehaviour
+{
+  public bool showPath = true;
+  public bool isRandom = false;
+  public float radius = 1.0f;
+  public Waypoint[] waypoints;
+
+  Waypoint _lastWaypoint;
+  int _nextIndex;
+  int _wayIndex;
+  int _wayLength;
+  bool _isHitRadius;
+  Vector3 _direction;
+
+  void Awake ()
+  {
+    showPath = false;
+    _isHitRadius = false;
+    _wayIndex = 0;
+    _nextIndex = _wayIndex + 1;
+    _wayLength = waypoints.Length;
+    _direction = Vector3.zero;
+  }
+}</pre></div></li><li><p>Next, we will add another function that basically checks if the enemy is<a id="id964" class="indexterm"></a> away<a id="id965" class="indexterm"></a> from the next waypoint <a id="id966" class="indexterm"></a>or not. We will use this function to make sure that the enemy isn't going too far from the area, which <a id="id967" class="indexterm"></a>will give our enemy more characteristics. Let's add the following code after the <code class="literal">Awake()</code> function:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+function AwayFromWaypoint ( position : Vector3, distance : float ) : boolean {
+  var offset : Vector3 = position - waypoints[_nextIndex].transform.position;
+  var length : float = offset.sqrMagnitude;
+  var sqrDistance : float = distance*distance;
+  if (length &gt; sqrDistance) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public bool AwayFromWaypoint ( Vector3 position, float distance ) {
+  Vector3 offset = position - waypoints[_nextIndex].transform.position;
+  float length = offset.sqrMagnitude;
+  float sqrDistance = distance*distance;
+  if (length &gt; sqrDistance) {
+    return true;
+  } else {
+    return false;
+  }
+}</pre></div></li><li><p>Then, we need to add another function, which will basically return the direction from our AI to the player. This function is to make our enemy follow the player to make it more aggressive. Let's add the function after the <code class="literal">AwayFromWaypoint()</code> function as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+function GetDirectionToPlayer ( enemy : Vector3, player : Vector3 ) : Vector3 {
+  var currentPosition : Vector3 = new Vector3(enemy.x, waypoints[_wayIndex].transform.position.y, enemy.z);
+  var playerPosition : Vector3 = new Vector3(player.x, waypoints[_wayIndex].transform.position.y, player.z);
+  _direction = (playerPosition - currentPosition).normalized;  
+  return _direction;
+
+
+}
+<span class="strong"><strong>// C# user:</strong></span>
+
+public Vector3 GetDirectionToPlayer ( Vector3 enemy, Vector3 player ) {
+  Vector3 currentPosition = new Vector3(enemy.x, waypoints[_wayIndex].transform.position.y, enemy.z);
+  Vector3 playerPosition = new Vector3(player.x, waypoints[_wayIndex].transform.position.y, player.z);
+  _direction = (playerPosition - currentPosition).normalized;  
+  return _direction;
+}</pre></div></li><li><p>Next, we will add the core function, which will calculate and return the enemy's direction related to the player's position. We will also set the <a id="id968" class="indexterm"></a>way<a id="id969" class="indexterm"></a> the enemy will be moved<a id="id970" class="indexterm"></a> through the waypoint either by an<a id="id971" class="indexterm"></a> order or randomness. So, type the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+function GetDirection (myTransform : Transform) : Vector3
+{
+  var offset : Vector3 = myTransform.position - waypoints[_nextIndex].transform.position;
+  var length : float = offset.sqrMagnitude;
+  var sqrDistance : float = radius*radius;
+  if (length &lt;= sqrDistance) {
+    if (!_isHitRadius) {
+      _isHitRadius = true;
+      _wayIndex = _nextIndex;
+      if (isRandom) {
+        var _randomWay : int = Mathf.FloorToInt(Random.value * _wayLength);
+        if (_wayLength &gt; 1) {
+          while (_wayIndex == _randomWay) {
+            _randomWay = Mathf.FloorToInt(Random.value * _wayLength);
+          }
+        }
+        _nextIndex = _randomWay;
+      } else {
+        _nextIndex = (_nextIndex + 1) % _wayLength;
+      }
+    }
+  } else {
+    _isHitRadius = false;
+  }  
+  var currentPosition : Vector3 = new Vector3 (myTransform.position.x, waypoints[_nextIndex].transform.position.y, myTransform.position.z);
+  _direction = (waypoints[_nextIndex].transform.position - currentPosition).normalized;
+  return _direction;
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public Vector3 GetDirection (Transform myTransform)
+{
+  Vector3 offset = myTransform.position - waypoints[_nextIndex].transform.position;
+  float length = offset.sqrMagnitude;
+  float sqrDistance = radius*radius;
+  if (length &lt;= sqrDistance) {
+    if (!_isHitRadius) {
+      _isHitRadius = true;
+      _wayIndex = _nextIndex;
+      if (isRandom) {
+        int _randomWay = Mathf.FloorToInt(Random.value * _wayLength);
+        if (_wayLength &gt; 1) {
+          while (_wayIndex == _randomWay) {
+            _randomWay = Mathf.FloorToInt(Random.value * _wayLength);
+          }
+        }
+        _nextIndex = _randomWay;
+      } else {
+        _nextIndex = (_nextIndex + 1) % _wayLength;
+      }
+    }
+  } else {
+    _isHitRadius = false;
+  }  
+  Vector3 currentPosition = new Vector3 (myTransform.position.x, waypoints[_nextIndex].transform.position.y, myTransform.position.z);
+    _direction = (waypoints[_nextIndex].transform.position - currentPosition).normalized;
+  return _direction;
+}</pre></div></li><li><p>The <a id="id972" class="indexterm"></a>last function of this <a id="id973" class="indexterm"></a>script is<a id="id974" class="indexterm"></a> the <code class="literal">OnDrawGizmos()</code> function, which will <a id="id975" class="indexterm"></a>only be used in the editor or debugging process, similar to the one we use on the <span class="strong"><strong>Waypoint</strong></span> script. We will use this function to draw the line direction between each waypoint. Let's add it as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+ 
+function OnDrawGizmos ()
+{
+  if ((waypoints != null) &amp;&amp; (waypoints.Length &gt; 1) &amp;&amp; (showPath == true)) {
+    if (isRandom) {
+      for (var j : int = 0; j &lt; waypoints.Length; ++j) {
+        for (var k : int = j; k &lt; waypoints.Length; ++k) {
+          if ((waypoints[j] != null) &amp;&amp; (waypoints[k] != null)) {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(waypoints[j].transform.position, waypoints[k].transform.position);
+          }
+        }
+      }
+    } else {
+      for (var point : Waypoint in waypoints) {
+        if ((_lastWaypoint != null) &amp;&amp; (point != null)) {
+          if (point != null) {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine (point.transform.position, _lastWaypoint.transform.position);
+          }
+        }
+        _lastWaypoint = point;
+      }
+    }
+  }
+}
+<span class="strong"><strong>// C# user:</strong></span>
+
+void OnDrawGizmos ()
+{
+  if ((waypoints != null) &amp;&amp; (waypoints.Length &gt; 1) &amp;&amp; (showPath == true)) {
+    if (isRandom) {
+      for (int j = 0; j &lt; waypoints.Length; ++j) {
+        for (int k = j; k &lt; waypoints.Length; ++k) {
+          if ((waypoints[j] != null) &amp;&amp; (waypoints[k] != null)) {
+            Gizmos.color = Color.blue;
+         Gizmos.DrawLine(waypoints[j].transform.position, waypoints[k].transform.position);
+          }
+        }
+      }
+    } else {
+      foreach (Waypoint point in waypoints) {
+        if ((_lastWaypoint != null) &amp;&amp; (point != null)) {
+          if (point != null) {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine (point.transform.position, _lastWaypoint.transform.position);
+          }
+        }
+        _lastWaypoint = point;
+      }
+    }
+  }
+}</pre></div></li><li><p>We <a id="id976" class="indexterm"></a>use <code class="literal">Gizmos.DrawLine()</code> to draw the line between each waypoint.</p></li><li><p>Now, we<a id="id977" class="indexterm"></a> are done with<a id="id978" class="indexterm"></a> the <code class="literal">WaypointsContainer</code> and <code class="literal">Waypoint</code> script. Go back to the Unity editor<a id="id979" class="indexterm"></a> to create the waypoint container<a id="id980" class="indexterm"></a> game object by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> to create the empty game object and name it <code class="literal">WaypointsContainer</code>. Then, drag the <span class="strong"><strong>WaypointsContainer</strong></span> script (that we just created) to this <span class="strong"><strong>WaypointsContainer</strong></span> game object, and set the <span class="strong"><strong>Transform</strong></span> properties as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>:<code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">1</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">1</code>
+</p>
+</td></tr></tbody></table></div><p>We can click on the little gear in the <span class="strong"><strong>Inspector</strong></span> view and choose <span class="strong"><strong>Reset</strong></span> to reset all to the default positions, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_05.jpg" /></div></li><li><p>Next, we need to create a waypoint. Let's create a new empty game object again. Go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> to create the empty game object, name it <code class="literal">Waypoint</code>, and drag the <span class="strong"><strong>Waypoint</strong></span> script to it. Then, we drag this object inside <span class="strong"><strong>WaypointsContainer</strong></span>, which we<a id="id981" class="indexterm"></a> already have in <a id="id982" class="indexterm"></a>the scene, and <a id="id983" class="indexterm"></a>reset its transform position<a id="id984" class="indexterm"></a> as <span class="strong"><strong>X</strong></span> to <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span> to <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span> to <code class="literal">0</code>. We will see something similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_06.jpg" /></div></li><li><p>Then, we need to create more <span class="strong"><strong>Waypoint</strong></span> game objects by pressing <span class="emphasis"><em>Crtl</em></span> + <span class="emphasis"><em>D</em></span> (in Windows) or <span class="emphasis"><em>command</em></span> + <span class="emphasis"><em>D</em></span> (on a Mac) five times to duplicate another five <span class="strong"><strong>Waypoint</strong></span> game objects, and set all these objects' transform positions as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">1.5</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">3</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">7</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">9</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-1</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">6</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-1.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">2</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">3</code>
+</p>
+</td></tr></tbody></table></div><p>If we take a look at the <span class="strong"><strong>Hierarchy</strong></span> view, we will see something similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_07.jpg" /></div></li><li><p>Next, we <a id="id985" class="indexterm"></a>will click on <span class="strong"><strong>WaypointsContainer</strong></span> and go <a id="id986" class="indexterm"></a>to its <span class="strong"><strong>Inspector</strong></span> view, set<a id="id987" class="indexterm"></a> <span class="strong"><strong>Size</strong></span> under the <span class="strong"><strong>Waypoints</strong></span> property to <code class="literal">6</code>, and drag all the <span class="strong"><strong>Waypoint</strong></span> objects to the <span class="strong"><strong>Waypoints</strong></span> array in the <span class="strong"><strong>Inspector</strong></span> view, as the shown in the following<a id="id988" class="indexterm"></a> screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_08.jpg" /></div></li><li><p>Then, if we click on <span class="strong"><strong>WaypointsContainer</strong></span> and go to its <span class="strong"><strong>Inspector</strong></span> view, we will see the <span class="strong"><strong>Is Random</strong></span> property. We can toggle it <span class="strong"><strong>On</strong></span> or <span class="strong"><strong>Off</strong></span> to enable the random movement of the AI, which will also show the result on the editor screen, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_09.jpg" /></div></li><li><p>We can also toggle the <span class="strong"><strong>Show Path</strong></span> parameter to turn the visual gizmos <span class="strong"><strong>On</strong></span> or <span class="strong"><strong>Off</strong></span>. Both results are controlled by the <code class="literal">OnDrawGizmos()</code> function, which we created in our script.</p></li></ol></div><p>We have done this step. However, if we have many waypoints, we need to add the <span class="strong"><strong>Waypoint</strong></span> objects to the array one by one. This sounds like a lot of work and sometimes it's inconvenient and takes so much time. So, in the next step, we will solve this problem by creating <span class="strong"><strong>CustomEditor</strong></span> to do this for us.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec105"></a>Objective complete – mini debriefing</h3></div></div></div><p>What <a id="id989" class="indexterm"></a>we have done here is created the waypoint <a id="id990" class="indexterm"></a>system that basically controls<a id="id991" class="indexterm"></a> the movement of the enemy. We started by creating<a id="id992" class="indexterm"></a> the <span class="strong"><strong>Waypoint</strong></span> script, which gets the <code class="literal">showPath</code> and<a id="id993" class="indexterm"></a> <code class="literal">radius</code> variable from the <span class="strong"><strong>WaypointsContainer</strong></span> script. Then, we <a id="id994" class="indexterm"></a>used those variables to show the gizmo objects, which are the icons and wire spheres in the <code class="literal">OnDrawGizmos()</code> function.</p><p>Next, we created the <code class="literal">WaypointsContainer</code> script that has all the necessary code to control the enemy movement. First, we have the <code class="literal">AwayFromWayPoint()</code> function that will check <a id="id995" class="indexterm"></a>the distance between the enemy's current position to the next waypoint. In this function, we've used <code class="literal">myVector3</code>.<code class="literal">sqrMagnitude</code> to check for the distance. If we take a look at the Unity documentation, we can also use <code class="literal">Vector3.Distance()</code> or <code class="literal">myVector3.magnitude</code> to check for the distance between two positions. So, why did we use <code class="literal">sqrMagnitude</code> instead of others?</p><p>Let's take a close look at the equation of the <code class="literal">Vector3.Distance()</code> function:</p><div class="informalexample"><pre class="programlisting">Vector3 vector = new Vector3 (a.x – b.x, a.y – b.y, a.z – b.z);
+float distance = Math.Sqrt(vector.x* vector.x+ vector.y* vector.y+ vector.z* vector.z);</pre></div><p>As we can see, we need to find the difference between two vectors first, use the power of 2 to the result vector, and square root it.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note74"></a>Note</h3><p>The difference between two vectors is the vector from the tail of the base vector to the head of the reverse of another vector. Then, the root of the square is just to calculate the magnitude of this vector.</p></div><p>Assuming <code class="literal">myVector3</code> is the difference between vectors, <code class="literal">a</code> and <code class="literal">b</code> like the <code class="literal">vector</code> parameter in the preceding script, then the following is the equation of <code class="literal">myVector.magnitude</code>:</p><div class="informalexample"><pre class="programlisting">float magnitude = Mathf.Sqrt(myVector.x* myVector.x+ myVector.y* myVector.y+ myVector.z* myVector.z);</pre></div><p>The equation of <code class="literal">myVector.sqrMagnitude</code> is as follows:</p><div class="informalexample"><pre class="programlisting">float sqrMagnitude = myVector.x* myVector.x+ myVector.y* myVector.y+ myVector.z* myVector.z;</pre></div><p>As we can see, the difference is that <code class="literal">sqrMagnitude</code> doesn't need to calculate <code class="literal">Math.Sqrt</code> or the square root, which makes it faster to calculate.</p><p>So, if <a id="id996" class="indexterm"></a>we want to compare the distance, <code class="literal">sqrMagnitude</code> is <a id="id997" class="indexterm"></a>often the best choice<a id="id998" class="indexterm"></a> because using the distance's power of 2 is a lot faster<a id="id999" class="indexterm"></a> than the square root of the magnitude, as we can see in the following script:</p><div class="informalexample"><pre class="programlisting">If (myVector3.sqrMagnitude &lt; distance*distance) { … }</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note75"></a>Note</h3><p>For more details, visit the following websites:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Vector3-magnitude.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Vector3-magnitude.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://answers.unity3d.com/questions/384932/best-way-to-find-distance.html" target="_blank">http://answers.unity3d.com/questions/384932/best-way-to-find-distance.html</a>
+</p></li></ul></div></div><p>Next, we <a id="id1000" class="indexterm"></a>added the <code class="literal">GetDirectionToPlayer()</code> function to find the direction between our enemy and the player by using the <span class="emphasis"><em>y</em></span> position of the waypoint to make sure that the direction gets calculated on the XZ plane. Then, we add the <code class="literal">GetDirection()</code> function, which checks the distance <a id="id1001" class="indexterm"></a>between the enemy position and waypoint position, as shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_10.jpg" /></div><p>We can see from the preceding diagram that if the distance between the enemy and the waypoint position is smaller than the radius of the waypoint, it will trigger the waypoint to change the next waypoint index, which will also change the movement direction of the enemy.</p><p>Next, we <a id="id1002" class="indexterm"></a>used the <code class="literal">OnDrawGizmos()</code> function to create the visual line link for each <span class="strong"><strong>Waypoint</strong></span> game objects to show in the editor. <span class="strong"><strong>Waypoint</strong></span> is the empty game object, which is sometimes difficult to edit in the editor because we cannot see it in the editors.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip27"></a>Tip</h3><p>It is better to use gizmo than trying to use camera layers and meshes for the waypoint.</p></div><p>So, using<a id="id1003" class="indexterm"></a> gizmo is the best solution and the best <a id="id1004" class="indexterm"></a>way that Unity provides<a id="id1005" class="indexterm"></a> us to see the visual of an empty game object. We<a id="id1006" class="indexterm"></a> also have the trigger parameter in the <span class="strong"><strong>Inspector</strong></span> view to turn the visual on or off  and to tell our enemy to walk randomly or by the order of the waypoint index.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec106"></a>Classified intel</h3></div></div></div><p>At the <code class="literal">Waypoint</code> script, we use the following lines in the <code class="literal">OnDrawGizmos()</code> function to get both values from the <code class="literal">WaypointsContainer</code> script as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+_showGizmos = transform.parent.GetComponent.&lt;WaypointsContainer&gt;().showPath;
+_radius = transform.parent.GetComponent.&lt;WaypointsContainer&gt;().radius;
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+_showGizmos = transform.parent.GetComponent&lt;WaypointsContainer&gt;().showPath;
+_radius = transform.parent.GetComponent&lt;WaypointsContainer&gt;().radius;</pre></div><p>This<a id="id1007" class="indexterm"></a> function is called <span class="strong"><strong>generic functions</strong></span>, which is usually<a id="id1008" class="indexterm"></a> known to the C# user. However, for the JavaScript<a id="id1009" class="indexterm"></a> user, this might be a new thing. This is basically<a id="id1010" class="indexterm"></a> the function that can be called to return the <a id="id1011" class="indexterm"></a>strict type. It means that we don't need to cast the type, as we can see in the following pseudo code:</p><div class="informalexample"><pre class="programlisting">Function FunctionName.&lt;T&gt;() : T;</pre></div><p>This is very useful if we want to get around the limitations of dynamic tying in JavaScript, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">var obj = GetComponent.&lt;Transform&gt;();</pre></div><p>From the preceding code, <code class="literal">obj</code> will be the <code class="literal">Transform</code> type. However, if we use <code class="literal">GetCompent(Transform)</code>, the <code class="literal">obj</code> type will be the <code class="literal">Component</code> type.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip28"></a>Tip</h3><p>The good thing about generic functions is that it will return the correct type and the JavaScript code doesn't need to find the correct type when it compiles, which will make our code faster.</p></div><p>For the C# user, generic functions can help us save time to cast it to the correct type, as shown in the following script:</p><div class="informalexample"><pre class="programlisting">Transform t = go.GetComponent&lt;Transform&gt;();</pre></div><p>We can<a id="id1012" class="indexterm"></a> use a generic function instead of using the <a id="id1013" class="indexterm"></a>following methods:</p><div class="informalexample"><pre class="programlisting">Transform t = (Transform) go.GetComponent(typeof(Transform)); 
+Transform t = go.GetComponent(typeof(Transform)) as Transform;</pre></div><p>We <a id="id1014" class="indexterm"></a>can see that it's a<a id="id1015" class="indexterm"></a> lot shorter.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note76"></a>Note</h3><p>For more details, visit <a class="ulink" href="http://docs.unity3d.com/Documentation/Manual/GenericFunctions.html" target="_blank">http://docs.unity3d.com/Documentation/Manual/GenericFunctions.html</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec11"></a>Gizmos</h4></div></div></div><p>We've used the <code class="literal">OnDrawGizmos()</code> function to create the visual viewable for the waypoint game<a id="id1016" class="indexterm"></a> object, which will show only in the editor and we won't see anything during the game play in the <span class="strong"><strong>Game</strong></span> view or in the real game after we build it.</p><p>However, if we <a id="id1017" class="indexterm"></a>want to see it while we are playing the game in the <span class="strong"><strong>Game</strong></span> view, we can click on the <span class="strong"><strong>Play</strong></span> button and click on the <span class="strong"><strong>Gizmos</strong></span> button on the top-right to toggle the gizmos on or off, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_11.jpg" /></div></div></div></div>

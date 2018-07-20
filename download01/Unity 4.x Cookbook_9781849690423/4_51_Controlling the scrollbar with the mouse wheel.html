@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec54"></a>Controlling the scrollbar with the mouse wheel</h2></div></div><hr /></div><p>For<a id="id305" class="indexterm"></a> many users, there is nothing more<a id="id306" class="indexterm"></a> natural than moving a scrollbar with the mouse wheel. However, this is not natively supported by Unity. In this recipe, we will add mouse wheel support to a vertical scrollbar.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec187"></a>How to do it...</h3></div></div></div><p>To control the scrollbar with the mouse wheel, please follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Attach the following C# script class to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: ScrollWheel.cs
+using UnityEngine;
+using System.Collections;
+
+public class ScrollWheel : MonoBehaviour {
+    public int margin;
+    public bool allScreen = true;
+    public float min = 0.0f;
+    public float max = 10.0f;
+    public float value = 10.0f;
+    public float speed = 5;
+
+    void OnGUI() {
+        Rect rect = new Rect(margin, margin, 30, Screen.height - (margin * 2));
+        value = GUI.VerticalScrollbar(rect, value, 1.0f, max, min);
+        bool onArea;
+        if (!allScreen &amp;&amp; !rect.Contains(Input.mousePosition)) {
+            onArea = false;
+        }
+        else {
+            onArea = true;
+        }
+    
+        float vsMove = Input.GetAxis("Mouse ScrollWheel") * speed;
+        if ((value + vsMove) &gt; min &amp;&amp; onArea) {
+            value += vsMove;
+        }
+    }
+}    </pre></div></li><li><p>Test your scene. You should now be able to control the scrollbar with the mouse wheel.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_22.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec188"></a>How it works...</h3></div></div></div><p>Since the scrollbar's handle position is given by a variable (in our case, <code class="literal">vsBar)</code>, all we needed to do was increment that variable according to the mouse wheel input.</p><p>We have also <a id="id307" class="indexterm"></a>added a few variables to enhance the scrollbar customization: margin, minimum and maximum values, scroll speed; and also a Boolean variable to enable/disable the mouse wheel input when the mouse cursor is not directly on top of the scrollbar.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec189"></a>There's more...</h3></div></div></div><p>In this recipe, the scrollbar height is determined by the application screen's height. However, there's no reason you couldn't add more variables to manually set its size and position.</p></div></div>

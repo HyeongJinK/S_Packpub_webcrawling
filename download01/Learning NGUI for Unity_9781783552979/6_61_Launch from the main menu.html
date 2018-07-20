@@ -1,0 +1,16 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec62"></a>Launch from the main menu</h2></div></div><hr /></div><p>Now that our game is starting to work, we should make sure we can go from the <code class="literal">Menu</code> scene to the <code class="literal">Game</code> scene without any problem.</p><p>Open the <code class="literal">Menu</code> scene now. We'll make sure the main menu's background texture fades out after the <code class="literal">Game</code> <a id="id755" class="indexterm"></a>scene is loaded, and the main menu's UI camera is disabled to ensure no elements are displayed during the game.</p><p>Open our <code class="literal">MenuManager.cs</code> script and add the following global variable declarations:</p><div class="informalexample"><pre class="programlisting">// We'll need the UI camera
+<span class="strong"><strong>public Camera uiCamera;</strong></span>
+// We'll need the UI background
+<span class="strong"><strong>public GameObject background;</strong></span>
+</pre></div><p>Save the script and go back to Unity. We'll assign these two new variables now:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Select our <code class="literal">UI Root</code> GameObject. For its attached <code class="literal">Menu Manager</code>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Drag <code class="literal">UI Root</code> | <code class="literal">Camera</code> into its <span class="strong"><strong>UI Camera</strong></span> field.</p></li><li style="list-style-type: disc"><p>Drag <code class="literal">UI Root</code> | <code class="literal">Background</code> into the <span class="strong"><strong>Background</strong></span> field.</p></li></ul></div></li></ol></div><p>Go back to the <code class="literal">MenuManager.cs</code> script and add the following <code class="literal">EnterGame()</code> coroutine:</p><div class="informalexample"><pre class="programlisting">// EnterGame Coroutine
+<span class="strong"><strong>private IEnumerator EnterGameRoutine()</strong></span>
+{
+  // Fade out the UI background
+<span class="strong"><strong>  TweenAlpha.Begin(background, 0.5f, 0);</strong></span>
+  // Wait for the tween to finish
+<span class="strong"><strong>  yield return new WaitForSeconds(0.5f);</strong></span>
+  // Hide the main menu UI by disabling cam
+<span class="strong"><strong>  uiCamera.enabled = false;</strong></span>
+}</pre></div><p>Now, we need to start that <a id="id756" class="indexterm"></a>coroutine when the <code class="literal">Game</code> scene is loaded. Add the following lines in the <code class="literal">LoadGameScene()</code> method of <code class="literal">MenuManager.cs</code>, just below the <code class="literal">Application.LoadLevel("Game")</code> line:</p><div class="informalexample"><pre class="programlisting">// Launch the enter game routine
+<span class="strong"><strong>StartCoroutine("EnterGameRoutine");</strong></span>
+</pre></div><p>Hit Unity's play button. Click on our main menu's <code class="literal">Play</code> button to launch the game. The background now fades out, and the UI camera is disabled after the fade.</p><p>Great! Now, let's summarize what you've learned in this chapter.</p></div>

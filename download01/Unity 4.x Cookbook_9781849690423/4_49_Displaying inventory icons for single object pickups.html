@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec52"></a>Displaying inventory icons for single object pickups</h2></div></div><hr /></div><p>The<a id="id293" class="indexterm"></a> previous <a id="id294" class="indexterm"></a>recipe communicated whether or not the player was carrying a key via text on screen. The use of graphical icons often results in a more engaging GUI.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec178"></a>Getting ready</h3></div></div></div><p>In the <code class="literal">0423_04_12</code> folder, you'll find a key icon image, and an empty inventory icon image. In the <code class="literal">0423_04_11</code> folder, you'll find some key images, and a crisscross image to apply to the terrain.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec179"></a>How to do it...</h3></div></div></div><p>To display graphical icons for individual inventory objects, please follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new scene, and add a directional light.</p></li><li><p>Create a new terrain, with <span class="strong"><strong>Size</strong></span> set to 2000 x 2000 and positioned at (-1000, 0, -1000). Now, apply a texture to it.</p></li><li><p>Create a cube named <code class="literal">Cube–key</code> at position (0, 1, 5) and with scale (2, 2, 2).</p></li><li><p>Tag <code class="literal">Cube–key</code> with the <code class="literal">key</code> string, and tick its <span class="strong"><strong>IsTrigger</strong></span> checkbox.</p></li><li><p>Add a key image to <code class="literal">Cube–key</code>.</p></li><li><p>Import the built-in <span class="strong"><strong>Character Controller</strong></span> Unity package and add a <span class="strong"><strong>3rd Person Controller</strong></span> to your scene at position (0, 1, 0).</p></li><li><p>Attach <a id="id295" class="indexterm"></a>the following C# script class to your character controller:</p><div class="informalexample"><pre class="programlisting">// file: PlayerInventoryIcon.cs
+using UnityEngine;
+using System.Collections;
+
+public class PlayerInventoryIcon : MonoBehaviour 
+{
+  public Texture keyIcon;
+  public Texture emptyIcon;
+  
+  private bool isCarryingKey = false;
+  
+  private void OnGUI()
+  {
+    if( isCarryingKey )
+      GUILayout.Label( keyIcon );
+    else
+      GUILayout.Label( emptyIcon );
+  }
+  
+  private void OnTriggerEnter(Collider hitCollider)
+  {
+    if( "key" == hitCollider.tag )
+    {
+      isCarryingKey = true;
+      Destroy ( hitCollider.gameObject );
+    }
+  }
+}</pre></div></li><li><p>With the <span class="strong"><strong>3rd Person Controller</strong></span> selected in the <span class="strong"><strong>Hierarchy</strong></span> view, drag the key icon and empty icon images into the <span class="strong"><strong>Inspector</strong></span> view for the corresponding public variables.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec180"></a>How it works...</h3></div></div></div><p>The two public <code class="literal">Texture</code> variables hold the icons for a key and an empty inventory. The <code class="literal">OnGUI()</code> method <a id="id296" class="indexterm"></a>uses an <code class="literal">if</code> statement to test the value of <code class="literal">isCarryingKey</code>. If it is true, then a key icon image is displayed, if not, then an icon representing an empty inventory is displayed. The following screenshot shows an example of the statement being true:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_19.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec181"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Displaying inventory text for single object pickups</em></span> recipe.</p></li><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Managing inventories with a general purpose PickUp class</em></span> recipe.</p></li></ul></div></div></div>

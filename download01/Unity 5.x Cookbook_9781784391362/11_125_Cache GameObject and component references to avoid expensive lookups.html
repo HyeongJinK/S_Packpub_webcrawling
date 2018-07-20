@@ -1,0 +1,172 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec122"></a>Cache GameObject and component references to avoid expensive lookups</h2></div></div><hr /></div><p>
+<span class="strong"><strong>Optimization principal 2</strong></span>: Minimize actions requiring Unity to perform "reflection" over objects and searching of all current scene objects.</p><p>Reflection is <a id="id1277" class="indexterm"></a>when, at run time, Unity has to analyze objects to see whether they contain a method corresponding to a "message" that the object has received - an example would be <code class="literal">SendMessage()</code>. An example of making Unity perform a search over all active objects in a scene would be the simple and useful, but slow, <code class="literal">FindObjectsByTag()</code>. Another action that slows Unity down is each time we make it look up an object's component using <code class="literal">GetComponent()</code>.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_33.jpg" /></div><p>In the olden days for many components, Unity offered <span class="emphasis"><em>quick component property getters</em></span> such as <code class="literal">.audio</code> to reference the <code class="literal">AudioSource</code> component of a script's parent <span class="strong"><strong>GameObject</strong></span>, <code class="literal">rigidbody</code> to<a id="id1278" class="indexterm"></a> reference the <span class="strong"><strong>RigidBody</strong></span> component, and so on. However, this wasn't a consistent rule, and in other cases, you had to use <code class="literal">GetComponent()</code>. With Unity 5, all these <span class="emphasis"><em>quick component property getters</em></span> have been removed (with the exception of <code class="literal">.transform</code>, which is automatically cached, so has no performance cost to use). To help game developers update their scripts to work with Unity 5, they introduced <span class="emphasis"><em>Automatic Script Updating</em></span>, whereby (after a suitable warning to have backed up files before going ahead!) Unity will go through scripts replacing <span class="emphasis"><em>quick component property getters</em></span> code with the standardized <code class="literal">GetComponent&lt;ComponentTyle&gt;()</code> code pattern, such as <a id="id1279" class="indexterm"></a>
+<code class="literal">GetComponent&lt;Rigidbody&gt;()</code> and <code class="literal">GetComponent&lt;AudioSource&gt;()</code>. However, while script updating makes things consistent, and also makes explicit all these <code class="literal">GetComponent()</code> reflection statements, each <code class="literal">GetComponent()</code> execution eats up valuable processing resources.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note60"></a>Note</h3><p>You can read more about Unity's reasons for this (and the alternative <span class="emphasis"><em>Extension Methods</em></span> approach they rejected; a shame—I think we'll see them appear in a later version of Unity since it's an elegant way to solve this coding situation) in this June 2014 blog post and manual page at:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://blogs.unity3d.com/2014/06/23/unity5-api-changes-automatic-script-updating/" target="_blank">http://blogs.unity3d.com/2014/06/23/unity5-api-changes-automatic-script-updating/</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://unity3d.com/learn/tutorials/modules/intermediate/scripting/extension-methods" target="_blank">http://unity3d.com/learn/tutorials/modules/intermediate/scripting/extension-methods</a>
+</p></li></ul></div></div><p>In this recipe, we'll incrementally refactor a method, making it more efficient at each step by removing reflection and component lookup actions. The method we'll improve is to find half the distance from the <span class="strong"><strong>GameObject</strong></span> in the scene tagged <code class="literal">Player</code> (a <span class="strong"><strong>3rd Person Controller</strong></span>) and 1,000 other <span class="strong"><strong>GameObjects</strong></span> in the scene tagged <code class="literal">Respawn</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec387"></a>Getting ready</h3></div></div></div><p>For this recipe, we have prepared a package named <code class="literal">unity4_assets_handyman_goodDirt</code> containing the 3rdPersonController handyman and Terrain material <code class="literal">goodDirt</code>. The package is in the folder <code class="literal">1362_11_15</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec388"></a>How to do it...</h3></div></div></div><p>To improve code performance by caching component lookups, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new<a id="id1280" class="indexterm"></a> 3D project, importing the provided Unity package <code class="literal">unity4_assets_handyman_goodDirt</code>.</p></li><li><p>Create a new <span class="strong"><strong>Terrain </strong></span>(size <span class="strong"><strong>200 x 200</strong></span>, located at <span class="strong"><strong>-100, 0, -100</strong></span>) and texture-paint it with <span class="strong"><strong>GoodDirt</strong></span>.</p></li><li><p>Add a <span class="strong"><strong>3rdPersonController</strong></span> at the center of the terrain (that is, <span class="strong"><strong>0, 1, 0</strong></span>). Note that this will already be tagged <span class="strong"><strong>Player</strong></span>.</p></li><li><p>Create a new <span class="strong"><strong>Sphere</strong></span> and give it the tag <span class="strong"><strong>Respawn</strong></span>.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> panel, create a new empty prefab named <span class="strong"><strong>prefab_sphere</strong></span> and drag the <span class="strong"><strong>Sphere</strong></span> from the <span class="strong"><strong>Hierarchy</strong></span> panel into your prefab in the <span class="strong"><strong>Project</strong></span> panel.</p></li><li><p>Now, delete the <span class="strong"><strong>Sphere</strong></span> from the <span class="strong"><strong>Hierarchy</strong></span> panel (since all its properties have been copied into our prefab).</p></li><li><p>Add the following C# script class <code class="literal">SphereBuilder</code> to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SphereBuilder : MonoBehaviour
+{
+  public const int NUM_SPHERES = 1000;
+  public GameObject spherePrefab;
+
+  void Awake(){
+    List&lt;Vector3&gt; randomPositions = BuildVector3Collection(NUM_SPHERES);
+    for(int i=0; i &lt; NUM_SPHERES; i++){
+      Vector3 pos = randomPositions[i];
+      Instantiate(spherePrefab, pos, Quaternion.identity);
+    }
+  }
+
+  public List&lt;Vector3&gt; BuildVector3Collection(int numPositions){
+    List&lt;Vector3&gt; positionArrayList = new List&lt;Vector3&gt;();
+    for(int i=0; i &lt; numPositions; i++) {
+      float x = Random.Range(-100, 100);
+      float y = Random.Range(1, 100);
+      float z = Random.Range(-100, 100);
+      Vector3 pos = new Vector3(x,y,z);
+      positionArrayList.Add (pos);
+    }
+
+    return positionArrayList;
+  }
+}</pre></div></li><li><p>With the <span class="strong"><strong>Main Camera</strong></span> selected in the <span class="strong"><strong>Hierarchy</strong></span>, drag <span class="strong"><strong>prefab_sphere</strong></span> from the Project panel in <span class="strong"><strong>Inspector</strong></span> public variable <code class="literal">Sphere Prefab</code>, for script component <code class="literal">SphereBuilder,</code> as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_34.jpg" /></div></li><li><p>Add the<a id="id1281" class="indexterm"></a> following C# script class <code class="literal">SimpleMath</code> to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SimpleMath : MonoBehaviour {
+  public float Halve(float n){
+    return n / 2;
+  }
+}</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec98"></a>Method 1 – AverageDistance calculation</h4></div></div></div><p>Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following<a id="id1282" class="indexterm"></a> C# script class <code class="literal">AverageDistance</code> to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System;
+
+public class AverageDistance : MonoBehaviour
+{
+  void Update(){
+    // method1 - basic
+    Profiler.BeginSample("TESTING_method1");
+    GameObject[] sphereArray = GameObject.FindGameObjectsWithTag("Respawn");
+    for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+      HalfDistanceBasic(sphereArray[i].transform);
+    }
+    Profiler.EndSample();
+  }
+
+  // basic
+  private void HalfDistanceBasic(Transform sphereGOTransform){
+    Transform playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
+    Vector3 pos1 = playerTransform.position;
+    Vector3 pos2 = sphereGOTransform.position;
+
+    float distance = Vector3.Distance(pos1, pos2);
+
+    SimpleMath mathObject = GetComponent&lt;SimpleMath&gt;();
+    float halfDistance = mathObject.Halve(distance);
+  }
+}</pre></div></li><li><p>Open the <span class="strong"><strong>Profiler</strong></span> panel and ensure that <span class="strong"><strong>record</strong></span> is selected and and that the script processing load is being recorded.</p></li><li><p>Run the game for 10 to 20 seconds.</p></li><li><p>In the <span class="strong"><strong>Profiler</strong></span><a id="id1283" class="indexterm"></a> panel, restrict the listed results to only samples starting with <code class="literal">TEST</code>. For whichever frame you select, you should see the percentage CPU load and milliseconds required for <span class="strong"><strong>TESTING_method1</strong></span>.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec99"></a>Method 2 – Cache array of Respawn object transforms</h4></div></div></div><p>Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>
+<code class="literal">FindGameObjectWithTag()</code> is slow, so let's fix that for the search for objects tagged <a id="id1284" class="indexterm"></a>
+<code class="literal">Respawn</code>. First, in C# script class <code class="literal">AverageDistance</code>, add a private <code class="literal">Transform</code> array variable named <code class="literal">sphereTransformArrayCache</code>:</p><div class="informalexample"><pre class="programlisting">private Transform[] sphereTransformArrayCache;</pre></div></li><li><p>Now, add the <code class="literal">Start()</code> method, the statement that stores in this array references to the <span class="strong"><strong>Transform</strong></span> component of all our <code class="literal">Respawn</code> tagged objects:</p><div class="informalexample"><pre class="programlisting">private void Start(){
+  GameObject[] sphereGOArray = GameObject.FindGameObjectsWithTag("Respawn");
+  sphereTransformArrayCache = new Transform[SphereBuilder.NUM_SPHERES];
+  for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+    sphereTransformArrayCache[i] = sphereGOArray[i].transform;
+  }
+}</pre></div></li><li><p>Now, in the <code class="literal">Update()</code>method, start a new <span class="strong"><strong>Profiler</strong></span> sample named <span class="strong"><strong>TESTING_method2</strong></span>, which<a id="id1285" class="indexterm"></a> uses our cached array of games objects tagged with <code class="literal">Respawn</code>:</p><div class="informalexample"><pre class="programlisting">// method2 - use cached sphere ('Respawn' array)
+Profiler.BeginSample("TESTING_method2");
+for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+  HalfDistanceBasic(sphereTransformArrayCache[i]);
+}
+Profiler.EndSample();</pre></div></li><li><p>Once again, run the game for 10 to 20 seconds and set the <span class="strong"><strong>Profiler</strong></span> panel to restrict the listed results to only samples starting with <code class="literal">TEST</code>. For whichever frame you select, you should see the percentage CPU load and milliseconds required for <span class="strong"><strong>TESTING_method1</strong></span> and <span class="strong"><strong>TESTING_method2</strong></span>.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec100"></a>Method 3 – Cache reference to Player transform</h4></div></div></div><p>That should run faster. But wait! Let's improve things some more. Let's make use of a cached reference to <span class="strong"><strong>Cube-Player</strong></span> component's transform, avoiding the slow object-tag reflection lookup<a id="id1286" class="indexterm"></a> altogether. Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, add a new private variable and a statement in the <code class="literal">Start()</code>method to assign the <code class="literal">Player</code> object's transform in this variable <code class="literal">playerTransformCache</code>:</p><div class="informalexample"><pre class="programlisting">private Transform playerTransformCache;
+private Transform[] sphereTransformArrayCache;
+
+private void Start(){
+  GameObject[] sphereGOArray = GameObject.FindGameObjectsWithTag("Respawn");
+  sphereTransformArrayCache = new Transform[SphereBuilder.NUM_SPHERES];
+  for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+    sphereTransformArrayCache[i] = sphereGOArray[i].transform;
+  }
+
+  playerTransformCache = GameObject.FindGameObjectWithTag("Player").transform;
+}</pre></div></li><li><p>Now, in <code class="literal">Update()</code>, add the following code to start a new <span class="strong"><strong>Profiler</strong></span> sample named <span class="strong"><strong>TESTING_method3</strong></span>:</p><div class="informalexample"><pre class="programlisting">// method3 - use cached playerTransform
+Profiler.BeginSample("TESTING_method3");
+for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+HalfDistanceCachePlayerTransform(sphereTransformArrayCache[i]);
+}
+Profiler.EndSample();</pre></div></li><li><p>Finally, we need to write a new method that calculates the half distance making use<a id="id1287" class="indexterm"></a> of the cached player transform variable we have set up. So, add this new method, <code class="literal">HalfDistanceCachePlayerTransform( sphereTransformArrayCache[i] )</code>:</p><div class="informalexample"><pre class="programlisting">// playerTransform cached
+private void HalfDistanceCachePlayerTransform(Transform sphereGOTransform){
+  Vector3 pos1 = playerTransformCache.position;
+  Vector3 pos2 = sphereGOTransform.position;
+  float distance = Vector3.Distance(pos1, pos2);
+  SimpleMath mathObject = GetComponent&lt;SimpleMath&gt;();
+  float halfDistance = mathObject.Halve(distance);
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec101"></a>Method 4 – Cache Player's Vector3 position</h4></div></div></div><p>Let's improve things some more. If, for our particular game, we can make the assumption that the player character<a id="id1288" class="indexterm"></a> does not move, we have an opportunity to cache the player's <span class="strong"><strong>position</strong></span> once, rather than retrieving it for each frame.</p><p>Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>At the moment, to find <code class="literal">pos1</code>, we are making Unity find the position <code class="literal">Vector3</code> value inside <code class="literal">playerTransform</code> <span class="emphasis"><em>every time the</em></span> <code class="literal">Update()</code> <span class="emphasis"><em>method is called.</em></span> Let's cache this <code class="literal">Vector3</code> position with a variable and statement in <code class="literal">Start()</code>, as follows:</p><div class="informalexample"><pre class="programlisting">private Vector3 pos1Cache;
+
+private void Start(){
+...
+pos1Cache = playerTransformCache.position;
+}</pre></div></li><li><p>Now, write a new half-distance method that makes use of this cached position:</p><div class="informalexample"><pre class="programlisting">// player position cached
+private void HalfDistanceCachePlayer1Position(Transform sphereGOTransform){
+  Vector3 pos1 = pos1Cache;
+  Vector3 pos2 = sphereGOTransform.position;
+  float distance = Vector3.Distance(pos1, pos2);
+  SimpleMath mathObject = GetComponent&lt;SimpleMath&gt;();
+  float halfDistance = mathObject.Halve(distance);
+}</pre></div></li><li><p>Now, in<a id="id1289" class="indexterm"></a> the <code class="literal">Update()</code> method, add the following code so that we create a new sample for our method 4, and call our new half-distance method:</p><div class="informalexample"><pre class="programlisting">// method4 - use cached playerTransform.position
+Profiler.BeginSample("TESTING_method4");
+for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+  HalfDistanceCachePlayer1Position(sphereTransformArrayCache[i]);
+}
+Profiler.EndSample();</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec102"></a>Method 5 – Cache reference to SimpleMath component</h4></div></div></div><p>That should improve things again. But we can still improve things—you'll notice in our latest half-distance<a id="id1290" class="indexterm"></a> method that we have an explicit <code class="literal">GetComponent()</code> call to get a reference to our <code class="literal">mathObject</code>; this will be executed <span class="emphasis"><em>every time the method is called.</em></span> Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's cache this scripted component reference as well to save a <code class="literal">GetComponent()</code> reflection for each iteration. We'll declare a variable <code class="literal">mathObjectCache</code>, and in <code class="literal">Awake()</code>, we will set it to refer to our <code class="literal">SimpleMath</code> scripted component:</p><div class="informalexample"><pre class="programlisting">private SimpleMath mathObjectCache;
+
+private void Awake(){
+  mathObjectCache = GetComponent&lt;SimpleMath&gt;();
+}</pre></div></li><li><p>Let's write a new half-distance method that uses this cached reference to the math component <code class="literal">HalfDistanceCacheMathComponent(i)</code>:</p><div class="informalexample"><pre class="programlisting">// math Component cache
+private void HalfDistanceCacheMathComponent(Transform sphereGOTransform){
+  Vector3 pos1 = pos1Cache;
+  Vector3 pos2 = sphereGOTransform.position;
+  float distance = Vector3.Distance(pos1, pos2);
+  SimpleMath mathObject = mathObjectCache;
+  float halfDistance = mathObject.Halve(distance);
+}</pre></div></li><li><p>Now, in the <a id="id1291" class="indexterm"></a>
+<code class="literal">Update()</code> method, add the following code so that we create a new sample for our <span class="emphasis"><em>method5</em></span> and call our new half-distance method:</p><div class="informalexample"><pre class="programlisting">// method5 - use cached math component
+Profiler.BeginSample("TESTING_method5");
+for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+  HalfDistanceCacheMathComponent(sphereTransformArrayCache[i]);
+}
+Profiler.EndSample();</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch11lvl3sec103"></a>Method 6 – Cache array of sphere Vector3 positions</h4></div></div></div><p>We've improved things <a id="id1292" class="indexterm"></a>quite a bit, but there is still a glaring opportunity to use caching to improve our code (if we can assume that the spheres do not move, which seems reasonable in this example). At present, for every frame and every sphere in our half-distance calculation method, we are asking Unity to retrieve the value of the <code class="literal">Vector3</code> position property in the transform of the current sphere (this is our variable <code class="literal">pos2</code>), and this position is used to calculate the distance of the current sphere from <code class="literal">Player</code>. Let's create an array of all those <code class="literal">Vector3</code> positions so that we can pass the current one to our half-distance calculation method and save the work of retrieving it so many times.</p><p>Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, add a new private variable and a statement inside our existing loop in the <code class="literal">Start()</code> method to assign each sphere's <code class="literal">Vector3</code> transform position in the array <code class="literal">spherePositionArrayCache</code>:</p><div class="informalexample"><pre class="programlisting">private Vector3[] spherePositionArrayCache = new Vector3[SphereBuilder.NUM_SPHERES];
+
+private void Start(){
+  GameObject[] sphereGOArray = GameObject.FindGameObjectsWithTag("Respawn");
+  sphereTransformArrayCache = new Transform[SphereBuilder.NUM_SPHERES];
+  for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+    sphereTransformArrayCache[i] = sphereGOArray[i].transform;
+    spherePositionArrayCache[i] = sphereGOArray[i].transform.position;
+  }
+
+  playerTransformCache = GameObject.FindGameObjectWithTag("Player").transform;
+  pos1Cache = playerTransformCache.position;
+}</pre></div></li><li><p>Let's write a<a id="id1293" class="indexterm"></a> new half-distance method that uses this array of cached positions:</p><div class="informalexample"><pre class="programlisting">// sphere position cache
+private void HalfDistanceCacheSpherePositions(Transform sphereGOTransform, Vector3 pos2){
+  Vector3 pos1 = pos1Cache;
+  float distance = Vector3.Distance(pos1, pos2);
+  SimpleMath mathObject = mathObjectCache;
+  float halfDistance = mathObject.Halve(distance);
+}</pre></div></li><li><p>Now, in the <code class="literal">Update()</code>method, add the following code so that we create a new sample for our <span class="emphasis"><em>method6</em></span> and call our new half-distance method:</p><div class="informalexample"><pre class="programlisting">// method6 - use cached array of sphere positions
+Profiler.BeginSample("TESTING_method6");
+for (int i=0; i &lt; SphereBuilder.NUM_SPHERES; i++){
+HalfDistanceCacheSpherePositions(sphereTransformArrayCache[i], spherePositionArrayCache[i]);
+}
+Profiler.EndSample();</pre></div></li><li><p>Open the <span class="strong"><strong>Profiler</strong></span> panel and ensure that <span class="strong"><strong>record</strong></span> is selected and script processing load is being recorded.</p></li><li><p>Run the game for 10 to 20 seconds.</p></li><li><p>In the <span class="strong"><strong>Profiler</strong></span> panel, restrict the listed results to only samples starting with <code class="literal">TEST</code>. For whichever frame you select, you should see the percentage CPU load and milliseconds required for each method (lower is better for both these values!). For almost every frame, you should see how/if each method refined by caching has reduced the CPU load.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_35.jpg" /></div></li></ol></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec389"></a>How it works...</h3></div></div></div><p>This recipe illustrates how we try to cache references once, before any iteration, for variables whose value will not change, such as references to <code class="literal">GameObjects</code> and their components, and, in this example, the <code class="literal">Transform</code> components and <code class="literal">Vector3</code> positions of objects tagged <code class="literal">Player</code> and <code class="literal">Respawn</code>. Of course, as with everything, there is a "cost" associated with<a id="id1294" class="indexterm"></a> caching, and that cost is the memory requirements to store all those references. This is known as the <a id="id1295" class="indexterm"></a><span class="strong"><strong>Space-Time Tradeoff</strong></span>. You can learn more about this classic computer science<a id="id1296" class="indexterm"></a> speed versus memory tradeoff at <a class="ulink" href="https://en.wikipedia.org/wiki/Space%E2%80%93time_tradeoff" target="_blank">https://en.wikipedia.org/wiki/Space%E2%80%93time_tradeoff</a>.</p><p>In methods that need to be performed many times, this removing of implicit and explicit component and object lookups may offer a measurable performance improvement.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note61"></a>Note</h3><p>Note: Two good places to learn more about Unity performance optimization techniques are from the <span class="emphasis"><em>Performance Optimization</em></span> web page in the Unity script reference and from Unity's Jonas Echterhoff and Kim Steen Riber Unite2012 presentation <span class="emphasis"><em>Performance Optimization Tips and Tricks for Unity</em></span>. Many recipes in this chapter had their origins from suggestions in the following sources:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/410/Documentation/ScriptReference/index.Performance_Optimization.html" target="_blank">http://docs.unity3d.com/410/Documentation/ScriptReference/index.Performance_Optimization.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://unity3d.com/unite/archive/2012" target="_blank">http://unity3d.com/unite/archive/2012</a>
+</p></li></ul></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec390"></a>See also</h3></div></div></div><p>Refer to the following recipes in this chapter for more information:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="emphasis"><em>Improving efficiency with delegates and events and avoiding SendMessage!</em></span>
+</p></li><li style="list-style-type: disc"><p>
+<span class="emphasis"><em>Identifying performance bottlenecks with the Unity performance Profiler</em></span>
+</p></li><li style="list-style-type: disc"><p>
+<span class="emphasis"><em>Identifying performance bottlenecks with Do-It-Yourself performance profiling</em></span>
+</p></li></ul></div></div></div>

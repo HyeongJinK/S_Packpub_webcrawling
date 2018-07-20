@@ -1,0 +1,157 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec46"></a>Using the Reynolds algorithm</h2></div></div><hr /></div><p>Without further ado, let's dive into the <span>Reynolds</span><a id="id288183624" class="indexterm"></a> flocking algorithm. There are two main scripts for our flocking implementation: <code class="literal">Boid.cs</code> and <code class="literal">FlockController.cs</code>. The sample code for this chapter provides a scene with all the necessary setup for testing. You'll also notice a third script named <code class="literal">TargetMovement.cs</code>, which we use to move a target that our flock will follow around the scene. </p><p>For our boid, we can use a simple cube as a prefab. Of course, feel free to replace the cube with any art you want. Let's add the <code class="literal">Boid.cs</code> script to our boid prefab. The code looks like this:</p><pre class="programlisting">using UnityEngine;
+
+public class Boid : MonoBehaviour 
+{
+    [SerializeField]
+    private FlockController flockController;
+
+    //The modified direction for the boid.
+    private Vector3 targetDirection;
+    //The Boid's current direction.
+    private Vector3 direction;
+
+    public FlockController FlockController 
+    {
+        get { return flockController; }
+        set { flockController = value; }
+    }
+
+    public Vector3 Direction { get { return direction; }}
+
+    private void Awake() 
+    {
+        direction = transform.forward.normalized;
+        if(flockController != null) 
+        {
+            Debug.LogError("You must assign a flock controller!");
+        }
+    }
+
+    private void Update() {
+        targetDirection = FlockController.Flock(this, transform.localPosition, direction);
+        if(targetDirection == Vector3.zero)
+        {
+            return;
+        }
+        direction = targetDirection.normalized;
+        direction *= flockController.SpeedModifier;
+        transform.Translate(direction * Time.deltaTime);
+    } 
+}</pre><p>Right off the bat, you'll notice a reference to <code class="literal">FlockController</code>, which we will create next. You can think of <code class="literal">FlockController</code> as the shared brain of the swarm/flock. Each boid does not need to be aware of its neighbors directly, because <code class="literal">FlockController</code> handles this information separately. This allows us to keep the boid code nice and tidy.</p><p>We initialize the direction vector in our <code class="literal">Awake</code> method, and we make sure that the <code class="literal">FlockController</code> is assigned, or we log an error. There are several ways you can enforce null-safety, such as creating the instance if not provided, but in our case we'll assume you assigned the value via the inspector.</p><p>The <code class="literal">Update</code> method does the rest of the workit calls the <code class="literal">Flock()</code> method on <code class="literal">FlockController</code> and passes in a reference to itself, its local position, and its direction. This will return a vector that we then normalize to keep movement from appearing jerky or too fast, and apply the movement by using <code class="literal">Transform.Translate()</code>. As usual, make sure you're easing the movement over the <code class="literal">Time.deltaTime</code> to ensure smooth frame-to-frame movement.</p><p>It's important to note that we make sure to cache as many <code class="literal">Vector3</code> variables as needed. Avoid allocations by avoiding the use of <code class="literal">new Vector3()</code> where possible.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec36"></a>Implementing the FlockController</h3></div></div></div><p>The <code class="literal">FlockController</code> is going to handle the <span>orchestration</span><a id="id288559458" class="indexterm"></a> of the entire flock. There is a quite a bit going on here in terms of variables. Let's take a look at <code class="literal">FlockController.cs</code> chunk by chunk:</p><pre class="programlisting">private int flockSize = 20;</pre><p>Here, we simply assign the size of our flock. You'll see this value being used up ahead in the <code class="literal">Awake</code> method:</p><pre class="programlisting">private float speedModifier = 5;
+
+[SerializeField]
+private float alignmentWeight = 1;
+
+[SerializeField]
+private float cohesionWeight = 1;
+
+[SerializeField]
+private float separationWeight = 1;
+
+[SerializeField]
+private float followWeight = 5;</pre><p>We then declare a series of modifier and weight values. <code class="literal">speedModifier</code> directly affects how fast our boids can move. Tweak this as needed. The three values following <code class="literal">speedModifier</code> are weight values for alignment, cohesion, and separation, respectively. These values will multiply their weight in the final calculation of all the direction vectors that drive the movement of the boid. <code class="literal">followWeight</code> is used to weight the effect of the target's delta versus the boid. If you want the boids to follow the target more closely, increase this value.</p><pre class="programlisting">[SerializeField]
+private Boid prefab;
+[SerializeField]
+private float spawnRadius = 3.0f;
+private Vector3 spawnLocation = Vector3.zero;
+
+[SerializeField]
+public Transform target;</pre><p>The following chunk of variables defines some more setup variables that we assign in the inspector. First, we have the prefab of the boid to spawn (which should have the <code class="literal">Boid.cs</code> component attached to it). <code class="literal">spawnRadius</code> is used to avoid artifacts that may come from spawning all the boids on top of each other if we were to spawn them all on one point. Instead, we spawn them within the given radius, as defined in this variable. Lastly, <code class="literal">target</code> is a reference to the <span>transform</span><a id="id288560741" class="indexterm"></a> of the target our flock/swarm will follow. In our test scene, it's a sphere with the <code class="literal">TargetMovement.cs</code> component attached to it.</p><p>Let's take a look at the <code class="literal">Awake</code> method:</p><pre class="programlisting">private void Awake()
+{
+    flockList = new List&lt;Boid&gt;(flockSize); 
+    for (int i = 0; i &lt; flockSize; i++)
+    {
+        spawnLocation = Random.insideUnitSphere * spawnRadius + transform.position;
+        Boid boid = Instantiate(prefab, spawnLocation, transform.rotation) as Boid;
+
+        boid.transform.parent = transform;
+        boid.FlockController = this;
+        flockList.Add(boid);
+    }
+}</pre><p>We iterate through a loop enough times to spawn enough boids for our <code class="literal">flockSize</code> variable. This is where our <code class="literal">spawnLocation</code> and <code class="literal">spawnRadius</code> come into play. Unity's <code class="literal">Random.insideUnitSphere</code> generates the random position, which we add to our transform's position to get the actual spawn location. We then instantiate the boid prefab, while assigning to a <code class="literal">Boid</code> instance, which we then add to our <code class="literal">flockList</code>. Also note that we assign the boid instance's <code class="literal">FlockController</code> property in this step.</p><p>Keep in mind that instantiating prefabs can be slow in Unity, so increasing the number of boids in the flock will lead to a huge performance dip during the instantiation frame. </p><p>The only other method in this class is the <code class="literal">Flock()</code> method, which we saw being called from <code class="literal">Boid</code> earlier. This does all the computation for the individual boids' directions. It looks like this:</p><pre class="programlisting">public Vector3 Flock(Boid boid, Vector3 boidPosition, Vector3 boidDirection)
+{
+    flockDirection = Vector3.zero;
+    flockCenter = Vector3.zero;
+    targetDirection = Vector3.zero;
+    separation = Vector3.zero;
+
+    for (int i = 0; i &lt; flockList.Count; ++i) 
+    {
+        Boid neighbor = flockList[i];
+        //Check only against neighbors.
+        if (neighbor != boid) 
+        {
+            //Aggregate the direction of all the boids.
+            flockDirection += neighbor.Direction;
+            //Aggregate the position of all the boids.
+            flockCenter += neighbor.transform.localPosition;
+            //Aggregate the delta to all the boids.
+            separation += neighbor.transform.localPosition - boidPosition;
+            separation *= -1;
+        }
+    }
+    //Alignment. The average direction of all boids.
+    flockDirection /= flockSize;
+    flockDirection = flockDirection.normalized * alignmentWeight;
+
+    //Cohesion. The centroid of the flock.
+    flockCenter /= flockSize;
+    flockCenter = flockCenter.normalized * cohesionWeight;
+
+    //Separation.
+    separation /= flockSize;
+    separation = separation.normalized * separationWeight;
+
+    //Direction vector to the target of the flock.
+    targetDirection = target.localPosition - boidPosition;
+    targetDirection = targetDirection * followWeight;
+
+    return flockDirection + flockCenter + separation + targetDirection;
+}</pre><p>The method takes some information about our <code class="literal">Boid</code>, as well as a copy of it. We then iterate through every boid in the <code class="literal">flockList</code> and assign the boid at the current iteration's index to a temporary value called <code class="literal">neighbor</code>. To avoid doing multiple loops, we do several things in the same <code class="literal">for</code> loop:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Sum up all the neighbors' directions</li><li style="list-style-type: disc">Sum up all the neighbors' positions</li><li style="list-style-type: disc">Sum up the position deltas to all neighbors</li></ul></div><p>Once done with the loop (and thus aggregating all of the preceding values), we calculate the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The flock direction, which we get by averaging the direction of all the boids. Since we've already got the sum of all the directions, we just divide it by the number of boids, the <code class="literal">flockSize</code>. We then normalize the value and apply the weight we defined earlier. This will give us our alignment.
+</li><li style="list-style-type: disc">Similarly, we get the centroid of the flock by averaging all the positions of all the boids. As with direction, we normalize the vector before applying the weighting. The <code class="literal">flockCenter</code> gives us our cohesion vector.</li><li style="list-style-type: disc">You may be seeing a pattern here, right? As with the previous two values, we average, normalize, then weight our separation value.</li><li style="list-style-type: disc"><code class="literal">targetDirection</code> is a bit different. We first take the delta between the boid's position and the target's position, then we apply the weight. We don't normalize this value in this implementation, but feel free to experiment by doing so. Normalizing this value won't break the simulation, but you may notice your boids casually floating away from the target if it moves too fast.</li></ul></div><p>With all of the values—cohesion, alignment, and separation—calculated, we add them up and return them to the <code class="literal">Boid</code> instance that called the method. The boid will use this vector as its target direction, as we saw in the <code class="literal">Boid.cs</code> file. </p><p>Because we could potentially have dozens or <span>hundreds</span><a id="id288319914" class="indexterm"></a> of boids, it's important to avoid any unnecessary computations at runtime. If you profile our implementation, you'll notice it allocates no memory whatsoever, meaning you won't have any annoying stuttering due to garbage collection. While the system will slow down as the boid count goes into the hundreds due to its single-threaded nature, having a few dozen boids is very fast. As you can see in the following screenshot, having a small flock flying around can be computed in less than a millisecond:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/6ee78fc4-685c-48b4-bb38-8aeca04e7144.png" /></div><p>The stats panel showing our scene's performance</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec37"></a>The flock target</h3></div></div></div><p>Last, but not least, we have our <span>flock</span><a id="id288319942" class="indexterm"></a> target. To reiterate, you can use any art you like, or you can stick with the handsome little sphere in the provided sample project. The code for the target <span>component</span><a id="id288319948" class="indexterm"></a> is in the <code class="literal">TargetMovement.cs</code> file. The contents look like this:</p><pre class="programlisting">using UnityEngine;
+
+public class TargetMovement : MonoBehaviour 
+{
+    [SerializeField]
+    private Vector3 bounds;
+    [SerializeField]
+    private float moveSpeed = 10.0f;
+    [SerializeField]
+    private float turnSpeed = 3.0f;
+    [SerializeField]
+    private float targetPointTolerance = 5.0f;
+
+    private Vector3 initialPosition;
+    private Vector3 nextMovementPoint;
+    private Vector3 targetPosition;
+
+    private void Awake() 
+    {
+        initialPosition = transform.position;
+        CalculateNextMovementPoint();
+    }
+
+    private void Update () 
+    {
+        transform.Translate(Vector3.forward * moveSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(nextMovementPoint - transform.position), turnSpeed * Time.deltaTime);
+
+        if(Vector3.Distance(nextMovementPoint, transform.position) &lt;= targetPointTolerance) 
+        {
+            CalculateNextMovementPoint();
+        }
+    }
+
+    private void CalculateNextMovementPoint()
+    {
+        float posX = Random.Range(initialPosition.x - bounds.x, initialPosition.x + bounds.x);
+        float posY = Random.Range(initialPosition.y - bounds.y, initialPosition.y + bounds.y);
+        float posZ = Random.Range(initialPosition.z - bounds.z, initialPosition.z + bounds.z);
+        targetPosition.x = posX;
+        targetPosition.y = posY;
+        targetPosition.z = posZ;
+        nextMovementPoint = initialPosition + targetPosition; 
+    }
+}</pre><p>There are two main chunks of work in this class. First, <code class="literal">Update</code> moves the game object towards the <code class="literal">forward</code> vector, while rotating it towards the <code class="literal">targetPosition</code>. We provide two variables to modify the move and turn speed: <code class="literal">moveSpeed</code> and <code class="literal">turnSpeed</code>, respectively. We then check whether we've arrived at the destination point by comparing the distance to it against a tolerance radius that we define in <code class="literal">targetPointTolerance</code>. If we're close enough, we then set the next target point by calling <code class="literal">CalculateNextMovementPoint()</code>.</p><p>In <code class="literal">CalculateNextMovementPoint()</code>, we set a random target position, but constrain it based on our bounds values, relative to the position of the target when we first run the script, as we set the <code class="literal">initialPosition</code> in <code class="literal">Awake</code>. Constraining this point will prevent the target from slowly deviating away from our game area and floating off into the sunset. Dramatic as it may be, it's not quite the effect we're going for here.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec38"></a>The scene layout</h3></div></div></div><p>Now that we have all of our code covered, let's take a look at our scene. Our sample scene <span>looks</span><a id="id288320008" class="indexterm"></a> like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/63e032ed-104e-4d74-99bc-91e1da5d479d.png" /></div><p>An overview of our scene layout
+</p><p>As you can see in the preceding screenshot, there isn't a lot of complexity to our setup. We have a plane, some environment cubes for perspective, a light, a camera, and our target. The full hierarchy <span>looks</span><a id="id288320030" class="indexterm"></a> like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/f4ee1e21-8e0d-4389-b9bc-ba364b72edb5.png" /></div><p>Our scene hierarchy with FlockController highlighted</p><p>As you can see from the preceding screenshot, we have a <strong class="userinput"><code>Directional light</code></strong>, and nested underneath it is a reflection probe. This is strictly for making the scene look nice, and has essentially no functional value, but hey, a little vanity never hurt anyone! We then have an empty game object named <strong class="userinput"><code>FlockController</code></strong>, which our <code class="literal">FlockController</code> script is attached to. The <strong class="userinput"><code>Target</code></strong> game object is a sphere with a bright yellow material and the <code class="literal">TargetMovement</code> script attached to it. All of the environment blocks are nested under the <strong class="userinput"><code>Environment</code></strong> game object, which in this case is a plane. The last three items are there to drive our camera, which will automatically lock on to our target, and keep it in frame. As it is outside the scope of this book, we'll skip over how the camera works, but if you're the curious type, you'll want to explore the official Unity documentation for more information on <span class="strong"><strong>Cinemachine</strong></span> and <span class="strong"><strong>Timeline</strong></span>, which drive the camera in our scene.</p><p>Back to the matter at hand—let's take a look at the <code class="literal">FlockController</code>, which <span>looks</span><a id="id288566394" class="indexterm"></a> like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/e6de8c36-6cfa-4dfa-8b86-16ba4221923a.png" /></div><p>The FlockController component</p><p>The preceding screenshot shows the values we have set in the sample scene. As you can see, the separation weight is a bit higher than the rest. Feel free to tweak the weight values in play mode to see how it affects the boids' behavior. Next, let's take a look at the target game object. The following screenshot shows our sample setup:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/0ee8e98d-78de-40fc-b5c2-adaf24b7a236.png" /></div><p>The test values for our target movement script
+</p><p>The screenshot shows the optimal values for our test scene. Tweaking the bounds might result in some wild camera movement, but play with the move and turn speed to see how it affects the scene in play mode. Lastly, let's take a look at our boid prefab, which has the <code class="literal">Boid</code> component on it. The provided sample project's boid settings can be seen in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/7f1b2b3d-da5a-49aa-be47-4cbf872fdd88.png" /></div><p>All the components and setup for the Boid game object</p><p>There isn't too much excitement in the preceding screenshot. As you can see, the <strong class="userinput"><code>Flock Controller</code></strong> is empty (because we assign it via code at runtime), and there are no other values to be tweaked on the boid itself, besides the appearance if you feel so inclined, but our neon green cube is a work of art, if I do say so myself.</p><p>When you hit play, you'll see your boids spawn and follow the <span>target</span><a id="id288566659" class="indexterm"></a> as it zooms around the scene. It'll look something like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/e97ec617-68fb-4060-8484-f4b28fa6b6a1.png" /></div><p>Our flock of boids swarming towards the target sphere</p><p>And just like that, we've created our very own flocking system. It's highly encouraged that you not only tweak the values in the inspector, but that you take a stab at modifying the code. The easiest way to see how a value affects the entire system is to either remove it, or increase it by a ridiculous amount. Next, we'll take a look at crowds in Unity 2017.</p></div></div>

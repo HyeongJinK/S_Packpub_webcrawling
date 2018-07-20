@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec10"></a>Adding properties to a Surface Shader</h2></div></div><hr /></div><p>Properties of a <a id="id12" class="indexterm"></a>Shader are very important to the Shader <a id="id13" class="indexterm"></a>pipeline, as they are the method you use to let the artist or user of the Shader assign textures, and tweak your Shader values. Properties allow you to expose GUI elements in a Material's <span class="strong"><strong>Inspector</strong></span> tab without you having to use a separate editor, which provides visual ways to tweak a Shader.</p><p>With your Shader opened in MonoDevelop, look at the block of lines 3 through 6. This is called the <a id="id14" class="indexterm"></a>
+<span class="strong"><strong>Properties block</strong></span>. Currently, it will have one property in it called <span class="strong"><strong>_MainTex</strong></span>. If you look at your Material that has this Shader applied to it, you will notice that there is one <span class="strong"><strong>texture</strong></span> GUI element in the <span class="strong"><strong>Inspector</strong></span> tab. These lines of code, in our Shader, is creating this GUI element for us.</p><p>Again, Unity has made this process very efficient in terms of coding and the amount of time it takes to iterate through changing your properties.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec12"></a>How to do it…</h3></div></div></div><p>Let's see how this works in our current Shader called <span class="strong"><strong>BasicDiffuse</strong></span>, by creating our own properties and learning more about the syntax involved:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In our <code class="literal">Properties</code> block of our Shader, remove the current property by deleting the following code from our current Shader.</p><div class="informalexample"><pre class="programlisting">_MainTex ("Base (RGB)", 2D) = "white" {}</pre></div></li><li><p>Now enter the following code, save the Shader, and re-enter the Unity editor.</p><div class="informalexample"><pre class="programlisting">_EmissiveColor ("Emissive Color", Color) = (1,1,1,1)</pre></div></li><li><p>When you return to Unity, the Shader will compile and you will see that our Material's <span class="strong"><strong>Inspector</strong></span> tab now has a <span class="strong"><strong>color</strong></span> swatch, named <span class="strong"><strong>Emissive Color</strong></span>, instead of a <span class="strong"><strong>texture</strong></span> swatch. Let's add one more and see what happens. Enter the following code:</p><div class="informalexample"><pre class="programlisting">_AmbientColor ("Ambient Color", Range(0,10)) = 2</pre></div></li><li><p>We have added <a id="id15" class="indexterm"></a>another Color Swatch to the Material's <a id="id16" class="indexterm"></a>
+<span class="strong"><strong>Inspector</strong></span> tab. Now let's add one more to get a feel for other kinds of properties that we can create. Add the following code to the properties block:</p><div class="informalexample"><pre class="programlisting">_MySliderValue ("This is a Slider", Range(0,10)) = 2.5</pre></div></li><li><p>We have now created another GUI element that allows us to visually interact with our Shader. This time we created a slider with the name <span class="strong"><strong>This is a Slider</strong></span>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695084/graphics/5084_01_04.jpg" /></div></li></ol></div><p>Properties allow you to create a visual way to tweak Shaders without having to change values in the Shader code itself.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec13"></a>How it works…</h3></div></div></div><p>Every Unity Shader has a built-in structure it is looking for in its code. The properties block is one of those functions that is expected by Unity. The reason behind this is to give you, the Shader programmer, a means of quickly creating GUI elements that tie directly into your Shader code. These properties that you declare in the properties block can then be used in your Shader code to change values, colors, and textures.</p><div class="mediaobject"><img src="/graphics/9781849695084/graphics/5084_01_05.jpg" /></div><p>Let's take a look at what is going on underneath the hood here. When you first start writing a new property, you will need to give it a <span class="strong"><strong>Variable Name</strong></span>. The variable name is going to be the name that your Shader code is going to use to get the value from the GUI element. This saves us a lot of time because we don't have to set up that system ourselves.</p><p>The<a id="id17" class="indexterm"></a>
+<a id="id18" class="indexterm"></a> next elements of a property are the <span class="strong"><strong>Inspector GUI Name</strong></span> and the type of the property, which is contained within parentheses. The Inspector GUI Name is the name that is going to appear in the Material's <span class="strong"><strong>Inspector</strong></span> tab when the user is interacting with and tweaking the Shader. The <span class="strong"><strong>Type</strong></span> is the type of data that this property is going to control. There are many types that we can define for properties inside of Unity Shaders. The following table describes the types of variables we can have in our Shaders:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>Surface Shader property types</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Range (min, max)</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id19" class="indexterm"></a>creates a float property as a slider from the minimum value to the maximum value</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Color</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id20" class="indexterm"></a> creates a color swatch in the <span class="strong"><strong>Inspector</strong></span> tab that opens up a color picker = (float,float,float,float)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">2D</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id21" class="indexterm"></a> creates a texture swatch that allows a user to drag a texture into the Shader</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Rect</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id22" class="indexterm"></a>creates a non-power-of-2 texture swatch and functions the same as the 2D GUI element</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Cube</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id23" class="indexterm"></a> creates a cube map swatch in <span class="strong"><strong>Inspector</strong></span> and allows a user to drag-and-drop a cube map into the Shader</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Float</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id24" class="indexterm"></a> creates a float value in <span class="strong"><strong>Inspector</strong></span> but without a slider</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Vector</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id25" class="indexterm"></a>creates a four-float property that allows you to create directions or colors</p>
+</td></tr></tbody></table></div><p>Finally, there is the default value. This simply sets the value of this property to the value you place in the code. So, in the example image, the default value for the property named <code class="literal">_AmbientColor</code>, which is of the type <code class="literal">Color</code>, is set to a value of <code class="literal">1,1,1,1</code>. Since this is a color property <a id="id26" class="indexterm"></a>expecting a color, which is <code class="literal">RGBA</code> or a <code class="literal">float4</code>, or <code class="literal">r, g, b, a = x, y, z, w</code> this <a id="id27" class="indexterm"></a>color property, when it is first created, is set to white.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec14"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The properties are documented in the Unity manual at <a class="ulink" href="http://docs.unity3d.com/Documentation/Components/SL-Properties.html" target="_blank">http://docs.unity3d.com/Documentation/Components/SL-Properties.html</a>
+</p></li></ul></div></div></div>

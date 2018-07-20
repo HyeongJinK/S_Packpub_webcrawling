@@ -1,0 +1,92 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec41"></a>Creating our first purchase</h2></div></div><hr /></div><p>To make our first in-app purchase, we will make use of a feature of Unity that was just added to our project, Codeless IAP. It is called Codeless IAP because you do not need to write any code for <span>the</span> actual IAP transaction, just the script that defines what users get if they make the purchase. It's by far the easiest way to integrate in-app purchases in Unity games and a great way to start trying IAPs in our project.</p><p>One of the most common in-app purchases is the ability to disable advertisements in mobile games. Let's add that functionality now by creating a button that when clicked will do just that:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Let's first open up our Main Menu level by going to the <strong class="userinput"><code>Project</code></strong> window, opening the <code class="literal">Assets/Scenes</code> folder, and then double-clicking on the <code class="literal">MainMenu</code> file.</li><li>From there, let's click on the 2D button to go into 2D mode since we'll be working with UI.</li><li>We will first need to have something to sell; to do that, we will use the IAP Catalog, which we can access by going to <strong class="userinput"><code>Window</code></strong> | <strong class="userinput"><code>Unity IAP</code></strong> | <strong class="userinput"><code>IAP Catalog</code></strong>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/7696d2f5-3cd5-439a-9e5c-e343427f3237.png" /></div><p></p><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Now, the first thing we'll need to do is create an ID for our product, which is how we identify our product in different app stores. In our case, let's go with <code class="literal">removeAds</code>. Then, under <strong class="userinput"><code>Type</code></strong>, change it to <strong class="userinput"><code>Non Consumable</code></strong>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/81e3a827-e4b1-4b86-8798-9fe41f826186.png" /></div><p>By non-consumable, we mean that the players only need to buy this once, and the game will keep that in mind for later purposes. The others are consumable, meaning that they are used for things that can be bought over and over again, such as special power ups and subscriptions. These give access to some kind of content for a period of time, possibly recurring until a user cancels them.</p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Next, we can close out of the <strong class="userinput"><code>IAP Catalog</code></strong> by clicking on <strong class="userinput"><code>X</code></strong> in the top-right corner of the window.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Select the <strong class="userinput"><code>Canvas - Scale Physical</code></strong> object in the <strong class="userinput"><code>Hierarchy</code></strong>window. From there, select <strong class="userinput"><code>Window</code></strong> | <strong class="userinput"><code>Unity IAP</code></strong> | <strong class="userinput"><code>Create IAP</code></strong><strong class="userinput"><code>Button</code></strong>, and you should see a new button created in our scene.</li><li>Create a <strong class="userinput"><code>Panel</code></strong> object and have it fill the entire screen as we did before. Add a <strong class="userinput"><code>Vertical Layout Group (Script)</code></strong> component to it. From there, change the <strong class="userinput"><code>Child Alignment</code></strong> to <strong class="userinput"><code>Middle Center</code></strong> and set all of the <strong class="userinput"><code>Padding</code></strong> and <strong class="userinput"><code>Spacing</code></strong> to <code class="literal">10</code>.</li><li>Then, add a <strong class="userinput"><code>Content Size Fitter</code></strong> component and set the <strong class="userinput"><code>Vertical Fit</code></strong> and <strong class="userinput"><code>Horizontal Fit</code></strong> field to <code class="literal">Preferred Size</code>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/b830b2d9-2062-4f30-a0bf-d585eccdeeb9.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Rename the newly added button to <code class="literal">Remove Ads</code> and then add a <strong class="userinput"><code>Horiztonal Layout Group</code></strong> component to it with all of the <strong class="userinput"><code>Padding</code></strong> set to <code class="literal">10</code> and check <strong class="userinput"><code>Width</code></strong> and <strong class="userinput"><code>Height</code></strong> to the <strong class="userinput"><code>Child Controls Size</code></strong> property. Also, add a <strong class="userinput"><code>Content Size Fitter</code></strong> component to it with both <strong class="userinput"><code>Fits</code></strong> set to <strong class="userinput"><code>Preferred Size</code></strong>. Then, in the child Text object's Text component, change the text property to show <code class="literal">Remove Ads</code> instead.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>Finally, drag and drop the two buttons onto the Panel with the <strong class="userinput"><code>Play</code></strong> button first and the <strong class="userinput"><code>Remove Ads</code></strong> button below it, as follows:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/0ce0ffa2-277d-4777-ba44-9869bf4b1835.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>Next, with the <strong class="userinput"><code>Remove Ads</code></strong> object selected, move to the <strong class="userinput"><code>Inspector</code></strong> tab and scroll down to the <strong class="userinput"><code>IAP Button</code></strong> component. Under <strong class="userinput"><code>Product ID:</code></strong>, select the dropdown and select <code class="literal">removeAds</code>. You'll note that the <code class="literal">IAP Button</code> class has an <strong class="userinput"><code>On Purchase Complete</code></strong> function that works similar to the On Click that we've used with Buttons in the past. With that in mind, we will need to create a function that will use this.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="12" type="1"><li>Go into the <code class="literal">UnityAdController</code> script and add the following variable:</li></ol></div><pre class="programlisting">public class UnityAdController : MonoBehaviour
+{
+<span class="strong"><strong>    // If we should show ads or not</strong></span>
+<span class="strong"><strong>    public static bool showAds = true;</strong></span>
+
+    // Nullable type 
+    public static DateTime? nextRewardTime = null;
+
+    // Rest of UnityAdController...</pre><p>We will use this variable to check whether we should show ads or not.</p><div class="orderedlist"><ol class="orderedlist arabic" start="13" type="1"><li>Next, we will need to open up the <code class="literal">MainMenuBehaviour</code> script and replace it with the following:</li></ol></div><pre class="programlisting">using UnityEngine; 
+using UnityEngine.SceneManagement; // LoadScene 
+ 
+public class MainMenuBehaviour : MonoBehaviour 
+{ 
+    /// &lt;summary&gt; 
+    /// Will load a new scene upon being called 
+    /// &lt;/summary&gt; 
+    /// &lt;param name="levelName"&gt;The name of the level we want  
+    /// to go to&lt;/param&gt; 
+    public void LoadLevel(string levelName) 
+    { 
+        SceneManager.LoadScene(levelName); 
+ 
+        #if UNITY_ADS 
+ 
+<span class="strong"><strong>        if (UnityAdController.showAds) 
+        {</strong></span> 
+            // Show an ad 
+            UnityAdController.ShowAd(); 
+<span class="strong"><strong>        }</strong></span> 
+ 
+        #endif 
+    } 
+ <span class="strong"><strong>
+    public void DisableAds() 
+    { 
+        UnityAdController.showAds = false; 
+ 
+        // Used to store that we shouldn't show ads 
+        PlayerPrefs.SetInt("Show Ads", 0); 
+    } 
+ 
+    virtual protected void Start()
+    {
+        // Initialize the showAds variable 
+        UnityAdController.showAds = (PlayerPrefs.GetInt("Show Ads", 1) == 1);
+    }</strong></span>
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="14" type="1"><li>Note that I made this function virtual, which means that inherited classes can also use this. With that in mind, we will also need to update Start function of the <code class="literal">PauseMenuBehaviour</code> to the following:</li></ol></div><pre class="programlisting">    protected override void Start()
+    {
+        // Initalize Ads if needed
+        base.Start();
+
+        paused = false;
+
+        // If no ads at all, just unpause 
+        #if !UNITY_ADS 
+            SetPauseMenu(false); 
+        #else 
+
+        // If we support ads but they're removed, unpause as well 
+        if (!UnityAdController.showAds) 
+        { 
+            SetPauseMenu(false); 
+        } 
+
+        #endif 
+    }</pre><p>The override keyword makes it so that it will replace the default behavior of Start. However, when we call <code class="literal">base.Start()</code> we are ensuring that the preceding content from <code class="literal">MainMenuBehaviour</code> will be called--in this case, we ensure that the <code class="literal">UnityAdController</code> has the correct value set.</p><div class="orderedlist"><ol class="orderedlist arabic" start="15" type="1"><li>Finally, we will need to adjust the <code class="literal">ObstacleBehaviour</code> script to handle not playing ads as well. Update the <code class="literal">ShowContinue</code> function to use the following:</li></ol></div><pre class="programlisting">                // Other code above...
+
+                // Come back after 1 second and check again 
+                yield return new WaitForSeconds(1f);
+            }
+<span class="strong"><strong>            else if (!UnityAdController.showAds)</strong></span>
+<span class="strong"><strong>            {</strong></span>
+<span class="strong"><strong>                // It's valid to click the button now</strong></span>
+<span class="strong"><strong>                contButton.interactable = true;
+</strong></span>
+<span class="strong"><strong>                // If player clicks on button we want to just continue</strong></span>
+<span class="strong"><strong>                contButton.onClick.AddListener(Continue);
+</strong></span>
+<span class="strong"><strong>                UnityAdController.obstacle = this;
+</strong></span>
+<span class="strong"><strong>                // Change text to allow continue</strong></span>
+<span class="strong"><strong>                btnText.text = "Free Continue";
+</strong></span>
+<span class="strong"><strong>                // We can now leave the coroutine</strong></span>
+<span class="strong"><strong>                break;</strong></span>
+<span class="strong"><strong>            }</strong></span>
+            else
+            {
+                // It's valid to click the button now 
+                contButton.interactable = true;
+
+                // More code below...</pre><div class="orderedlist"><ol class="orderedlist arabic" start="16" type="1"><li>Save your script and dive into Unity.</li><li>From the <strong class="userinput"><code>Hierarchy</code></strong> window, select the <strong class="userinput"><code>Remove Ads</code></strong> button. Go into the <strong class="userinput"><code>Inspector</code></strong> tab and then scroll down to <strong class="userinput"><code>IAP Button</code></strong><strong class="userinput"><code>(Script)</code></strong>. Go ahead and click on the plus button underneath the <strong class="userinput"><code>On Purchase Complete</code></strong> option and then add the <code class="literal">Main Menu</code> object in the little box on the bottom of the side below the <strong class="userinput"><code>Runtime Only</code></strong> dropdown and then select <strong class="userinput"><code>Main Menu Behaviour</code></strong> | <strong class="userinput"><code>DisableAds</code></strong> from the dropdown to the right:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/4526f27b-6e7f-430a-ba7c-94d150a088d6.png" /></div><p></p><div class="orderedlist"><ol class="orderedlist arabic" start="18" type="1"><li>Now, save our scene and start the game:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/3aec8f0c-d9be-4204-a7f3-839e97b07a40.png" /></div><p>Now, if we click on the <strong class="userinput"><code>Remove Ads</code></strong> button, it will ask whether we want to make the purchase. If we do, it will then make it so when we go into the game, there are no ads.</p><p>Likewise, now when we die, it will display a <strong class="userinput"><code>Free Continue</code></strong> button:</p><div class="mediaobject"><img src="/graphics/9781787288713/graphics/ece51d74-06aa-402c-bc5f-81ce885ff7eb.png" /></div><p>With that, we now have the Unity end of creating a simple purchase completed.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note62"></a>Note</h3><p>If you're interested in learning more about Codeless IAP, check out <span><a class="ulink" href="https://docs.unity3d.com/Manual/UnityIAPCodelessIAP.html" target="_blank">https://docs.unity3d.com/Manual/UnityIAPCodelessIAP.html</a>.</span></p></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note63"></a>Note</h3><p>If you'd like to dive into more customizable forms of IAPs, you may access the library directly. Information on that can be found at <a class="ulink" href="https://unity3d.com/learn/tutorials/topics/ads-analytics/integrating-unity-iap-your-game" target="_blank"><span>https://unity3d.com/learn/tutorials/topics/ads-analytics/integrating-unity-iap-your-game</span></a>.</p></div></div>

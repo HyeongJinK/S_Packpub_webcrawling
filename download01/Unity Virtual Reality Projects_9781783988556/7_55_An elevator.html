@@ -1,0 +1,24 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec55"></a>An elevator</h2></div></div><hr /></div><p>Want to <a id="id439" class="indexterm"></a>see the view from the top of the logo? Let's make a Mario-style elevator to get there.</p><p>
+<span class="strong"><strong>Feature</strong></span>: <span class="emphasis"><em>Provide an elevator platform, which moves up and down, that I can walk onto and ride to the top of my logo.</em></span>
+</p><p>Build it into the scene by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the elevator platform by navigating to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>3D Object</strong></span> | <span class="strong"><strong>Cube</strong></span>. Name it <code class="literal">Elevator</code>.</p></li><li><p>Set its so that it's aligned with the logo. By doing this, you can ride the platform and walk off it onto the top of the logo. I set <span class="strong"><strong>Position</strong></span> to (<code class="literal">17</code>, <code class="literal">1.4</code>, <code class="literal">-8.8</code>) and <span class="strong"><strong>Scale</strong></span> to (<code class="literal">4</code>, <code class="literal">0.1</code>, <code class="literal">4</code>).</p></li><li><p>Drag the <code class="literal">Blue</code> material onto it.</p></li><li><p>Create the script by navigating to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>New Script</strong></span>. Name it <code class="literal">Elevate</code> and open it for editing.</p></li></ol></div><p>Here's the <code class="literal">Elevate.cs</code> code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Elevator : MonoBehaviour {
+  public float minHeight = 1.2f;
+  public float maxHeight = 8.0f;
+  public float velocity = 1;
+  
+  void Update () {
+    float y = transform.position.y;
+    y += velocity * Time.deltaTime;
+    if (y &gt; maxHeight) {
+    y = maxHeight;
+      velocity = -velocity;
+    }
+    if (y &lt; minHeight) {
+      y = minHeight;
+      velocity = -velocity;
+    }
+    transform.position = new Vector3 (transform.position.x, y, transform.position.z);
+  }
+}</pre></div><p>The script<a id="id440" class="indexterm"></a> simply moves the platform up or down each frame. No physics, just simple animation. However, it's a rigid object, and we can stand on it.</p><p>Run this in VR. Try to walk onto the elevator, ride to the top, and then move onto the top of the object structures. The following image shows my view from the top:</p><div class="mediaobject"><img src="/graphics/9781783988556/graphics/B04781_07_06.jpg" /></div></div>

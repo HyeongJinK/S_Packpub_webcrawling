@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec86"></a>Saving external text files with C# file streams</h2></div></div><hr /></div><p>This recipe illustrates<a id="id594" class="indexterm"></a> how to use C# streams to write text data<a id="id595" class="indexterm"></a> to a text file, either into the standalone project's <code class="literal">Data</code> folder or to the <code class="literal">Resources</code> folder.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note36"></a>Note</h3><p>This technique only works when you compile to a Windows or Mac standalone executable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec300"></a>Getting ready</h3></div></div></div><p>In the <code class="literal">0423_08_02</code> folder, we have provided the <code class="literal">FileReadWriteManager.cs</code> class script file:</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec301"></a>How to do it...</h3></div></div></div><p>To save external text files using C# file streams, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the C# script <code class="literal">FileReadWriteManager.cs</code> into your project.</p></li><li><p>Add the following C# script to <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: SaveTextFile.cs
+using UnityEngine; 
+using System.Collections;
+using System.IO;
+
+public class SaveTextFile : MonoBehaviour {
+    public string fileName = "hello.txt";
+    public string folderName = "Data";
+    private string filePath = "(no file path yet)";
+    private string message = "(trying to save data)";
+    private FileReadWriteManager fileManager;
+
+    void Start () {
+        fileManager = new FileReadWriteManager();
+        filePath = Application.dataPath + Path.DirectorySeparatorChar + fileName;
+
+        string textData = "hello \n and goodbye";
+        fileManager.WriteTextFile( filePath, textData );
+
+        message = "file should have been written now ...";
+    }
+
+   void OnGUI() 
+   {
+        GUILayout.Label("filepath = " + filePath);
+        GUILayout.Label("message = " + message);
+    }
+}</pre></div></li><li><p>Build and <a id="id596" class="indexterm"></a>run your (Windows or Mac) standalone executable. You'll need to save the current scene and then add this to the scenes<a id="id597" class="indexterm"></a> in the build.</p></li><li><p>You should now find a new text file named <code class="literal">hello.txt</code> in the <code class="literal">Data</code> folder of your project's standalone files, containing the lines "hello" and " and goodbye".</p></li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note37"></a>Note</h3><p>It is possible to test this when running within the <span class="emphasis"><em>Unity editor</em></span> (that is, before building a standalone application). In order to test this way, you'll need to create a <code class="literal">Data</code> folder in your project panel.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec302"></a>How it works...</h3></div></div></div><p>When the game runs, the <code class="literal">Start()</code> method creates the <code class="literal">filePath</code> string from the public variables <code class="literal">fileName</code> and <code class="literal">folderName</code>, and then calls the <code class="literal">WriteTextFile()</code> method<a id="id598" class="indexterm"></a> from the <code class="literal">fileReadWriteManager</code> object, to which it passes the <code class="literal">filePath</code> and <code class="literal">textData</code> strings. This method creates (or overwrites) a text file (for the given file path and filename) containing the string data received.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec303"></a>There's more...</h3></div></div></div><p>Some details you don't want to miss:</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch08lvl3sec68"></a>Choosing the Data or the Resources folder</h4></div></div></div><p>Standalone build applications contain both a <code class="literal">Data</code> folder and a <code class="literal">Resources</code> folder. Either of these can be used for writing (or some other folder, if desired). We generally put read-only files into the <code class="literal">Resources</code> folder and use the <code class="literal">Data</code> folder for files that are to be created from scratch or have had their contents changed.</p></div></div></div>

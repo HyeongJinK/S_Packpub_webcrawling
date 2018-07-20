@@ -1,0 +1,48 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec43"></a>Level complete detection</h2></div></div><hr /></div><p>It's all well and<a id="id231" class="indexterm"></a> good having three levels, but <a id="id232" class="indexterm"></a>without a mechanism to move between them they are useless. We are going to add a check to see if the player has finished a level, if they have then increment the level counter and load the next level in the array. We only need to do the check at the end of every move; to do so every frame would be redundant.</p><p>We'll write the following method first and then explain it:</p><div class="informalexample"><pre class="programlisting">// If this method returns true then we have finished the level
+boolhaveFinishedLevel () {
+  // Initialise the counter for how many crates are on goal 
+  // tiles
+  int cratesOnGoalTiles = 0;
+  // Loop through all the rows in the current level
+  for (int i = 0; i&lt; levels[currentLevel].Length; i++) {
+    // Get the tile ID for the column and pass it the switch 
+    // statement
+    for (int j = 0; j &lt; levels[currentLevel][i].Length; j++) {
+      switch (levels[currentLevel][i][j]) {
+        case 5:
+        // Do we have a match for a crate on goal 
+        // tile ID? If so increment the counter
+        cratesOnGoalTiles++;
+        break;
+        default:
+        break;
+      }
+    }
+  }
+  
+  // Check if the cratesOnGoalTiles variable is the same as the
+  // amountOfCrates we set when building the level
+  if (amountOfCrates == cratesOnGoalTiles) {
+    return true;
+  } else {
+    return false;
+  }
+}</pre></div><p>In the <code class="literal">BuildLevel</code> method<a id="id233" class="indexterm"></a>, whenever we instantiate <code class="literal">crate</code>, we increment the <code class="literal">amountOfCrates</code> variable. We can use this variable to check if the amount of crates on goal tiles is<a id="id234" class="indexterm"></a> the same as the <code class="literal">amountOfCrates</code> variable, if it is then we know we have finished the current level. The <code class="literal">for</code> loops iterate<a id="id235" class="indexterm"></a> through the current level's rows and columns, and we know that <code class="literal">5</code> in the array is a crate on a goal tile. The method returns a Boolean based on whether we have finished the level or not. Now let's add the call to the <a id="id236" class="indexterm"></a>method. The logical place would be inside the <code class="literal">MovePlayer</code> method, so go ahead and add a call to the method just after the <code class="literal">pCol += tCol;</code> statement.</p><p>As the method returns <code class="literal">true</code> or <code class="literal">false</code>, we're going to use it in an <code class="literal">if</code> statement, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">// Check if we have finished the level
+if (haveFinishedLevel()) {
+  Debug.Log("Finished");
+}</pre></div><p>The <code class="literal">Debug.Log</code> method<a id="id237" class="indexterm"></a> will do for now, let's check if it's working. The solution for level one is on YouTube at <a class="ulink" href="http://www.youtube.com/watch?v=K5SMwAJrQM8&amp;hd=1" target="_blank">http://www.youtube.com/watch?v=K5SMwAJrQM8&amp;hd=1</a>. Click on the play icon at the top-middle of the Unity screen and copy the sequence of moves in the video (or solve it yourself), when all the crates are on the goal tiles you'll see <span class="strong"><strong>Finished</strong></span> in the <span class="strong"><strong>Console</strong></span> panel.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec22"></a>Moving to the next level</h3></div></div></div><p>Assuming everything went correctly, you should have seen the <code class="literal">Finished</code> text appear. Next is to<a id="id238" class="indexterm"></a> load a new level which is probably going to be easier than <a id="id239" class="indexterm"></a>you think. We already have all the code to build a level and add the character in our current scene. Rather than elaborately tear it down and unload the current assets, we can simply increment the <code class="literal">currentLevel</code> counter and then reload the scene; our existing code will take care of the rest. Replace the <code class="literal">Debug.Log</code> method with the following code:</p><div class="informalexample"><pre class="programlisting">// Check if we have finished the level
+if (haveFinishedLevel()) {
+  
+  currentLevel++;
+  if (currentLevel == levels.Length) {
+    currentLevel = 0;
+  }
+  PlayerPrefs.SetInt("currentLevel", currentLevel);
+  
+  Invoke("LoadNextLevel", 1.0f);
+} </pre></div><p>Here, we are checking if we have finished the level with the <code class="literal">haveFinishedlevel</code> method, and then incrementing the <code class="literal">currentLevel</code> counter. The next check makes sure that it doesn't go over the amount of levels we actually have by comparing it to the <code class="literal">Length</code> of the levels array, if it does go over, we set it back to <code class="literal">0</code> to loop the level order. We then store the level in the <code class="literal">PlayerPrefs</code> object, so you can resume from that point after quitting the game. The last line is the <code class="literal">Invoke</code> method, as we don't want to load the new level at the exact moment, we finish placing the last <code class="literal">crate</code>. We can invoke a method after a delay. Here, the method to <code class="literal">Invoke</code> is named <code class="literal">LoadNextLevel</code> and the delay is <code class="literal">1.0f</code>, which means one second. Let's create the <code class="literal">LoadLevel</code> method:</p><div class="informalexample"><pre class="programlisting">Void LoadNextlevel () {
+  Application.LoadLevel("GameScreen");
+}</pre></div><p>As you've seen previously, <code class="literal">Application.LoadLevel</code> just loads a new scene, and because we have set out method to use the <code class="literal">currentLevel</code> variable, we can simply reload our scene to render the next level.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec23"></a>Restarting our level</h3></div></div></div><p>Sometimes <a id="id240" class="indexterm"></a>things just don't go your way. In <code class="literal">Sokoban</code>, you <a id="id241" class="indexterm"></a>can get yourself into a situation where it is impossible to complete the level. As this is the case, then we need the ability to restart the game. Let's map it to the <code class="literal">Y</code> button on the Ouya controller. Add the following code to the bottom of your <code class="literal">Update</code> method:</p><div class="informalexample"><pre class="programlisting">// Should we restart the current level?
+if (OuyaInput.GetButtonDown(OuyaButton.Y, playerNumber)) {
+  Application.LoadLevel("GameScreen");
+}</pre></div><p>Give your <a id="id242" class="indexterm"></a>game a test on the Ouya, and when in the main <a id="id243" class="indexterm"></a>game, click on the <code class="literal">Y</code> button. You should reset back to the start position.</p></div></div>

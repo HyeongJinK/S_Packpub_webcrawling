@@ -1,0 +1,335 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec51"></a>Creating a custom editor for the WaypointsContainer script</h2></div></div><hr /></div><p>In <a id="id1018" class="indexterm"></a>this step, we will <a id="id1019" class="indexterm"></a>create the <code class="literal">WaypointsContainerEditor</code> script, which will <a id="id1020" class="indexterm"></a>create the custom inspector for our <code class="literal">WaypointsContainer</code> component. We will have the <span class="strong"><strong>Slider</strong></span> bar to limit the minimum and maximum radius of each the waypoint, the <span class="strong"><strong>Add</strong></span> and <span class="strong"><strong>Remove</strong></span> waypoint buttons that automatically add and remove the waypoint from the scene, and finally, we will update the name of each waypoint automatically when adding or removing from the scene to make it easier for us to edit.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec107"></a>Prepare for lift off</h3></div></div></div><p>We will begin by removing the old <span class="strong"><strong>WaypointsContainer</strong></span> object in the <span class="strong"><strong>Hierarchy</strong></span> view:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's right-click on the <span class="strong"><strong>WaypointsContainer</strong></span> game object that we created in the previous step and choose <span class="strong"><strong>Delete</strong></span> to remove it from the scene, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_12.jpg" /></div></li><li><p>Next, we will create the new container, but this time, we will have a bit of a different setup, which will be prepared for the next step. Let's go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> to create a new empty game object and name it <code class="literal">Enemy</code>. Then, we will set its position as <span class="strong"><strong>X</strong></span> to <code class="literal">0.5</code>, <span class="strong"><strong>Y</strong></span> to <code class="literal">0.25</code>, and <span class="strong"><strong>Z</strong></span> to <code class="literal">-5</code>.</p></li><li><p>Then, we create another<a id="id1021" class="indexterm"></a> empty <a id="id1022" class="indexterm"></a>game <a id="id1023" class="indexterm"></a>object; go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span>, name it <code class="literal">WaypointsContainer</code>, drag it inside the <span class="strong"><strong>Enemy</strong></span> game object, and set its <span class="strong"><strong>Position</strong></span> as <span class="strong"><strong>X</strong></span> to <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span> to <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span> to <code class="literal">0</code>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_13.jpg" /></div></li><li><p>Finally, we need to create <a id="id1024" class="indexterm"></a>the<a id="id1025" class="indexterm"></a> <span class="strong"><strong>Editor</strong></span> folder<a id="id1026" class="indexterm"></a> in the <span class="strong"><strong>Project</strong></span> view and create the C# (for C# user) or JavaScript (for JavaScript user) script and name it <code class="literal">WaypointsContainerEditor</code>, as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_14.jpg" /></div></li></ol></div><p>This will tell Unity that this script is an editor script and will compile after our game script, which allows us to get access to <span class="strong"><strong>WaypointsContainer</strong></span>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note77"></a>Note</h3><p>For more<a id="id1027" class="indexterm"></a> information on the script compilation order, visit <a class="ulink" href="http://docs.unity3d.com/Documentation/Manual/ScriptCompileOrderFolders.html" target="_blank">http://docs.unity3d.com/Documentation/Manual/ScriptCompileOrderFolders.html</a>.</p></div><p>Now, we are ready to begin.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec108"></a>Engage thrusters</h3></div></div></div><p>Let's get started:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Double <a id="id1028" class="indexterm"></a>click <a id="id1029" class="indexterm"></a>on <a id="id1030" class="indexterm"></a>
+<span class="strong"><strong>WaypointsContainerEditor</strong></span> to open it and type the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user: </strong></span>
+
+#pragma strict
+@CustomEditor(WaypointsContainer)
+
+class WaypointsContainerEditor extends Editor {
+  private final var OBJECT_NAME : String = "Waypoint";
+  private final var s_showPath : String = "showPath";
+  private final var s_random : String = "isRandom";
+  private final var s_radius : String = "radius";
+  private final var s_arraySizePath : String = "waypoints.Array.size";
+  private final var s_arrayData : String = "waypoints.Array.data[{0}]";
+
+  private var seo_object : SerializedObject;
+  private var sep_radius : SerializedProperty;
+  private var sep_showGizmo : SerializedProperty;
+  private var sep_random : SerializedProperty;
+  private var sep_waypointCount : SerializedProperty;
+
+  private var _wayPointsContainer : WaypointsContainer;
+
+  function OnEnable ()
+  {
+    seo_object = new SerializedObject (target);
+    sep_showGizmo = seo_object.FindProperty (s_showPath);
+    sep_random = seo_object.FindProperty (s_random);
+    sep_radius = seo_object.FindProperty (s_radius);
+    sep_waypointCount = seo_object.FindProperty (s_arraySizePath);
+    _wayPointsContainer = seo_object.targetObject as WaypointsContainer;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using UnityEditor;
+[CustomEditor(typeof(WaypointsContainer))]
+public class WaypointsContainerEditor : Editor
+{ 
+  const string OBJECT_NAME = "Waypoint";
+  const string s_showPath = "showPath";
+  const string s_random = "isRandom";
+  const string s_radius = "radius";
+  const string s_arraySizePath = "waypoints.Array.size";
+  const string s_arrayData = "waypoints.Array.data[{0}]";
+  
+  private SerializedObject seo_object;
+  private SerializedProperty sep_radius;
+  private SerializedProperty sep_showGizmo;
+  private SerializedProperty sep_random;
+  private SerializedProperty sep_waypointCount;
+  
+  WaypointsContainer _wayPointsContainer;
+  
+  void OnEnable ()
+  {
+    seo_object = new SerializedObject (target);
+    sep_showGizmo = seo_object.FindProperty (s_showPath);
+    sep_random = seo_object.FindProperty (s_random);
+    sep_radius = seo_object.FindProperty (s_radius);
+    sep_waypointCount = seo_object.FindProperty (s_arraySizePath);
+    _wayPointsContainer = seo_object.targetObject as WaypointsContainer;
+  }
+}</pre></div><p>We have used <code class="literal">SerializeObject</code> and <code class="literal">SerializeProperty</code> to access the property from <code class="literal">WaypointsContainer</code> script and set all properties.</p></li><li><p>Next, we will <a id="id1031" class="indexterm"></a>add the<a id="id1032" class="indexterm"></a> functions<a id="id1033" class="indexterm"></a> to set, get, add, and remove waypoints. Let's add the following code after the <code class="literal">OnEnable()</code> function:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function GetWaypointArray () : Waypoint[]
+{
+  var waypoints : Waypoint[] = _wayPointsContainer.GetComponentsInChildren.&lt;Waypoint&gt;();  
+  return waypoints;
+}
+function GetWaypointAtIndex (index : int) : Waypoint
+{
+  return seo_object.FindProperty (String.Format (s_arrayData, index)).objectReferenceValue as Waypoint;
+}
+function SetWaypoint (index : int, waypoint : Waypoint)
+{
+  if (waypoint != null) {
+    Undo.RecordObject(waypoint.gameObject,"Update"+index.ToString());
+    var nameIndex : String = (index &lt; 9) ? "0"+(index+1).ToString() : (index+1).ToString();
+    waypoint.name = OBJECT_NAME+nameIndex;
+    seo_object.FindProperty (String.Format (s_arrayData, index)).objectReferenceValue = waypoint;
+  }
+}
+function RemoveWaypointAtIndex (index : int)
+{
+  var arrayCount : int = sep_waypointCount.intValue;
+  for (var i : int = index; i &lt; arrayCount - 1; i++) {
+    SetWaypoint (i, GetWaypointAtIndex (i + 1));
+  }
+  if (GetWaypointAtIndex(index) != null) {
+    var go : GameObject = GetWaypointAtIndex(index).gameObject;
+    Undo.DestroyObjectImmediate(go);
+  }
+}
+function AddWayPoint ( waypoint : Waypoint)
+{
+  sep_waypointCount.intValue++;
+  SetWaypoint (sep_waypointCount.intValue - 1, waypoint); }
+<span class="strong"><strong>// C# user:</strong></span>
+
+Waypoint[] GetWaypointArray ()
+{
+  Waypoint[] waypoints = _wayPointsContainer.GetComponentsInChildren&lt;Waypoint&gt;();  
+  return waypoints;
+}  
+Waypoint GetWaypointAtIndex (int index)
+{
+  return seo_object.FindProperty (string.Format (s_arrayData, index)).objectReferenceValue as Waypoint;
+}
+void SetWaypoint (int index, Waypoint waypoint)
+{
+  if (waypoint != null) {
+    Undo.RecordObject(waypoint.gameObject,"Update"+index.ToString());
+    string nameIndex = (index &lt; 9) ? "0"+(index+1).ToString() : (index+1).ToString();
+    waypoint.name = OBJECT_NAME+nameIndex;
+    seo_object.FindProperty (string.Format (s_arrayData, index)).objectReferenceValue = waypoint;
+  }
+}  
+void RemoveWaypointAtIndex (int index)
+{
+  int arrayCount = sep_waypointCount.intValue;
+  for (int i = index; i &lt; arrayCount - 1; i++) {
+    SetWaypoint (i, GetWaypointAtIndex (i + 1));
+  }
+  if (GetWaypointAtIndex(index) != null) {
+    GameObject go = GetWaypointAtIndex(index).gameObject;
+    Undo.DestroyObjectImmediate(go);
+  }
+}  
+void AddWayPoint (Waypoint waypoint)
+{
+  sep_waypointCount.intValue++;
+  SetWaypoint (sep_waypointCount.intValue - 1, waypoint);
+}</pre></div></li><li><p>Then, we will<a id="id1034" class="indexterm"></a> add<a id="id1035" class="indexterm"></a> the <a id="id1036" class="indexterm"></a>
+<code class="literal">OnInspectorGUI()</code> function, which acts in a similar way to the <code class="literal">OnGUI()</code> function, but this function updates every time we go to the inspector. Let's add the following code after the <code class="literal">AddWayPoint()</code> function:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function OnInspectorGUI ()
+{
+  if ((targets != null) &amp;&amp; (target != null)) {
+    seo_object.Update ();
+    sep_showGizmo.boolValue = EditorGUILayout.Toggle ("Show Gizmos", sep_showGizmo.boolValue);
+    if (sep_showGizmo.boolValue) {
+      sep_random.boolValue = EditorGUILayout.Toggle ("Random Path", sep_random.boolValue);
+    }
+    EditorGUILayout.Slider(sep_radius, 1.0f, 3.0f, "Way Point Radius");
+    GUILayout.Label ("Waypoints", EditorStyles.boldLabel);
+    var waypoints : Waypoint[] = GetWaypointArray ();
+    sep_waypointCount.intValue = waypoints.Length;  
+    for (var i : int = 0; i &lt; waypoints.Length; i++) {
+      GUILayout.BeginHorizontal ();
+      var result : Waypoint = EditorGUILayout.ObjectField (waypoints[i], typeof(Waypoint), true) as Waypoint;
+      if (GUI.changed) {
+        SetWaypoint (i, result);
+      }
+      if (GUILayout.Button ("-")) {
+        RemoveWaypointAtIndex (i);
+      }
+      GUILayout.EndHorizontal ();
+    }
+    if (GUILayout.Button("Add Waypoint")) {
+      var indexString : String = (waypoints.Length &lt; 9) ? "0"+(waypoints.Length+1).ToString() : (waypoints.Length+1).ToString();
+      var go : GameObject = new GameObject(OBJECT_NAME+indexString);
+      go.transform.parent = _wayPointsContainer.transform;
+      go.transform.localPosition = Vector3.zero;
+      var waypoint : Waypoint = go.AddComponent.&lt;Waypoint&gt;();
+      AddWayPoint (waypoint);
+      Undo.RegisterCreatedObjectUndo(go,"AddWaypointButton");
+   }
+    seo_object.ApplyModifiedProperties ();
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+public override void OnInspectorGUI ()
+{
+  if ((targets != null) &amp;&amp; (target != null)) {
+    seo_object.Update ();
+    sep_showGizmo.boolValue = EditorGUILayout.Toggle ("Show Gizmos", sep_showGizmo.boolValue);
+    if (sep_showGizmo.boolValue) {
+      sep_random.boolValue = EditorGUILayout.Toggle ("Random Path", sep_random.boolValue);
+    }	
+    EditorGUILayout.Slider(sep_radius, 1.0f, 3.0f, "Way Point Radius");
+    GUILayout.Label ("Waypoints", EditorStyles.boldLabel);
+    Waypoint[] waypoints = GetWaypointArray ();
+    sep_waypointCount.intValue = waypoints.Length;  
+    for (int i = 0; i &lt; waypoints.Length; i++) {
+      GUILayout.BeginHorizontal ();
+      Waypoint result = EditorGUILayout.ObjectField (waypoints[i], typeof(Waypoint), true) as Waypoint;
+      if (GUI.changed) {
+        SetWaypoint (i, result);
+      }  
+      if (GUILayout.Button ("-")) {
+        RemoveWaypointAtIndex (i);
+      }
+      GUILayout.EndHorizontal ();
+    }  
+    if (GUILayout.Button("Add Waypoint")) {
+      string indexString = (waypoints.Length &lt; 9) ? "0"+(waypoints.Length+1).ToString() : (waypoints.Length+1).ToString();
+      GameObject go = new GameObject(OBJECT_NAME+indexString);
+      go.transform.parent = _wayPointsContainer.transform;
+      go.transform.localPosition = Vector3.zero;
+      Waypoint waypoint = go.AddComponent&lt;Waypoint&gt;();
+      AddWayPoint (waypoint);
+      Undo.RegisterCreatedObjectUndo(go,"AddWaypointButton");
+    }
+    seo_object.ApplyModifiedProperties ();
+  }
+}</pre></div><p>Here, we have created the <code class="literal">boolean</code> properties to toggle the show/hide gizmos and enabled/disabled a random waypoint and the <code class="literal">Slider</code> property to adjust the waypoint radius, and added a button to add a new waypoint to the scene.</p></li><li><p>Before we finish this step, we need to add the one last function that will make the update when we remove the waypoint object or create the object<a id="id1037" class="indexterm"></a> in<a id="id1038" class="indexterm"></a> the<a id="id1039" class="indexterm"></a> <span class="strong"><strong>Hierarchy</strong></span> view. So, let's add the following function after <code class="literal">OnInspectorGUI()</code>:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>//Unity JavaScript user:</strong></span>
+
+function UpdateHierarchy ()
+{
+  if ((targets != null) &amp;&amp; (target != null)) {
+    seo_object.Update();
+    var waypoints : Waypoint[] = GetWaypointArray();
+    sep_waypointCount.intValue = waypoints.Length;
+    for (var i : int = 0; i &lt; sep_waypointCount.intValue; i++) {
+      Undo.RecordObject(waypoints[i].gameObject,"Update"+i.ToString());
+      SetWaypoint(i,waypoints[i]);
+    }
+    seo_object.ApplyModifiedProperties();
+  }
+} 
+
+
+<span class="strong"><strong>//C# user:</strong></span>
+
+void UpdateHierarchy ()
+{
+  if ((targets != null) &amp;&amp; (target != null)) {
+    seo_object.Update();
+    Waypoint[] waypoints = GetWaypointArray();
+    sep_waypointCount.intValue = waypoints.Length;
+    for (int i = 0; i &lt; sep_waypointCount.intValue; i++) {
+      SetWaypoint(i,waypoints[i]);
+    }
+    seo_object.ApplyModifiedProperties();
+  }
+}</pre></div></li><li><p>Then, we<a id="id1040" class="indexterm"></a> need<a id="id1041" class="indexterm"></a> to go back to the <code class="literal">OnEnable()</code> function and add one line of code that will <a id="id1042" class="indexterm"></a>call this function when the <span class="strong"><strong>Hierarchy</strong></span> view has changed. Let's add the highlighted code as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function OnEnable ()
+{
+  …
+<span class="strong"><strong>  EditorApplication.hierarchyWindowChanged = UpdateHierarchy;</strong></span>
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void OnEnable ()
+{
+  …
+<span class="strong"><strong>  EditorApplication.hierarchyWindowChanged = UpdateHierarchy;</strong></span>
+}</pre></div></li><li><p>Now, let's finish our <a id="id1043" class="indexterm"></a>code. We can go back to the Unity editor and add the <code class="literal">WaypointsContainer</code> script (not the <code class="literal">WaypointsContainerEditor</code>) to the <code class="literal">WaypointsContainer</code> object in the <span class="strong"><strong>Hierarchy</strong></span> view. We will see in the following screenshot that the inspector has changed from the way it was:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_15.jpg" /></div></li><li><p>Next, we will click on the <span class="strong"><strong>Add Waypoint</strong></span> button six times. Go to its <span class="strong"><strong>Inspector</strong></span> view and set each position values as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">5</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">4</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">12</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">11</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-1.6</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">2</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">8</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-2</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">3.5</code>
+</p>
+</td></tr></tbody></table></div><p>We will see something like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_16.jpg" /></div></li></ol></div><p>Now, we have finished this step. We can <a id="id1044" class="indexterm"></a>also <a id="id1045" class="indexterm"></a>play <a id="id1046" class="indexterm"></a>around by clicking the <span class="strong"><strong>–</strong></span> button to remove the waypoint or delete it from the <span class="strong"><strong>Hierarchy</strong></span> view. This will automatically update the name of the waypoint and reorder each one.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip29"></a>Tip</h3><p>To create a new waypoint alternatively, we can do it by pressing <span class="emphasis"><em>Crtl</em></span> + <span class="emphasis"><em>D</em></span> (in Windows) or <span class="emphasis"><em>command</em></span> + <span class="emphasis"><em>D</em></span> (on Mac) on the last one in the <span class="strong"><strong>Hierarchy</strong></span> view. This will also update<a id="id1047" class="indexterm"></a> the name and reorder the waypoint; this happens by setting the <code class="literal">EditorApplication.hierarchyWindowChanged()</code> function.</p><p>For more details, visit <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/EditorApplication-hierarchyWindowChanged.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/EditorApplication-hierarchyWindowChanged.html</a>.</p></div><p>We can also change the waypoint radius, show/hide the gizmos, make it random, move the waypoint object around to serve what we need, or even add or remove the waypoint objects to fit our level.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip30"></a>Tip</h3><p>The waypoint script will not work properly if we put the waypoint where the enemy can't walk through, which means that our enemy should be able to walk through and touch each waypoint (hit the green wire sphere area of each waypoint, as shown in the preceding screenshot). Otherwise, the enemy won't be able to move to the next waypoint.</p><p>We can also adjust the radius (you will see the green wire sphere change its size) in the waypoint radius, which will make our enemy start turning to the next waypoint faster or slower. However, we should be careful when adjusting the radius. If we set it too low, the character might not hit it and not turn to the next waypoint. That's why we have set the minimum radius equal to <code class="literal">1.0</code> and maximum equal to <code class="literal">3.0</code> in the <code class="literal">OnInspectorGUI()</code> function at the line <code class="literal">EditorGUILayout.Slider(sep_radius, 1.0f, 3.0f, "Way Point Radius");</code>.</p></div><p>In the next step, we will continue by <a id="id1048" class="indexterm"></a>creating <a id="id1049" class="indexterm"></a>the AI <a id="id1050" class="indexterm"></a>script to make our enemy walk through each waypoint.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec109"></a>Objective complete – mini debriefing</h3></div></div></div><p>First, we use <code class="literal">@CustomEditor(WaypointsContainer)</code> (in JavaScript) or <code class="literal">[CustomEditor(typeof(WaypointsContainer))]</code> (in C#) to tell Unity that this custom editor will be based on the <code class="literal">WaypointsContainer</code> script and we inherited the class from the <code class="literal">Editor</code> class. </p><p>Next, we just added <code class="literal">SerializeObject</code> and <code class="literal">SerializeProperty</code>, which allows us to access the property from the <code class="literal">WaypointsContainer</code> script.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip31"></a>Tip</h3><p>We can also use <code class="literal">serializedObject</code> instead of the new<code class="literal"> SerializedObject (target)</code> too. The result is similar; however, in our case, we need to get the serialized object from the target to make sure that when we delete the object in the <span class="strong"><strong>Hierarchy</strong></span> view, it won't return <code class="literal">null</code>.</p></div><p>Then, we <a id="id1051" class="indexterm"></a>use the <code class="literal">OnEnable()</code> function to initialize all the properties. <code class="literal">OnEnable()</code> is the function that is called every time that the game object becomes enabled and active. This function is opposite to <code class="literal">OnDisable()</code>, which will be called when the game object is disabled and not active.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note78"></a>Note</h3><p>We can use this to set the parameters or reset it when we enabled or disabled the game object. To toggle the object that is disabled or enabled, we can use <code class="literal">gameObject.SetActive(true/false)</code> or check or uncheck the box in front of the game object name in the <span class="strong"><strong>Inspector</strong></span> view.</p><p>For more details, visit the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnEnable.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnEnable.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnDisable.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MonoBehaviour.OnDisable.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/GameObject.SetActive.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/GameObject.SetActive.html</a>
+</p></li></ul></div></div><p>Next, we've created the<a id="id1052" class="indexterm"></a> function, which <a id="id1053" class="indexterm"></a>will get<a id="id1054" class="indexterm"></a> the <code class="literal">waypoints</code> array from the children of this <code class="literal">_waypointsContainer</code> object. Then, we write the following line to find the waypoint object using the following index:</p><div class="informalexample"><pre class="programlisting">seo_object.FindProperty (string.Format (s_arrayData, index))</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note79"></a>Note</h3><p>
+<code class="literal">FindProperty</code> allows <a id="id1055" class="indexterm"></a>us to pass the name of the object and return the <code class="literal">SerializedProperty</code> object. In this case, we need to access the array, so we use the <code class="literal">string.Format()</code> function and pass <a id="id1056" class="indexterm"></a>the string and index to get the result string such as <code class="literal">waypoints.Array.data[index]</code>.</p><p>For<a id="id1057" class="indexterm"></a> more information on <code class="literal">string.Format()</code>, visit <a class="ulink" href="http://msdn.microsoft.com/en-us/library/system.string.format(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/system.string.format(v=vs.110).aspx</a>.</p></div><p>At the <code class="literal">SetWaypoint()</code> function, we've updated the name of waypoint by index, set it to the <code class="literal">waypoints</code> array, and<a id="id1058" class="indexterm"></a> used <code class="literal">Undo.RecordObject()</code> to record the object information for the <code class="literal">undo</code> command. In the <code class="literal">RemoveWaypointAtIndex()</code> function, we basically<a id="id1059" class="indexterm"></a> removed the waypoint by index, saved the information of the object for undo, and destroyed the object by using <code class="literal">Undo.DestroyObjectImmediate()</code>.</p><p>Then in the <code class="literal">AddWayPoint()</code> function, we<a id="id1060" class="indexterm"></a> just increase the size of the array and add the new waypoint object.</p><p>Next, we created the <code class="literal">OnInspectorGUI()</code> function and applied all the properties by using the <code class="literal">EditorGUILayout</code> object<a id="id1061" class="indexterm"></a> to access each type of the object. This object is similar to the <code class="literal">GUILayout</code> object, and it allows us to get and set the property.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note80"></a>Note</h3><p>For more details, visit the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Editor.OnInspectorGUI.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Editor.OnInspectorGUI.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/412/Documentation/ScriptReference/EditorGUILayout.html" target="_blank">http://docs.unity3d.com/412/Documentation/ScriptReference/EditorGUILayout.html</a>
+</p></li></ul></div></div><p>Here, we have created<a id="id1062" class="indexterm"></a> the <a id="id1063" class="indexterm"></a>
+<code class="literal">boolean</code> properties to toggle <a id="id1064" class="indexterm"></a>the show/hide gizmos and enabled/disabled random waypoint and the <code class="literal">Slider</code> property to adjust the waypoint radius, and added the button to add a new waypoint to the scene.</p><p>Finally, we've created the <code class="literal">UpdateHierarchy()</code> function and added the following line in the <code class="literal">OnEnable()</code> function to tell Unity to call the <code class="literal">UpdateHierarchy()</code> function every time something changes in the <span class="strong"><strong>Hierarchy</strong></span> view:</p><div class="informalexample"><pre class="programlisting">EditorApplication.hierarchyWindowChanged = UpdateHierarchy;</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec110"></a>Classified intel</h3></div></div></div><p>In the Unity editor, there is an old way to access the property from the <code class="literal">Editor</code> class. We can either use the <code class="literal">target</code> keyword<a id="id1065" class="indexterm"></a> to access all the properties directly from the editor or the <code class="literal">SerializeProperty</code> class and the <code class="literal">SerializeObject</code> keyword to access the property.</p><p>One way is to use <code class="literal">target</code> as follows:</p><div class="informalexample"><pre class="programlisting">function OnInspectorGUI() {
+  target.radius = EditorGUILayout.FloatField("Radius:", target.radius);
+  if (GUI.changed) {
+    EditorUtility.SetDirty(target);
+  }
+}</pre></div><p>On the other hand, we use the <code class="literal">SerializedObject</code> keyword<a id="id1066" class="indexterm"></a> and <a id="id1067" class="indexterm"></a>the <code class="literal">SerializedProperty</code> class to access the property, as we can see in the following code:</p><div class="informalexample"><pre class="programlisting">SerializedProperty sep_radius;
+function OnEnable() {
+  sep_radius = serializedObject.FindProperty("radius"); 
+}
+function OnInspectorGUI() {
+  serializedObject.Update();
+  sep_radius.floatValue = EditorGUILayout.FloatField("Radius:", sep_radius.floatValue);
+  serializedObject.ApplyModifiedProperties();
+}</pre></div><p>The <code class="literal">target</code> keyword<a id="id1068" class="indexterm"></a> can be used to access to the radius property directly by typing <code class="literal">target.radius</code>. Then, we checked if the GUI has changed or not by using <code class="literal">GUI.changed</code>. Then, we update the property by using <code class="literal">EditorUtility.SetDirty(target);</code>. </p><p>We use<a id="id1069" class="indexterm"></a> the <code class="literal">SerializedProperty</code> class and the <code class="literal">serializedObject</code> keyword<a id="id1070" class="indexterm"></a> to set the serialize property in <code class="literal">OnEnable()</code>:</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note81"></a>Note</h3><p>To use <code class="literal">SerializedProperty</code>, we need to put the property between <code class="literal">serializedObject.Update();</code> and <code class="literal">serializedObject.ApplyModifiedProperties();</code>. This will make sure that the property is updated and saves it when we have change the value.</p></div><p>Using <code class="literal">SerializedProperty</code> seems<a id="id1071" class="indexterm"></a> to be <a id="id1072" class="indexterm"></a>more<a id="id1073" class="indexterm"></a> complex than the target, so why are we using it? The advantage of <code class="literal">SerializedProperty</code> is<a id="id1074" class="indexterm"></a> that it will handle the multi-object editing, undo, and prefab override for us, to which we can attach <code class="literal">@CanEditMultipleObjects</code> (in JavaScript) or <code class="literal">[CanEditMultipleObjects]</code> (in C#) to make our script editor multiple objects.</p><p>If we copy our current <code class="literal">WaypointsContainer</code> script and select both the objects, we will see the message in the inspector say <span class="strong"><strong>Multi-object editing not supported</strong></span> as we can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_17.jpg" /></div><p>To make it work, we just add the line <code class="literal">@CanEditMultipleObjects</code> (in JavaScript) or <code class="literal">[CanEditMultipleObjects]</code> (in C#) in the <code class="literal">WaypointsContainerEditor</code> script before the class. Let's have a look at the following line:</p><div class="informalexample"><pre class="programlisting">seo_object = new SerializedObject (target);</pre></div><p>We change this line to the following:</p><div class="informalexample"><pre class="programlisting">seo_object = new SerializedObject (targets);</pre></div><p>Otherwise, replace the keyword <code class="literal">seo_object</code> with <code class="literal">serializedObject</code> and remove the <code class="literal">seo_object</code> property.</p><p>Basically, we were getting the last selection object by using <code class="literal">target</code>, but if we change it to <code class="literal">targets</code> or <code class="literal">serializedObject</code>, it will return all the objects that have been selected.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip32"></a>Tip</h3><p>To make the <a id="id1075" class="indexterm"></a>multi-object <a id="id1076" class="indexterm"></a>editing work <a id="id1077" class="indexterm"></a>properly with all the properties in <span class="strong"><strong>WaypointsContainerEditor</strong></span>, we might have to change the way the code is structured. For example, we probably need to<a id="id1078" class="indexterm"></a> change the <code class="literal">GetWaypointAtIndex()</code> function to return <code class="literal">Waypoint[]</code> for each <code class="literal">WaypointsContainer</code> scripts.</p></div></div></div>

@@ -1,0 +1,175 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch19lvl1sec172"></a>Creating our player</h2></div></div><hr /></div><p>Having the basis<a id="id753" class="indexterm"></a> of our world is great, but if we don't have a player, it doesn't matter how nice the level looks. In this section, we will create the actual player<a id="id754" class="indexterm"></a> that will walk around and move in the world:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's first create a <span class="strong"><strong>Capsule</strong></span> by selecting <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>3D Object </strong></span>| <span class="strong"><strong>Capsule</strong></span>.</p></li><li><p>Right now, the capsule is too big to fit our world due to being larger than our blocks. To easily fix this, we will set the <span class="strong"><strong>Scale</strong></span> of our <span class="strong"><strong>Capsule</strong></span> to be (<span class="strong"><strong>0.4, 0.4</strong></span>, and <span class="strong"><strong>0.4</strong></span>). Also, set its <span class="strong"><strong>Position</strong></span> to (<span class="strong"><strong>1, 2, 0</strong></span>):</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_06_08.jpg" /></div></li><li><p>Now, we want our player to use gravity and forces, so we will need to add a <span class="strong"><strong>Rigidbody</strong></span> component by going to <span class="strong"><strong>Component | Physics | Rigidbody</strong></span>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note80"></a>Note</h3><p>The 2D and 3D <a id="id755" class="indexterm"></a>Physics systems are not interchangeable as in either can be used but they cannot interact with each other. You'll need to choose one or the other when working on a project. We're using 3D right now, so you can have a good idea of the differences between 2D and 3D and what to look out for.</p></div></li><li><p>Next, because<a id="id756" class="indexterm"></a> we are doing a 2D game, we don't want our player to be moving in the Z axis, so under the <span class="strong"><strong>Rigidbody</strong></span>, open up the <span class="strong"><strong>Constraints</strong></span> box and check <span class="strong"><strong>Z</strong></span> in the <span class="strong"><strong>Freeze Position</strong></span> variable. After this, check each axis for the <span class="strong"><strong>Freeze Rotation</strong></span> as we do not want our character to change its rotation via <span class="strong"><strong>Rigidbody</strong></span> (we'll rotate it via code):</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_06_09.jpg" /></div></li><li><p>After this, all that's left is to create some custom functionality, which means that you guessed it, another script. Create a new C# Script file named <code class="literal">PlayerBehaviour</code> and open it up in your IDE of choice.</p><p>With the <code class="literal">PlayerBehaviour</code> script opened, let's first write down each of the issues we need to solve and make them functions. As programmers, it's <a id="id757" class="indexterm"></a>our job to solve problems, and separating problems into smaller pieces will make it easier to solve each part rather than try to solve<a id="id758" class="indexterm"></a> the entire thing all at once.</p></li><li><p>Add in the following code:</p><div class="informalexample"><pre class="programlisting">void FixedUpdate()
+{
+    // Move the player left and right
+    Movement();
+
+    // Sets the camera to center on the player's position.
+    // Keeping the camera's original depth
+    Camera.main.transform.position = new Vector3(transform.position.x, transform.position.y, Camera.main.transform.position.z);
+}</pre></div></li><li><p>Next, we write the following in the <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+// Have the player jump if they press the jump button
+   Jumping();
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note81"></a>Note</h3><p>
+<code class="literal">Update() </code>is great and is called every frame, but it's called at random times, leading to more instant but less constant things, such as input. Instead of that,<code class="literal"> FixedUpdate()</code> is a great function to use for things that need to happen consistently and for things like physics due to its fixed delta time (the <code class="literal">Time.deltaTime</code> value we've been using previously changes depending on the frame rate). However, in a platformer, the player needs to feel a jump instantly, so that's why I put the <code class="literal">Jumping</code> function inside of <code class="literal">Update</code>.</p></div><p>So at this point, we have broken the player's behavior into two sections—their movement and their jumping.</p></li><li><p>Next, we're going to need to declare some variables for us to use:</p><div class="informalexample"><pre class="programlisting">    // A reference to our player's rigidbody component
+    private Rigidbody rigidBody;
+    // Force to apply when player jumps
+    public Vector2 jumpForce = new Vector2(0, 450);
+
+    // How fast we'll let the player move in the x axis
+    public float maxSpeed = 3.0f;
+
+    // A modifier to the force applied
+    public float speed = 50.0f;
+
+    // The force to apply that we will get for the player's 
+    // movement
+    private float xMove;
+
+    // Set to true when the player can jump
+    private bool shouldJump;</pre></div></li><li><p>I've initialized the <a id="id759" class="indexterm"></a>public data here, but the <a id="id760" class="indexterm"></a>user can modify the numbers in the <span class="strong"><strong>Inspector</strong></span>. However, we still need to initialize the private variables in the <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">    void Start () 
+    {
+        rigidBody = GetComponent&lt;Rigidbody&gt;();
+        shouldJump = false;
+        xMove = 0.0f;
+    }</pre></div></li><li><p>Now that we have the variables, we think that we need to fill in the implementation for the <code class="literal">Movement</code> function now:</p><div class="informalexample"><pre class="programlisting">void Movement()
+{
+    // Get the player's movement (-1 for left, 1 for right, 
+    // 0 for none)
+    xMove = Input.GetAxis("Horizontal");
+
+    if (xMove != 0)
+    {
+        // Setting player horizontal movement
+        float xSpeed = Mathf.Abs(xMove * rigidBody.velocity.x);
+
+        if (xSpeed &lt; maxSpeed)
+        {
+            Vector3 movementForce = new Vector3(1, 0, 0);
+            movementForce *= xMove * speed;
+            rigidBody.AddForce(movementForce);
+        }
+
+        // Check speed limit
+        if (Mathf.Abs(rigidBody.velocity.x) &gt; maxSpeed)
+        {
+            Vector2 newVelocity;
+
+            newVelocity.x = Mathf.Sign(rigidBody.velocity.x) *
+                            maxSpeed;
+            newVelocity.y = rigidBody.velocity.y;
+
+            rigidBody.velocity = newVelocity;
+        }
+    }
+    else
+    {
+        // If we're not moving, get slightly slower
+        Vector2 newVelocity = rigidBody.velocity;
+
+        // Reduce the current speed by 10%
+        newVelocity.x *= 0.9f;
+        rigidBody.velocity = newVelocity;
+    }
+}</pre></div></li></ol></div><p>In this section of code, we use a different way to get input from the player, the <code class="literal">GetAxis</code> function. When<a id="id761" class="indexterm"></a> called, <code class="literal">GetAxis</code> will return a value for the direction that you are moving in a particular axis. In this instance, <code class="literal">-1</code> for going all the way to the left, <code class="literal">0</code> for stationary, and <code class="literal">1</code> for all the way to the right. GetAxis can<a id="id762" class="indexterm"></a> return any number between <code class="literal">-1</code> and <code class="literal">1</code> as using a game controller you may only slightly move the analog stick. This would allow you to sneak in an area rather than always be running. In addition to the <span class="strong"><strong>Horizontal Axis</strong></span>, there are a number of others included in Unity by default, but we can also customize or create our own.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch19lvl2sec106"></a>Adding Jump functionality</h3></div></div></div><p>At this point, we can<a id="id763" class="indexterm"></a> move left and right in the game, but we're unable to jump. Let's fix this now:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Access the <span class="strong"><strong>Input</strong></span> properties by going to <span class="strong"><strong>Edit | Project Settings</strong></span> | <span class="strong"><strong>Input</strong></span>. Once there extend the <span class="strong"><strong>Jump</strong></span> tab. In the <span class="strong"><strong>Alt Positive Button</strong></span> put in <code class="literal">up</code>:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_06_10.jpg" /></div></li><li><p>Next, let's<a id="id764" class="indexterm"></a> implement the <code class="literal">Jumping</code> function:</p><div class="informalexample"><pre class="programlisting">    void Jumping()
+    {
+        if(Input.GetButtonDown("Jump")) 
+        {
+            shouldJump = true;
+        }
+        
+        // If the player should jump
+        if(shouldJump) 
+        {
+            rigidBody.AddForce(jumpForce);
+            shouldJump = false;
+        }
+    }</pre></div><p>Now, if we press <span class="emphasis"><em>Spacebar</em></span> or <span class="emphasis"><em>Up</em></span>, we will change the <code class="literal">shouldJump</code> Boolean value to true. If it's true, then we'll apply the <code class="literal">jumpForce</code> to our character.</p></li><li><p>With this completed, let's <a id="id765" class="indexterm"></a>save our script and jump back into the Unity Editor. From there, go to the <span class="strong"><strong>Hierarchy</strong></span> tab and select the <span class="strong"><strong>Capsule</strong></span> object. Rename it to <code class="literal">Player</code> and then attach the newly created behavior to our player if you haven't done so already:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_06_11.jpg" /></div></li></ol></div><p>Great start! We now have a player in our world, and we're able to move around and jump. However, if you keep playing with it, you'll note some of the issues that this has, namely the fact that you can always jump up as many times as you want and if you hold a direction key hitting a wall, you'll stay stuck in the air. This could make for interesting game mechanics, but I'm going to assume that this is not what you're looking for.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch19lvl2sec107"></a>Working with Gizmos</h3></div></div></div><p>Next, before we <a id="id766" class="indexterm"></a>solve our movement issues, I wanted to show you a tool that you can use as a developer to help you when working on your own projects. Add the following function to your script:</p><div class="informalexample"><pre class="programlisting">void OnDrawGizmos()
+{
+    Debug.DrawLine(transform.position, transform.position + rigidBody.velocity, Color.red);
+}</pre></div><p>
+<code class="literal">OnDrawGizmos</code> is a function inherited by the <code class="literal">MonoBehaviour</code> class that will allow us to draw things that will appear in the <span class="strong"><strong>Scene</strong></span> view. Sure enough, if you play the game, you will not see anything in the <span class="strong"><strong>Game</strong></span> view, but if you look at the <span class="strong"><strong>Scene</strong></span> tab, you'll be able to see the velocity that our object is traveling by. To make it easier to see, feel free to hit the 2D button in the top toolbar on the <span class="strong"><strong>Scene</strong></span> tab to get a side view:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_06_12.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note82"></a>Note</h3><p>Note that the <span class="strong"><strong>Game</strong></span> tab needs to be active before Input will register any pressed keys so I have both tabs open. Alternatively, you can add the gizmo to the Game view as well by going to the top right of the Game tab and toggling the Gizmos button.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch19lvl2sec108"></a>Smoothing out player movement</h3></div></div></div><p>In this example here, the<a id="id767" class="indexterm"></a> red line is showing that I'm jumping up and moving to the left. If you'll look at the <span class="strong"><strong>Scene</strong></span> view when the player is walking, you'll see little bumps occuring. This isn't something we'd like to see as we expect the collision to flow together. These bumps occur because the moment that we hit the edges of two separate boxes, the collision engine will try to push the player in different directions to prevent the collision from happening. After the collisions occur, the physics engine will try to combine both of those forces into one that causes these hickups. We can fix this by telling Unity to spend some extra time doing the calcuations.</p><p>Go into Unity's <span class="strong"><strong>Physics</strong></span> properties by going to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Physics</strong></span>. Change the <span class="strong"><strong>Default Contact Offset</strong></span> property to <span class="strong"><strong>0.0001</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_06_13.jpg" /></div><p>The <span class="strong"><strong>Contact Offset</strong></span> property allows the collision detection system to predicatively enforce the contact <a id="id768" class="indexterm"></a>constraint even when the objects are slightly separated, we decrease that number as we don't want the collisions to happen.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch19lvl3sec08"></a>Restricting Jumping</h4></div></div></div><p>Now there's the matter of being <a id="id769" class="indexterm"></a>able to jump anytime we want. What we want to have happen is to have the player not be able to jump unless they're on the ground. This is to prevent the case of being able to jump while falling:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>So to do this, we will need to introduce some new variables:</p><div class="informalexample"><pre class="programlisting">private bool onGround;
+private float yPrevious;</pre></div></li><li><p>Just like any private variables, we will need to initialize them in our <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">onGround = false;
+yPrevious = Mathf.Floor(transform.position.y);</pre></div></li><li><p>Now in our <code class="literal">Jumping</code> function, we just need to add the following code in bold:</p><div class="informalexample"><pre class="programlisting">    void Jumping()
+    {
+        if(Input.GetButtonDown("Jump")) 
+        {
+            shouldJump = true;
+        }
+        
+        // If the player should jump
+        if(shouldJump <span class="strong"><strong>&amp;&amp; onGround</strong></span>) 
+        {
+            rigidBody.AddForce(jumpForce);	
+            shouldJump = false;
+        }
+    }</pre></div></li><li><p>And in our <code class="literal">Update</code> function, we will add in a new function for us to check whether we are <a id="id770" class="indexterm"></a>grounded:</p><div class="informalexample"><pre class="programlisting">// Update is called once per frame
+void Update () 
+{
+<span class="strong"><strong>    // Check if we are on the ground</strong></span>
+<span class="strong"><strong>    CheckGrounded();</strong></span>
+    
+    // Have the player jump if they press the jump button
+    Jumping();
+}</pre></div></li><li><p>Now we just need to add in the code for <code class="literal">CheckGrounded</code>. This isn't exactly a simple issue to solve without math, so we will actually need to use some linear algebra to solve the issue for us as follows:</p><div class="informalexample"><pre class="programlisting">void CheckGrounded()
+{
+    // Check if the player is hitting something from 
+    // the center of the object (origin) to slightly below
+    // the bottom of it (distance)
+    float distance = (GetComponent&lt;CapsuleCollider&gt;().height / 2 * this.transform.localScale.y) + .01f; Vector3 floorDirection = transform.TransformDirection(-Vector3.up);
+    Vector3 origin = transform.position;
+
+    if (!onGround)
+    {
+        // Check if there is something directly below us
+        if (Physics.Raycast(origin, floorDirection, distance))
+        {
+            onGround = true;
+        }
+    }
+    // If we are currently grounded, are we falling down or 
+    // jumping?
+    else if ((Mathf.Floor(transform.position.y) != yPrevious))
+    {
+        onGround = false;
+    }
+
+    // Our current position will be our previous next frame
+    yPrevious = Mathf.Floor(transform.position.y);
+}</pre></div></li></ol></div><p>This function uses a Raycast to cast an invisible line (ray) from origin in the direction of the floor for a certain<a id="id771" class="indexterm"></a> distance, which is just slightly further than our player. If it finds an object colliding with this, it will return <code class="literal">true</code>, which will tell us that we are indeed on the ground.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch19lvl3sec09"></a>Preventing the player getting stuck</h4></div></div></div><p>In the game, we can leave the ground in two ways—by jumping or by falling down a platform. Either way, we<a id="id772" class="indexterm"></a> will be changing our y position; if that's the case, we are no longer on the ground, so <code class="literal">onGround</code> will be set to <code class="literal">false</code>. The <code class="literal">Floor</code> function will remove the decimal from a number to allow for some leeway for a floating point error.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Now our only issue resides in the fact that the player sticks to walls if they press into it. To solve this, we will just simply not allow the player to move into a wall by not adding a force if we're right next to a wall. Add the following bolded code to this section of code in the <code class="literal">Movement</code> function:</p><div class="informalexample"><pre class="programlisting">// Movement()
+// if xMove != 0...
+if (xSpeed &lt; maxSpeed) 
+{
+Vector3 movementForce = new Vector3(1,0,0);
+movementForce *= xMove * speed;
+
+<span class="strong"><strong>RaycastHit hit;</strong></span>
+<span class="strong"><strong>if(!rigidBody.SweepTest(movementForce, out hit, 0.05f))</strong></span>
+{
+rigidBody.AddForce(movementForce);
+}
+}
+// Etc.</pre></div><p>The <code class="literal">SweepTest</code> function will check in the direction the rigid body is traveling, and if it sees something within a certain direction, it will fill hit with the object that it touched and return <code class="literal">true</code>. We want to stop the player from being able to move into the wall, so we will not add force if that's the case.</p></li><li><p>Now, this works for the most part except for when we are already along the wall and jump <a id="id773" class="indexterm"></a>up and other fringe cases. To fix these issues when we are touching a wall, we will add a variable that will keep track if we are touching a wall:</p><div class="informalexample"><pre class="programlisting">private bool collidingWall;</pre></div></li><li><p>After this, we need to initialize it in <code class="literal">Start</code>:</p><div class="informalexample"><pre class="programlisting">collidingWall = false;</pre></div></li><li><p>After this, we will use the 3D collision detection functions to determine if we're touching a wall:</p><div class="informalexample"><pre class="programlisting">// If we hit something and we're not grounded, it must be a wall
+// or a ceiling. 
+    void OnCollisionStay(Collision collision)
+    { 
+        if (!onGround)
+        { 
+            collidingWall = true;  
+        }
+    }
+    
+    void OnCollisionExit(Collision collision)
+    {
+        collidingWall = false;
+    }</pre></div><p>You'll note that the functions look quite similar to the 2D functions aside from not having the word 2D.</p></li><li><p>Next, inside <a id="id774" class="indexterm"></a>of your <code class="literal">Movement</code> function, add the following bolded lines:</p><div class="informalexample"><pre class="programlisting">    void Movement()
+    {
+        //Get the player's movement (-1 for left, 1 for
+        //right, 0 for none)
+        xMove = Input.GetAxis("Horizontal");
+        
+        if(collidingWall &amp;&amp; !onGround)
+        {
+            xMove = 0;
+        }
+        // Etc.</pre></div><p>Now if we are colliding against a wall, we will stop the player from applying force.</p></li><li><p>Save the script and go back into Unity, refreshing the scripts if needed and hit the <span class="strong"><strong>Play</strong></span> button:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_06_14.jpg" /></div></li></ol></div><p>Now our player<a id="id775" class="indexterm"></a> can jump along walls and fall like normal, and the player can jump only when he is on the ground! We now have the basis to make a platformer game completed!</p></div></div></div>

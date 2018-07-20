@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec83"></a>Saving data for Dead Keys</h2></div></div><hr /></div><p>For <span class="emphasis"><em>Dead Keys</em></span>, our level <span>loading</span> needs are simple, technically. We simply need to save the latest level we have reached and then restore back to the beginning of that level every time the game is started. To do this, we can use the <code class="literal">Player preferences</code> class. Create a new script, named <code class="literal">LevelSaveRestore.cs</code>:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/68e7a1a4-4a9e-4ab0-89f9-4f61ad4d64fa.png" /></div><p>Creating a new save state script</p><p>This script file <span>should</span> be attached to one, and only one, empty object in the scene, which is active at level startup, and this should happen for every playable level in the game. The full code for the script file is shown as follows:</p><pre class="programlisting">using System.Collections; 
+using System.Collections.Generic; 
+using UnityEngine.SceneManagement; 
+using UnityEngine; 
+//------------------------------------------------ 
+public class LevelSaveRestore : MonoBehaviour 
+{ 
+   //------------------------------------------------ 
+   [SerializeField] 
+   int LastAchievedLevel = 0;   string LastAchievedLevelName = string.Empty;   public int CurrentLevel = 0; 
+   //------------------------------------------------ 
+   void Awake() 
+   { 
+         //Get latest level, if key exists 
+         LastAchievedLevel = PlayerPrefs.GetInt ("LatestLevel_Val", 
+         CurrentLevel); 
+         LastAchievedLevelName = PlayerPrefs.GetString 
+         ("LatestLevel_Name", SceneManager.GetActiveScene().name); 
+ 
+         //Should we load latest level 
+         if (CurrentLevel &lt; LastAchievedLevel)  
+         { 
+               if(!SceneManager.GetActiveScene ().name.Equals 
+               (LastAchievedLevelName)) 
+                     SceneManager.LoadScene (LastAchievedLevelName); 
+         }  
+         else  
+         { 
+               //Update latest scene 
+               LastAchievedLevel = CurrentLevel; 
+               LastAchievedLevelName = SceneManager.GetActiveScene 
+               ().name; 
+               PlayerPrefs.SetInt ("LatestLevel_Val", 
+               LastAchievedLevel); 
+               PlayerPrefs.SetString ("LatestLevel_Name", 
+               LastAchievedLevelName); 
+               PlayerPrefs.Save (); 
+         } 
+   } 
+   //------------------------------------------------ 
+} 
+//------------------------------------------------ </pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec73"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <code class="literal">UnityEngine.SceneManagement</code> namespace <span>should</span> be included in every source file that changes scenes or needs access to the current scene</li><li style="list-style-type: disc">The <code class="literal">Awake</code> event is used to retrieve the last level reached using <code class="literal">PlayerPrefs</code> to return two values: the highest-level number and the level name associated with that</li><li style="list-style-type: disc"><code class="literal">HighestLevel</code> is compared to <code class="literal">CurrentLevel</code>, and where <code class="literal">CurrentLevel</code> is less, a <code class="literal">Scene</code> change occurs to load the <code class="literal">Highest</code> level</li><li style="list-style-type: disc">If the active level is the highest, then this value is saved to <code class="literal">PlayerPrefs</code></li></ul></div><p>Add the <code class="literal">LevelSaveRestore</code> script to an empty object in the scene for each and every scene. For each scene, assign the script a number reflecting the level's order in progression. The first level is <span class="emphasis"><em>0</em></span>, the next is <span class="emphasis"><em>1</em></span>, the next is <span class="emphasis"><em>2</em></span>, and so on:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/b2c73550-fcfa-4f04-afab-2983fa853f27.png" /></div><p>Set the level number for a level restore</p><p>Next, add all <span>playable</span> levels to the level list in the <strong class="userinput"><code>Build Settings...</code></strong>:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/d0784caa-2b0a-4d51-b1c2-98951bf1946c.png" /></div><p>Accessing the Build Settings...</p><p>To add levels, choose <strong class="userinput"><code>File</code></strong> | <strong class="userinput"><code>Build Settings...</code></strong>, and then drag and <span>drop</span> every level into the list. Each level should be assigned a unique number and will be recognized by the scene manager as a separate and independent level in the build:</p><div class="mediaobject"><img src="/graphics/9781788479837/graphics/3e1fe96d-891b-4f33-8008-bdda4499c46a.png" /></div><p>Adding scenes to the build list</p><p>Great! You're now ready to go with <span class="emphasis"><em>Dead Keys</em></span>. Each level now has the ability to save its progress, saving the highest level reached. This will be resumed automatically when the player enters any level.</p></div></div>

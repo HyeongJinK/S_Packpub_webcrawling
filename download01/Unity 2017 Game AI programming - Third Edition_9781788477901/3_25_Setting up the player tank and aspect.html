@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec31"></a>Setting up the player tank and aspect</h2></div></div><hr /></div><p>Our <code class="literal">Target</code> object is a simple sphere game <span>object</span><a id="id288183611" class="indexterm"></a> with the mesh render removed, so that we end up with only the <span class="strong"><strong>Sphere Collider</strong></span>. </p><p>Look at the following code in the <code class="literal">Target.cs</code> file:</p><pre class="programlisting">using UnityEngine;
+
+public class Target : MonoBehaviour
+{
+    public Transform targetMarker;
+
+    void Start (){}
+
+    void Update ()
+    {
+        int button = 0;
+
+        //Get the point of the hit position when the mouse is being clicked
+        if(Input.GetMouseButtonDown(button)) 
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hitInfo;
+
+            if (Physics.Raycast(ray.origin, ray.direction, out hitInfo)) 
+            {
+                Vector3 targetPosition = hitInfo.point;
+                targetMarker.position = targetPosition;
+            }
+        }
+    }
+}</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip6"></a>Note</h3><p>You'll notice we left in an empty <code class="literal">Start</code> method in the code. While there is a cost in having empty <code class="literal">Start</code>, <code class="literal">Update</code>, and other <code class="literal">MonoBehaviour</code> events that don't do anything, we can sometimes choose to leave the <code class="literal">Start</code> method in during development, so that the component shows an enable/disable toggle in the inspector.</p></div><p>Attach this script to our <code class="literal">Target</code> object, which is what we assigned in the inspector to the <code class="literal">targetMarker</code> variable. The script detects the mouse click event and then, using a raycast, it detects the mouse click point on the plane in the 3D space. After that, it updates the <code class="literal">Target</code> object to that position in the world space in the scene.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note7"></a>Note</h3><p>A raycast is a feature of the Unity Physics API that shoots a virtual ray from a given origin towards a given direction, and returns data on any colliders hit along the way.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec20"></a>Implementing the player tank</h3></div></div></div><p>Our player tank is the simple tank model we used in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Finite State Machines and You</em></span>, with a kinematic rigid body component attached. The rigid body component is needed in order to generate trigger events whenever we do collision detection with any AI characters. The first thing we need to do is to <span>assign</span><a id="id288570089" class="indexterm"></a> the tag <code class="literal">Player</code> to our tank.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note8"></a>Note</h3><p>The <code class="literal">isKinematic</code> flag in Unity's Rigidbody component makes it so that external forces are ignored, so that you can control the Rigidbody entirely from code or from an animation, while still having access to the Rigidbody API.</p></div><p>The tank is controlled by the <code class="literal">PlayerTank</code> script, which we will create in a moment. This script retrieves the target position on the map and updates its destination point and the direction accordingly.</p><p>The code in the <code class="literal">PlayerTank.cs</code> file is as follows:</p><pre class="programlisting">using UnityEngine;
+
+public class PlayerTank : MonoBehaviour 
+{
+    public Transform targetTransform;
+    public float targetDistanceTolerance = 3.0f;
+
+    private float movementSpeed;
+    private float rotationSpeed;
+
+  // Use this for initialization
+  void Start () 
+    {
+        movementSpeed = 10.0f;
+        rotationSpeed = 2.0f;
+  }
+
+  // Update is called once per frame
+  void Update () 
+    {
+        if (Vector3.Distance(transform.position, targetTransform.position) &lt; targetDistanceTolerance) 
+        {
+            return;
+        }
+
+        Vector3 targetPosition = targetTransform.position;
+        targetPosition.y = transform.position.y;
+        Vector3 direction = targetPosition - transform.position;
+
+        Quaternion tarRot = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, tarRot, rotationSpeed * Time.deltaTime);
+
+        transform.Translate(new Vector3(0, 0, movementSpeed * Time.deltaTime));
+  }
+}</pre><div class="mediaobject"><img src="/graphics/9781788477901/graphics/89981ba5-9c53-4f78-96e3-ec11d53655ca.png" /></div><p>Properties of our tank object
+</p><p>The preceding screenshot shows us a snapshot of our script in the inspector once applied to our tank.</p><p>This script queries the position of the <code class="literal">Target</code> object on the map and updates its destination point and the direction accordingly. After we assign this script to our tank, be sure to assign our <code class="literal">Target</code> object to the <code class="literal">targetTransform</code> variable.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec21"></a>Implementing the Aspect class</h3></div></div></div><p>Next, let's take a look at the <code class="literal">Aspect.cs</code> class. <code class="literal">Aspect</code> is a very simple class with just one public enum of type <code class="literal">AspectTypes</code> called <code class="literal">aspectType</code>. That's all of the variables we need in this component. Whenever our AI <span>character</span><a id="id288319836" class="indexterm"></a> senses something, we'll check the  <code class="literal">aspectType</code> to see whether it's the aspect that the AI has been looking for.</p><p>The code in the <code class="literal">Aspect.cs</code> file looks like this:</p><pre class="programlisting">using UnityEngine;
+
+public class Aspect : MonoBehaviour {
+  public enum AspectTypes {
+    PLAYER,
+    ENEMY,
+  }
+  public AspectTypes aspectType;
+}</pre><p>Attach this aspect script to our player tank and set the <code class="literal">aspectType</code> to <code class="literal">PLAYER</code>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/7c08220e-ca45-4b2e-a40f-fb82c38f8d5e.png" /></div><p>Setting the Aspect Type of the tank
+</p></div></div>

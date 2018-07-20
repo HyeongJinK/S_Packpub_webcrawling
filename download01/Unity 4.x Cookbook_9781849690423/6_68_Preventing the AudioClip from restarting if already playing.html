@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec69"></a>Preventing the AudioClip from restarting if already playing</h2></div></div><hr /></div><p>In a game there may be several different events that cause a sound to start playing. If the sound is already playing, then in almost all cases we don't wish to restart the sound. This recipe includes a test, so that an <span class="strong"><strong>AudioSource</strong></span> component is only sent a <code class="literal">Play()</code> message if it is not currently playing.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec237"></a>Getting ready</h3></div></div></div><p>Try this with any audio clip that is one second or longer in duration.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec238"></a>How to do it...</h3></div></div></div><p>To prevent an <a id="id464" class="indexterm"></a>audio clip from restarting, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create an empty game object named <code class="literal">AudioObject</code>, and add an audio source component to this object.</p></li><li><p>Drag an audio clip file from the <span class="strong"><strong>Project</strong></span> view to populate the <span class="strong"><strong>AudioClip</strong></span> parameter of the <span class="strong"><strong>AudioSource</strong></span> component of <span class="strong"><strong>AudioObject</strong></span>.</p></li><li><p>Add the following script class to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: AvoidSoundRestart.cs
+using UnityEngine;
+
+public class AvoidSoundRestart : MonoBehaviour{
+  public AudioSource audioSource;
+  
+  private void OnGUI(){
+    string statusMessage = "audio source - not playing";
+    if(audioSource.isPlaying )
+       statusMessage = "audio source - playing";
+    
+    GUILayout.Label( statusMessage );
+    
+    bool buttonWasClicked = GUILayout.Button("send Play() message");
+    if( buttonWasClicked )
+      PlaySoundIfNotPlaying();
+  }
+  
+  private void PlaySoundIfNotPlaying(){
+    if( !audioSource.isPlaying )
+      audioSource.Play();
+  }
+}</pre></div></li><li><p>With the <span class="strong"><strong>Main Camera</strong></span> selected in the <span class="strong"><strong>Hierarchy</strong></span> view, drag <span class="strong"><strong>AudioObject</strong></span> into the <span class="strong"><strong>Inspector</strong></span> for the public <span class="strong"><strong>AudioSource</strong></span> variable.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec239"></a>How it works...</h3></div></div></div><p><code class="literal">AudioSource</code> components <a id="id465" class="indexterm"></a>have a public readable property named<a id="id466" class="indexterm"></a> <code class="literal">isPlaying</code>, which is a Boolean true/false flag indicating if the sound is currently playing. The <code class="literal">PlaySoundIfNotPlaying()</code> method<a id="id467" class="indexterm"></a> includes an <code class="literal">if</code> statement ensuring that a <code class="literal">Play()</code> message is only sent to the <code class="literal">AudioSource</code> component<a id="id468" class="indexterm"></a> if its <code class="literal">isPlaying</code> is false.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec240"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Waiting for audio to finish before auto-destructing an object</em></span> recipe.</p></li></ul></div></div></div>

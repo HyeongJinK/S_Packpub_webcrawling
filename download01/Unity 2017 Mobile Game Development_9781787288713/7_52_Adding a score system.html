@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec46"></a>Adding a score system</h2></div></div><hr /></div><p>In order to provide incentive to players to share our game with others, we need to provide a compelling reason to do so. Some people are very competitive and wish to be the best at playing a game, challenging others to do better than them. To help with that, we can allow our players to share a score value via social media. However, to do that, we'll first need to have a scoring system. Thankfully, it's not too difficult to do that, so let's add that in real quick:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Start off by opening the <code class="literal">Gameplay.scene</code> file located in the <code class="literal">Assets/Scenes</code> folder.</li></ol></div><p>To show our players what their score is, we'll need to have some way to show it. In our case, the easiest way would be with a text object.</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>From the <strong class="userinput"><code>Hierarchy</code></strong> window, right-click on the <strong class="userinput"><code>Canvas</code></strong> object and select <strong class="userinput"><code>UI</code></strong> | <strong class="userinput"><code>Text</code></strong>.</li><li>Rename this object <code class="literal">Score Text</code> and use the <strong class="userinput"><code>Anchors Preset</code></strong> menu to the top-center, holding down <span class="emphasis"><em>Shift</em></span> + <span class="emphasis"><em>Alt</em></span> to set the pivot and position as well. Afterward, let's set the <strong class="userinput"><code>RectTransform</code></strong> component's <strong class="userinput"><code>Height</code></strong> property on the object to <code class="literal">50</code> to ensure that we have space to hold the score when we increase the size.</li><li>Next, in the <strong class="userinput"><code>Text component</code></strong>, change the <strong class="userinput"><code>Text property</code></strong> to <code class="literal">0</code> and set the <strong class="userinput"><code>Alignment</code></strong> to be centered. Afterward, set the <strong class="userinput"><code>Font Size</code></strong> to <code class="literal">40</code> so that it's easy to see.</li><li>To improve its readability, let's add another component, the Outline, by going to <strong class="userinput"><code>Add Component</code></strong> and then typing in <code class="literal">Outline</code> and pressing <strong class="userinput"><code>Enter</code></strong>.</li><li>From there, set the <strong class="userinput"><code>Effect Color</code></strong> field to <code class="literal">White</code>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/df47e53e-8cc7-42e2-b84a-f3bf76249697.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Next, open up the <code class="literal">PlayerBehaviour</code> script and add the following line at the top:</li></ol></div><pre class="programlisting">using UnityEngine.UI; // Text</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Afterward, add the following code inside the class:</li></ol></div><pre class="programlisting">private float score = 0; 
+ 
+public Text scoreText; 
+ 
+public float Score 
+{ 
+    get { return score; }  
+    set 
+    { 
+        score = value; 
+ 
+        // Update the text to display the whole number portion  
+        // of the score 
+        scoreText.text = string.Format("{0:0}" ,score); 
+    } 
+}</pre><p>This makes use of C#'s <code class="literal">get</code>/<code class="literal">set</code> functions, which are implicit getters and setters. Basically, any time we get or set the <code class="literal">Score</code> variable, we will execute whatever is located between the <code class="literal">{}</code>. In our case, any time we set the <code class="literal">Score</code> variable, it will update our text for us.</p><p>This has an advantage over what a number of my students do, which is to update the value of the text every frame, which doesn't need to happen. We only need to update the text when the value changes, which makes it perfect for us to use in this situation.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note65"></a>Note</h3><p>For more information on the <code class="literal">get/set</code> accessors, check out <a class="ulink" href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/using-properties" target="_blank"><span>https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/using-properties</span></a>.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Then, update the class to have the following highlighted changes:</li></ol></div><pre class="programlisting">    /// &lt;summary&gt; 
+    /// Use this for initialization 
+    /// &lt;/summary&gt; 
+    new void Start () 
+   { 
+        // Get access to our Rigidbody component 
+       rb = GetComponent&lt;Rigidbody&gt;(); 
+ 
+<span class="strong"><strong>       Score = 0;</strong></span> 
+   } 
+ 
+    /// &lt;summary&gt; 
+    /// Update is called once per frame 
+    /// &lt;/summary&gt; 
+    void Update () 
+   { 
+        // If the game is paused, don't do anything 
+        if (PauseMenuBehaviour.paused) 
+            return; 
+<span class="strong"><strong>        Score += Time.deltaTime;</strong></span> 
+ 
+        // Movement in the x axis 
+        float horizontalSpeed = 0; 
+ 
+   // Rest of Update here... </pre><p>What we are doing here is resetting our score whenever the Player is created and increasing the value while the game isn't paused.</p><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>Save the script and dive back into Unity.</li><li>Select the <strong class="userinput"><code>Player</code></strong> object and drag and drop our <strong class="userinput"><code>Score Text</code></strong> object into the <strong class="userinput"><code>Score Text</code></strong> variable, as follows:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/42d48029-0481-43fa-a26c-f3046008e512.png" /></div><p>Now, as you can see, we have a score for our game, which updates as we play.</p></div>

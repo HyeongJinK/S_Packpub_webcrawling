@@ -1,0 +1,89 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec24"></a>Detecting touch on game objects</h2></div></div><hr /></div><p>It's great to know that our regular input is working, but you may want to check whether a game object in our scene has been touched so that we can react to it. In our case, to add something else for our player to do, we'll make it so that if the player taps an obstacle, it will be destroyed.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>In the <code class="literal">PlayerBehaviour</code> script, add the following new function:</li></ol></div><pre class="programlisting">/// &lt;summary&gt; 
+/// Will determine if we are touching a game object and if so  
+/// call events for it 
+/// &lt;/summary&gt; 
+/// &lt;param name="touch"&gt;Our touch event&lt;/param&gt; 
+private static void TouchObjects(Touch touch) 
+{ 
+    // Convert the position into a ray 
+    Ray touchRay = Camera.main.ScreenPointToRay(touch.position); 
+
+    RaycastHit hit; 
+
+    // Are we touching an object with a collider? 
+    if (Physics.Raycast(touchRay, out hit)) 
+    { 
+        // Call the PlayerTouch function if it exists on a  
+        // component attached to this object 
+        hit.transform.SendMessage("PlayerTouch",  
+                          SendMessageOptions.DontRequireReceiver); 
+    } 
+} </pre><p>Here, we use a different version to determine collision: a raycast. The <span class="strong"><strong>raycast</strong></span> is basically an invisible vector leading in a given direction, and we will use it to check whether it collides with any objects inside of our scenes. This is often used in games, such as first-person shooters, to determine whether the player has hit an enemy or not without spawning a projectile and moving it there.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note33"></a>Note</h3><p>For more information on raycasting, check out <span><a class="ulink" href="https://docs.unity3d.com/ScriptReference/Physics.Raycast.html" target="_blank">https://docs.unity3d.com/ScriptReference/Physics.Raycast.html</a></span>.</p></div><p>If we do hit something, we call a function named <code class="literal">SendMessage</code> on the object that we collided with. This function will attempt to call a function with the same name as the first parameter if it exists on any component on the game object. The second parameter lets us know whether we should display an error if it doesn't exist.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note34"></a>Note</h3><p>For more info on the <code class="literal">SendMessage</code> function, check out <span><a class="ulink" href="https://docs.unity3d.com/ScriptReference/GameObject.SendMessage.html" target="_blank">https://docs.unity3d.com/ScriptReference/GameObject.SendMessage.html</a>.</span></p></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Now, in the <code class="literal">Update</code> function, let's actually call the above-mentioned function:</li></ol></div><pre class="programlisting">    /// &lt;summary&gt; 
+    /// Update is called once per frame 
+    /// &lt;/summary&gt; 
+    void Update()
+    {
+        // Movement in the x axis 
+        float horizontalSpeed = 0;
+
+//Check if we are running either in the Unity editor or in a standalone //build. 
+#if UNITY_STANDALONE || UNITY_WEBPLAYER  || UNITY_EDITOR
+
+        // Check if we're moving to the side 
+        horizontalSpeed = Input.GetAxis("Horizontal") * 
+                            dodgeSpeed; 
+
+    // If the mouse is held down (or the screen is tapped 
+    // on Mobile) 
+    if (Input.GetMouseButton(0)) 
+    { 
+        horizontalSpeed = CalculateMovement(Input.mousePosition); 
+    } 
+
+//Check if we are running on a mobile device 
+#elif UNITY_IOS || UNITY_ANDROID
+
+        if(horizMovement == MobileHorizMovement.Accelerometer)
+        {
+            // Move player based on direction of the accelerometer
+            horizontalSpeed = Input.acceleration.x * dodgeSpeed;
+        }
+
+        // Check if Input has registered more than zero touches 
+        if (Input.touchCount &gt; 0)
+        {
+            // Store the first touch detected. 
+            Touch touch = Input.touches[0];
+
+            if(horizMovement == MobileHorizMovement.ScreenTouch)
+            {
+                horizontalSpeed = CalculateMovement(touch.position); 
+            }
+
+            SwipeTeleport(touch);
+
+<span class="strong"><strong>TouchObjects(touch);</strong></span>
+        }
+
+        #endif
+
+        // Apply our auto-moving and movement forces 
+        rb.AddForce(horizontalSpeed, 0, rollSpeed);
+    }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Finally, we call a <code class="literal">PlayerTouch</code> function if it exists. So, let's open up the <code class="literal">ObstacleBehaviour</code> script and add the following code:</li></ol></div><pre class="programlisting">public GameObject explosion; 
+
+/// &lt;summary&gt; 
+/// If the object is tapped, we spawn an explosion and  
+/// destroy this object 
+/// &lt;/summary&gt; 
+void PlayerTouch() 
+{ 
+    if (explosion != null) 
+    { 
+        var particles = Instantiate(explosion, transform.position, 
+                                Quaternion.identity); 
+        Destroy(particles, 1.0f); 
+    } 
+
+    Destroy(this.gameObject); 
+} </pre><p>This function will basically destroy the game object it is attached to and create an explosion that will also destroy itself after <code class="literal">1</code> second.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note35"></a>Note</h3><p><span>It</span> is possible to get similar results to what we are writing by making use of Unity's <code class="literal">OnMouseDown</code> function. As we have already discussed, it is possible to use mouse events when developing for mobile. Keep in mind, though, that the use of that function is more computationally expensive than the method I'm suggesting here. 
+This is because when you tap the screen, every object that has an <code class="literal">OnMouseDown</code> method will do a raycast to check whether it was touched. When you have many objects on the screen, you'll note massive performance differences between one raycast and <span>one hundred</span>, and it's important to keep performance in mind when dealing with mobile development. For more information on this, check out: <a class="ulink" href="http://answers.unity3d.com/questions/1064394/onmousedown-and-mobile.html" target="_blank">http://answers.unity3d.com/questions/1064394/onmousedown-and-mobile.html</a>.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Save the scripts and dive back into Unity.</li></ol></div><p>We haven't created an explosion particle effect yet, so let's go ahead and do that. To create this effect, we will make use of a <span class="strong"><strong>particle system</strong></span>. We'll be diving into particle systems at a much deeper level in the <a class="link" href="#" linkend="ch09">Chapter 9</a>, <span class="emphasis"><em>Making Our Game Juicy</em></span>, but, for now, we can consider a particle system as a game object that is made as simply as possible so that we can spawn many of them on the screen at once without causing the game to slow down too much. This is mostly used for things such as smoke or fire, but, in this case, we will have our obstacle explode.</p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Create a particle system by going to <strong class="userinput"><code>GameObject</code></strong> | <strong class="userinput"><code>Effects</code></strong> | <strong class="userinput"><code>Particle System</code></strong>.</li><li>Select the game object in the <strong class="userinput"><code>Hierarchy</code></strong> window and then open the <strong class="userinput"><code>Particle System</code></strong> component in the <strong class="userinput"><code>Inspector</code></strong> tab. In there, click on the <strong class="userinput"><code>Renderer</code></strong> section and change <strong class="userinput"><code>RenderMode</code></strong> to <strong class="userinput"><code>Mesh</code></strong> and <strong class="userinput"><code>Material</code></strong> to <strong class="userinput"><code>Default-Material</code></strong> by clicking on the circle next to the name and selecting it from the menu that pops up:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/b5fb6b29-025e-4094-888c-63bcacbe595c.png" /></div><p>This will make the particles look like the obstacles that we've already created as a box with the default material.</p><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Next, under the top <strong class="userinput"><code>Particle System</code></strong> section, change the <strong class="userinput"><code>Gravity Modifier</code></strong> property to <code class="literal">1</code>.</li></ol></div><p>This makes it so the objects will fall over time, much like normal objects with rigid bodies do, but with less computation.</p><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Then, under <strong class="userinput"><code>Start Speed</code></strong>, move to the right side and click on the downward-facing arrow, and from that menu, select <strong class="userinput"><code>Random Between Two Constants</code></strong>. From there, <span>set</span> the two values to <code class="literal">0</code> and <code class="literal">8</code>. </li></ol></div><p>This makes the objects spawned have starting speeds between <code class="literal">0</code> and <code class="literal">8</code>.</p><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Then, change the <strong class="userinput"><code>Start Size</code></strong> to something between <code class="literal">0</code> and <code class="literal">0.25</code>.</li><li>Afterward, change <strong class="userinput"><code>Duration</code></strong> to <code class="literal">1</code> and uncheck the <strong class="userinput"><code>Looping</code></strong> option. This makes it so that the particle system will last only for 1 second, and unchecking looping means that the particle system will happen <span>only once.</span></li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>Finally, change the <strong class="userinput"><code>Start Lifetime</code></strong> property to <code class="literal">1</code> so that we can ensure that all of the particles will be dead before the game object is destroyed.</li><li>Under the <strong class="userinput"><code>Emission</code></strong> section, change <strong class="userinput"><code>Rate over Time</code></strong> to <code class="literal">0</code>. Then, under <strong class="userinput"><code>Bursts</code></strong>, click on the + button and then set <strong class="userinput"><code>Min</code></strong> and <strong class="userinput"><code>Max</code></strong> to <code class="literal">50</code>.</li><li>Then, check <strong class="userinput"><code>Size over Lifetime</code></strong> and click on th<span>e text next to the check-mark t</span>o show more details. From there, change the <strong class="userinput"><code>Size</code></strong> property by selecting a curve that decreases over time so that at the end they'll all be <code class="literal">0</code>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/16f43b27-7648-4e90-8da4-b0eff4215864.png" /></div><p>This will make the particles smaller over time, and they will destroy themselves only after they become invisible.</p><div class="orderedlist"><ol class="orderedlist arabic" start="14" type="1"><li>Finally, check the <strong class="userinput"><code>Collision</code></strong> property and open it, setting the <strong class="userinput"><code>Type</code></strong> property to <strong class="userinput"><code>World</code></strong>. This will cause the particles to hit the ground.</li><li>Change the name of the particle system to <strong class="userinput"><code>Explosion</code></strong>. Then, make your object a prefab by dragging and dropping it from the <strong class="userinput"><code>Hierarchy</code></strong> tab into the <strong class="userinput"><code>Project</code></strong> tab in the <strong class="userinput"><code><code class="literal">Assets/Prefabs</code></code></strong> folder. Once the prefab is created, remove the original from the scene by selecting it and pressing the <span class="emphasis"><em>Delete</em></span> key.</li><li>Afterward, assign it to the <strong class="userinput"><code>Explosion</code></strong> property of the <strong class="userinput"><code>Obstacle Behaviour (Script)</code></strong> in the <code class="literal">Obstacle</code> prefab:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/e18ac5ab-54b5-4b90-a78a-ce43d5f42187.png" /></div><p></p><div class="orderedlist"><ol class="orderedlist arabic" start="17" type="1"><li>Save your project and export it to your mobile device:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/6baf3cda-5775-4805-85ad-c89d2459aee7.png" /></div><p>From now on, whenever we click on the obstacles, they will be destroyed.</p></div>

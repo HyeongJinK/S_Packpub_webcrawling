@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec80"></a>YieldInstruction</h2></div></div><hr /></div><p>When writing<a id="id1315" class="indexterm"></a> a game code, one often ends up needing to script a sequence of events. This could result in code like the following:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+private var state : int = 0;
+function Update() {
+  if (state == 0) {
+       // do step 0
+       Debug.Log("Do step 0");
+       state = 1;
+       return;
+  }
+  if (state == 1) {
+       // do step 1
+       Debug.Log("Do step 1");
+       state = 0;
+       return;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+int state = 0;
+void Update() {
+  if (state == 0) {
+       // do step 0
+       Debug.Log("Do step 0");
+       state = 1;
+       return;
+  }
+  if (state == 1) {
+       // do step 1
+       Debug.Log("Do step 1");
+       state = 0;
+       return;
+  }
+}</pre></div><p>The preceding code basically executes <code class="literal">step 0</code> and <code class="literal">step 1</code> and then goes back to <code class="literal">step 0</code> (as a loop), but if there are more events, execution will happen after <code class="literal">step 1</code> and so on. Too many <code class="literal">if</code> statements can make the code look ugly in the long run. In this case, it's more convenient to use the <code class="literal">yield</code> statement. The <code class="literal">yield</code> statement is a special kind of <code class="literal">return</code> that <a id="id1316" class="indexterm"></a>ensures that the function will continue from the line after <a id="id1317" class="indexterm"></a>the <code class="literal">yield</code> statement is called the next time. The result could be something like the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+function Start() {
+    while (true) { //Use this line instead of Update()
+      //do step 0
+      Debug.Log("Do step 0");
+      yield;  //wait for one frame
+      //do step 1
+      Debug.Log("Do step 1");
+      yield;  //wait for one frame    
+    }
+}
+
+
+<span class="strong"><strong>// C# user</strong></span>
+
+IEnumerator Start() {
+    while (true) { //Use this line instead of Update()
+      //do step 0
+      Debug.Log("Do step 0");
+      yield return null;  //wait for one frame
+      //do step 1
+      Debug.Log("Do step 1");
+      yield return null;  //wait for one frame    
+    }
+}</pre></div><p>The preceding <a id="id1318" class="indexterm"></a>code will have a similar result without having a new variable and an extra <code class="literal">if</code> statement to check for each step event.</p><p>You can also pass special values to the <code class="literal">yield</code> statement to delay the execution of the <code class="literal">Update()</code> function until a certain event has occurred, such as <code class="literal">WaitForSeconds</code>, <code class="literal">WaitForFixedUpdate</code>, <code class="literal">Coroutine</code>, and <code class="literal">StartCoroutine</code>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip43"></a>Tip</h3><p>You cannot use <code class="literal">yield</code> from within <code class="literal">Update()</code> or <code class="literal">FixedUpdate()</code>, but you can use <code class="literal">StartCoroutine</code> to start a function that can use <code class="literal">yield</code>.</p></div></div>

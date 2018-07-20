@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec92"></a>Class declarations</h2></div></div><hr /></div><p>You can <a id="id1344" class="indexterm"></a>define classes in JavaScript in a way that is similar to C#. The following example is a class named <code class="literal">MyClass</code> that inherits from the <code class="literal">MonoBehaviour</code> class:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+class MyClass extends MonoBehaviour {
+  var myVar = 1;
+  function Start() {
+    Debug.Log("Hello World!");
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+class MyClass : MonoBehaviour {
+  public int myVar = 1;
+  void Start() {
+    Debug.Log("Hello World!");
+  }
+}</pre></div><p>However, in JavaScript, if you're inheriting from <code class="literal">MonoBehaviour</code>, you don't need to write a class body at all. You can also write following the script in JavaScript, which will fetch a similar result as the preceding JavaScript example:</p><div class="informalexample"><pre class="programlisting">var myVar = 1;
+function Start() {
+  Debug.Log("Hello World!");
+}</pre></div><p>Unity will <a id="id1345" class="indexterm"></a>automatically implement an explicit class body for you. You can also write classes that do not inherit from anything; however, you cannot place these scripts in the game objects, but you have to instantiate them with the <code class="literal">new</code> keyword<a id="id1346" class="indexterm"></a> as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+class MyClass {
+  var myVar = 1;
+  function MyClass() {
+    Debug.Log("Hello World!");
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+class MyClass {
+  public int myVar = 1;
+  void MyClass() {
+    Debug.Log("Hello World!");
+  }
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note96"></a>Note</h3><p>If you are inheriting from <code class="literal">MonoBehaviour</code>, you should not use constructors or destructors. Instead, use the event handler functions such as <code class="literal">Start()</code>, <code class="literal">Awake()</code>, and <code class="literal">OnEnabled()</code>.</p></div></div>

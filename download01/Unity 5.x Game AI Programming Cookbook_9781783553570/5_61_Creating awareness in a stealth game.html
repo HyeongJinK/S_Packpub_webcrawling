@@ -1,0 +1,163 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec64"></a>Creating awareness in a stealth game</h2></div></div><hr /></div><p>Now that we <a id="id278" class="indexterm"></a>know how to implement sensory-level algorithms, it's time to see how they could be taken into account in order to develop higher-level techniques for creating agent awareness.</p><p>This recipe is based <a id="id279" class="indexterm"></a>on the work of Brook Miles and its team at Klei Entertainment for the game, <span class="emphasis"><em>Mark of the Ninja</em></span>. The mechanism moves around the notion of having interest sources that can be seen or heard by the agents, and a sensory manager handling them.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec220"></a>Getting ready</h3></div></div></div><p>As a lot of things move around the idea of interests, we'll need two data structures for defining an interest's sense and priority, and a data type for the interest itself.</p><p>This is the data structure for sense:</p><div class="informalexample"><pre class="programlisting">public enum InterestSense
+{
+    SOUND,
+    SIGHT
+};</pre></div><p>This is the data structure for priority:</p><div class="informalexample"><pre class="programlisting">public enum InterestPriority
+{
+    LOWEST = 0,
+    BROKEN = 1,
+    MISSING = 2,
+    SUSPECT = 4,
+    SMOKE = 4,
+    BOX = 5,
+    DISTRACTIONFLARE = 10,
+    TERROR = 20
+};</pre></div><p>The following is the interest data type:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public struct Interest
+{
+    public InterestSense sense;
+    public InterestPriority priority;
+    public Vector3 position;
+}</pre></div><p>Before developing <a id="id280" class="indexterm"></a>the necessary classes for implementing this idea, it's important to note that sensory-level functions are left blank in order to keep the recipe flexible and open to our custom implementations. These implementations <a id="id281" class="indexterm"></a>could be developed using some of the previously learned recipes.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec221"></a>How to do it…</h3></div></div></div><p>This is a long recipe where we'll implement two extensive classes. It is advised to carefully read the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's start by creating the class that defines our agents, and its member variables:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class AgentAwared : MonoBehaviour
+{
+    protected Interest interest;
+    protected bool isUpdated = false;
+}</pre></div></li><li><p>Define the function for checking whether a given interest is relevant or not:</p><div class="informalexample"><pre class="programlisting">public bool IsRelevant(Interest i)
+{
+    int oldValue = (int)interest.priority;
+    int newValue = (int)i.priority;
+    if (newValue &lt;= oldValue)
+        return false;
+    return true;
+}</pre></div></li><li><p>Implement the function for setting a new interest in the agent:</p><div class="informalexample"><pre class="programlisting">public void Notice(Interest i)
+{
+    StopCoroutine(Investigate());
+    interest = i;
+    StartCoroutine(Investigate());
+}</pre></div></li><li><p>Define the <a id="id282" class="indexterm"></a>custom function for investigating. This will have our own implementation, and it will take into account the <a id="id283" class="indexterm"></a>agent's interest:</p><div class="informalexample"><pre class="programlisting">public virtual IEnumerator Investigate()
+{
+    // TODO
+    // develop your implementation
+    yield break;
+}</pre></div></li><li><p>Define the custom function for leading. This will define what an agent does when it's in charge of giving orders, and will depend on our own implementation:</p><div class="informalexample"><pre class="programlisting">public virtual IEnumerator Lead()
+{
+    // TODO
+    // develop your implementation
+    yield break;
+}</pre></div></li><li><p>Create the class for defining interest sources:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class InterestSource : MonoBehaviour
+{
+    public InterestSense sense;
+    public float radius;
+    public InterestPriority priority;
+    public bool isActive;
+}</pre></div></li><li><p>Implement a <a id="id284" class="indexterm"></a>property for retrieving its interest:</p><div class="informalexample"><pre class="programlisting">public Interest interest
+{
+    get
+    {
+        Interest i;
+        i.position = transform.position;
+        i.priority = priority;
+        i.sense = sense;
+        return i;
+    }
+}</pre></div></li><li><p>Define the function for checking whether or not the agent is affected by the interest source. This could be defined in the agent's class, but it requires some changes in some of the next steps. This is one of the sensory-level functions:</p><div class="informalexample"><pre class="programlisting">protected bool IsAffectedSight(AgentAwared agent)
+{
+    // TODO
+    // your sight check implementation
+    return false;
+}</pre></div></li><li><p>Implement the next sensory-level function for checking if an agent is affected by sound. It has the same architectural considerations as the previous step:</p><div class="informalexample"><pre class="programlisting">protected bool IsAffectedSound(AgentAwared agent)
+{
+    // TODO
+    // your sound check implementation
+    return false;
+}</pre></div></li><li><p>Define the function for getting the list of agents affected by the interest source. It is <a id="id285" class="indexterm"></a>declared virtual, in case we need to <a id="id286" class="indexterm"></a>specify further, or simply change the way it works:</p><div class="informalexample"><pre class="programlisting">public virtual List&lt;AgentAwared&gt; GetAffected(AgentAwared[] agentList)
+{
+    List&lt;AgentAwared&gt; affected;
+    affected = new List&lt;AgentAwared&gt;();
+    Vector3 interPos = transform.position;
+    Vector3 agentPos;
+    float distance;
+    // next steps
+}</pre></div></li><li><p>Start creating the main loop for traversing the list of agents and return the list of affected ones:</p><div class="informalexample"><pre class="programlisting">foreach (AgentAwared agent in agentList)
+{
+    // next steps
+}
+return affected;</pre></div></li><li><p>Discriminate an agent if it is out of the source's action radius:</p><div class="informalexample"><pre class="programlisting">agentPos = agent.transform.position;
+distance = Vector3.Distance(interPos, agentPos);
+if (distance &gt; radius)
+    continue;</pre></div></li><li><p>Check whether the agent is affected, given the source's type of sense:</p><div class="informalexample"><pre class="programlisting">bool isAffected = false;
+switch (sense)
+{
+    case InterestSense.SIGHT:
+        isAffected = IsAffectedSight(agent);
+        break;
+    case InterestSense.SOUND:
+        isAffected = IsAffectedSound(agent);
+        break;
+}</pre></div></li><li><p>If the agent is affected, add it to the list:</p><div class="informalexample"><pre class="programlisting">if (!isAffected)
+    continue;
+affected.Add(agent);</pre></div></li><li><p>Next, create the class for the sensory manager:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class SensoryManager : MonoBehaviour
+{
+    public List&lt;AgentAwared&gt; agents;
+    public List&lt;InterestSource&gt; sources;   
+}</pre></div></li><li><p>Implement <a id="id287" class="indexterm"></a>its <code class="literal">Awake</code> function:</p><div class="informalexample"><pre class="programlisting">public void Awake()
+{
+    agents = new List&lt;AgentAwared&gt;();
+    sources = new List&lt;InterestSource&gt;();
+}</pre></div></li><li><p>Declare the <a id="id288" class="indexterm"></a>function for getting a set of scouts, given a group of agents:</p><div class="informalexample"><pre class="programlisting">public List&lt;AgentAwared&gt; GetScouts(AgentAwared[] agents, int leader = -1)
+{
+    // next steps
+}</pre></div></li><li><p>Validate according to the number of agents:</p><div class="informalexample"><pre class="programlisting">if (agents.Length == 0)
+    return new List&lt;AgentAwared&gt;(0);
+if (agents.Length == 1)
+    return new List&lt;AgentAwared&gt;(agents);</pre></div></li><li><p>Remove the leader, if given its index:</p><div class="informalexample"><pre class="programlisting">List&lt;AgentAwared&gt; agentList;
+agentList = new List&lt;AgentAwared&gt;(agents);
+if (leader &gt; -1)
+    agentList.RemoveAt(leader);</pre></div></li><li><p>Calculate the number of scouts to retrieve:</p><div class="informalexample"><pre class="programlisting">List&lt;AgentAwared&gt; scouts;
+scouts = new List&lt;AgentAwared&gt;();
+float numAgents = (float)agents.Length;
+<span class="strong"><strong>int numScouts = (int)Mathf.Log(numAgents, 2f);</strong></span>
+</pre></div></li><li><p>Get random scouts from the list of agents:</p><div class="informalexample"><pre class="programlisting">while (numScouts != 0)
+{
+    int numA = agentList.Count;
+    int r = Random.Range(0, numA);
+    AgentAwared a = agentList[r];
+    scouts.Add(a);
+    agentList.RemoveAt(r);
+    numScouts--;
+}</pre></div></li><li><p>Retrieve <a id="id289" class="indexterm"></a>the scouts:</p><div class="informalexample"><pre class="programlisting">return scouts;</pre></div></li><li><p>Define the <a id="id290" class="indexterm"></a>function for checking the list of interest sources:</p><div class="informalexample"><pre class="programlisting">public void UpdateLoop()
+{
+    List&lt;AgentAwared&gt; affected;
+    AgentAwared leader;
+    List&lt;AgentAwared&gt; scouts;
+    foreach (InterestSource source in sources)
+    {
+        // next steps
+    }
+}</pre></div></li><li><p>Avoid inactive sources:</p><div class="informalexample"><pre class="programlisting">if (!source.isActive)
+    continue;
+source.isActive = false;</pre></div></li><li><p>Avoid sources that don't affect any agent:</p><div class="informalexample"><pre class="programlisting">affected = source.GetAffected(agents.ToArray());
+if (affected.Count == 0)
+    continue;</pre></div></li><li><p>Get a random leader and the set of scouts:</p><div class="informalexample"><pre class="programlisting">int l = Random.Range(0, affected.Count);
+leader = affected[l];
+scouts = GetScouts(affected.ToArray(), l);</pre></div></li><li><p>Call the leader to its role if necessary:</p><div class="informalexample"><pre class="programlisting">if (leader.Equals(scouts[0]))
+    StartCoroutine(leader.Lead());</pre></div></li><li><p>Finally, inform <a id="id291" class="indexterm"></a>the scouts about noticing the interest, in case it's relevant to them:</p><div class="informalexample"><pre class="programlisting">foreach (AgentAwared a in scouts)
+{
+    Interest i = source.interest;
+    if (a.IsRelevant(i))
+        a.Notice(i);
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec222"></a>How it works…</h3></div></div></div><p>There is a list of interest sources that could get the attention of a number of agents in the world. Those lists are kept in a manager that handles the global update for every source, taking into account only the active ones.</p><p>An interest <a id="id292" class="indexterm"></a>source receives the list of agents in the world and <a id="id293" class="indexterm"></a>retrieves only the affected agents after a two-step process. First, it sets aside all the agents that are outside its action radius and then only takes into account those agents that can be reached with a finer (and more expensive) sensory-level mechanism.</p><p>The manager handles the affected agents, sets up a leader and scouts, and finally</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec223"></a>There is more…</h3></div></div></div><p>It is worth mentioning that the <code class="literal">SensoryManager</code> class works as a hub to store and organize the list of agents and the list of interest sources, so it ought to be a singleton. Its duplication could bring undesired complexity or behavior.</p><p>An agent's interest is automatically changed by the sensory manager using the priority values. Still, it can be reset when needed, using the public function <code class="literal">Notice</code>.</p><p>There is room for improvement still, depending on our game. The scout lists can overlap with each other, and it's up to us and our game to handle this scenario the best way we can. However, the system <a id="id294" class="indexterm"></a>we built takes advantage of the priority <a id="id295" class="indexterm"></a>values to make decisions.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec224"></a>See also</h3></div></div></div><p>For further information on the train of thought behind this recipe, please refer to Steve Rabin's book, <span class="emphasis"><em>Game AI Pro</em></span>.</p></div></div>

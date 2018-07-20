@@ -1,0 +1,38 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec79"></a>Coroutines</h2></div></div><hr /></div><p>
+<code class="literal">StartCoroutine</code> returns a <code class="literal">Coroutine</code>. Instances of this class are only used to reference these <code class="literal">coroutines</code> and do not hold any exposed properties or functions.</p><p>A <code class="literal">coroutine</code> is a<a id="id1313" class="indexterm"></a> function that can suspend its <code class="literal">yield</code> execution until the given <code class="literal">YieldInstruction</code> class finishes calling.</p><p>An<a id="id1314" class="indexterm"></a> example of <code class="literal">coroutine</code> is as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span>
+
+function Start() {
+  // Starting = 0.0
+  Debug.Log ("Starting = " + Time.time);
+  // Start function WaitAndPrint as a Coroutine
+  yield WaitAndPrint(); 
+  // Done WaitAndPrint = 5.0
+  Debug.Log ("Done WaitAndPrint = " + Time.time);
+}
+
+function WaitAndPrint() {
+  //Suspend execution for 5 seconds 
+  yield WaitForSeconds(5);
+  // WaitAndPrint = 5.0
+  Debug.Log ("WaitAndPrint = " + Time.time);
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+IEnumerator Start() {
+  // Starting = 0.0
+  Debug.Log ("Starting = " + Time.time);
+  // Start function WaitAndPrint as a Coroutine
+  yield return WaitAndPrint(); 
+  // Done WaitAndPrint = 5.0
+  Debug.Log ("Done WaitAndPrint = " + Time.time);
+}
+
+IEnumerator WaitAndPrint() {
+  //Suspend execution for 5 seconds 
+  yield return new WaitForSeconds(5f);
+  // WaitAndPrint = 5.0
+  Debug.Log ("WaitAndPrint = " + Time.time);
+}</pre></div></div>

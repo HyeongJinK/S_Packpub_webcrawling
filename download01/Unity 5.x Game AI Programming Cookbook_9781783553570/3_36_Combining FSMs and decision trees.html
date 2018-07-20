@@ -1,0 +1,45 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec41"></a>Combining FSMs and decision trees</h2></div></div><hr /></div><p>Given the <a id="id154" class="indexterm"></a>previous recipes'<a id="id155" class="indexterm"></a> ease of implementation and learning, we can combine them to develop a powerful decision-making system with benefits from both worlds, making it a very powerful technique in many different scenarios.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec135"></a>Getting ready</h3></div></div></div><p>We will learn how to make modifications and develop child classes in order to create a finite-state machine that is capable of creating complex transitions based on decision trees.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec136"></a>How to do it...</h3></div></div></div><p>This recipe relies on creating a couple of child classes from the one we already know and making a little modification:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new action class that holds a reference to a state:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ActionState : DecisionTreeNode
+{
+    public State state;
+
+    public override DecisionTreeNode MakeDecision()
+    {
+        return this;
+    }
+}</pre></div></li><li><p>Implement a transition class that is able to hold a decision tree:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class TransitionDecision : Transition
+{
+    public DecisionTreeNode root;
+
+    public State GetState()
+    {
+        ActionState action;
+        action = root.MakeDecision() as ActionState;
+        return action.state;
+    }
+}</pre></div></li><li><p>Modify <a id="id156" class="indexterm"></a>the <a id="id157" class="indexterm"></a>
+<code class="literal">LateUpdate</code> function in the <code class="literal">State</code> class to support both transition types:</p><div class="informalexample"><pre class="programlisting">public void LateUpdate()
+{
+    foreach (Transition t in transitions)
+    {
+        if (t.condition.Test())
+        {
+                  State target;
+            if (t.GetType().Equals(typeof(TransitionDecision)))
+
+                TransitionDecision td = t as TransitionDecision;
+                target = td.GetState();
+            }
+            else
+                target = t.target;
+            target.enabled = true;
+            this.enabled = false;
+            return;
+        }
+    }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec137"></a>How it works...</h3></div></div></div><p>The modification on the <code class="literal">State</code> class lets us deal with the new type of transition. The new child classes are specific types created to trick both systems and obtain the desired result of having an action node that doesn't do anything itself, but returns a new state to be activated after <a id="id158" class="indexterm"></a>choosing <a id="id159" class="indexterm"></a>with a decision tree.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec138"></a>See also</h3></div></div></div><p>Refer to the following recipes:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="emphasis"><em>Choosing through a decision tree</em></span></p></li><li style="list-style-type: disc"><p><span class="emphasis"><em>Working a finite-state machine</em></span></p></li></ul></div></div></div>

@@ -1,0 +1,22 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec68"></a>Negamaxing</h2></div></div><hr /></div><p>When we have a <a id="id303" class="indexterm"></a>zero-sum game with only two players involved, we are able to improve Minimax, taking advantage of the principle that one player's loss is the other's gain. In this way, it is able to provide the same results as the Minimax algorithm. However, it does not track whose move it is.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec233"></a>Getting ready…</h3></div></div></div><p>It is important to know the difference between a dynamic member function and a static member function, as well as recursion. A dynamic member function is bound to the instance of the class, while a static member function is bound to the class itself. The static method allows us to call it without instantiating an object. This is great for general-purpose algorithms, such as the one we are developing in this recipe.</p><p>In the case of recursion, it's not always clear that (unlike iteration) this is an iterative process that requires a base case (also called the stop condition) and a recursive case (the one to keep iterating).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec234"></a>How to do it…</h3></div></div></div><p>We will add a new function to the <code class="literal">BoardAI</code> class as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Negamax</code> function:</p><div class="informalexample"><pre class="programlisting">public static float Negamax(
+        Board board,
+        int maxDepth,
+        int currentDepth,
+        ref Move bestMove)
+{
+    // next steps here   
+}</pre></div></li><li><p>Validate the base case:</p><div class="informalexample"><pre class="programlisting">if (board.IsGameOver() || currentDepth == maxDepth)
+    return board.Evaluate();</pre></div></li><li><p>Set the initial values:</p><div class="informalexample"><pre class="programlisting">bestMove = null;
+float bestScore = Mathf.NegativeInfinity;</pre></div></li><li><p>Loop through all the available moves and return the best score:</p><div class="informalexample"><pre class="programlisting">foreach (Move m in board.GetMoves())
+{
+    // next steps here
+}
+return bestScore;</pre></div></li><li><p>Create a <a id="id304" class="indexterm"></a>new game state from the current move:</p><div class="informalexample"><pre class="programlisting">Board b = board.MakeMove(m);
+float recursedScore;
+Move currentMove = null;</pre></div></li><li><p>Start the recursion:</p><div class="informalexample"><pre class="programlisting">recursedScore = Negamax(b, maxDepth, currentDepth + 1, ref currentMove);</pre></div></li><li><p>Set the current score and update the best score and move, if necessary:</p><div class="informalexample"><pre class="programlisting">float currentScore = -recursedScore;
+if (currentScore &gt; bestScore)
+{
+    bestScore = currentScore;
+    bestMove = m;
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec235"></a>How it works…</h3></div></div></div><p>The base algorithm works the same but, as we did before, there are some advantages. At each step in the recursion, the scores from the previous steps have their sign inverted. Instead of choosing the best option, the algorithm changes the sign of the score, eliminating the need to track whose move it is.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec236"></a>There's more…</h3></div></div></div><p>As Negamax alternates the viewpoints between players at each step, the evaluate function used is the one with no parameters.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec237"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Working with the game-tree class</em></span> recipe</p></li><li style="list-style-type: disc"><p>The <a id="id305" class="indexterm"></a>
+<span class="emphasis"><em>Minimax</em></span> recipe</p></li></ul></div></div></div>

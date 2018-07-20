@@ -1,0 +1,19 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec7"></a>Obtain Components using the fastest method</h2></div></div><hr /></div><p>There are several variations of the <code class="literal">GetComponent()</code> method, and they each have a different performance cost, so it becomes prudent to call the fastest possible version of this method. The three overloads available are <code class="literal">GetComponent(string)</code>, <code class="literal">GetComponent&lt;T&gt;()</code>, and <code class="literal">GetComponent(typeof(T))</code>. It turns out that the fastest version depends on which version of Unity we are running since several optimizations have been made to these methods through the years; however, in all later versions of Unity 5 and the initial release of Unity 2017, it is best to use the <code class="literal">GetComponent&lt;T&gt;()</code> variant.</p><p>Let's prove this with some simple testing:</p><pre class="programlisting">int numTests = 1000000;
+TestComponent test;
+using (new CustomTimer("GetComponent(string)", numTests)) {
+  for (var i = 0; i &lt; numTests; ++i) {
+    test = (TestComponent)GetComponent("TestComponent");
+  }
+}
+
+using (new CustomTimer("GetComponent&lt;ComponentName&gt;", numTests)) {
+  for (var i = 0; i &lt; numTests; ++i) {
+    test = GetComponent&lt;TestComponent&gt;();
+  }
+}
+
+using (new CustomTimer("GetComponent(typeof(ComponentName))", numTests))  {
+  for (var i = 0; i &lt; numTests; ++i) {
+    test = (TestComponent)GetComponent(typeof(TestComponent));
+  }
+}</pre><p>The preceding code tests each of the <code class="literal">GetComponent()</code> overloads a million times. This is far more tests than would be sensible for a typical project, but it helps make the relative costs clear.</p><p>Here is the result we get when the tests complete:</p><div class="mediaobject"><img src="/graphics/9781788392365/graphics/249c2d7b-8337-4404-845d-8c349d85d07f.png" /></div><p>As you can see, the <code class="literal">GetComponent&lt;T&gt;()</code> method is only a tiny fraction faster than <code class="literal">GetComponent(typeof(T))</code>, whereas <code class="literal">GetComponent(string)</code> is significantly slower than the alternatives. Therefore, it is pretty safe to use either of the type-based versions of <code class="literal">GetComponent()</code> because of the small performance difference. However, we should ensure that we never use <code class="literal">GetComponent(string)</code> since the outcome is identical, and there is no benefit for the costs incurred. There are some very rare exceptions, like if we were writing a custom debug console for Unity, which might parse a user-inputted <code class="literal">string</code> to acquire a Component. In any case, these would be used for debugging and diagnostics situations only, where performance isn't too important. For a production-level application, the use of <code class="literal">GetComponent(string)</code> is just a needless waste.</p></div>

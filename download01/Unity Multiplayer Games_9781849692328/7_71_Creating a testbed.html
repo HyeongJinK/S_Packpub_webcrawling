@@ -1,0 +1,153 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec72"></a>Creating a testbed</h2></div></div><hr /></div><p>Before we create <a id="id306" class="indexterm"></a>our rewinding system, we'll need a demo game to build off. For this one, we'll create a simple first person shooter (there is a pre-made first person controller asset included with Unity). Players can click to shoot, which will deal with 10 damages to the target. After receiving 100 or more damages, the player is disconnected from the match.</p><p>First, we'll start on an empty project. Import the <span class="strong"><strong>Character Controller</strong></span> package (<span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Import Package</strong></span> | <span class="strong"><strong>Character Controller</strong></span>). This includes a first person character controller prefab (<span class="strong"><strong>Standard Assets</strong></span> | <span class="strong"><strong>Character Controllers</strong></span> | <span class="strong"><strong>First Person Controller</strong></span>).</p><div class="mediaobject"><img src="/graphics/9781849692328/graphics/2328OT_07_03.jpg" /></div><p>Drag this prefab into your scene. Additionally, create a plane for the character to stand on (make sure it's big enough for several players to run around).</p><p>The first thing we'll <a id="id307" class="indexterm"></a>do is create a script for our networked player. For the sake of the demonstration we'll use a very simple method of interpolation.</p><p>Firstly, the base script. We only need three functions here: <code class="literal">Start</code>, <code class="literal">Update</code>, and <code class="literal">OnSerializeNetworkView</code>.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class NetworkPlayer : MonoBehaviour
+{
+  private Transform camTransform;
+
+  private Vector3 lastReceivedPos;
+  private Quaternion lastReceivedRot;
+  private Quaternion lastReceivedCamRot;
+
+  void Start()
+  {
+  }
+
+  void Update()
+  {
+  }
+
+  void OnSerializeNetworkView( BitStream stream, NetworkMessageInfo info )
+  {
+  }
+}</pre></div><p>In <code class="literal">Start</code>, we'll <a id="id308" class="indexterm"></a>get a reference to the camera transform, and disable scripts as needed, depending on whether this a local or remote player:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+  // get camera transform
+  camTransform = GetComponentInChildren&lt;Camera&gt;().transform;
+
+
+  // if this doesn't belong to the local player, disable input and camera
+  if( !networkView.isMine )
+  {
+    GetComponent&lt;FPSInputController&gt;().enabled = false;
+    camTransform.camera.enabled = false;
+  }
+}</pre></div><p>In <code class="literal">OnSerializeNetworkView</code>, we'll serialize the position of the player, rotation of the player, and rotation of the camera:</p><div class="informalexample"><pre class="programlisting">void OnSerializeNetworkView( BitStream stream, NetworkMessageInfo info )
+{
+  if( stream.isWriting )
+  {
+    // serialize position and rotation
+    Vector3 position = transform.position;
+    Quaternion rotation = transform.rotation;
+    Quaternion camRotation = camTransform.localRotation;
+      
+    stream.Serialize( ref position );
+    stream.Serialize( ref rotation );
+    stream.Serialize( ref camRotation );
+  }
+  else
+  {
+    // deserialize position and rotation
+    Vector3 position = Vector3.zero;
+    Quaternion rotation = Quaternion.identity;
+    Quaternion camRotation = Quaternion.identity;
+
+    stream.Serialize( ref position );
+    stream.Serialize( ref rotation );
+    stream.Serialize( ref camRotation );
+
+    // store values to be interpolated towards
+    lastReceivedPos = position;
+    lastReceivedRot = rotation;
+    lastReceivedCamRot = camRotation;
+  }
+}</pre></div><p>Finally, in <code class="literal">Update</code> <a id="id309" class="indexterm"></a>we'll interpolate toward the values received over the network:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  // interpolate towards last received network state
+  if( !networkView.isMine )
+  {
+    transform.position = Vector3.Lerp( transform.position, lastReceivedPos, Time.deltaTime * 10f );
+    transform.rotation = Quaternion.Slerp( transform.rotation, lastReceivedRot, Time.deltaTime * 10f );
+    camTransform.localRotation = Quaternion.Slerp( camTransform.localRotation, lastReceivedCamRot, Time.deltaTime * 10f );
+  }
+}</pre></div><p>With this code the server now has enough information to perform hitscans: it has the position of the player, the player orientation, and the player look direction (camera rotation).</p><p>Next, we'll create the base script for our weapon. This is equivalent to the first naive weapon script introduced earlier:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class WeaponScript : MonoBehaviour
+{
+  public float Damage = 10f;
+
+  public LayerMask HitLayers = ~0;
+  // note: ~ [tilde] is the unary complement operator - basically it flips all bits of input
+  // LayerMask, internally, is actually a bitmask where each bit represents a layer – every bit enabled includes the given layer in the mask (this is why there are 32 layers - there are 32 bits in an integer). No bits on (zero) means an empty layermask,
+  // in the number 0, all bits are zero. ~0 is the opposite - all bits are on (and is equal to int.MaxValue). This equivalent to an "Everything" layermask.
+
+  void Update()
+  {
+    // if this is the local network view, and the user presses the left mouse button, call the Fire function
+    if( networkView.isMine &amp;&amp; Input.GetMouseButtonDown( 0 ) )
+    {
+      Fire();
+    }
+  }
+
+  void Fire()
+  {
+    RaycastHit hit;
+    if( Physics.Raycast( transform.position, transform.forward, out hit, 100f, HitLayers ) )
+    {
+      // let a script on the object handle taking damage
+      hit.collider.SendMessage( "TakeDamage", Damage, SendMessageOptions.DontRequireReceiver );
+    }
+  }
+}</pre></div><p>This goes on<a id="id310" class="indexterm"></a> the camera (you'll need to attach a network view to it as well).</p><p>We'll also create a damage component:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Damage : MonoBehaviour
+{
+  public float Health = 100f;
+
+  void TakeDamage( float damage )
+  {
+    if( !Network.isServer )
+    {
+      // send an RPC to the server
+      networkView.RPC( "serverTakeDamage", RPCMode.Server, damage );
+    }
+    else
+    {
+      // note: RPCs with RPCMode.Server, sent from the server "to itself" will not work, the RPC simply fails silently.
+      // so we'll manually call the function instead
+      serverTakeDamage( damage );
+    }
+  }
+
+  [RPC]
+  void serverTakeDamage( float damage )
+  {
+    // make sure the player isn't already dead
+    if( Health &lt;= 0 ) return;
+      
+    // subtract damage from health
+    Health -= damage;
+
+    // check if player is dead
+    if( Health &lt;= 0f )
+    {
+      // kick player out of the game when they die
+      Network.CloseConnection( networkView.owner, true );
+    }
+  }
+}</pre></div><p>Whenever the<a id="id311" class="indexterm"></a> component receives the <code class="literal">TakeDamage</code> message, it will send a message to the server which subtracts the damage value from <code class="literal">Health</code>. If <code class="literal">Health</code> hits zero, the player is kicked out of the game.</p><p>Finally, we'll create a spawn script for our player:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SpawnScript : MonoBehaviour
+{
+  public GameObject PlayerObject;
+
+  void Start()
+  {
+    // spawn the player object
+    Network.Instantiate( PlayerObject, transform.position, transform.rotation, 0 );
+  }
+}</pre></div><p>Attach this to an empty game object in the scene and drag your player prefab onto the <code class="literal">PlayerObject</code> slot.</p><p>I won't cover how to create a main menu for this demo. You can refer to <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Unity Networking – The Pong Game</em></span> for the example code.</p><p>By now, you should<a id="id312" class="indexterm"></a> have a fully functioning testbed. We're now going to modify this to add our server-side hit detection.</p></div>

@@ -1,0 +1,111 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec48"></a>Events</h2></div></div><hr /></div><p>Game worlds are fully deterministic systems; in Unity, the scene represents a shared 3D Cartesian space and timeline inside which finite <code class="literal">GameObjects</code> exist. Things only happen within this space when the<a id="id296" class="indexterm"></a> game logic and code permits them to. For example, objects can only move when there is code somewhere that tells them to do so, and under specific conditions, such as when the player presses specific buttons on the keyboard. Notice from the example that behaviors are not simply random but are interconnected; objects move only when keyboard events occur. There is an important connection established between the actions, where one action entails another. These connections or linkages are referred to as events; each unique connection being a single event. Events are not active but passive; they represent moments of opportunity but not action in themselves, such as a key press, a mouse click, an object entering a collider volume, the player being attacked, and so on. These are examples of events and none of them say what the program should actually do, but only the kind of scenario that just happened. Event-driven programming starts with the recognition of events as a general concept and comes to see almost every circumstance in a game as an instantiation of an event; that is, as an event situated in time, not just an event concept but as a specific event that happens at a specific time. Understanding game events like these is helpful because all actions in a game can then be seen as direct responses to events as and when they happen. Specifically, events are connected to responses; an event happens and triggers a response. Further, the response can go on to become an event that triggers further responses and so on. In other words, the game world is a complete, integrated system of events and responses. Once<a id="id297" class="indexterm"></a> the world is seen this way, the question then arises as to how it can help us improve performance over simply relying on the <code class="literal">Update</code> functions to move behaviors forward on every frame. And the method is simply by finding ways to reduce the frequency of events. Now, stated in this way, it may sound a crude strategy, but it's important. To illustrate, let's consider the example of an enemy character firing a weapon at the player during combat.</p><p>Throughout the gameplay, the enemy will need to keep track of many properties. Firstly, their health, because when it runs low the enemy should seek out medical kits and aids to restore their health again. Secondly, their ammo, because when it runs low the enemy should seek to collect more and also the enemy will need to make reasoned judgments about when to fire at the player, such as only when they have a clear line of sight. Now, by simply thinking about this scenario, we've already identified some connections between actions that might be identified as events. But before taking this consideration further, let's see how we might implement this behavior using an <code class="literal">Update</code> function, as shown in the following code sample 4-1. Then, we'll look at how events can help us improve on that implementation:</p><div class="informalexample"><pre class="programlisting"> // Update is called once per frame
+ void Update () 
+ {
+    //Check enemy health
+    //Are we dead?
+    if(Health &lt;= 0)
+    {
+          //Then perform die behaviour
+          Die();
+          return;
+    }
+ 
+    //Check for health low
+    if(health &lt;= 20)
+    {
+          //Health is low, so find first-aid
+          RunAndFindHealthRestore();
+          return;
+    }
+ 
+    //Check ammo
+ 
+    //Have we run out of ammo?
+    if(Ammo &lt;= 0)
+    {
+          //Then find more
+          SearchMore();
+          return;
+    }
+ 
+    //Health and ammo are fine. Can we see player? If so, shoot
+    if(HaveLineOfSight)
+    {
+            FireAtPlayer();
+   }
+ }</pre></div><p>The preceding code sample 4-1 shows a heavy <code class="literal">Update</code> function filled with lots of condition checking and responses. In essence, the <code class="literal">Update</code> function attempts to merge event handling and response behaviors into one and the results in an unnecessarily expensive process. If we think about the event connections between these different processes (the health and ammo check), we see how the code could be refactored more neatly. For example, ammo only changes on two occasions: when a weapon is fired or when new ammo is <a id="id298" class="indexterm"></a>collected. Similarly, health only changes on two occasions: when an enemy is successfully attacked by the player or when an enemy collects a first-aid kit. In the first case, there is a reduction, and in the latter case, an increase.</p><p>Since these are the only times when the properties change (the events), these are the only points where their values need to be validated. See the following code sample 4-2 for a refactored enemy, which includes C# properties and a much reduced <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting"> using UnityEngine;
+ using System.Collections;
+ 
+ public class EnemyObject : MonoBehaviour 
+ {
+    //-------------------------------------------------------
+    //C# accessors for private variables
+<span class="strong"><strong>    public int Health</strong></span>
+    {
+          get{return _health;}
+          set
+          {
+                //Clamp health between 0-100
+               _health = Mathf.Clamp(value, 0, 100);
+ 
+                //Check if dead
+                if(_health &lt;= 0)
+                {
+                      OnDead();
+                      return;
+                }
+ 
+                //Check health and raise event if required
+                if(_health &lt;= 20)
+                {
+                      OnHealthLow();
+                      return;
+                }
+          }
+    }
+    //-------------------------------------------------------
+<span class="strong"><strong>    public int Ammo</strong></span>
+    {
+          get{return _ammo;}
+          set
+          {
+               //Clamp ammo between 0-50
+              _ammo = Mathf.Clamp(value,0,50);
+                //Check if ammo empty
+                if(_ammo &lt;= 0)
+                {
+                      //Call expired event
+                      OnAmmoExpired();
+                      return;
+                }
+          }
+    }
+    //-------------------------------------------------------
+   //Internal variables for health and ammo
+<span class="strong"><strong>    private int _health = 100;</strong></span>
+<span class="strong"><strong>    private int _ammo = 50;</strong></span>
+    //-------------------------------------------------------
+    // Update is called once per frame
+    void Update () 
+    {
+    }
+    //-------------------------------------------------------
+    //This event is called when health is low
+   <span class="strong"><strong>void OnHealthLow()</strong></span>
+    {
+          //Handle event response here
+    }
+    //-------------------------------------------------------
+    //This event is called when enemy is dead
+<span class="strong"><strong>    void OnDead()</strong></span>
+    {
+        //Handle event response here
+    }
+    //-------------------------------------------------------
+    //Ammo run out event
+<span class="strong"><strong>    void OnAmmoExpired()</strong></span>
+    {
+        //Handle event response here
+    }
+    //-------------------------------------------------------
+ }</pre></div><p>The enemy class in the code sample 4-2 has been refactored to an event-driven design, where properties such as <code class="literal">Ammo</code> and <code class="literal">Health</code> are validated not inside the <code class="literal">Update</code> function but on assignment. From here, events are raised wherever appropriate based on the newly assigned values. By adopting an event-driven design, we introduce performance optimization and <a id="id299" class="indexterm"></a>cleanness into our code; we reduce the excess baggage and value checks as found with the <code class="literal">Update</code> function in the code sample 4-1, and instead we only allow value-specific events to drive our code, knowing they'll be invoked only at the relevant times.</p></div>

@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec57"></a>Info bubble</h2></div></div><hr /></div><p>In a comic book, when a <span>character</span><a id="id325317266" class="indexterm"></a> says something, it's shown in a <span class="emphasis"><em>speech bubble</em></span>. In many online social VR worlds, participants are represented by avatars and, hovering above someone's avatar, their name is displayed. I'll call this type of user interface an <span class="emphasis"><em>info bubble</em></span>.</p><p>Info bubbles are located in world space at a specific 3D position, but the canvas should always be facing the camera. We can ensure this with a script.</p><p>In this example, we'll display the <strong class="userinput"><code>X</code></strong>, <strong class="userinput"><code>Z</code></strong> location of the <code class="literal">WalkTarget</code> object (set up in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>Gaze-Based Control</em></span>), controlled by the <code class="literal">LookMoveTo.cs</code> script. To add the info bubble, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>From the <strong class="userinput"><code>Project</code></strong> window, drag the <code class="literal">DefaultCanvas</code> prefab directly into the <strong class="userinput"><code>Hierarchy</code></strong> window so that it's a child of <code class="literal">WalkTarget</code>.</li><li>Rename it to <code class="literal">InfoBubble</code>.</li><li>With <code class="literal">InfoBubble</code> selected, set the <strong class="userinput"><code>Rect Transform</code></strong> component's <strong class="userinput"><code>Pos X</code></strong>, <strong class="userinput"><code>Pos Y</code></strong>, <strong class="userinput"><code>Pos Z</code></strong> to (<code class="literal">0</code>, <code class="literal">0.2</code>, <code class="literal">0</code>).</li><li>With <strong class="userinput"><code>Text</code></strong> under <code class="literal">InfoBubble</code> selected, set the <strong class="userinput"><code>Rect Transform</code></strong> component's <strong class="userinput"><code>Pos X</code></strong>, <strong class="userinput"><code>Pos Y</code></strong>, <strong class="userinput"><code>Pos Z</code></strong> to (<code class="literal">0</code>, <code class="literal">0</code>, <code class="literal">0</code>) and <strong class="userinput"><code>Right</code></strong> and <strong class="userinput"><code>Bottom</code></strong> to <code class="literal">0</code>, <code class="literal">0</code>.</li><li>With <strong class="userinput"><code>Image</code></strong> under <code class="literal">InfoBubble</code> selected, set <strong class="userinput"><code>Scale</code></strong> to (<code class="literal">0.7</code>, <code class="literal">0.2</code>, <code class="literal">1</code>).</li><li>Enter the <code class="literal">X:00.00</code>, <code class="literal">Z:00.00</code> sample string for <strong class="userinput"><code>Text</code></strong>.</li></ol></div><p>Verify that the canvas and text look roughly the right size and position and adjust the text as you please. (In my scene, there's a cube at the origin so I temporarily disable it to see the WalkTarget also at the origin.)</p><p>Now, we will modify the <code class="literal">LookMoveTo.cs</code> script to show the current <code class="literal">WalkTarget</code> <strong class="userinput"><code>X</code></strong>, <strong class="userinput"><code>Z</code></strong> position. Open the script in the MonoDevelop editor and add the following code:</p><pre class="programlisting">using UnityEngine; 
+using UnityEngine.UI; 
+ 
+public class LookMoveTo : MonoBehaviour 
+{ 
+  public GameObject ground; 
+  public Transform infoBubble; 
+ 
+  private Text infoText; 
+ 
+  void Start () 
+  { 
+    if (infoBubble != null) 
+    { 
+      infoText = infoBubble.Find ("Text").GetComponent&lt;Text&gt; (); 
+    } 
+  } 
+ 
+  void Update () 
+  { 
+    Transform camera = Camera.main.transform; 
+    Ray ray; 
+    RaycastHit[] hits; 
+    GameObject hitObject; 
+ 
+    ray = new Ray (camera.position, camera.rotation * Vector3.forward); 
+    hits = Physics.RaycastAll (ray); 
+    for (int i=0; i &lt; hits.Length; i++) 
+    { 
+      RaycastHit hit = hits [i]; 
+      hitObject = hit.collider.gameObject; 
+      if (hitObject == ground) 
+      { 
+        if (infoBubble != null) 
+        { 
+          infoText.text = "X: " + hit.point.x.ToString("F2") + 
+                          "Z: " + hit.point.z.ToString("F2"); 
+ 
+          infoBubble.LookAt(camera.position); 
+          infoBubble.Rotate (0, 180f, 0); 
+        } 
+        transform.position = hit.point; 
+      } 
+    } 
+  }
+} </pre><p>The line <code class="literal">using UnityEngine.UI;</code> states that this script will need access to the Unity UI API. We defined a <code class="literal">public Transform infoBubble</code> variable, which will be set to the <code class="literal">WalkTarget/InfoBubble</code> object. We also defined a <code class="literal">private Text infoText</code> variable, which gets set to the <code class="literal">InfoBubble</code> object's <strong class="userinput"><code>Text</code></strong> object. The script assumes that the given <code class="literal">InfoBubble</code> has a child <strong class="userinput"><code>Text</code></strong> UI object.</p><p>Unfortunately, the overuse of the word <span class="emphasis"><em>text</em></span> can be confusing. The <code class="literal">infoText</code><span class="emphasis"><em>text</em></span> object has a <span class="emphasis"><em>text</em></span> component, which has a <span class="emphasis"><em>text</em></span> string property! You can see what I mean in Unity editor. If you examine the Inspector panel while <code class="literal">InfoBubble/Text</code> is selected, you'll see that it contains a <strong class="userinput"><code>Text</code></strong> (<strong class="userinput"><code>Script</code></strong>) component, which has a <strong class="userinput"><code>Text</code></strong> field. This <strong class="userinput"><code>Text</code></strong> field is where we write our messages. So in <code class="literal">Setup()</code>, we find the <code class="literal">WalkTarget/InfoBubble/Text</code> object, assigning the <strong class="userinput"><code>Text</code></strong> object to <code class="literal">infoText</code>, and then in <code class="literal">Update()</code>, we set the string value of <code class="literal">infoText.text</code> so that the score is shown on the bubble canvas.</p><p>Also, in <code class="literal">Update()</code>, we transformed the <code class="literal">infoBubble</code> canvas so that it's always facing us using <code class="literal">infoBubble.LookAt()</code> and passing it the camera position. The result of <code class="literal">LookAt()</code> has the canvas facing away from us. So, we also need to rotate it around the <span class="emphasis"><em>y </em></span>axis by 180 degrees.</p><p>Save the script and drag the <code class="literal">InfoBubble</code> object from <strong class="userinput"><code>Hierarchy</code></strong> onto the <strong class="userinput"><code>Info Bubble</code></strong> slot in the <strong class="userinput"><code>Look Move To</code></strong> (<strong class="userinput"><code>Script</code></strong>) component. If you don't assign the <code class="literal">InfoBubble</code> canvas, the script will still run because we test for <code class="literal">null</code> objects before we reference them.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip66"></a>Note</h3><p>An info bubble UI canvas is attached to other game objects, moving when they move and always facing the camera (like a billboard).</p></div><p>Run the scene in VR and you'll see that <code class="literal">WalkTarget</code> has a little info bubble telling us about its <strong class="userinput"><code>X</code></strong>, <strong class="userinput"><code>Z</code></strong> position.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note67"></a>Note</h3><p>Extra challenge: Want to try something else? Implement a health meter bar for Ethan. Use the <code class="literal">countDown</code> variable in the <code class="literal">KillTarget</code> script to determine his percentage of health and to display a health meter (horizontal bar) above his head when it's not at 100 percent.</p></div><p>Info bubbles are useful when you <span>need</span><a id="id325577618" class="indexterm"></a> to display UI messages that belong to specific objects in the scene and may move in concert with the objects.</p></div>

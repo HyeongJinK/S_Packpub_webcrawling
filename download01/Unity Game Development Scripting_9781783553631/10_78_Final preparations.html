@@ -1,0 +1,27 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec76"></a>Final preparations</h2></div></div><hr /></div><p>Now, we will add our final features to make this game complete.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec143"></a>Adding win conditions</h3></div></div></div><p>Right <a id="id628" class="indexterm"></a>now, the game is playable, but there is <a id="id629" class="indexterm"></a>no way to win! Let's change that by creating a new empty GameObject and naming it <code class="literal">RoundManager</code>. Next, create a new C# script, name it <code class="literal">WinConditions</code>, and add this code to the script:</p><div class="informalexample"><pre class="programlisting">public int Enemies;
+
+void Start ()
+{
+  GameObject[] e = GameObject.FindGameObjectsWithTag("Enemy"); 
+  Enemies = e.Length;
+}
+
+void Update ()
+{
+  if(Enemies &lt;= 0)
+  {
+    if(Application.loadedLevel != 3)
+      Application.LoadLevel(Application.loadedLevel + 1);
+    else
+      Application.LoadLevel(0);
+  }
+}</pre></div><p>What this <a id="id630" class="indexterm"></a>script will do is get a count of how<a id="id631" class="indexterm"></a> many enemies there are in the scene and use that information to decide whether the player wins. In the <code class="literal">Start</code> function, we grab the amount <a id="id632" class="indexterm"></a>of enemies and assign it to the <code class="literal">int</code> variable we created. In the <code class="literal">Update</code> function, we<a id="id633" class="indexterm"></a> check that there are no more enemies left. In our game, when you kill all the enemies you move on to the next level; if there are no levels left, you return to the main menu.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec144"></a>Affecting the AI</h3></div></div></div><p>In <a id="id634" class="indexterm"></a>the <code class="literal">AI_Agent</code> script, we need to add these two <a id="id635" class="indexterm"></a>lines of code to allow stat tracking and, as we just created, a way to affect the win conditions. Add these two lines to the <code class="literal">ChangeHealth</code> function just before you call the <code class="literal">Destroy</code> function:</p><div class="informalexample"><pre class="programlisting">Camera.main.GetComponent&lt;StatTracker&gt;().SetStat("Kills", 1);
+GameObject.Find("RoundManager").GetComponent&lt;WinConditions&gt;().Enemies--;</pre></div><p>The first line will add to the <code class="literal">Kills</code> stat by <code class="literal">1</code>, improving that stat. In the second line, we decrease the number of enemies, bringing the player one step closer to victory.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec145"></a>Finalizing the items</h3></div></div></div><p>Just as<a id="id636" class="indexterm"></a> with the AI code, we will need to modify <a id="id637" class="indexterm"></a>another script to get the potions to work correctly. In the <code class="literal">GUI_2D</code> script, in the <code class="literal">OnGUI</code> function, replace the code for first <code class="literal">ItemButton</code> with this code:</p><div class="informalexample"><pre class="programlisting">if(GUI.Button(ItemButtons[0], Items[0].name))
+{
+  if(Items[0].name == "Potion")
+  {
+    Items[0].GetComponent&lt;itemSelf&gt;().selfType = SelfType.Potion;
+    Items[0].GetComponent&lt;itemSelf&gt;().selfAction = SelfAction.ChangeHP;
+    Items[0].GetComponent&lt;itemSelf&gt;().Amount = 25;
+  }
+}</pre></div><p>This <a id="id638" class="indexterm"></a>code now makes that GUI button usable<a id="id639" class="indexterm"></a> and will call the correct functions to use that potion.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec146"></a>Creating more levels</h3></div></div></div><p>Now we <a id="id640" class="indexterm"></a>come to the last step in making our game—making<a id="id641" class="indexterm"></a> more levels! Since we have everything we need in our game added to this scene, we can just duplicate this scene and rename the new ones. I've duplicated the scene twice, naming one of them <code class="literal">Chapter10_b</code> and the other <code class="literal">Chapter 10_c</code>.</p></div></div>

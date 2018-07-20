@@ -1,0 +1,31 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec30"></a>GameManager</h2></div></div><hr /></div><p>There are some small updates<a id="id197" class="indexterm"></a> that we need to add to the <code class="literal">GameManager</code> class so that we can connect the Dungeon Board data to the <code class="literal">BoardManager</code> and <code class="literal">Player</code> classes. The <code class="literal">GameManager</code> class will use some driver functions to pass information to and from the different classes and initiate the dungeon generation. The update is shown in <span class="emphasis"><em>Code Snip 4.9</em></span>:</p><div class="informalexample"><pre class="programlisting">16 private DungeonManager dungeonScript;
+17 private Player playerScript;
+…
+22 void Awake() {
+23  if (instance == null)
+24    instance = this;
+25  else if (instance != this)
+26    Destroy(gameObject);
+27    
+28  DontDestroyOnLoad(gameObject);
+29    
+30  enemies = new List&lt;Enemy&gt;();
+31
+32  boardScript = GetComponent&lt;BoardManager&gt; ();
+33
+34  dungeonScript = GetComponent&lt;DungeonManager&gt; ();
+35  playerScript = GameObject.FindGameObjectWithTag ("Player").GetComponent&lt;Player&gt; ();
+36    
+37  InitGame();
+38 }
+…
+116 public void enterDungeon () {
+117   dungeonScript.StartDungeon ();
+118   boardScript.SetDungeonBoard (dungeonScript.gridPositions, dungeonScript.maxBound, dungeonScript.endPos);
+119   playerScript.dungeonTransition = false;
+120 }
+121
+122 public void exitDungeon () {
+123   boardScript.SetWorldBoard ();
+124   playerScript.dungeonTransition = false;
+125 }</pre></div><p>These updates allow<a id="id198" class="indexterm"></a> for some communication between the <code class="literal">Player</code>, <code class="literal">DungeonManager</code>, and <code class="literal">BoardManager</code> classes. Let's see how:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Lines 16-17</code>: We should add a reference to the <code class="literal">Player</code> and <code class="literal">DungeonManager</code> classes, so that we can exchange information and communication between them.</p></li><li style="list-style-type: disc"><p><code class="literal">Lines 34-35</code>: Inside the <code class="literal">Awake</code> function, we initialize the <code class="literal">boardScript</code> and <code class="literal">playerScript</code> variables.</p></li><li style="list-style-type: disc"><p><code class="literal">Lines 116-120</code>: The <code class="literal">enterDungeon</code> function drives the dungeon generation process. We call the function to generate the dungeon data then pass it to the <code class="literal">BoardManager</code> class to place the dungeon onscreen. We have to notify the <code class="literal">Player</code> class that the dungeon transition has occurred.</p></li><li style="list-style-type: disc"><p><code class="literal">Lines 122-125</code>: The <code class="literal">enterDungeon</code> function drives the return to the world board. It calls the <code class="literal">SetWorldBoard</code> function from the <code class="literal">BoardManager</code> class and informs the <code class="literal">Player</code> class that the transition is over.</p></li></ul></div><p>This completes all the code updates needed to fully implement our dungeon generator feature. It is almost time to see our creation in action. However, there are now some new parts that need our<a id="id199" class="indexterm"></a> attention back in the Unity Editor.</p></div>

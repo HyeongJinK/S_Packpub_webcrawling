@@ -1,0 +1,33 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec72"></a>Field of view – FOV</h2></div></div><hr /></div><p>OK, we<a id="id545" class="indexterm"></a> looked at spheres, cylinders, balls, and orbs. That was fun! Now, let's talk some more about 360-degree media and virtual reality and why it seems so compelling. There's a huge difference in the experience of viewing a 360-degree video on a flat screen versus inside a VR headset. Why?</p><p>In a theater, on a computer screen, or in VR, the angle from one edge of the view area to the opposite is commonly referred to as the angle of view or <span class="strong"><strong>field of view</strong></span> (<span class="strong"><strong>FOV</strong></span>). For example, an IMAX cinema theater with larger screens than that of the conventional cinema encompasses more of your peripheral vision and has a wider field of view. The following table compares the horizontal field of view of various viewing experiences. A wider field of view is important to provide immersive experiences.</p><p>These FOV values pertain to looking in one direction without moving your head or eyes:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Viewing experience</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Horizontal field of view (FOV)</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>A 27" computer monitor</p>
+</td><td style="" align="left" valign="top">
+<p>26 degrees</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>A movie theater</p>
+</td><td style="" align="left" valign="top">
+<p>54 degrees</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>An IMAX theater</p>
+</td><td style="" align="left" valign="top">
+<p>70 degrees</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Google Cardboard</p>
+</td><td style="" align="left" valign="top">
+<p>90 degrees</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Oculus Rift DK2</p>
+</td><td style="" align="left" valign="top">
+<p>100 degrees</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>GoPro camera</p>
+</td><td style="" align="left" valign="top">
+<p>74 - 140 degrees</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Human vision</p>
+</td><td style="" align="left" valign="top">
+<p>180 degrees</p>
+</td></tr></tbody></table></div><p>In <a id="id546" class="indexterm"></a>Unity, the <span class="strong"><strong>Camera</strong></span> component that is used to render a scene has a configurable FOV angle. This setting adjusts the size of the viewport rectangle, or <span class="emphasis"><em>frustum</em></span>, that is used to peer into the scene. It's like adjusting a real camera lens' focal length (for instance, normal versus wide angle). This viewport is mapped to the physical display, be it a TV, monitor, or a mobile device screen.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note26"></a>Note</h3><p>For<a id="id547" class="indexterm"></a> more information about FOV adjustments in conventional video games, read this excellent article, <span class="emphasis"><em>All about Field of View (FOV),</em></span> (July 18, 2014) by visiting <a class="ulink" href="http://steamcommunity.com/sharedfiles/filedetails/?id=287241027" target="_blank">http://steamcommunity.com/sharedfiles/filedetails/?id=287241027</a>.</p></div><p>Similarly, inside a VR head-mounted display is a physical mobile phone-sized screen with physical width and height. However, through the headset lenses, the apparent width of the screen is much bigger (and further away).</p><p>In VR, you're not so obviously limited by the FOV and physical dimensions of the screen, because you can easily move your head to change your view direction at any time. This provides a fully immersive view, horizontal 360 degrees, as you look side to side and up and down by 180 degrees. In VR, the field of view is only significant with regard to the outer reaches of your peripheral vision and eyeball movement.</p><p>To recap, this<a id="id548" class="indexterm"></a> is how viewing a 360-degree photosphere works:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Say we have an equirectangular sphere defined by a mesh of small triangular faces</p></li><li style="list-style-type: disc"><p>An equirectangular-projected texture is mapped onto the inside of a sphere</p></li><li style="list-style-type: disc"><p>We have a VR camera rig at the center of the sphere with left and right eye cameras</p></li><li style="list-style-type: disc"><p>The cameras see a section of the inside of the sphere, limited by the field of view</p></li><li style="list-style-type: disc"><p>As you move your head in VR, the area that the cameras see changes in unison with your movement</p></li><li style="list-style-type: disc"><p>You will have an uninterrupted view of the 360-degree image</p></li></ul></div><p>It may<a id="id549" class="indexterm"></a> not be real-time 3D computer graphics, but that, my friend, is still cool.</p></div>

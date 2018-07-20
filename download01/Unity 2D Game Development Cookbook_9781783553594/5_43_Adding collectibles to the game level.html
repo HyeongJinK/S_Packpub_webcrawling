@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec53"></a>Adding collectibles to the game level</h2></div></div><hr /></div><p>Running on<a id="id326" class="indexterm"></a> platforms is<a id="id327" class="indexterm"></a> not enough for the prototype; we need to provide a player with a goal. Let's say that our prototype level is complete once the player has gathered a number of collectibles that we randomly scatter in the level.</p><p>To achieve that, we add a few lines to the <code class="literal">PlatManager</code> script and create a new prefab to be instantiated as our collectible game object.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec134"></a>Getting ready</h3></div></div></div><p>Open the <code class="literal">PlatManager</code> script in <span class="strong"><strong>Monodevelop</strong></span> and be ready to add the lines described here.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec135"></a>How to do it...</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We need two extra variables to make the collectibles: a public Transform to store the reference to the collectible prefab and a private one to instantiate it. Do this by adding the following lines to the script:</p><div class="informalexample"><pre class="programlisting">public Transform collectPref;
+private Transform collectible;</pre></div></li><li><p>Next <a id="id328" class="indexterm"></a>we create a new function called <code class="literal">TossCollectible()</code> that casts a <a id="id329" class="indexterm"></a>random result to decide whether to instantiate a collectible on the next platform to be created in the level. Add the following lines to the script:</p><div class="informalexample"><pre class="programlisting">void TossCollectible(){
+  float f = Random.Range(0f,1f);
+  Debug.Log(f);
+  if (f &gt; 0.5){
+    Vector3 v = new Vector3 (nextPos.x, nextPos.y + delta, 0);
+    collectible = (Transform)Instantiate(collectPref, v, Quaternion.identity);
+  }
+}</pre></div></li><li><p>Now we can add a call to <code class="literal">TossCollectible()</code> when we instantiate a new platform in the level. What follows is the complete updated <code class="literal">FixedUpdate()</code> function, with the new lines highlighted:</p><div class="informalexample"><pre class="programlisting">void FixedUpdate(){
+  UpdatePos();
+  if(actualPlat != null &amp;&amp; charX &gt; actualPlat.transform.position.x + delta){float strict = actualPlat.transform.position.x; 
+    prevPlat = actualPlat;
+    actualPlat = null;
+    SetScalesAndGaps();
+    nextPos = new Vector3(strict + platScale.x + gap, yGap, charZ); 
+    nextPlat = (Transform)Instantiate(platBrick, nextPos, 	 Quaternion.identity );
+    nextPlat.localScale = platScale; 
+    TossCollectible();
+  }
+  if(actualPlat != null &amp;&amp; charX &lt; actualPlat.transform.position.x - delta){
+    float strict = actualPlat.transform.position.x;
+    prevPlat = actualPlat;
+    actualPlat = null;
+    SetScalesAndGaps();
+    nextPos = new Vector3(strict - platScale.x - gap, yGap, charZ);
+    nextPlat = (Transform)Instantiate(platBrick, nextPos, Quaternion.identity );
+    nextPlat.localScale = platScale;
+    TossCollectible();
+  }
+  if(prevPlat != null){
+    float strict = prevPlat.transform.position.x; 
+    if(charX &gt; strict - delta &amp;&amp; charX &lt; strict + delta){ 
+      Destroy(nextPlat.gameObject);
+      nextPlat = null;
+      actualPlat = prevPlat;
+      prevPlat = null;
+    }
+  }
+  if(nextPlat != null){
+    float strict = nextPlat.transform.position.x;
+    if(charX &gt; strict - delta &amp;&amp; charX &lt; strict + delta){ 
+      actualPlat = nextPlat;
+      nextPlat = null;
+      Destroy(prevPlat.gameObject);
+    }
+  }
+}</pre></div></li><li><p>Next we <a id="id330" class="indexterm"></a>need to edit the <code class="literal">Runner</code> script to manage the<a id="id331" class="indexterm"></a> collisions between the character and the collectibles. Open the script in <span class="strong"><strong>Monodevelop</strong></span>. We begin with declaring a new public <code class="literal">int</code> variable to store the number of items collected so far. We will display this data in the GUI, later. Add the following declaration at the top of the script:</p><div class="informalexample"><pre class="programlisting">public int collected;</pre></div></li><li><p>In the <code class="literal">Start()</code> function, we initialize <code class="literal">collected</code> to <code class="literal">0</code>, with one simple instruction. To make things more clear, we add the full <code class="literal">Start()</code> function as follows:</p><div class="informalexample"><pre class="programlisting">void Start () {
+  charAnimator = GameObject.Find("runner").GetComponent&lt;Animator&gt;();
+  horAcceleration = 4f;
+  bIsTouch = false;
+  jumpVel = new Vector3 (0,10,0);
+  collected = 0;
+}</pre></div></li><li><p>Finally, we <a id="id332" class="indexterm"></a>modify the <code class="literal">OnCollisionEnter()</code> function <a id="id333" class="indexterm"></a>by adding a check for a second tag, named collectible, that we will create pretty soon. If we get a positive check with the tag, we can destroy the collectible instance and add <code class="literal">1</code> to the number of collected items. What follows is the updated <code class="literal">OnCollisionEnter()</code> function:</p><div class="informalexample"><pre class="programlisting">void OnCollisionEnter(Collision c){
+  if(c.gameObject.tag == "platform"){
+    bIsTouch = true;
+    charAnimator.SetBool("bJump",false);
+  }
+  if(c.gameObject.tag == "collectible"){
+    Destroy(c.gameObject);
+    collected += 1;
+  }
+}</pre></div></li><li><p>Now back to Unity, we need to create the prefab to be instantiated as the collectible. Let's start by adding <span class="strong"><strong>Sphere</strong></span> <span class="strong"><strong>GameObject</strong></span> to the scene. Scale it down to <code class="literal">.35</code> on all axes and be sure that its position is reset to <code class="literal">0</code> on all axes.</p></li><li><p>Add any material you like to the sphere. We picked a red material, but anything you like will do the task.</p></li><li><p>Next, create a new prefab in the <code class="literal">Prefabs</code> folder of your project and name it <span class="strong"><strong>coll_prefab</strong></span>. Then drag the sphere onto the prefab, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_05_35.jpg" /></div></li><li><p>You can<a id="id334" class="indexterm"></a> now delete <span class="strong"><strong>Sphere</strong></span> from the scene. Select<a id="id335" class="indexterm"></a> <span class="strong"><strong>coll_prefab</strong></span> in the <span class="strong"><strong>Project</strong></span> panel, then move to <span class="strong"><strong>Inspector</strong></span>. In the Tag field, open the scrolling menu and add a new tag called <span class="strong"><strong>collectible</strong></span>, as we did before, and set that tag for <span class="strong"><strong>coll_prefab</strong></span>. You can refer to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_05_36.jpg" /></div></li><li><p>Last step: select<a id="id336" class="indexterm"></a> <span class="strong"><strong>plat_manager</strong></span> in <span class="strong"><strong>Scene</strong></span>, then drag<a id="id337" class="indexterm"></a> <span class="strong"><strong>coll_prefab</strong></span> to the empty <span class="strong"><strong>Collect Pref</strong></span> field, which represents the public variable we added to the <span class="strong"><strong>PlatManager</strong></span> script. The following screenshot shows the operation:</p><div class="mediaobject"><img src="/graphics/9781783553594/graphics/3594OT_05_37.jpg" /></div></li><li><p>You <a id="id338" class="indexterm"></a>can now run the prototype and run around<a id="id339" class="indexterm"></a> to collect items that appear above the platforms.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec136"></a>How it works...</h3></div></div></div><p>The collectible objects are spawned with a random chance on platforms that get instantiated at runtime. Upon collision with the game character, they get destroyed and their count is increased by one.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec137"></a>There's more...</h3></div></div></div><p>In the previous script, we used the <code class="literal">OnCollisionEnter()</code> function to detect when the character hits a collectible. Unity offers another method called <code class="literal">OnTriggerEnter()</code> that detects when two objects collide without generating a collision. The <code class="literal">OnTriggerEnter()</code> function is useful when you don't want two colliding objects to physically react upon collision. You can check out this link for a description of the difference between <code class="literal">OnCollisionEnter()</code> <a id="id340" class="indexterm"></a>and <code class="literal">OnTriggerEnter()</code>: <a class="ulink" href="http://answers.unity3d.com/questions/790724/what-is-the-difference-between-oncollisionenter-an.html" target="_blank">http://answers.unity3d.com/questions/790724/what-is-the-difference-between-oncollisionenter-an.html</a>.</p><p>To complete our working prototype we need to add a control for the game camera so it follows the character. There is already a camera in the scene called <span class="strong"><strong>Main Camera</strong></span>, so we will take advantage of it.</p></div></div>

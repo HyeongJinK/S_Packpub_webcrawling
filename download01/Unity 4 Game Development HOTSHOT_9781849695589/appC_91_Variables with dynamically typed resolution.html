@@ -1,0 +1,14 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec89"></a>Variables with dynamically typed resolution</h2></div></div><hr /></div><p>Only in<a id="id1341" class="indexterm"></a> JavaScript, variables can have an unspecified type. This only occurs if you don't assign a value or specify a type while declaring the variable:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// JavaScript user:</strong></span> The type specification is not necessary.
+var playerLife : int;       //statically typed (because 
+                                type specified)
+var playerLife = 2;      //statically typed (because 
+                                type is inferred from value 
+                                assigned)
+var playerLife;        //dynamically typed (because 
+                                   neither a type or value is  
+                                   specified)</pre></div><p>The dynamically typed variables will cause slower performance, and you can run into casting problems. You can use <code class="literal">#pragma strict</code> by including this at the top of a script to tell Unity to disable the dynamic typing in the script and report compile errors when there is a dynamic type in the script.</p><p>On the other hand, <code class="literal">var</code> in C# means that the type of variable being declared on the right-hand side of the code will be inferred by the compiler, which will be similar to a static type declaration. However, <code class="literal">var</code> cannot be used for the dynamic type:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// C# user:</strong></span>
+
+var playerLife = 2;      //This statement is equivalent 
+int playerLife = 2;      //to this statement</pre></div></div>

@@ -1,0 +1,41 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec37"></a>Animating vertices in a Surface Shader</h2></div></div><hr /></div><p>Now that we <a id="id274" class="indexterm"></a>know how to access data on a per-vertex <a id="id275" class="indexterm"></a>basis, let's expand our knowledge set to include other types of data and position of a vertex.</p><p>Using a vertex function, we can access the position of each vertex in a mesh. This allows us to actually modify each individual vertex while the shader does the processing.</p><p>In this recipe, we will create a shader that will allow us to modify the positions of each vertex on a mesh with a sine wave. This technique can be used to create animations for objects such as flags or waves on an ocean.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec95"></a>Getting ready</h3></div></div></div><p>Let's gather our assets together so that we can create the code for our Vertex Shader:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new scene and place a plane mesh in the center of the scene.</p></li><li><p>Then <a id="id276" class="indexterm"></a>create a new shader and material.</p></li><li><p>Finally, assign the shader to the material and the material to the plane mesh.</p></li></ol></div><p>Your scene should look similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_05_03.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec96"></a>How to do it…</h3></div></div></div><p>With our scene ready to go, let's double-click on our newly created shader to open it in MonoDevelop:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's begin with our shader by populating the <code class="literal">Properties</code> block:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>Properties </strong></span>
+{
+  _MainTex ("Base (RGB)", 2D) = "white" {}
+  _tintAmount ("Tint Amount", Range(0,1)) = 0.5
+  _ColorA ("Color A", Color) = (1,1,1,1)
+  _ColorB ("Color B", Color) = (1,1,1,1)
+  _Speed ("Wave Speed", Range(0.1, 80)) = 5
+  _Frequency ("Wave Frequency", Range(0, 5)) = 2
+  _Amplitude ("Wave Amplitude", Range(-1, 1)) = 1
+}</pre></div></li><li><p>We now need to tell Unity that we are going to be using a vertex function by adding the following to the <code class="literal">#pragma</code> statement:</p><div class="informalexample"><pre class="programlisting">CGPROGRAM
+<span class="strong"><strong>#pragma</strong></span> surface surf Lambert vertex:vert</pre></div></li><li><p>In order to <a id="id277" class="indexterm"></a>access the values that have <a id="id278" class="indexterm"></a>been given to us by our properties, we need to declare a corresponding variable in our <code class="literal">CGPROGRAM</code> block:</p><div class="informalexample"><pre class="programlisting">sampler2D _MainTex;
+float4 _ColorA;
+float4 _ColorB;
+float _tintAmount;
+float _Speed;
+float _Frequency;
+float _Amplitude;
+float _OffsetVal;</pre></div></li><li><p>We will be using the vertex position modification as a <code class="literal">vert</code> color as well. This will allow us to tint our object:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>struct</strong></span> Input 
+{
+  float2 uv_MainTex;
+  float3 vertColor;
+}</pre></div></li><li><p>At this point, we can perform our vertex modification using a sine wave and vertex function. Enter the following code after the <code class="literal">Input</code> struct:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> vert(inout appdata_full v, out Input o)
+{
+  float time = _Time * _Speed;
+  float waveValueA = sin(time + v.vertex.x * _Frequency) * _Amplitude;
+      
+  v.vertex.xyz = float3(v.vertex.x, v.vertex.y + waveValueA, v.vertex.z);
+  v.normal = normalize(float3(v.normal.x + waveValueA, v.normal.y, v.normal.z));
+  o.vertColor = float3(waveValueA,waveValueA,waveValueA);
+}</pre></div></li><li><p>Finally, we complete our shader by performing a <code class="literal">lerp()</code> function between two colors so that we can tint the peaks and valleys of our new mesh, modified by our vertex function:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> surf (Input IN, inout SurfaceOutput o) 
+{
+  half4 c = tex2D (_MainTex, IN.uv_MainTex);
+  float3 tintColor = lerp(_ColorA, _ColorB, IN.vertColor).rgb; 
+      
+  o.Albedo = c.rgb * (tintColor * _tintAmount);
+  o.Alpha = c.a;
+}</pre></div></li></ol></div><p>After <a id="id279" class="indexterm"></a>completing the code for your shader, switch back to <a id="id280" class="indexterm"></a>Unity and let the shader compile. Once compiled, you should see something similar to the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_05_04.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec97"></a>How it works…</h3></div></div></div><p>This particular shader uses the same concept from the last recipe, except that this time, we are modifying the positions of the vertices in the mesh. This is really useful if you don't want to rig up simple objects, such as a flag, and then animate them using a skeleton structure or hierarchy of transforms.</p><p>We simply create a sine wave value using the <code class="literal">sin()</code> function that is built into the Cg language. After calculating this value, we add it to the <code class="literal">y</code> value of each vertex position, creating a wave-like effect.</p><p>We also did a little bit of modification to the normal on the mesh just to give it a more realistic shading based on the sine wave value.</p><p>You will <a id="id281" class="indexterm"></a>see how easy it is to perform more complex <a id="id282" class="indexterm"></a>vertex effects by utilizing the built-in vertex parameters that Surface Shaders give us.</p></div></div>

@@ -1,0 +1,92 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec47"></a>Carnivore: the hunter</h2></div></div><hr /></div><p>Trying to find the balance in creating a thriving <span>world</span><a id="id324673124" class="indexterm"></a> was one of the challenges you originally faced in the original terrarium. In fact, the most challenging creature to write was no surprise: the carnivore. The carnivore is at the top of the food chain and its purpose is to consume herbivores. Not unlike the real world, this will actually help in our training of both agents. In order to add our carnivore creature, we will first need to add some code to our <code class="literal">CreatureAgent</code> script. Follow this exercise to modify the <code class="literal">CreatureAgent</code> script for carnivores:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">CreatureAgent</code> script in your favorite coding editor.</li><li>Modify the <code class="literal">AgentAction</code> method and uncomment the <span class="strong"><strong>Attack</strong></span> and <span class="strong"><strong>Defend</strong></span> actions as follows:</li></ol></div><pre class="programlisting">      public override void AgentAction(float[] vectorAction, 
+      string textAction) {
+        //Action Space 7 float
+        // 0 = Move
+        // 1 = Eat 
+        // 2 = Reproduce 
+        // 3 = Attack 
+        // 4 = Defend 
+        // 5 = move orders 
+        // 6 = rotation
+        if (vectorAction[0] &gt; .5)
+        {
+          MoveAgent(vectorAction);
+        }
+        else if (vectorAction[1] &gt; .5)
+        {
+          Eat();
+        }
+        else if (vectorAction[2] &gt; .5)
+        {
+          Reproduce();
+        }
+        else if (vectorAction[3] &gt; .5)
+        {
+<span class="strong"><strong>Attack();</strong></span>
+        }
+        else if (vectorAction[4] &gt; .5)
+        {
+<span class="strong"><strong>Defend();</strong></span>
+        }
+      }      </pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Next, the <code class="literal">Attack</code> method needs to handle attack and defense actions for both creatures. Code up the Attack method as follows:</li></ol></div><pre class="programlisting">      void Attack() 
+      { 
+        float damage = 0f;
+        currentAction = "Attack";
+        nextAction = Time.timeSinceLevelLoad + (25 / MaxSpeed);
+        var vic = FirstAdjacent("herbivore").GetComponent&lt;CreatureAgent&gt;();
+        if (vic != null)
+        {
+          if (vic.currentAction == "Defend")
+          {
+            damage = ((AttackDamage * Size) - (vic.DefendDamage * 
+            vic.Size)) / (Size * 
+            vic.Size); 
+          }
+          else
+          {
+            damage = ((AttackDamage * Size) - (1 * vic.Size)) / (Size * 
+            vic.Size);
+          }
+        } else {
+          vic = FirstAdjacent("carnivore").GetComponent&lt;CreatureAgent&gt;();
+          if (vic != null)
+          {
+            if (vic.currentAction == "Attack")
+            {
+              damage = ((AttackDamage * Size) - (vic.AttackDamage * 
+              vic.Size)) / (Size 
+              * vic.Size);
+            } else {
+              damage = ((AttackDamage * Size) - (vic.DefendDamage 
+              * vic.Size)) / 
+              (Size * vic.Size);
+            }
+          }
+        }
+        if(damage &gt; 0)
+        {
+          vic.Energy -= damage;
+          if (vic.Energy &lt; 0)
+          { <span class="strong"><strong>AddReward(.25f);</strong></span> }
+         } else if(damage &lt; 0) {
+           Energy -= damage;</pre><pre class="programlisting">         }
+         Energy -= .1f;
+      }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Most of the preceding logic is fairly straightforward, but a couple of sections should be noted. First, notice the difference between the damage calculation for a herbivore and a carnivore. Herbivores can only use defense if they are defending, whereas carnivores can use defense if they are not attacking and can attack if attacking. Second, we add a fairly significant reward when a creature kills another creature. While this may appear rather bloodthirsty, we need to do so in order to train killers. Feel free to play with this reward if you want a more peaceful terrarium.</li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note34"></a>Note</h3><p>The rule calculations here are arbitrary since the original source for Microsoft Terrarium could not be found. If you are in possession of the original code, please contact the author.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Finally, add the new <code class="literal">Defend</code> method, as follows:</li></ol></div><pre class="programlisting">      void Defend()
+      {
+        currentAction = "Defend";
+        nextAction = Time.timeSinceLevelLoad + (25 / MaxSpeed);
+      }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>The <code class="literal">Defend</code> method is quite simple and all it does it set the creature to <code class="literal">Defend</code>.</li><li>Be sure to save the file when you are done editing it and return to Unity. Make sure that there are no compiler errors.</li></ol></div><p>Now that we have the required code <span>changes</span><a id="id324673906" class="indexterm"></a> in our <code class="literal">CreatureAgent</code> file to support the <code class="literal">CreatureType</code> carnivore, in the next section we will build the carnivore agent in the terrarium.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec42"></a>Building the carnivore</h3></div></div></div><p>Building the carnivore creature will follow many of the <span>same</span><a id="id324988418" class="indexterm"></a> patterns we used for the plant and herbivore creatures. Open up Unity and follow this exercise to put the carnivore into the scene:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Select the <span class="strong"><strong>HerbivoreBrain</strong></span> in the <span class="strong"><strong>Hierarchy</strong></span> window and type <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span> (<span class="emphasis"><em>Command</em></span> + <span class="emphasis"><em>D</em></span> on macOS) to duplicate the object. Rename the new object <code class="literal">CarnivoreBrain</code>.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Duplicate the <span class="strong"><strong>Herbivore</strong></span> creature agent object and rename the new object <span class="strong"><strong>Carnivore</strong></span>.</li><li>Open the <span class="strong"><strong>Carnivore</strong></span> object and select the <span class="strong"><strong>Chicken</strong></span> model. Type <code class="literal">Delete</code> to delete the model.</li><li>Drag the <span class="strong"><strong>Dragon</strong></span> prefab from the <code class="literal">Assets/_Gloomy_Animal/Meshes</code> folder and drop it onto the <span class="strong"><strong>Carnivore</strong></span> object in the <span class="strong"><strong>Hierarchy</strong></span> window.</li><li>Set the properties on all the <span class="strong"><strong>Carnivore</strong></span> components as <span>shown</span><a id="id325400240" class="indexterm"></a> in the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/19044d9c-44b2-4b41-ab71-58603215cad9.png" /></div><p>Setting the properties of the Dragon (Carnivore)</p><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Be sure to create the <span class="strong"><strong>Carnivore</strong></span> prefab in the <code class="literal">Assets/Terrarium/Prefabs</code> folder and set the <span class="strong"><strong>Child Spawn</strong></span> property.</li><li>In order to balance things out, our carnivore is going to need to eat more than one herbivore. Therefore, duplicate more herbivores and plants into the scene. Five herbivores, five plants, and one carnivore is a good starting balance.</li><li>Launch the Build Settings dialog and build the scene for external training.</li></ol></div><p>The whole process of putting the carnivore into the <span>terrarium</span><a id="id325402744" class="indexterm"></a> should go quite quickly now given that you have had some practice. That leaves our next section to train the carnivore and run our terrarium in full mode.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec43"></a>Training the carnivore</h3></div></div></div><p>As you may have already guessed, the carnivore <span>training</span><a id="id325402759" class="indexterm"></a> is going to be fairly close as to what we did with the plant eaters. Follow along with this exercise to train the carnivore:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open Visual Studio Code or another text editor and load the <code class="literal">trainer_config.yaml</code> file.</li><li>Add the <span class="strong"><strong>CarnivoreBrain</strong></span> settings, essentially a clone of the <span class="strong"><strong>HerbivoreBrain</strong></span> settings, to the end of the file, as shown in the following code:</li></ol></div><pre class="programlisting">      CarnivoreBrain:
+        use_recurrent: true
+        sequence_length: 64
+        num_layers: 1
+hidden_units: 128
+memory_size: 512
+beta: 1.0e-2
+gamma: 0.99
+        num_epoch: 3
+        buffer_size: 1024
+        batch_size: 128
+        max_steps: 5.0e5
+        summary_freq: 500
+        time_horizon: 128</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Save the file when you are done editing it.</li><li>Open a Python or Anaconda prompt and activate <code class="literal">ml-agents</code>. Change to the <code class="literal">ml-agents</code> folder.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Run the trainer with the following command:</li></ol></div><pre class="programlisting"><span class="strong"><strong>python python/learn.py python/python.exe --run-id=terrarium2 --train 
+      --slow</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>You will notice that things may not balance out very quickly. This because the carnivore needs a bit more training and intelligence, if you will. It is the same in nature, where we often see that the predator has a higher capacity for thinking.</li><li>Switch the camera around and watch how the Dragon (carnivore) picks up hunting. It may take them a while and they may die a few times. The following screenshot shows a sample terrarium running:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789138139/graphics/59134582-34d7-4b86-95ee-b89b8733df11.png" /></div><p>Herbivore creatures learning new actions to avoid the carnivore</p><p>You will also notice that the herbivore begins to pick new strategies in order to avoid getting eaten. In the preceding excerpt, you can see how they run from the scary dragon.</p><p>That concludes all the time we have for this example, but it <span>really</span><a id="id325405985" class="indexterm"></a> is far from finished. Feel free to add to this project and share it with your friends. You could even create competitions to train and compete with the agents in the terrarium just like the old Microsoft Terrarium contest. In the last section, we will discuss how you can proceed with your learning and other areas to develop in with your new-found knowledge.</p></div></div>

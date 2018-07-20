@@ -1,0 +1,64 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch14lvl1sec120"></a>Adding GameController to spawn enemy waves</h2></div></div><hr /></div><p>We have all <a id="id484" class="indexterm"></a>of the mechanics of our game completed at this point. Now, we need to actually create the game or manage what happens in the game. This game controller would be required to run our game, keep track of and display the game's score, and finally end the game whenever the player dies. Later on, we'll discuss a game state manager, which we can use for larger projects with multiple states, but for the sake of this simple project, we will create a simple game controller, and that's what we'll do now:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, create an empty game object by going to <span class="strong"><strong>Game Object</strong></span> | <span class="strong"><strong>Create Empty</strong></span>. From there, with the object selected, go to <span class="strong"><strong>Inspector</strong></span> and set its name to <span class="strong"><strong>Game Controller</strong></span>, and optionally, for neatness sake, set its <span class="strong"><strong>Position</strong></span> to (<code class="literal">0</code>, <code class="literal">0</code>, <code class="literal">0</code>). As this is our main game object, I'm also going to drag it up on the <span class="strong"><strong>Hierarchy</strong></span> tab so that it is the top object on the list.</p></li><li><p>Underneath the name, you'll see the <span class="strong"><strong>Tag</strong></span> property. Change it from <span class="strong"><strong>Untagged</strong></span> to <span class="strong"><strong>GameController</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_01_22.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note49"></a>Note</h3><p>A <span class="strong"><strong>Tag</strong></span> is a way to link to one or more game objects in a collected group. For instance, you might use <span class="strong"><strong>Player</strong></span> and <span class="strong"><strong>Enemy</strong></span> tags for players and enemies respectively; a <span class="strong"><strong>Collectable</strong></span> tag could be defined for power-ups or coins that are placed in the scene, and so on. This could also have been used with <span class="strong"><strong>EnemyBehaviour</strong></span> to check whether something was a bullet or not. One thing to note is the fact that <span class="strong"><strong>GameObject</strong></span> can only have one tag assigned to it. Tags do nothing to the scene but are a way to identify game objects for scripting purposes.</p></div></li><li><p>Next, let's <a id="id485" class="indexterm"></a>see another way that we can create scripts quickly. From the <span class="strong"><strong>Inspector</strong></span> tab, select <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>New Script</strong></span>, and once you are brought to the next menu, change the language to C#, and set the name of the script to <code class="literal">GameController</code>.</p></li><li><p>Select the newly created script, and move it to the <code class="literal">Assets\Scripts</code> folder. Go to your IDE of choice by double-clicking on the script file.</p><p>While our game does many things, the most important thing is the spawning of enemies, which is what we'll be adding in first. Let's create a variable to store our enemy.</p></li><li><p>Inside of the class definition, add the following variable:</p><div class="informalexample"><pre class="programlisting">// Our enemy to spawn
+public Transform enemy;</pre></div></li><li><p>Now, we <a id="id486" class="indexterm"></a>can set the enemy that we currently have in the scene, but we should instead make the enemy a prefab and use it. To do so, drag the enemy from <span class="strong"><strong>Hierarchy</strong></span> into your <code class="literal">Assets\Prefabs</code> folder. Once we've created the prefab, we can remove the enemy object from our scene by deleting it.</p></li><li><p>Next, drag and drop the enemy prefab into the <span class="strong"><strong>Enemy</strong></span> variable in the <span class="strong"><strong>GameController</strong></span> component.</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_01_23.jpg" /></div></li><li><p>Next, go back into our <code class="literal">GameController</code> script by double-clicking it to go into <span class="strong"><strong>MonoDevelop</strong></span>. Add the following additional variables to the component:</p><div class="informalexample"><pre class="programlisting">[Header("Wave Properties")]
+// We want to delay our code at certain times
+public float timeBeforeSpawning = 1.5f;
+public float timeBetweenEnemies = .25f;
+public float timeBeforeWaves = 2.0f;
+
+public  int enemiesPerWave = 10;
+private int currentNumberOfEnemies = 0;</pre></div><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_01_24.jpg" /></div><p>Now, if <a id="id487" class="indexterm"></a>we save the script and go back into the editor, you'll notice a couple of interesting things. First of all, you'll see that due to the Header that we added to our script, the script has been separated into sections to make it easier to compartmentalize our code. In addition, we also see a warning on the bottom-left of the screen saying that we haven't used our variables yet. You can click on it to open up the Console window to look at it, but with that in mind, let's make it so that we are actually using the variables.</p><p>We now need a function to spawn enemies; let's call it <code class="literal">SpawnEnemies</code>. We don't want to spawn all of the enemies at once. What we want is a steady stream of enemies to come to the player over the course of the game. However, in C#, to have a function pause the gameplay without having to stop the entire game, we need to use a coroutine that looks different from all of the code that we've used so far.</p></li><li><p>Inside<a id="id488" class="indexterm"></a> the <code class="literal">Start</code> method, add the following line:</p><div class="informalexample"><pre class="programlisting">StartCoroutine(SpawnEnemies());</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note50"></a>Note</h3><p>A <span class="strong"><strong>coroutine</strong></span> is like a function that has the ability to pause execution and continue where it left off after a period of time. By default, a coroutine is resumed on the frame after we start to <code class="literal">yield</code>, but it is also possible to introduce a time delay using the <code class="literal">WaitForSeconds</code> function for how long you want to wait before it's called again.</p></div></li><li><p>Now that we are already using the function, let's add in the <code class="literal">SpawnEnemies</code> function as follows:</p><div class="informalexample"><pre class="programlisting">// Coroutine used to spawn enemies
+IEnumerator SpawnEnemies()
+{
+  // Give the player time before we start the game
+  yield return new WaitForSeconds(timeBeforeSpawning);
+
+  // After timeBeforeSpawning has elapsed, we will enter 
+  // this loop
+  while(true)
+  {
+    // Don't spawn anything new until all of the previous
+    // wave's enemies are dead
+    if(currentNumberOfEnemies &lt;= 0) 
+    {
+
+      //Spawn 10 enemies in a random position
+      for (int i = 0; i &lt; enemiesPerWave; i++) 
+      {
+        // We want the enemies to be off screen
+        // (Random.Range gives us a number between the 
+        // first and second parameter)
+        float randDistance = Random.Range(10, 25);
+
+        // Enemies can come from any direction
+        Vector2 randDirection =
+          Random.insideUnitCircle;
+        Vector3 enemyPos =
+          this.transform.position;
+
+        // Using the distance and direction we set the 
+        // position
+        enemyPos.x += randDirection.x * randDistance;
+        enemyPos.y += randDirection.y * randDistance;
+
+        // Spawn the enemy and increment the number of 
+        // enemies spawned 
+        // (Instantiate Makes a clone of the first 
+        // parameter 
+        // and places it at the second with a rotation of 
+        // the third.)
+        Instantiate(enemy, enemyPos, this.transform.rotation);
+        currentNumberOfEnemies++;
+        yield return new WaitForSeconds(timeBetweenEnemies);
+      }
+    }
+    // How much time to wait before checking if we need to 
+    // spawn another wave
+    yield return new WaitForSeconds(timeBeforeWaves);
+  }
+}</pre></div><p>The <code class="literal">++</code> operator will take the current value of a number and increment it by 1.</p></li><li><p>Now, when<a id="id489" class="indexterm"></a> we destroy an enemy, we want to decrement the number of <code class="literal">currentNumberOfEnemies</code>, but it's a private variable, which means that it can only be changed inside the <code class="literal">GameController</code> class or one of the methods inside of the class. Simple enough? Now, let's add a new function in our <code class="literal">GameController</code> class:</p><div class="informalexample"><pre class="programlisting">// Allows classes outside of GameController to say when we 
+// killed an enemy.
+public void KilledEnemy()
+{
+  currentNumberOfEnemies--;
+}</pre></div></li><li><p>Finally, let's <a id="id490" class="indexterm"></a>go back into our <code class="literal">EnemyBehaviour</code> class. Inside the <code class="literal">OnCollisionEnter2D</code> function under the <code class="literal">Destroy</code> function call, add the following lines:</p><div class="informalexample"><pre class="programlisting">GameController controller = GameObject.FindGameObjectWithTag("GameController").GetComponent&lt;GameController&gt;();
+controller.KilledEnemy();</pre></div><p>The preceding line gets the script <code class="literal">GameController</code> from the game object that has the <code class="literal">GameController</code> tag.</p><p>This will call the <code class="literal">KilledEnemy</code> function from <code class="literal">GameController</code>, onto which we set the <code class="literal">GameController</code> tag in step 2.</p></li><li><p>With all those changes, save both script files and run the game! Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_01_25.jpg" /></div></li></ol></div><p>We now have waves of enemies that will now move toward the player! When we kill all of the enemies inside a wave, we will spawn the next wave. In such a short period of time, we already have<a id="id491" class="indexterm"></a> so much going on!</p></div>

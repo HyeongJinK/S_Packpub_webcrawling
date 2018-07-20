@@ -1,0 +1,25 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec136"></a>Time for action – center the button</h2></div></div><hr /></div><p>In order to center the <a id="id403" class="indexterm"></a>button on the screen, you need to adjust the <span class="strong"><strong>TitleGUI</strong></span> script:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Double-click on the <span class="strong"><strong>TitleGUI</strong></span> script in the <span class="strong"><strong>Project</strong></span> panel, or switch over to the script editor if it's already open.</p></li><li><p>Write a few new variables at the top of the script, and define them in the <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// button width:</strong></span>
+<span class="strong"><strong>var buttonW:int = 100;</strong></span>
+<span class="strong"><strong>// button height:</strong></span>
+<span class="strong"><strong>var buttonH:int = 50;</strong></span>
+<span class="strong"><strong>   </strong></span>
+<span class="strong"><strong>// half of the Screen width:</strong></span>
+<span class="strong"><strong>var halfScreenW:float;</strong></span>
+<span class="strong"><strong>// half of the button width:</strong></span>
+<span class="strong"><strong>var halfButtonW:float;</strong></span>
+
+<span class="strong"><strong>function Start()</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  halfScreenW = Screen.width/2;</strong></span>
+<span class="strong"><strong>  halfButtonW = buttonW/2;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div></li><li><p>Modify the button creation line in the <code class="literal">OnGUI</code> function to incorporate these new variables:</p><div class="informalexample"><pre class="programlisting">if(GUI.Button(Rect(<span class="strong"><strong>halfScreenW-halfButtonW, 460, buttonW, buttonH),"Play Game"))</strong></span>
+</pre></div></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec59"></a>
+<span class="emphasis"><em>What just happened – investigating the code</em></span>
+</h3></div></div></div><p>The code is just a touch <a id="id404" class="indexterm"></a>hairier now, but those variable declarations help to clarify it. First, we're storing the width and height of the button that we're going to create:</p><div class="informalexample"><pre class="programlisting">// button width
+var  buttonW:int = 100;
+// button height
+var  buttonH:int = 50;</pre></div><p>Next, we're creating a variable that will hold the value of half the screen width, which we get by dividing the <code class="literal">Screen.width</code> property by 2 later on in the <code class="literal">Start</code> function. <span class="strong"><strong>Screen</strong></span> refers to what Unity calls <span class="strong"><strong>Screen Space</strong></span>, which is the resolution of the published player—the box or window through which the player experiences your game. By referring to Screen Space, we can center things on the screen regardless of the resolution our gamer's computer is running.</p><div class="informalexample"><pre class="programlisting">// half of the Screen width
+var halfScreenW:float;</pre></div><p>(and then later, in the <code class="literal">Start</code> function)</p><div class="informalexample"><pre class="programlisting">halfScreenW = Screen.width/2;</pre></div><p>Below that, we're storing half of the button width by dividing our earlier stored value, button, by <code class="literal">2</code>:</p><div class="informalexample"><pre class="programlisting">// Half of the button width
+var halfButtonW:float;</pre></div><p>(and then later, in the <code class="literal">Start</code> function)</p><div class="informalexample"><pre class="programlisting">halfButtonW = buttonW/2;</pre></div></div></div>

@@ -1,0 +1,54 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec57"></a>Cameras and animation</h2></div></div><hr /></div><p>Camera fly-throughs are <a id="id420" class="indexterm"></a>animations in which the camera is moved and rotated over time across specific positions to create a cinematic. Their importance is primarily to create cut-scenes, though not exclusively. It can be useful for the creation of stylized third-person cameras and other top-down <a id="id421" class="indexterm"></a>views in which the camera motion must be mapped in a specific and deliberated way. One of the most <a id="id422" class="indexterm"></a>common methods to create a camera motion like this is to predefine them either using Unity's animation editor or third-party tools such as Maya, Blender, and 3DS Max. However, there are times when more programmatic control is required over the camera to adjust its position manually, away from an average center, using smooth, curved motions, passing through a series of points or following a specific and predefined route. This section considers three approaches.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec38"></a>Follow cameras</h3></div></div></div><p>Perhaps, one of the most common camera <a id="id423" class="indexterm"></a>needs is a follow camera, that is, a camera that tracks a specified object in the scene and follows it. This camera maintains some<a id="id424" class="indexterm"></a> distance between the object and the camera, as shown in the following screenshot. This is useful for third-person cameras, such as over-the-shoulder views and top-down views for RTS games.</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_05_11.jpg" /><div class="caption"><p>Making a camera smoothly follow an object</p></div></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip33"></a>Tip</h3><p>This project can be found in the book's companion files (code bundle) inside the <code class="literal">Camera_Smooth_Damp</code> folder of this chapter.</p></div><p>For such cameras, a simple follow behavior is usually not enough for your purposes. If it were, you could simply parent the camera to the object and leave it at that. However, typically, you'll want some degree of smoothing or damping to the camera motion, that is, a falling-off of speed that allows<a id="id425" class="indexterm"></a> the camera to gradually slow down to a stop on reaching the target, as opposed to a sudden and immediate stop in which the camera is either travelling at full speed or not at all. To achieve this, the <code class="literal">Quaternion.Slerp</code> and <code class="literal">Vector3.SmoothDamp</code> functions can be used. Consider the following code sample 5-11 for a class that can be attached to any camera to smoothly follow an object:</p><div class="informalexample"><pre class="programlisting"> using UnityEngine;
+ using System.Collections;
+ //---------------------------------------------------------------
+ public class CamFollow : MonoBehaviour 
+ {
+ //---------------------------------------------------------------
+    //Follow target
+     public Transform Target = null;
+ 
+    //Reference to local transform
+    private Transform ThisTransform = null;
+ 
+    //Linear distance to maintain from target (in world units)
+    public float DistanceFromTarget = 10.0f;
+ 
+    //Height of camera above target
+    public float CamHeight = 1f;
+ 
+    //Damping for rotation
+    public float RotationDamp = 4f;
+ 
+    //Damping for position
+    public float PosDamp = 4f;
+ //---------------------------------------------------------------
+    void Awake()
+    {
+         //Get transform for camera
+         ThisTransform = GetComponent&lt;Transform&gt;();
+    }
+ //---------------------------------------------------------------
+    // Update is called once per frame
+    void LateUpdate () 
+    {
+         //Get output velocity
+         Vector3 Velocity = Vector3.zero;
+ 
+         //Calculate rotation interpolate
+         ThisTransform.rotation = Quaternion.Slerp(ThisTransform.rotation, Target.rotation, RotationDamp * Time.deltaTime);
+ 
+         //Get new position
+         Vector3 Dest = ThisTransform.position = Vector3.SmoothDamp(ThisTransform.position, Target.position, ref Velocity, PosDamp * Time.deltaTime);
+ 
+         //Move away from target
+         ThisTransform.position = Dest - ThisTransform.forward * 
+DistanceFromTarget;
+ 
+          //Set height
+          ThisTransform.position = new Vector3(ThisTransform.position.x, CamHeight, ThisTransform.position.z);
+ 
+         //Look at dest
+         ThisTransform.LookAt(Dest);
+    }
+ //---------------------------------------------------------------
+ }</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip34"></a>Tip</h3><p>More information on <code class="literal">Quaternion.Slerp</code> can be <a id="id426" class="indexterm"></a>found online at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Quaternion.Slerp.html" target="_blank">http://docs.unity3d.com/ScriptReference/Quaternion.Slerp.html</a>, and more information <a id="id427" class="indexterm"></a>on <code class="literal">Vector3.SmoothDamp</code> can be found online at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Vector3.SmoothDamp.html" target="_blank">http://docs.unity3d.com/ScriptReference/Vector3.SmoothDamp.html</a>.</p></div></div></div>

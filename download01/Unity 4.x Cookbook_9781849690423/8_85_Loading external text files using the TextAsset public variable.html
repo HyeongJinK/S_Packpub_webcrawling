@@ -1,0 +1,16 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec84"></a>Loading external text files using the TextAsset public variable</h2></div></div><hr /></div><p>A straightforward <a id="id580" class="indexterm"></a>way to store data in text files <a id="id581" class="indexterm"></a>and then choose between them before compiling is to use a public variable of the class <code class="literal">TextAsset</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note32"></a>Note</h3><p>This technique is only appropriate when there will be no change to the data file after game compilation.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec294"></a>Getting ready</h3></div></div></div><p>For this recipe, you'll need a text (<code class="literal">.txt</code>) file. In the <code class="literal">0423_08_01</code> folder, we have provided two such files:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">cities.txt</code></p></li><li style="list-style-type: disc"><p><code class="literal">countries.txt</code></p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec295"></a>How to do it...</h3></div></div></div><p>To load external text files using <code class="literal">TextAsset</code>, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the text file you wish to use into your project (for example, <code class="literal">cities.txt</code>)</p></li><li><p>Add the following C# script to <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: ReadPublicTextAsset.cs
+using UnityEngine;
+using System.Collections;
+
+public class ReadPublicTextAsset : MonoBehaviour {
+    public TextAsset dataTextFile;
+    private string textData = "";
+
+    private void Start() {
+        textData = dataTextFile.text;
+    }
+
+    private void OnGUI() {
+        GUILayout.Label ( textData );
+    }
+}</pre></div></li><li><p>With <span class="strong"><strong>Main Camera</strong></span> selected in the <span class="strong"><strong>Hierarchy</strong></span> view, drag the <code class="literal">cities.txt</code> file into the public string variable <span class="strong"><strong>dataTextFile</strong></span> in the <span class="strong"><strong>Inspector</strong></span> view.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec296"></a>How it works...</h3></div></div></div><p>The contents <a id="id582" class="indexterm"></a>of the text file are <a id="id583" class="indexterm"></a>read from the <code class="literal">dataTextFile</code> <code class="literal">TextAsset</code> object and stored as a string into <code class="literal">textData</code>. Our <code class="literal">OnGUI()</code> method displays the contents of <code class="literal">textData</code> as a label.</p></div></div>

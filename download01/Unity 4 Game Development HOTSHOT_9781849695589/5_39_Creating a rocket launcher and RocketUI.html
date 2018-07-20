@@ -1,0 +1,361 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec46"></a>Creating a rocket launcher and RocketUI</h2></div></div><hr /></div><p>In this<a id="id894" class="indexterm"></a> final step, we will create<a id="id895" class="indexterm"></a> the <code class="literal">RocketLauncher</code> and <code class="literal">RocketUI</code> scripts to make <a id="id896" class="indexterm"></a>our robot<a id="id897" class="indexterm"></a> actually shoot the <code class="literal">rocket</code> object, which we created in the previous step, by adding a script in our <code class="literal">CharacterControl</code> script to trigger them.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec97"></a>Engage thrusters</h3></div></div></div><p>Let's get started. To create the <code class="literal">RocketLauncher</code> and <code class="literal">RocketUI</code> scripts, perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>First, in the <span class="strong"><strong>Hierarchy</strong></span> view, we will create the <code class="literal">RocketUI</code> prefab by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>GUI Texture</strong></span>; name it <code class="literal">RocketUI</code> and set it as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0.9</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0.08</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>GUITexture</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Texture</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>rocketUI</strong></span> (located in the <code class="literal">Resources/UI</code> folder in the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Pixel Inset</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-64</code>, <span class="strong"><strong>W</strong></span>: <code class="literal">128</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-32</code>, and <span class="strong"><strong>H</strong></span>: <code class="literal">64</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>Now, we will create the <code class="literal">Text</code> and <code class="literal">Shadow</code> objects by going to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>GUI Text</strong></span> twice; name the first object <code class="literal">Text</code> and the second one <code class="literal">Shadow</code>. Then, in the <span class="strong"><strong>Hierarchy</strong></span> view, we need to <a id="id898" class="indexterm"></a>drag the <span class="strong"><strong>Shadow</strong></span> object<a id="id899" class="indexterm"></a> inside the <span class="strong"><strong>Text</strong></span> object and<a id="id900" class="indexterm"></a> the <span class="strong"><strong>Text</strong></span> object inside the <span class="strong"><strong>RocketUI</strong></span> object, as <a id="id901" class="indexterm"></a>shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_36.jpg" /></div></li><li><p>Then, we will click on the <span class="strong"><strong>Text</strong></span> object, go to the <span class="strong"><strong>Inspector</strong></span> view, and set it as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>GUIText</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">20</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Font</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Federation</strong></span> (located in <code class="literal">Resources/Fonts</code> in the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Font Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">25</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Font Style</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Bold</strong></span> </p>
+</td></tr></tbody></table></div></li><li><p>Next, we will click on the <span class="strong"><strong>Shadow</strong></span> object and go to the <span class="strong"><strong>Inspector</strong></span> view and set it as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">-1</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>GUIText</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">20</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Pixel</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">2</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">-2</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Font</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Federation</strong></span> (located in <code class="literal">Resources/Fonts</code> in the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Font Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<code class="literal">25</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Font Style</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Bold</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Color</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>R</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>G</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>B</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>A</strong></span>: <code class="literal">255</code>, (black color)</p>
+</td></tr></tbody></table></div></li><li><p>Next, we<a id="id902" class="indexterm"></a> will create the <a id="id903" class="indexterm"></a>script to control our <span class="strong"><strong>RocketUI</strong></span> object. Let's go to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for Unity JavaScript <a id="id904" class="indexterm"></a>users) or <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> (for C# users), name it <code class="literal">RocketUI</code>, double-click on it to launch <span class="strong"><strong>MonoDevelop</strong></span>, and define the <a id="id905" class="indexterm"></a>variables as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+
+private var _guiTexts : GUIText[];
+
+function Awake () {
+  _guiTexts = GetComponentsInChildren.&lt;GUIText&gt;();
+}
+
+function UpdateUI ( ammo : int ) {
+  for (var i : int = 0; i &lt; _guiTexts.Length; ++i) {
+    _guiTexts[i].text = ammo.ToString();
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class RocketUI : MonoBehaviour {
+  GUIText[] _guiTexts;
+
+  void Awake () {
+    _guiTexts = GetComponentsInChildren&lt;GUIText&gt;();
+  }
+
+  public void UpdateUI ( int ammo ) {
+    for (int i = 0; i &lt; _guiTexts.Length; ++i) {
+      _guiTexts[i].text = ammo.ToString();
+    }
+  }
+}</pre></div></li><li><p>Then, we go back to Unity and add the <code class="literal">RocketUI</code> script to the <span class="strong"><strong>RocketUI</strong></span> object in <span class="strong"><strong>Hierarchy</strong></span>.</p></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span> view, we need to create the <code class="literal">RocketLauncher</code> object<a id="id906" class="indexterm"></a> by going<a id="id907" class="indexterm"></a> to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span>; name<a id="id908" class="indexterm"></a> it <code class="literal">RocketLauncher</code> and <a id="id909" class="indexterm"></a>drag it inside our <span class="strong"><strong>gun_model</strong></span> object, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_05_37.jpg" /></div></li><li><p>Now we will create the script to control our <span class="strong"><strong>RocketLauncher</strong></span> object. Let's go to <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for Unity JavaScript users) or <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> (for C# users), name it <code class="literal">RocketLauncher</code>, double-click on it to launch <span class="strong"><strong>MonoDevelop</strong></span>, and define the variables as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+
+var smoke : ParticleSystem;
+var rocket : ConstantForce;
+var speed :float = 10f;
+var ammoCount : int = 20;
+
+private var lastShot : float = 0.0f;
+private var _rocketUI : RocketUI;
+
+function Start () {
+  _rocketUI = FindObjectOfType(typeof(RocketUI));
+}
+
+public function Fire( reloadTime : float ) {
+  if (Time.time &gt; (reloadTime + lastShot) &amp;&amp; ammoCount &gt; 0) {
+    var rocketPrefab : ConstantForce = ConstantForce.Instantiate(rocket, transform.position, transform.rotation) as ConstantForce;
+    rocketPrefab.relativeForce = new Vector3(0, 0, speed);
+    
+    smoke.Play();
+    
+    //We ignore the collision between rocket and character
+    Physics.IgnoreCollision(rocketPrefab.collider, transform.root.collider);
+    
+    //Get the last shot time    
+    lastShot = Time.time;
+    //Decrease the bullet
+    ammoCount--;
+    
+    _rocketUI.UpdateUI(ammoCount);
+  }
+}
+
+public function Reload () {
+  ammoCount = 20;
+  _rocketUI.UpdateUI(ammoCount);
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class RocketLauncher : MonoBehaviour {
+
+  public ParticleSystem smoke;
+  public ConstantForce rocket;
+  public float speed = 10f;
+  public int ammoCount = 20;
+
+  float lastShot = 0.0f;
+  RocketUI _rocketUI;
+
+  void Start () {
+    _rocketUI = GameObject.FindObjectOfType&lt;RocketUI&gt;();
+  }
+  
+  public void Fire( float reloadTime) {
+    if (Time.time &gt; (reloadTime + lastShot) &amp;&amp; ammoCount &gt; 0) {
+      ConstantForce rocketPrefab = ConstantForce. Instantiate(rocket, transform.position, transform.rotation)as ConstantForce;
+      rocketPrefab.relativeForce = new Vector3(0, 0, speed);
+      
+      smoke.Play();
+      
+      //We ignore the collision between rocket and character
+      Physics.IgnoreCollision(rocketPrefab.collider, transform.root.collider);
+      
+      //Get the last shot time    
+      lastShot = Time.time;
+      //Decrease the bullet
+      ammoCount--;
+      _rocketUI.UpdateUI(ammoCount);
+    }
+  }
+  
+  public void Reload () {
+    ammoCount = 20;
+    _rocketUI.UpdateUI(ammoCount);
+  }
+}</pre></div></li><li><p>Finally, we will go back to Unity and add the <code class="literal">RocketLauncher</code> script to the <span class="strong"><strong>RocketLauncher</strong></span> object in the <span class="strong"><strong>Hierarchy</strong></span> view. Then, go to its <span class="strong"><strong>Inspector</strong></span> view and set it as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">6.5 </code>
+<span class="strong"><strong>Y</strong></span>: <code class="literal">0.25 </code>
+<span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0 </code>
+<span class="strong"><strong>Y</strong></span>: <code class="literal">90 </code>
+<span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1 </code>
+<span class="strong"><strong>Y</strong></span>: <code class="literal">1 </code>
+<span class="strong"><strong>Z</strong></span>: <code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rocket Launcher</strong></span> (script)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Smoke</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Smoke</strong></span> (drag the <span class="strong"><strong>Smoke</strong></span> object located in <code class="literal">robot/gun_model</code> in the <span class="strong"><strong>Hierarchy</strong></span> view)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rocket</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>rocket</strong></span> (drag the <span class="strong"><strong>rocket</strong></span> prefab located in the <code class="literal">Resources/Prefabs</code> folder in the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr></tbody></table></div><p>We are done. Click on play to see the result!</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec98"></a>Objective complete – mini debriefing</h3></div></div></div><p>In<a id="id910" class="indexterm"></a> this section, we created the <code class="literal">RocketUI</code> script to <a id="id911" class="indexterm"></a>show the number of bullets left on the <a id="id912" class="indexterm"></a>screen. The script <a id="id913" class="indexterm"></a>will automatically update the number of bullets we have left when we click on <span class="strong"><strong>fire</strong></span> or <span class="strong"><strong>reload</strong></span>.</p><p>Next, we created the <span class="strong"><strong>RocketLauncher</strong></span> object and script to fire the rocket, which will show the <span class="strong"><strong>Smoke</strong></span> particle when we click on <span class="strong"><strong>fire</strong></span> by getting the <code class="literal">playbackTime</code> value from the current animation using <code class="literal">AnimationStateInfo</code>. We get the time left for the current animation to finish by using <code class="literal">currentState.normalizedTime % 1</code> to calculate the remaining time and pass it to <code class="literal">BroadcastMessage ("Fire", playbackTime)</code> to trigger the <code class="literal">Fire</code> event.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec99"></a>Classified intel</h3></div></div></div><p>In the <code class="literal">CharacterControl</code> script, we will see that we have used <code class="literal">BroadcastMessage("Fire", playbackTime)</code>. We will learn what the <code class="literal">BroadcastMessage()</code> function actually does.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec10"></a>BroadcastMessage</h4></div></div></div><p>The <code class="literal">BroadcastMessage()</code> function basically calls all the functions named <code class="literal">Fire</code> in this game <a id="id914" class="indexterm"></a>object or any of its children. This is a great way to make our script and object more organized.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note66"></a>Note</h3><p>Performance-wise, <code class="literal">BroadcastMessage()</code> is slower than a function call because it iterates through all the possible target objects, finds matches of the desired function, and executes them. Therefore, it won't cause a huge increase in performance if we don't have a large number of function calls.</p></div><p>We can have different scripts attached to the children of this parent object and trigger them at the same time. For example, <code class="literal">BroadcastMessage("Fire", playbackTime)</code> will call the <code class="literal">Fire(var f:float)</code> or <code class="literal">Fire(float f)</code> function in each component attached to the object (irrespective of whether we're calling it on <span class="strong"><strong>Component</strong></span> or <span class="strong"><strong>GameObject</strong></span>). So, when the user clicks on <span class="strong"><strong>fire</strong></span>, we will have the rocket shot at the same time with the smoke coming out from the launcher without having to code everything in one big script. We can see more details at the following links:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Component.BroadcastMessage.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Component.BroadcastMessage.html</a>
+</p></li><li style="list-style-type: disc"><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/GameObject.BroadcastMessage.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/GameObject.BroadcastMessage.html</a>
+</p></li></ul></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip26"></a>Tip</h3><p>If we use C#, we can avoid using the <code class="literal">BroadcastMessage()</code> function by using <code class="literal">delegate</code> and <code class="literal">event</code> to trigger all the objects that have an event listener attached. We will talk about <code class="literal">delegate</code> and <code class="literal">event</code> in <a class="link" href="#" linkend="ch07">Project 7</a>, <span class="emphasis"><em>Forge a Destructible and Interactive Virtual World</em></span>.</p></div></div></div></div>

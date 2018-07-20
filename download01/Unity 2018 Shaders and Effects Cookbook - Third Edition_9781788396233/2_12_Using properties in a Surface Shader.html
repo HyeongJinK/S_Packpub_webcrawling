@@ -1,0 +1,83 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec20"></a>Using properties in a Surface Shader</h2></div></div><hr /></div><p>Now that we have created some properties, let's actually hook them up to the shader so that we can use them as tweaks to our shader and make the material <span>process</span><a id="id325209450" class="indexterm"></a> much more interactive. We can use the <strong class="userinput"><code>Properties</code></strong> values from the material's <strong class="userinput"><code>Inspector</code></strong> tab because we have attached a variable name to the <span>property</span><a id="id325209465" class="indexterm"></a> itself, but in the shader code, you have to set up a couple of things before you can start calling the value by its variable name.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec30"></a>How to do it...</h3></div></div></div><p>The following steps show you how to use the properties in a Surface Shader:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Continuing from the previous example, let's create another shader with the name <code class="literal">ParameterExample</code>. Just like before, remove the <code class="literal">_MainTex</code> property in the same manner as was done in the <span class="emphasis"><em>Adding properties to a shader</em></span> recipe of this chapter:</li></ol></div><pre class="programlisting">// Inside the Properties block
+_MainTex ("Albedo (RGB)", 2D) = "white" {} 
+
+// Below the CGPROGRAM line
+sampler2D _MainTex; 
+
+// Inside of the surf function
+fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color; </pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Afterward, update the <code class="literal">Properties</code> section to the following code:</li></ol></div><pre class="programlisting">Properties {
+  _Color ("Color", Color) = (1,1,1,1)
+<span class="strong"><strong>  _AmbientColor ("Ambient Color", Color) = (1,1,1,1) </strong></span>
+<span class="strong"><strong>  _MySliderValue ("This is a Slider", Range(0,10)) = 2.5</strong></span>
+
+  _Glossiness ("Smoothness", Range(0,1)) = 0.5
+  _Metallic ("Metallic", Range(0,1)) = 0.0
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Next, add the following lines of code to the shader, below the <code class="literal">CGPROGRAM</code> line:</li></ol></div><pre class="programlisting">float4 _AmbientColor; 
+float _MySliderValue; </pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>With <span class="emphasis"><em>step 3</em></span> complete, we can <span>now</span><a id="id325453764" class="indexterm"></a> use the values from the <span>properties</span><a id="id325453968" class="indexterm"></a> in our shader. Let's do this by adding the value from the <code class="literal">_Color</code> property to the <code class="literal">_AmbientColor</code> property and giving the result of this to the <code class="literal">o.Albedo</code> line of code. So, let's add the following code to the shader in the <code class="literal">surf()</code> function:</li></ol></div><pre class="programlisting">void surf (Input IN, inout SurfaceOutputStandard o) {
+      // We can then use the properties values in our shader 
+      fixed4 c = pow((_Color + _AmbientColor), _MySliderValue); 
+
+      // Albedo comes from property values given from slider and colors
+      o.Albedo = c.rgb;
+
+      // Metallic and smoothness come from slider variables
+      o.Metallic = _Metallic;
+      o.Smoothness = _Glossiness;
+      o.Alpha = c.a;
+    }
+    ENDCG</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Finally, your shader should look like the following shader code. If you save your shader and re-enter Unity, your shader will compile. If there were no errors, you will now have the ability to change the ambient and emissive colors of the material as well as increase the saturation of the final color using the slider value. Pretty neat:</li></ol></div><pre class="programlisting">Shader "CookbookShaders/Chapter02/ParameterExample" {
+  // We define Properties in the properties block 
+  Properties {
+    _Color ("Color", Color) = (1,1,1,1)
+    _Glossiness ("Smoothness", Range(0,1)) = 0.5
+    _Metallic ("Metallic", Range(0,1)) = 0.0
+  }
+  SubShader {
+    Tags { "RenderType"="Opaque" }
+    LOD 200
+
+    // We need to declare the properties variable type inside of the
+    // CGPROGRAM so we can access its value from the properties block.
+
+    CGPROGRAM
+    // Physically based Standard lighting model, and enable shadows on all light types
+    #pragma surface surf Standard fullforwardshadows
+
+    // Use shader model 3.0 target, to get nicer looking lighting
+    #pragma target 3.0
+
+    float4 _AmbientColor; 
+    float _MySliderValue; 
+
+    struct Input {
+      float2 uv_MainTex;
+    };
+
+    half _Glossiness;
+    half _Metallic;
+    fixed4 _Color;
+
+    // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
+    // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
+    // #pragma instancing_options assumeuniformscaling
+    UNITY_INSTANCING_BUFFER_START(Props)
+      // put more per-instance properties here
+    UNITY_INSTANCING_BUFFER_END(Props)
+
+    void surf (Input IN, inout SurfaceOutputStandard o) {
+      // We can then use the properties values in our shader 
+      fixed4 c = pow((_Color + _AmbientColor), _MySliderValue); 
+
+      // Albedo comes from property values given from slider and colors
+      o.Albedo = c.rgb;
+
+      // Metallic and smoothness come from slider variables
+      o.Metallic = _Metallic;
+      o.Smoothness = _Glossiness;
+      o.Alpha = c.a;
+    }
+    ENDCG
+  }
+  FallBack "Diffuse"
+}</pre><p></p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note23"></a>Note</h3><p>The <code class="literal">pow(arg1, arg2)</code> function is a built-in function that will perform the equivalent <code class="literal">math</code> function of power. So, argument <code class="literal">1</code> is the value that we want to raise to a power and argument <code class="literal">2</code> is the power that we want to raise it to.
+To find out more about the <code class="literal">pow()</code> function, look at the Cg tutorial. It is a great free resource that you can use to learn more about shading and there is a glossary of all the functions available to you in the Cg shading language at <span><a class="ulink" href="http://http.developer.nvidia.com/CgTutorial/cg_tutorial_appendix_e.html" target="_blank">http://http.developer.nvidia.com/CgTutorial/cg_tutorial_appendix_e.html</a>.</span></p></div><p>The following screenshot <span>demonstrates</span><a id="id325463139" class="indexterm"></a> the result obtained <span>using</span><a id="id325463147" class="indexterm"></a> our <span>properties</span><a id="id325463156" class="indexterm"></a> to control our material's colors and saturation from within the material's <strong class="userinput"><code>Inspector</code></strong> tab:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/07bb7f82-bee6-42f8-9e1e-afc68facb71f.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec31"></a>How it works...</h3></div></div></div><p>When you declare a new property in the <code class="literal">Properties</code> block, you are providing a way for the shader to retrieve the tweaked value from the material's <strong class="userinput"><code>Inspector</code></strong> tab. This value is stored in the variable name portion of the property. In this case, <code class="literal">_AmbientColor</code>, <code class="literal">_Color</code>, and <code class="literal">_MySliderValue</code> are the variables in which we are storing the tweaked values.</p><p>In order for you to be able to use the value in the <code class="literal">SubShader</code> block, you need to create three new variables with the same names as the property's variable name. This automatically sets up a link between these two so that they know they have to work with the same data. Additionally, it declares the type of data that we want to store in our <code class="literal">SubShader</code> variables, which will come in handy when we look at optimizing shaders in a later chapter. Once you have created the <code class="literal">SubShader</code> variables, you can then use the values in the <code class="literal">surf()</code> function. In this case, we want to add the <code class="literal">_Color</code> and <code class="literal">_AmbientColor</code> variables <span>together</span><a id="id325209381" class="indexterm"></a> and take it to a <span>power</span><a id="id325209389" class="indexterm"></a> of whatever the <code class="literal">_MySliderValue</code> variable is equal to in the material's <strong class="userinput"><code>Inspector</code></strong> tab. The vast majority of shaders start out as Standard Shaders and get modified until they match the desired look. We have now created the foundation for any Surface Shader you will create that requires a diffuse component.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note24"></a>Note</h3><p>Materials are assets. This means that any change made to them while your game is running in the editor are permanent. If you have changed the value of a property by mistake, you can undo it using <span class="emphasis"><em><span class="strong"><strong>Ctrl </strong></span></em></span>+ <span class="emphasis"><em><span class="strong"><strong>Z</strong></span></em></span>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec32"></a>There's more...</h3></div></div></div><p>Like any other programming language, Cg does not allow mistakes. As such, your shader will not work if you have a typo in your code. When this happens, your materials are rendered in unshaded magenta:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/b6a0c371-13b5-45a4-b7cb-ec5a6ef85252.png" /></div><p>When a script does not compile, Unity prevents your game from being exported or even executed. Conversely, errors in shaders do not stop your game from being executed. If one of your shaders appears as magenta, it is time to investigate where the problem is. If you select the incriminated shader, you will see a list of errors displayed in its <strong class="userinput"><code>Inspector</code></strong> tab:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/dfb0ebd4-135f-4ebf-9d0a-bb65ea199a35.png" /></div><p>Despite showing the line that <span>raised</span><a id="id325209560" class="indexterm"></a> the error, it rarely means that this is the line that has to be fixed. The error message shown in the previous screenshot is generated by deleting the <code class="literal">sampler2D _MainTex</code> variable from the <code class="literal">SubShader{}</code> block. However, the error is raised by the first line that tries to access such a variable. Finding and <span>fixing</span><a id="id325209575" class="indexterm"></a> what's wrong with code is a <span>process</span><a id="id325209584" class="indexterm"></a> called <span class="strong"><strong>debugging</strong></span>. The most common mistakes that you should check for are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">A missing bracket. If you forgot to add a curly bracket to close a section, the compiler is likely to raise errors at the end of the document, at the beginning, or in a new section.</li><li style="list-style-type: disc">A missing semicolon. One of the most common mistakes, but luckily one of the easiest to spot and fix. When looking at the Error definition, first check if the line above it has a semicolon or not. </li><li style="list-style-type: disc">A property that has been defined in the <code class="literal">Properties</code> section but has not been coupled with a variable in the <code class="literal">SubShader{}</code> block.</li><li style="list-style-type: disc">Compared to what you might be used to in C# scripts, the floating point values in Cg do not need to be followed by an <code class="literal">f</code>. It's <code class="literal">1.0</code>, not <code class="literal">1.0f</code>.</li></ul></div><p>The error messages raised by shaders can be very misleading, especially due to their strict syntactic constraints. If you are in doubt about their meaning, it's best to search the internet. The Unity forums are filled with other developers who are likely to have encountered (and fixed) your problem before.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec33"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">More information on how to master Surface Shaders and their properties can be found in <a class="link" href="#" linkend="ch03"><span>Chapter 3</span></a>, <span class="emphasis"><em>Surface Shaders and Texture Mapping</em></span>.</li><li style="list-style-type: disc">If you are curious to see what shaders can actually do when used at their full potential, have a look at <a class="link" href="#" linkend="ch11"><span>Chapter 11</span></a>, <span class="emphasis"><em>Advanced Shading Techniques</em></span>, for some of the most advanced techniques covered in this book.</li></ul></div></div></div>

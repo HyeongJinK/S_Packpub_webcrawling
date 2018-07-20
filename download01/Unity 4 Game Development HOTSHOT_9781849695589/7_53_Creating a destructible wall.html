@@ -1,0 +1,213 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec58"></a>Creating a destructible wall</h2></div></div><hr /></div><p>In this section, we will start by creating a destructible wall with multiple <span class="strong"><strong>cube</strong></span> game objects in the Unity engine, as well as adding some code to the <code class="literal">rocket</code> script to make this wall breakable when the player shoots the rocket to hit it.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec125"></a>Prepare for lift off</h3></div></div></div><p>We will begin with creating a <a id="id1160" class="indexterm"></a>new tag for our destructible wall:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Let's go to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Tags</strong></span> to bring out the <span class="strong"><strong>Inspector</strong></span> view for <span class="strong"><strong>Tags</strong></span>. In the <span class="strong"><strong>Inspector</strong></span> view, we will click on the triangle in front of the <span class="strong"><strong>Tags</strong></span> element and then on the <span class="strong"><strong>Element 4</strong></span> type <span class="strong"><strong>Destructible</strong></span>, as you can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_15.jpg" /></div></li><li><p>Next, we will go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Empty</strong></span> to create an empty game object and name it <code class="literal">Wall</code> to reset its transform position to <span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>. Then we are ready to start.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec126"></a>Engage thrusters</h3></div></div></div><p>Now, we have set the <span class="strong"><strong>Destructible</strong></span> tag and created an empty game object, <code class="literal">Wall</code>. Next, we will create the four cubes to represent each piece of the broken wall:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>Cube</strong></span>, name it <code class="literal">Cube1</code>, and drag it to the <span class="strong"><strong>Wall</strong></span> game object, which we just created, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_16.jpg" /></div></li><li><p>Add the <span class="strong"><strong>Rigidbody</strong></span> component to <span class="strong"><strong>Cube1</strong></span> to make the wall fall realistically when it breaks by navigating to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Rigidbody</strong></span> and adding <span class="strong"><strong>Rigidbody</strong></span>.</p></li><li><p>Next, we <a id="id1161" class="indexterm"></a>will go to the cube's <span class="strong"><strong>Inspector</strong></span> view to set up the parameters as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="3" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">3</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">3</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">0</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">6</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">6</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">1</code>
+</p>
+</td></tr><tr><td style="" colspan="3" align="left" valign="top">
+<p>
+<span class="strong"><strong>Box Collider</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Material</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rock</strong></span> (drag the <span class="strong"><strong>Rock</strong></span> physics material from the <code class="literal">Resources/Physics Materials</code> folder to the <span class="strong"><strong>Project</strong></span> view)</p>
+</td></tr><tr><td style="" colspan="3" align="left" valign="top">
+<p>
+<span class="strong"><strong>Mesh Renderer</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Materials</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Size</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>1</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Element 0</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rock </strong></span>(drag the <span class="strong"><strong>Rock</strong></span> material from the <code class="literal">Resources/Materials</code> folder to the <span class="strong"><strong>Project</strong></span> view)</p>
+</td><td style="" align="left" valign="top"> </td></tr><tr><td style="" colspan="3" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rigidbody</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Mass</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<code class="literal">9</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Is Kinematic</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>Check</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Tag</strong></span>
+</p>
+</td><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Destructible</strong></span>
+</p>
+</td></tr></tbody></table></div><p>Now we have finished setting up the first cube. Let's duplicate three more cubes using <span class="emphasis"><em>Command</em></span> + <span class="emphasis"><em>D</em></span> (for Mac) or <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span> (for Windows), and name all three as <code class="literal">Cube2</code>, <code class="literal">Cube3</code>, and <code class="literal">Cube4</code>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_17.jpg" /></div><p>Then, we go<a id="id1162" class="indexterm"></a> to each new cube's <span class="strong"><strong>Inspector</strong></span> view and set up its transform position as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><tbody><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform (Cube2)</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">3</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">9</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform</strong></span> (<span class="strong"><strong>Cube3</strong></span>)</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-3</code>, <span class="strong"><strong>Y</strong></span>: 9, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" colspan="2" align="left" valign="top">
+<p>
+<span class="strong"><strong>Transform (Cube4</strong></span>
+<span class="strong"><strong>)</strong></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">-3</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">3</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr></tbody></table></div><p>The wall that is created will look like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_18.jpg" /></div></li><li><p>Next, we will click on the <span class="strong"><strong>Wall</strong></span> game object in the <span class="strong"><strong>Hierarchy</strong></span> view and go to the <span class="strong"><strong>Inspector</strong></span> view, and set up <span class="strong"><strong>Transform</strong></span> as follows:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="2" align="left" valign="bottom">
+<p>
+<span class="strong"><strong>Transform</strong></span>
+</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Position</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1037.5</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">4</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">693</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rotation</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">0</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">36</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">0</code>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Scale</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>X</strong></span>: <code class="literal">1</code>, <span class="strong"><strong>Y</strong></span>: <code class="literal">1</code>, and <span class="strong"><strong>Z</strong></span>: <code class="literal">1</code>
+</p>
+</td></tr></tbody></table></div></li><li><p>Now, we <a id="id1163" class="indexterm"></a>will add a script that makes this <span class="strong"><strong>Wall</strong></span> object break apart when the character shoots at it. Let's go to the <code class="literal">Chapter7/Scripts/C#/Object</code> (for C# users) or <code class="literal">Chapter7/Scripts/Javascript/Object</code> (for Unity JavaScript users) folder, and double-click on the <code class="literal">rocket</code> script to open this script in the script editor.</p></li><li><p>In the <code class="literal">rocket</code> script, we will add two parameters at the beginning of the script, as highlighted in the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span> 
+var explosionParticle : GameObject;
+<span class="strong"><strong>var explosionRadius : float = 50;</strong></span>
+<span class="strong"><strong>var explosionForce : float = 1000;</strong></span>
+
+
+<span class="strong"><strong>//C# user:</strong></span>
+
+public GameObject explosionParticle;
+<span class="strong"><strong>public float explosionRadius = 50;</strong></span>
+<span class="strong"><strong>public float explosionForce = 1000;</strong></span>
+</pre></div></li><li><p>Next, we will go to the <code class="literal">OnCollisionEnter()</code> function and add the following highlighted script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function OnCollisionEnter (others : Collision) {
+  var contactPoint : ContactPoint = others.contacts[0];
+  var rotation : Quaternion = Quaternion.Euler(Vector3.up);
+  GameObject.Instantiate(explosionParticle, contactPoint.point, rotation);
+<span class="strong"><strong>  var position : Vector3 = transform.position;</strong></span>
+<span class="strong"><strong>  var hits : Collider[] = Physics.OverlapSphere(position, explosionRadius);</strong></span>
+<span class="strong"><strong>  for (var c : Collider in hits) {</strong></span>
+<span class="strong"><strong>    if (c.tag == "Destructible") {</strong></span>
+<span class="strong"><strong>      var r : Rigidbody = c.rigidbody;</strong></span>
+<span class="strong"><strong>      if (r != null) {</strong></span>
+<span class="strong"><strong>        r.isKinematic = false;</strong></span>
+<span class="strong"><strong>        r.AddExplosionForce(explosionForce, position, explosionRadius);</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+  KillObject();
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void OnCollisionEnter (Collision others) {
+  ContactPoint contactPoint = others.contacts[0];
+  Quaternion rotation = Quaternion.Euler(Vector3.up);
+  GameObject.Instantiate(explosionParticle, contactPoint.point, rotation);
+<span class="strong"><strong>  Vector3 position = transform.position;</strong></span>
+<span class="strong"><strong>  Collider[] hits = Physics.OverlapSphere(position, explosionRadius);</strong></span>
+<span class="strong"><strong>  foreach (Collider c in hits) {</strong></span>
+<span class="strong"><strong>    if (c.tag == "Destructible") {</strong></span>
+<span class="strong"><strong>      Rigidbody r = c.rigidbody;</strong></span>
+<span class="strong"><strong>      if (r != null) {</strong></span>
+<span class="strong"><strong>        r.isKinematic = false;</strong></span>
+<span class="strong"><strong>        r.AddExplosionForce(explosionForce, position, explosionRadius);</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+  KillObject();
+}</pre></div><p>We have used the <code class="literal">Physics.OverlapSphere()</code> function<a id="id1164" class="indexterm"></a> to get all the colliders that collide<a id="id1165" class="indexterm"></a> within the explosion radius of the rocket. Then, we will loop through each collider and add the explosion force using the<a id="id1166" class="indexterm"></a> <code class="literal">AddExplosionForce()</code> function to make the destructible pieces explode.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip34"></a>Tip</h3><p>The <code class="literal">Physics.OverlapSphere()</code> function<a id="id1167" class="indexterm"></a> is used to get all the colliders that touch each other or that are inside the given sphere radius. For more details on this function, visit the following URL:</p><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Physics.OverlapSphere.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Physics.OverlapSphere.html</a>
+</p><p>The <code class="literal">AddExplosionForce()</code> function basically<a id="id1168" class="indexterm"></a> applies a force to the <span class="strong"><strong>Rigidbody</strong></span> component, which will simulate the explosion effect. This means that the force will be decrease depending on the distance of <span class="strong"><strong>Rigidbody</strong></span>. For more details on this function, visit the following URL:</p><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/Rigidbody.AddExplosionForce.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/Rigidbody.AddExplosionForce.html</a>
+</p></div></li><li><p>Save the script and<a id="id1169" class="indexterm"></a> click on the play button; in the scene, if we go to the path on the right, we will see the <span class="strong"><strong>Wall</strong></span> object that we have just created. We can shoot at it and it will break, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_19.jpg" /></div><p>We will see that the current wall breaks into four pieces. We can also fracture the mesh in a modeling program and make it much more dynamic and realistic. You might also want to check out the following link for the simple fracture script:</p><p>
+<a class="ulink" href="http://forum.unity3d.com/threads/57994-Simple-Fracture-Script-v-1-01" target="_blank">http://forum.unity3d.com/threads/57994-Simple-Fracture-Script-v-1-01</a>
+</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec127"></a>Objective complete – mini debriefing</h3></div></div></div><p>In this step, we basically created four cubes, and each one has its own collider and <span class="strong"><strong>Rigidbody</strong></span> attached, which will create physical movement when we apply the explosion force. This will create a realistic behavior for the wall when it's breaking apart, as shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_20.jpg" /></div><p>To make this work, we disabled the <span class="strong"><strong>Is Kinematic</strong></span> component in each cube's <span class="strong"><strong>Rigidbody</strong></span>. The <span class="strong"><strong>Is Kinematic</strong></span> property is<a id="id1170" class="indexterm"></a> basically used to enable or disable the physics calculation of the object that has <span class="strong"><strong>Rigidbody</strong></span> attached. In some cases, we can apply <span class="strong"><strong>Rigidbody</strong></span> on the character's animation and then enable or<a id="id1171" class="indexterm"></a> disable the <span class="strong"><strong>Is Kinematic</strong></span> property when we need to, such as using  the ragdoll physics or character animation on the <code class="literal">ragdoll</code> object as we mentioned in the first step of this project, <span class="emphasis"><em>Creating a ragdoll object</em></span>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec128"></a>Classified intel</h3></div></div></div><p>In this step, we have also applied the <span class="strong"><strong>Rock</strong></span> physics material to the <span class="strong"><strong>Box Collider</strong></span> material in the cube. We can apply friction and bounciness values to each object of the <span class="strong"><strong>Box Collider</strong></span> material to get a realistic reaction while calculating the physics.</p><p>For the <span class="strong"><strong>Rock</strong></span> physics material, we go to the <code class="literal">Resources/Physics Materials</code> folder in the <span class="strong"><strong>Project</strong></span> view, and then click on the <span class="strong"><strong>Rock</strong></span> physics material object to bring up its <span class="strong"><strong>Inspector</strong></span> view. We will see to it that we have set the <span class="strong"><strong>Dynamic Friction</strong></span> value to <code class="literal">0.3</code> and <span class="strong"><strong>Static Friction</strong></span> to <code class="literal">0.3</code>, which will make each piece slow down when it collides with another. This way, we can make the rock be not too slippery or too hard to move. Also, the rock should not bounce at all. So, we set the <span class="strong"><strong>Bounciness</strong></span> value to <code class="literal">0</code>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_21.jpg" /></div><p>For more details on each property, visit the following URL:</p><p>
+<a class="ulink" href="http://docs.unity3d.com/Documentation/Components/class-PhysicMaterial.html" target="_blank">http://docs.unity3d.com/Documentation/Components/class-PhysicMaterial.html</a>
+</p></div></div>

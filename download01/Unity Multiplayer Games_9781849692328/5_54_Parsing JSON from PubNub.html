@@ -1,0 +1,30 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec57"></a>Parsing JSON from PubNub</h2></div></div><hr /></div><p>All <a id="id253" class="indexterm"></a>responses <a id="id254" class="indexterm"></a>from the subscribe service are structured as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>An array, containing:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>An array of new messages since the last call to subscribe</p></li><li style="list-style-type: disc"><p>A new time token to use for the next call</p></li></ul></div></li></ul></div><p>The first time you make a request to subscribe, you get something like this:</p><div class="informalexample"><pre class="programlisting">[[],"13782280489181338"]</pre></div><p>This is a JSON array. The first is an array of messages—for the first request, it will be empty. The second entry is a string, and it is the new time token to use.</p><p>After the first request, you'll see something that looks more like this:</p><div class="informalexample"><pre class="programlisting">[[ "Some message here", "Another message here" ], "13782280489181345"]</pre></div><p>Now, the <a id="id255" class="indexterm"></a>first<a id="id256" class="indexterm"></a> entry isn't full. It's an array of strings (in fact, these are JSON data which means they can hold any data you want, but in the case of our chat application we are sending string values). These are all of the new messages which have been published to the channel since the last time you subscribed.</p><p>To parse this, we'll use a JSON parser made for Unity called SimpleJSON. It can be downloaded for free from the Unify Community wiki, here:</p><p>
+<a class="ulink" href="http://wiki.unity3d.com/index.php/SimpleJSON" target="_blank">http://wiki.unity3d.com/index.php/SimpleJSON</a>
+</p><p>Follow the setup instructions to add it to a Unity project.</p><p>Next, let's build a helper function for parsing PubNub responses:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+using SimpleJSON;
+
+public class PubNubUtils
+{
+  public static string[] ParseSubscribeResponse( string response, out string timeToken )
+  {
+    // parse the JSON as a JSON array
+    var json = JSON.Parse( response ).AsArray;
+    // first entry is another JSON array
+    var messages = json[ 0 ].AsArray;
+
+    // second entry is new time token
+    timeToken = json[ 1 ].Value;
+
+    // parse message JSON array into string array
+    string[] ret = new string[ messages.Count ];
+    for( int i = 0; i &lt; ret.Length; i++ )
+    {
+      ret[ i ] = messages[ i ].Value;
+    }
+
+    // return messages
+    return ret;
+  }
+}</pre></div><p>Now that we can take <a id="id257" class="indexterm"></a>the response from subscribe and parse a<a id="id258" class="indexterm"></a> list of messages and the new time token, let's build our wrapper around PubNub.</p></div>

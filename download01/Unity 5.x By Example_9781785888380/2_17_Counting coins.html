@@ -1,0 +1,32 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec22"></a>Counting coins</h2></div></div><hr /></div><p>The coin collection <a id="id115" class="indexterm"></a>game wouldn't really be much of a game if there were only one coin. The central idea is that a level should feature many coins, all of which the player <a id="id116" class="indexterm"></a>should collect before a timer expires. Now, to know whether all coins have been collected, we'll need to know how many coins there are in total in the scene. After all, if we don't know how many coins there are, then we can't know if we've collected them all. So, our first task in scripting is to configure the <code class="literal">Coin</code> class so that we can know the total number of coins in the scene at any moment easily. Consider <span class="emphasis"><em>Code Sample 2.3</em></span>, which adapts the <code class="literal">Coin</code> class to achieve this:</p><div class="informalexample"><pre class="programlisting">//-------------------------
+using UnityEngine;
+using System.Collections;
+//-------------------------
+public class Coin : MonoBehaviour 
+{
+  //-------------------------
+  //Keeps track of total coin count in scene
+  <span class="strong"><strong>public static int CoinCount = 0;</strong></span>
+  //-------------------------
+  // Use this for initialization
+  void Start () 
+{
+    //Object created, increment coin count
+    <span class="strong"><strong>++Coin.CoinCount;</strong></span>
+  }
+  //-------------------------
+  //Called when object is destroyed
+  void OnDestroy()
+  {
+    //Decrement coin count
+    <span class="strong"><strong>--Coin.CoinCount;</strong></span>
+    
+    //Check remaining coins
+    if(Coin.CoinCount &lt;= 0)
+    {
+      //We have won
+    }
+  }
+  //-------------------------
+}
+//-------------------------</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec07"></a>Code Sample 2.3</h3></div></div></div><p>The following points summarize the code sample:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">Coin</code> class <a id="id117" class="indexterm"></a>maintains a static member variable, <code class="literal">CoinCount</code>, which, being static, is shared across all instances of the class. This variable keeps count of the total number of coins in the scene and each instance has access to it.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Start</code> function is called once per <code class="literal">Coin</code> instance when the object is created in the <span class="strong"><strong>Scene</strong></span>. For coins that are present when the scene begins, the <code class="literal">Start</code> event is called at scene startup. This function increments the <code class="literal">CoinCount</code> variable by one per instance, thus keeping count of all coins.</p></li><li style="list-style-type: disc"><p>The <code class="literal">OnDestroy</code> function is called once per instance when the object is destroyed. This decrements the <code class="literal">CoinCount</code> variable, reducing the count for each coin destroyed.</p></li></ul></div><p>Altogether, <span class="emphasis"><em>Code Sample 2.3</em></span> maintains a <code class="literal">CoinCount</code> variable. In short, this variable allows us to always keep track of the total coin count. We can query it easily to determine how many coins remain. This is good, but is only the first step towards completing the coin collection functionality.</p></div></div>

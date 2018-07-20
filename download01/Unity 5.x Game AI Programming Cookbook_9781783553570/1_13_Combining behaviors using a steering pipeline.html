@@ -1,0 +1,84 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec20"></a>Combining behaviors using a steering pipeline</h2></div></div><hr /></div><p>This is <a id="id44" class="indexterm"></a>a different approach to creating and blending behaviors that is based on goals. It tries to be a middle-ground between movement-blending and planning, without the implementation costs of the latter.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec52"></a>Getting ready</h3></div></div></div><p>Using a steering pipeline slightly changes the train of thought used so far. We need to think in terms of goals, and constraints. That said, the heavy lifting rests on the base classes and the derived classes that will define the behaviors; we need to start by implementing them.</p><p>The following code is for the <code class="literal">Targeter</code> class. It can be seen as a goal-driven behavior:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Targeter : MonoBehaviour
+{
+    public virtual Goal GetGoal()
+    {
+        return new Goal();
+    }
+}</pre></div><p>Now, we create the <code class="literal">Decomposer</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Decomposer : MonoBehaviour
+{
+    public virtual Goal Decompose (Goal goal)
+    {
+        return goal;
+    }
+}</pre></div><p>We also <a id="id45" class="indexterm"></a>need a <code class="literal">Constraint</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Constraint : MonoBehaviour
+{
+    public virtual bool WillViolate (Path path)
+    {
+        return true;
+    }
+
+    public virtual Goal Suggest (Path path) {
+        return new Goal();
+    }
+}</pre></div><p>And finally, an <code class="literal">Actuator</code> class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Actuator : MonoBehaviour
+{
+    public virtual Path GetPath (Goal goal)
+    {
+        return new Path();
+    }
+
+    public virtual Steering GetOutput (Path path, Goal goal)
+    {
+        return new Steering();
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec53"></a>How to do it...</h3></div></div></div><p>The <code class="literal">SteeringPipeline</code> class makes use of the previously implemented classes in order to work, maintaining the component-driven pipeline but with a different approach, as mentioned <a id="id46" class="indexterm"></a>earlier:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">SteeringPipeline</code> class deriving from the <code class="literal">Wander</code> behavior, including the array of components that it handles:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class SteeringPipeline <span class="strong"><strong>: Wander</strong></span>
+{
+    public int constraintSteps = 3;
+    Targeter[] targeters;
+    Decomposer[] decomposers;
+    Constraint[] constraints;
+    Actuator actuator;
+}</pre></div></li><li><p>Define the <code class="literal">Start</code> function to set the references to the attached components in the game object:</p><div class="informalexample"><pre class="programlisting">void Start ()
+{
+    targeters = GetComponents&lt;Targeter&gt;();
+    decomposers = GetComponents&lt;Decomposer&gt;();
+    constraints = GetComponents&lt;Constraint&gt;();
+    actuator = GetComponent&lt;Actuator&gt;();
+}</pre></div></li><li><p>Define the <code class="literal">GetSteering</code> function to work out the goal and the steering value to reach it:</p><div class="informalexample"><pre class="programlisting">public override Steering GetSteering()
+{
+    Goal goal = new Goal();
+    foreach (Targeter targeter in targeters)
+        goal.UpdateChannels(targeter.GetGoal());
+    foreach (Decomposer decomposer in decomposers)
+        goal = decomposer.Decompose(goal);
+    for (int i = 0; i &lt; constraintSteps; i++)
+    {
+        Path path = actuator.GetPath(goal);
+        foreach (Constraint constraint in constraints)
+        {
+            if (constraint.WillViolate(path))
+            {
+                goal = constraint.Suggest(path);
+                break;
+            }
+            return actuator.GetOutput(path, goal);
+        }
+    }
+    return base.GetSteering();
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec54"></a>How it works...</h3></div></div></div><p>This code takes a composite goal generated by <span class="emphasis"><em>targeters</em></span>, creates sub-goals using <span class="emphasis"><em>decomposers</em></span>, and evaluates them to comply with defined <span class="emphasis"><em>constraints</em></span> before "blending" them into a final goal in order <a id="id47" class="indexterm"></a>to produce a steering result. If everything fails (the constraints are not satisfied), it uses the default <code class="literal">Wander</code> behavior.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec55"></a>There's more...</h3></div></div></div><p>You should try to implement some of the behavior recipes in terms of targeters, decomposers, constraints, and an actuator. Take into account that there's room for one actuator only, and it's the one responsible for making the final decision. A good example is as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="strong"><strong>Targeters</strong></span>: seeking, arriving, facing, and <a id="id48" class="indexterm"></a>matching velocity</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Decomposers</strong></span>: path-finding <a id="id49" class="indexterm"></a>algorithms</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Constraints</strong></span>: avoiding <a id="id50" class="indexterm"></a>walls/agents</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec56"></a>See also</h3></div></div></div><p>For more theoretical insights, refer to Ian Millington's book, <span class="emphasis"><em>Artificial Intelligence for Games</em></span>.</p></div></div>

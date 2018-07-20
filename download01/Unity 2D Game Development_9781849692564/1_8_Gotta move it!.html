@@ -1,0 +1,119 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec14"></a>Gotta move it!</h2></div></div><hr /></div><p>Our player now has a<a id="id54" class="indexterm"></a> basic idle animation, but we can't interact with him yet. Let's fix that. Here is where we add the ability for the player to move around the scene.</p><p>We are going to use the existing key bindings that are present by default in a Unity project. To see what these are or change them, navigate to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Input</strong></span> and mess around. Unity stores all keybinds as axes, as they all have floating point values. This allows all input buttons for the engine to support the classic on/off function as well as support more touch-sensitive buttons and joysticks, such as those present on most modern gamepads.</p><p>Let's create a new folder in our project folder called <code class="literal">Scripts</code>, and inside that, create a new C# script. Call this script <code class="literal">PlayerStateController</code>. Here's how it should look:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class PlayerStateController : MonoBehaviour
+{
+public enum playerStates
+{
+idle = 0,
+left,
+right,
+jump,
+landing,
+falling,
+kill,
+resurrect
+}
+public delegate void playerStateHandler(PlayerStateController.playerStatesnewState);
+
+public static event playerStateHandleronStateChange;
+void LateUpdate () 
+{
+// Detect the current input of the Horizontal axis, then 
+// broadcast a state update for the player as needed.
+// Do this on each frame to make sure the state is always
+// set properly based on the current user input.
+float horizontal = Input.GetAxis("Horizontal");
+if(horizontal != 0f)
+{
+if(horizontal &lt; 0f)
+{
+if(onStateChange != null) onStateChange(PlayerStateController.playerStates.left);
+}
+else
+{
+if(onStateChange != null) onStateChange(PlayerStateController.playerStates.right);
+}
+}
+else
+{
+if(onStateChange != null) onStateChange(PlayerStateController.playerStates.idle);
+}
+}
+}</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip03"></a>Tip</h3><p>
+<span class="strong"><strong>Pro Tip</strong></span>
+</p><p>If you have a game with hundreds or even thousands of objects that track events from one object, such as a player, then it would be advised to use a singleton in those cases and have the other objects keep track of the state of the player on their own. Otherwise, you can get a massive load spike if you are loading thousands of events on a level load, which would happen even if you are using a pooling system.</p></div><p>As you may <a id="id55" class="indexterm"></a>have noticed, we listed out a number of states here. This makes up most of the states we'll use in the game. Don't worry, we'll add some more as we go on, which will show you how to add new states to the code.</p><p>This script also handles listening to the input keys. We're currently only listening to the horizontal input. If it is negative, we are moving left, and if it is positive, we are moving right. All of this is then managed by a simple Event and Delegate. This makes sure all enemies and other objects in the world can be informed of state changes to the player. All this does is open up numerous possibilities; we like possibilities.</p><p>Now, we need a script that listens to when the state changes and knows what to do when this happens. Create another script called <code class="literal">PlayerStateListener</code> and make that code look like the following code. The code is a rather large bit of code, and only part of it is displayed here. Check out the entire code in the supplied code examples!</p><div class="informalexample"><pre class="programlisting">// Every cycle of the engine, process the current state.
+void onStateCycle()
+{
+switch(currentState)
+{
+case PlayerStateController.playerStates.idle:
+break;
+
+case PlayerStateController.playerStates.left:
+transform.Translate(newVector3((playerWalkSpeed * -1.0f) * Time.deltaTime, 0.0f, 0.0f));
+break;
+
+case PlayerStateController.playerStates.right:
+transform.Translate(newVector3(playerWalkSpeed * Time.deltaTime, 0.0f, 0.0f));
+break;
+}
+}
+
+// onStateChange is called when we make a change to the player's state from anywhere within the game's code.
+public void onStateChange(PlayerStateController.playerStatesnewState)
+{
+// If the current state and the new state are the same, abort - no need to change to the state we're already in.
+
+if(newState == currentState)
+return;
+
+// Check if the current state is allowed to transition into // this state. If it's not, abort.
+if(!checkForValidStatePair(newState))
+return;
+
+// Having reached here, we now know that this state change is // allowed. So let's perform the necessary actions depending // on what the new state is.
+switch(newState)
+{
+case PlayerStateController.playerStates.idle:
+break;
+
+case PlayerStateController.playerStates.left:
+break;
+
+case PlayerStateController.playerStates.right:
+break;
+}
+
+// And finally, assign the new state to the player object
+currentState = newState;
+} 
+// Compare the desired new state against the current, and see // if we are allowed to change to the new state. This is a 
+// powerful system that ensures we only allow the actions to // occur that we want to occur.
+
+bool checkForValidStatePair(PlayerStateController.playerStatesnewState)
+{
+bool returnVal = false;
+
+// Compare the current against the new desired state.
+switch(currentState)
+{
+case PlayerStateController.playerStates.idle:
+// Any state can take over from idle.
+returnVal = true;
+break;
+case PlayerStateController.playerStates.left:
+// Any state can take over from the player moving // left.
+returnVal = true;
+break;
+case PlayerStateController.playerStates.right: 
+// Any state can take over from the player moving // right.
+returnVal = true; 
+break;
+} 
+return returnVal;
+}
+}</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip04"></a>Tip</h3><p>
+<span class="strong"><strong>Pro Tip</strong></span>
+</p><p>Event listeners and delegates are extraordinarily powerful. There's no longer any need to write massive amounts of state-check code for all of your objects. Say you have a huge sequence occurring in your game, such as a giant alien spaceship moving into attack position over a town. Instead of having every single object in the scene constantly check the state of the alien spaceship, just use event calls on the ship and event listeners on the reactive objects to update their local states based on the actions that occur. This saves time and headaches, giving you more time to make that sequence even better rather than spending more time just trying to make it work.</p></div><p>Phew! Now <a id="id56" class="indexterm"></a>that the code is a bit lengthier, give it a good read and it's pretty clear what is going on. What we have here is a decently powerful<a id="id57" class="indexterm"></a> <span class="strong"><strong>State System</strong></span>. With this, we can manage how the player object acts based on other current events. Whenever the player pushes movement keys, the <code class="literal">onStateChange(newState);</code> function is called. The code then checks to make sure if the current state is allowed to transition in to the state defined in <code class="literal">newState</code>—we wouldn't want the player to start walking around when dead! If the state change is allowed to occur, then some immediate code is applied, such as changing the current animation, and then the state is set. On every <code class="literal">LateUpdate</code>, the <code class="literal">onStateCycle();</code>function is called, which allows state events per engine cycle to occur. This is paced in <code class="literal">LateUpdate</code> rather than the <code class="literal">Update</code> function to make sure the input control has been processed first by Unity.</p><p>You probably noticed we haven't added all of the states in that code yet. No worries, we'll keep adding states as needed in the coming chapters.</p><p>Apply both the <code class="literal">PlayerStateController</code> and <code class="literal">PlayerStateListener</code> scripts to the player object. Now click on <span class="strong"><strong>Play</strong></span> and… the big moment… press the left or right keys as assigned in Unity's input setup (which default to <span class="emphasis"><em>A</em></span> and <span class="emphasis"><em>D</em></span> as well as the left and right arrow keys). </p><p>The player <a id="id58" class="indexterm"></a>moves! You now have a walking character that the player can control!</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip05"></a>Tip</h3><p>
+<span class="strong"><strong>Pro Tip</strong></span>
+</p><p>Your state system should be flexible and allow new states to be added easily. This means no state should directly rely on another state but instead can transition from one state to another. Plan your state systems in detail and in advance! Some very complex state systems go as far as having transitional states rather than just cycling states. Games have used state systems (also known as state machines) for decades, including in the original Super Mario Bros. games. </p></div></div>

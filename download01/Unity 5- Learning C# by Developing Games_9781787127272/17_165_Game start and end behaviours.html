@@ -1,0 +1,107 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch17lvl1sec154"></a>Game start and end behaviours</h2></div></div><hr /></div><p>Now, we don't <a id="id670" class="indexterm"></a>want a game to automatically start as soon as we hit the play button. We want to give the player a chance to tap and then start spawning the obstacles. To do this, we'll create our own components that we will add and remove dynamically to contain this additional behavior.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to the <span class="strong"><strong>Project</strong></span> tab, open up the <code class="literal">Scripts</code> folder, and create a new script named <code class="literal">GameStartBehaviour</code>. Open it up and use the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class GameStartBehaviour : MonoBehaviour {
+
+    /// &lt;summary&gt;
+    /// a reference to the player object.
+    /// &lt;/summary&gt;
+    private GameObject player;
+
+    // Use this for initialization
+    void Start ()
+    {
+        player = GameObject.Find("Plane");
+        player.GetComponent&lt;Rigidbody2D&gt;().isKinematic = true;
+    }
+    
+    // Update is called once per frame
+    void Update ()
+    {
+        // Start the game
+        if ((Input.GetKeyUp("space") || Input.GetMouseButtonDown(0)))
+        {
+            // After 1 second, spawn obstacles every 1.5 
+            // seconds
+            GameController controller = GetComponent&lt;GameController&gt;();
+            controller.InvokeRepeating("CreateObstacle", 1f, 1.5f);
+
+            // We want the plane to start falling now
+            player.GetComponent&lt;Rigidbody2D&gt;().isKinematic = false;
+
+            // Just delete this component, not the object 
+            // it's attached to
+            Destroy(this);
+        }
+    }
+}</pre></div></li><li><p>Save the<a id="id671" class="indexterm"></a> script and then open up the <code class="literal">GameController</code> script. Replace the <code class="literal">InvokeRepeating</code> line with the following:</p><div class="informalexample"><pre class="programlisting">gameObject.AddComponent&lt;GameStartBehaviour&gt;();</pre></div></li><li><p>Save the script and move back into the Unity Editor, save the project and play the game:</p><div class="mediaobject"><img src="/graphics/9781787127272/graphics/B05212_04_15.jpg" /></div><p>You'll note that now the game starts with the plane standing still. This is because we made the object kinematic, which means that it's not affected by other objects.</p></li><li><p>Now, let's <a id="id672" class="indexterm"></a>make it so that when we crash, we can restart the game. To do this, let's add in a new C# script named <code class="literal">GameEndBehaviour</code>. Use the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.SceneManagement;
+
+public class GameEndBehaviour : MonoBehaviour {
+
+    /// &lt;summary&gt;
+    /// Stops the player from quitting the game until a
+    /// certain amount of time has passed.
+    /// &lt;/summary&gt;
+ private bool canQuit = false;
+
+    /// &lt;summary&gt;
+    /// We've lost the game so stop spawning obstacles
+    /// &lt;/summary&gt;
+    void Start()
+    {
+        // Start our timer coroutine
+        StartCoroutine(DelayQuit());
+
+        // We no longer need to spawn obstacles
+        GameController controller = GameObject.Find("GameController").GetComponent&lt;GameController&gt;();
+        controller.CancelInvoke();
+    }
+
+    /// &lt;summary&gt;
+    /// Checks if the player presses space or clicks the
+    /// mouse. If we can restart, we will
+    /// &lt;/summary&gt;
+    void Update()
+    {
+        if ((Input.GetKeyUp("space") || Input.GetMouseButtonDown(0)) &amp;&amp; canQuit)
+        {
+          // Will restart up to the same level as we are 
+          // currently playing          
+          SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+    }
+
+
+    /// &lt;summary&gt;
+    /// Delays the player being able to restart instantly
+    /// &lt;/summary&gt;
+    /// &lt;returns&gt;How long to wait before being called again&lt;/returns&gt;
+    IEnumerator DelayQuit()
+    {
+        // Give the player time before we end the game
+        yield return new WaitForSeconds(.5f);
+
+        // After .5 seconds have passed it will come here.
+        canQuit = true;
+    }
+}</pre></div></li><li><p>Now go <a id="id673" class="indexterm"></a>back to <code class="literal">PlayerBehavior</code> and add the following bolded code to the end of the <code class="literal">OnCollisionEnter2D</code> function:</p><div class="informalexample"><pre class="programlisting">    /// &lt;summary&gt;
+    /// If we collide with any of the polygon colliders then we crash
+    /// &lt;/summary&gt;
+    /// &lt;param name="other"&gt;Who we collided with&lt;/param&gt;
+    void OnCollisionEnter2D(Collision2D other)
+    {
+        // We have now been hit
+        beenHit = true;
+        GameController.speedModifier = 0;
+
+        // The animation should no longer play, so we can set the 
+        // speed to 0 or destroy it
+        GetComponent&lt;Animator&gt;().speed = 0.0f;
+
+<span class="strong"><strong>        // Finally, create a GameEndBehaviour so we can restart</strong></span>
+<span class="strong"><strong>        if (!gameObject.GetComponent&lt;GameEndBehaviour&gt;())</strong></span>
+<span class="strong"><strong>        {</strong></span>
+<span class="strong"><strong>            gameObject.AddComponent&lt;GameEndBehaviour&gt;();</strong></span>
+<span class="strong"><strong>        }</strong></span>
+    }</pre></div></li><li><p>Save all of the scripts and run the project.</p></li></ol></div><p>At this point, whenever we lose, the game stops and after .5 seconds, we can then click once again in order to restart the project!</p></div>

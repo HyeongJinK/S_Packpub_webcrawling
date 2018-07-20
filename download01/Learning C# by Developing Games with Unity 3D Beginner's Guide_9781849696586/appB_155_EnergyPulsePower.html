@@ -1,0 +1,31 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec148"></a>EnergyPulsePower</h2></div></div><hr /></div><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class EnergyPulsePower : MonoBehaviour
+{
+  public float pulseDuration = 1f;
+  
+  public Transform goodOrb;
+  
+  void Update()
+  {
+    pulseDuration -= Time.deltaTime;
+    
+    if(pulseDuration &lt;= 0)
+      Destroy(gameObject);
+  }
+  
+  void OnTriggerEnter(Collider other)
+  {
+    if(other.gameObject.tag == "BadOrb")
+    {
+      Instantiate(goodOrb, other.transform.position,           other.transform.rotation);
+      GameObject.Find("GameManager).
+        GetComponent&lt;GameDate&gt;().playerLives += 1;
+      Destroy(other.gameObject);
+      Destroy(gameObject);
+    }
+    else
+      Destroy(gameObject);
+  }
+}</pre></div></div>

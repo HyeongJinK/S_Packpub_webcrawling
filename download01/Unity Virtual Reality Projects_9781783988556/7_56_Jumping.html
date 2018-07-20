@@ -1,0 +1,34 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec56"></a>Jumping</h2></div></div><hr /></div><p>When we<a id="id441" class="indexterm"></a> created the trampoline, I mentioned that our implementation doesn't require you to jump to start bouncing. However, jumping is a fun idea, whether on a trampoline or not. Some games use the keyboard spacebar or a controller button to make your avatar jump. We'll now implement a simple jump gesture from the VR headset, which applies a vertical velocity to our movement.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note19"></a>Note</h3><p>Note that this will not work with headsets that lack positional tracking, such as Google Cardboard and GearVR.</p></div><p>
+<span class="strong"><strong>Feature</strong></span>: <span class="emphasis"><em>When I jump, my character in VR jumps.</em></span>
+</p><p>To<a id="id442" class="indexterm"></a> implement a jump gesture, we'll look for a rapid change in the <span class="strong"><strong>Y</strong></span> position of the headset, which is very similar to the head nod gesture that we did in <a class="link" href="#" linkend="ch05">Chapter 5</a>, <span class="emphasis"><em>World Space UI</em></span>, (which checked for a rapid change in the <span class="emphasis"><em>x</em></span>-axis angle). When a jump gesture is detected, we'll apply a vertical force to the first-person , as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>With <code class="literal">MeMyselfEye</code> selected in <span class="strong"><strong>Hierarchy</strong></span>, create the script by navigating to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>New Script</strong></span>.</p></li><li><p>Name it <code class="literal">JumpGesture</code> and open it for editing.</p></li></ol></div><p>Edit the <code class="literal">JumpGesture.cs</code> script, as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class JumpGesture : MonoBehaviour {
+  public bool isJump = false;
+  public float jumpForce = 1000.0f;
+
+  private float jumpRate = 1.0f;
+  private float previousHeight;
+  private HeadLookWalkBounce walkBounce;
+
+  void Start () {
+    previousHeight = Camera.main.transform.position.y;  
+    walkBounce = GetComponent&lt;HeadLookWalkBounce&gt; ();
+  }
+  
+  void Update () {
+    if (DetectJump ()) {
+      walkBounce.bounceForce = jumpForce;
+    }
+  }
+
+  private bool DetectJump() {
+    float height = Camera.main.transform.localPosition.y;
+    float deltaHeight = height - previousHeight;
+    float rate = deltaHeight / Time.deltaTime;
+    previousHeight = height;
+    return (rate &gt;= jumpRate);
+  }
+}</pre></div><p>The <code class="literal">Update()</code> function <a id="id443" class="indexterm"></a>calls <code class="literal">DetectJump</code>, which determines whether the player has actually jumped in real life by detecting a quick change in the camera's <span class="strong"><strong>Y</strong></span> position. If the player did jump, then it sets <code class="literal">bounceForce</code> in the <code class="literal">HeadLookWalkBounce</code> script, like the trampoline did. If you want, you can modify <code class="literal">jumpForce</code> to be different from the value used by the trampoline.</p><p>Try it in VR. <span class="emphasis"><em>Ha! See, you don't need no stinkin' game controller to jump! Use your quads.</em></span>
+</p><p>This is a simple approximation for illustration purposes. It only looks at the motion changes from the previous frame. I encourage you to explore new and better ways to use your head and body as VR input.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note20"></a>Note</h3><p>
+<span class="strong"><strong>Extra challenge</strong></span>: For mobile VR devices with no positional tracking, try something else to invoke a jump.</p></div></div>

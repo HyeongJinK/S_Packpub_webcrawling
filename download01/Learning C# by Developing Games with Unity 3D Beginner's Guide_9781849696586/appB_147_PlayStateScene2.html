@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec140"></a>PlayStateScene2</h2></div></div><hr /></div><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using Assets.Code.Interfaces;
+
+namespace Assets.Code.States
+{
+  public class PlayStateScene2 : IStateBase
+  {
+    private StateManager manager;
+    private GameObject player;
+    private PlayerControl controller;
+
+    public PlayStateScene2 (StateManager managerRef)
+    {
+      manager = managerRef;
+      if(Application.loadedLevelName != "Scene2")
+        Application.LoadLevel("Scene2");
+      
+      player = GameObject.Find("Player");
+      controller = player.GetComponent&lt;PlayerControl&gt;();
+      player.rigidbody.isKinematic = false;
+      
+      foreach(var camera in manager.gameDataRef.cameras)
+      {
+        if(camera.name != "Following Camera")
+          camera.SetActive(false);
+        else
+          camera.SetActive(true);
+      }
+    }
+        
+    public void StateUpdate()
+    {
+      if(manager.gameDataRef.playerLives &lt;= 0)
+      {
+        manager.SwitchState(new                   LostStateScene2(manager));
+        manager.gameDataRef.ResetPlayer();
+        player.rigidbody.isKinematic = true;
+        player.transform.position = new 
+          Vector3(50, .5f, 40);
+      }
+      
+      if(manager.gameDataRef.score &gt;= 5)
+      {
+        manager.SwitchState(new                   WonStateScene2(manager));
+        player.rigidbody.isKinematic = true;
+      }
+      
+      if(Input.GetKey(KeyCode.LeftControl))
+      {
+        controller.FireEnergyPulse();
+      }
+    }
+
+    public void ShowIt()
+    {
+      GUI.Box(new Rect(10,10,100,25),
+        string.Format("Score: "+                 manager.gameDataRef.score));
+
+      GUI.Box(new Rect(Screen.width - 110,10,100,25),
+        string.Format("Lives left: "+               manager.gameDataRef.playerLives));
+    }
+  }
+}</pre></div></div>

@@ -1,0 +1,123 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec83"></a>Building an air-hockey rival</h2></div></div><hr /></div><p>Air hockey is probably one <a id="id371" class="indexterm"></a>of the most popular games enjoyed by players of all ages during the golden age of arcades, and they are still found everywhere. With the advent of touchscreen mobile devices, developing an air-hockey game is a fun way to not only test physics engines, but also to develop intelligent rivals despite the apparently low complexity of the game.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec282"></a>Getting ready</h3></div></div></div><p>This is a technique based on some of the algorithms that we learned in <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Movement</em></span>, such as <code class="literal">Seek</code>, <code class="literal">Arrive</code>, and <code class="literal">Leave</code>, and the ray casting knowledge that is employed in several other recipes, such as path smoothing.</p><p>It is necessary for the paddle game object to be used by the agent to have the <code class="literal">AgentBehaviour</code>, <code class="literal">Seek</code>, and <code class="literal">Leave</code> components attached, as it is used by the current algorithm. Also, it is important to tag the objects used as walls, that is, the ones containing the box colliders, as seen in the following figure:</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3570_08_02.jpg" /></div><p>Finally, it is important to <a id="id372" class="indexterm"></a>create an <code class="literal">enum</code> type for handling the rival's state:</p><div class="informalexample"><pre class="programlisting">public enum AHRState
+{
+    ATTACK,
+    DEFEND,
+    IDLE
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec283"></a>How to do it…</h3></div></div></div><p>This is a long class, so it is important to carefully follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the rival's class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class AirHockeyRival : MonoBehaviour
+{
+    // next steps
+}</pre></div></li><li><p>Declare the public variables for setting it up and fine-tuning it:</p><div class="informalexample"><pre class="programlisting">public GameObject puck;
+public GameObject paddle;
+public string goalWallTag = "GoalWall";
+public string sideWallTag = "SideWall";
+[Range(1, 10)]
+public int maxHits;</pre></div></li><li><p>Declare the private variables:</p><div class="informalexample"><pre class="programlisting">float puckWidth;
+Renderer puckMesh;
+Rigidbody puckBody;
+AgentBehaviour agent;
+Seek seek;
+Leave leave;
+AHRState state;
+bool hasAttacked;</pre></div></li><li><p>Implement the <code class="literal">Awake</code> <a id="id373" class="indexterm"></a>member function for setting up private classes, given the public ones:</p><div class="informalexample"><pre class="programlisting">public void Awake()
+{
+    puckMesh = puck.GetComponent&lt;Renderer&gt;();
+    puckBody = puck.GetComponent&lt;Rigidbody&gt;();
+    agent = paddle.GetComponent&lt;AgentBehaviour&gt;();
+    seek = paddle.GetComponent&lt;Seek&gt;();
+    leave = paddle.GetComponent&lt;Leave&gt;();
+    puckWidth = puckMesh.bounds.extents.z;
+    state = AHRState.IDLE;
+    hasAttacked = false;
+    if (seek.target == null)
+        seek.target = new GameObject();
+    if (leave.target == null)
+        leave.target = new GameObject();
+}</pre></div></li><li><p>Declare the <code class="literal">Update</code> member function. The following steps will define its body:</p><div class="informalexample"><pre class="programlisting">public void Update()
+{
+    // next steps
+}</pre></div></li><li><p>Check the current state and call the proper functions:</p><div class="informalexample"><pre class="programlisting">switch (state)
+{
+    case AHRState.ATTACK:
+        Attack();
+        break;
+    default:
+    case AHRState.IDLE:
+        agent.enabled = false;
+        break;
+    case AHRState.DEFEND:
+        Defend();
+        break;
+}</pre></div></li><li><p>Call the function <a id="id374" class="indexterm"></a>for resetting the active state for hitting the puck:</p><div class="informalexample"><pre class="programlisting">AttackReset();</pre></div></li><li><p>Implement the function for setting up the state from external objects:</p><div class="informalexample"><pre class="programlisting">public void SetState(AHRState newState)
+{
+    state = newState;
+}</pre></div></li><li><p>Implement the function for retrieving the distance from paddle to puck:</p><div class="informalexample"><pre class="programlisting">private float DistanceToPuck()
+{
+    Vector3 puckPos = puck.transform.position;
+    Vector3 paddlePos = paddle.transform.position;
+    return Vector3.Distance(puckPos, paddlePos);
+}</pre></div></li><li><p>Declare the member function for attacking. The following steps will define its body:</p><div class="informalexample"><pre class="programlisting">private void Attack()
+{
+    if (hasAttacked)
+        return;
+    // next steps
+}</pre></div></li><li><p>Enable the agent component and calculate the distance to puck:</p><div class="informalexample"><pre class="programlisting">agent.enabled = true;
+float dist = DistanceToPuck();</pre></div></li><li><p>Check whether the puck is out of reach. If so, just follow it:</p><div class="informalexample"><pre class="programlisting">if (dist &gt; leave.dangerRadius)
+{
+    Vector3 newPos = puck.transform.position;
+    newPos.z = paddle.transform.position.z;
+    seek.target.transform.position = newPos;
+    seek.enabled = true;
+    return;    
+}</pre></div></li><li><p>Attack the <a id="id375" class="indexterm"></a>puck if it is within reach:</p><div class="informalexample"><pre class="programlisting">hasAttacked = true;
+seek.enabled = false;
+Vector3 paddlePos = paddle.transform.position;
+Vector3 puckPos = puck.transform.position;
+Vector3 runPos = paddlePos - puckPos;
+runPos = runPos.normalized * 0.1f;
+runPos += paddle.transform.position;
+leave.target.transform.position = runPos;
+leave.enabled = true;</pre></div></li><li><p>Implement the function for resetting the parameter for hitting the puck:</p><div class="informalexample"><pre class="programlisting">private void AttackReset()
+{
+    float dist = DistanceToPuck();
+    if (hasAttacked &amp;&amp; dist &lt; leave.dangerRadius)
+        return;
+    hasAttacked = false;
+    leave.enabled = false;
+}</pre></div></li><li><p>Define the function for defending the goal:</p><div class="informalexample"><pre class="programlisting">private void Defend()
+{
+    agent.enabled = true;
+    seek.enabled = true;
+    leave.enabled = false;
+    Vector3 puckPos = puckBody.position;
+    Vector3 puckVel = puckBody.velocity;
+    Vector3 targetPos = Predict(puckPos, puckVel, 0);
+    seek.target.transform.position = targetPos;
+}</pre></div></li><li><p>Implement the function for predicting the puck's position in the future:</p><div class="informalexample"><pre class="programlisting">private Vector3 Predict(Vector3 position, Vector3 velocity, int numHit)
+{
+    if (numHit == maxHits)
+        return position;
+    // next steps
+}</pre></div></li><li><p>Cast a ray, given <a id="id376" class="indexterm"></a>the position and the direction of the puck:</p><div class="informalexample"><pre class="programlisting">RaycastHit[] hits = Physics.RaycastAll(position, velocity.normalized);
+RaycastHit hit;</pre></div></li><li><p>Check the hit results:</p><div class="informalexample"><pre class="programlisting">foreach (RaycastHit h in hits)
+{
+    string tag = h.collider.tag;
+    // next steps
+}</pre></div></li><li><p>Check whether it collides with the goal wall. Base case:</p><div class="informalexample"><pre class="programlisting">if (tag.Equals(goalWallTag))
+{
+    position = h.point;
+    position += (h.normal * puckWidth);
+    return position;
+}</pre></div></li><li><p>Check whether it collides with a side wall. Recursive case:</p><div class="informalexample"><pre class="programlisting">if (tag.Equals(sideWallTag))
+{
+    hit = h;
+    position = hit.point + (hit.normal * puckWidth);
+    Vector3 u = hit.normal;
+    u *= Vector3.Dot(velocity, hit.normal);
+    Vector3 w = velocity - u;
+    velocity = w - u;
+    break;
+}
+// end of foreach</pre></div></li><li><p>Enter the recursive case. This is done from the <code class="literal">foreach</code> loop:</p><div class="informalexample"><pre class="programlisting">return Predict(position, velocity, numHit + 1);</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec284"></a>How it works…</h3></div></div></div><p>The agent calculates the puck's next hits given its current velocity until the calculation results in the puck hitting the <a id="id377" class="indexterm"></a>agent's wall. This calculation gives a point for the agent to move its paddle toward it. Furthermore, it changes to the attack mode when the puck is close to its paddle and is moving towards it. Otherwise, it changes to idle or defend depending on the new distance.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec285"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Movement</em></span> recipes <span class="emphasis"><em>Pursuing and evading</em></span> and <span class="emphasis"><em>Arriving and leaving</em></span> recipes</p></li></ul></div></div></div>

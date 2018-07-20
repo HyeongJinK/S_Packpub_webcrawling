@@ -1,0 +1,35 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec77"></a>The Chase state</h2></div></div><hr /></div><p>The Chase state is the <a id="id478" class="indexterm"></a>second of the three in the enemy FSM. This state connects to both the Patrol and Attack states directly. It can be reached in one of two ways. If a patrolling NPC establishes a direct line of sight to the player, then the NPC changes from patrolling to chasing. Conversely, if an attacking NPC falls outside the reach of the player (perhaps because he is running away), the NPC resorts to chasing again. From the chasing state itself, it's possible to move either to the Patrol or Attack state, with the inverse conditions as those, which lead to chase. That is, if the NPC loses sight of the player, it returns to patrolling and, if the NPC reaches within attacking distance of the player, it switches to attacking. Consider the following code sample, which amends the <code class="literal">AIEnemy</code> class to support the chase behavior:</p><div class="informalexample"><pre class="programlisting">  public IEnumerator AIChase()
+  {
+    //Loop while chasing
+    while(currentstate == ENEMY_STATE.CHASE)
+    {
+      //Set loose search
+      ThisLineSight.Sensitity = LineSight.SightSensitivity.LOOSE;
+
+      //Chase to last known position
+      ThisAgent.Resume();
+      ThisAgent.SetDestination(ThisLineSight.LastKnowSighting);
+
+      //Wait until path is computed
+      while(ThisAgent.pathPending)
+        yield return null;
+
+      //Have we reached destination?
+      if(ThisAgent.remainingDistance &lt;= ThisAgent.stoppingDistance)
+      {
+        //Stop agent
+        ThisAgent.Stop();
+
+        //Reached destination but cannot see player
+        if(!ThisLineSight.CanSeeTarget)
+          CurrentState = ENEMY_STATE.PATROL;
+        else //Reached destination and can see player. Reached attacking distance
+          CurrentState = ENEMY_STATE.ATTACK;
+
+        yield break;
+      }
+
+      //Wait until next frame
+      yield return null;
+    }
+  }</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec32"></a>Code Sample 8.4</h3></div></div></div><p>The following points summarize the code sample:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">AIChase</code> <a id="id479" class="indexterm"></a>coroutine is started when the Chase state is entered and, like the Patrol state, it repeats on a frame-safe infinite loop for as long as the state is active.</p></li><li style="list-style-type: disc"><p>The <code class="literal">remainingDistance</code> member variable of the <code class="literal">NavMeshAgent</code> is used to determine whether the NPC has reached within attacking distance of the player.</p></li><li style="list-style-type: disc"><p>The <code class="literal">CanSeeTarget</code> Boolean variable of the <code class="literal">LineSight</code> class indicates whether the player is visible and is influential in choosing whether the NPC should return to patrolling.</p></li></ul></div><p>Excellent work! Now <a id="id480" class="indexterm"></a>give the code a test run in the editor and you have an enemy character than can patrol and chase. Splendid!</p></div></div>

@@ -1,0 +1,84 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec31"></a>Working with animation - creating the navigator</h2></div></div><hr /></div><p>The animator is now created for the camera object, and the camera object itself is configured in a hierarchy that'll make our work organized and clean going forward. The object structure is Navigator &gt; Player &gt; Main Camera, as shown earlier in the screenshot in the section <span class="emphasis"><em>Animating the camera</em></span>. Now it's time for us to define the core functionality for the main camera by scripting. Specifically, we'll create a new class, called <code class="literal">Navigator</code>. This will be responsible for moving the camera across its network of paths. To create a new script, right-click in the <span class="strong"><strong>Project</strong></span> panel and choose <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span>. Name this <code class="literal">Navigator</code>. Then, double-click the file, open it inside <span class="strong"><strong>MonoDevelop</strong></span> or another associated code editor, such as Visual Studio or Microsoft Code. The auto-generated class template will appear as follows:</p><pre class="programlisting">using UnityEngine; 
+using System.Collections; 
+ 
+public class Navigator : MonoBehaviour 
+{ 
+    // Use this for initialization 
+    void Start () { 
+     
+    } 
+     
+    // Update is called once per frame 
+    void Update () { 
+     
+    } 
+} 
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec34"></a>Customizing and changing MonoDevelop</h3></div></div></div><p>Going forwards, I'll assume you're using MonoDevelop for coding and editing text files from within Unity. MonoDevelop is a third-party, cross-platform application for editing text files and compiling code in many languages. Unity is configured by default to work with MonoDevelop as the standard editor. This means that MonoDevelop will open automatically when you double-click a valid script file from the <span class="strong"><strong>Project</strong></span> panel. However, if you want to change the default editor, you can do this by choosing <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Preferences</strong></span> from the application menu, then choosing the <span class="strong"><strong>External Tools</strong></span> tab.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_03_033.jpg" /></div><p>
+</p><p>Accessing the Unity Preferences dialog to change the default code editor</p><p>From the <span class="strong"><strong>External Tools</strong></span> tab, click the <span class="strong"><strong>External Script Editor</strong></span> field and select your preferred code editor. MonoDevelop is an available option and you can browse your computer for other applications, like Visual Studio or Microsoft Code.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_03_034.jpg" /></div><p>
+</p><p>Customizing the Unity code editor</p><p>On launching MonoDevelop for the first time, your code editor will probably appear as shown in this screenshot, the very light color scheme can be hard on the eyes:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_03_035.jpg" /></div><p>
+</p><p>MonoDevelop default color scheme</p><p>Some people find a darker color scheme easier to view for long periods. You can easily change this, first by choosing <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Preferences</strong></span> from the MonoDevelop application menu. This displays the user <span class="strong"><strong>Preferences</strong></span> window.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_03_036.jpg" /></div><p>
+</p><p>User Preferences window</p><p>From here, choose <span class="strong"><strong>Syntax Highlighting</strong></span> and select the <span class="strong"><strong>Oblivion</strong></span> color scheme.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_03_037.jpg" /></div><p>
+</p><p>Choosing Oblivion</p><p>This Oblivion scheme darkens the editor background, making the code easier to read.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_03_038.jpg" /></div><p>
+</p><p>The Oblivion color scheme in action!</p><p>Splendid. You've now customized MonoDevelop in preparation for coding, which we will use in many ways over the coming chapters, including this chapter.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec35"></a>Singletons</h3></div></div></div><p>The <code class="literal">Navigator</code> class is associated with the player and represents player controls. There can be one, and only one, player in the scene at any one time. For this reason, the <code class="literal">Navigator</code> class should be coded as a Singleton object. A Singleton object is a class that is specifically designed so that it cannot be instantiated more than once. Note, the Singleton design is not a convention by which we agree, with ourselves and other developers, not to instantiate the class more than once. Rather, the Singleton class is so designed as to make multiple instantiations impossible. Let's start implementing Singleton behavior. The class is re-coded as follows and comments follow:</p><pre class="programlisting">using UnityEngine; 
+using System.Collections; 
+ 
+public class Navigator : MonoBehaviour  
+{ 
+    //Reference to singleton instance 
+    public static Navigator ThisInstance 
+    { 
+        get 
+        { 
+            //Get or create singleton instance 
+            if (mThisInstance == null) 
+            { 
+                GameObject GO = new GameObject ("Navigator"); 
+                mThisInstance = GO.AddComponent&lt;Navigator&gt; (); 
+            } 
+ 
+            return mThisInstance; 
+        } 
+ 
+        set  
+        { 
+            //If not null then we already have instance 
+            if (mThisInstance != null)  
+            { 
+            //If different, then remove duplicate immediately 
+       (mThisInstance.GetInstanceID() != value.GetInstanceID()) 
+                    DestroyImmediate (value.gameObject); 
+ 
+                return; 
+            } 
+ 
+            //If new, then create new singleton instance 
+            mThisInstance = value; 
+        } 
+    } 
+ 
+    private static Navigator mThisInstance = null; 
+ 
+    void Awake() 
+    { 
+        ThisInstance = this; 
+    } 
+ 
+} 
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note23"></a>Note</h3><p>Remember, static variables are very different from non-static. Variables prefixed with static belong to the class itself and not to a specific instance of the class. Thus, they are shared across all instances of that class. If the value of a static variable changes, then it changes for all instances. More information on statics and Unity can be found online here: <a class="ulink" href="https://unity3d.com/learn/tutorials/topics/scripting/statics" target="_blank">https://unity3d.com/learn/tutorials/topics/scripting/statics</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec36"></a>Comments</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The navigator Singleton features two new variables: the private static variable <code class="literal">mThisInstance</code>; and the public static property <code class="literal">ThisInstance</code>.</p></li><li style="list-style-type: disc"><p>The <code class="literal">mThisInstance</code> variable should always maintain a reference to the one and only currently activated instance of the navigator. All other instances are to be regarded as invalid and should be removed.</p></li><li style="list-style-type: disc"><p>The only way to access and read the <code class="literal">mThisInstance</code> variable is through the <code class="literal">ThisInstance</code> property. The <code class="literal">set</code> method controls which values are written to <code class="literal">mThisInstance</code> and the <code class="literal">get</code> method controls which values are returned.</p></li><li style="list-style-type: disc"><p>The <code class="literal">Awake</code> event, which is called when an instance is created, uses the <span class="emphasis"><em>set</em></span> method for the <code class="literal">ThisInstance</code> property. This property validates the passed value (the current instance) and determines whether an instance has been created before by checking the <code class="literal">mThisInstance</code> variable. Since the <code class="literal">mThisInstance</code> variable is static, its value will hold across all instances. Hence, we can always know if <code class="literal">mThisInstance</code> has been previously assigned.</p></li><li style="list-style-type: disc"><p>If an instance has already been assigned to <code class="literal">mThisInstance</code>, then any differing instances must be later instances and may be removed. Here, all addition instances are destroyed with <code class="literal">DestroyImmediate</code>.</p></li><li style="list-style-type: disc"><p>The function <code class="literal">GetInstanceID</code> determines whether two object references refer to one and the same object. This makes sense as each object in the scene is guaranteed a unique instance ID. This is needed to prevent the Singleton from deleting itself; that is, the one and only instance.</p></li></ul></div><p>Great work! We've now applied the <span class="strong"><strong>Singleton Design Pattern</strong></span> to the navigator object and this class should be dragged and dropped to the top-level navigator object in the scene. The <code class="literal">Navigator</code> class will then be instantiated on the navigator object as a component.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785880742/graphics/image_03_039.jpg" /></div><p>
+</p><p>Assigning the Navigator script to the navigator object</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec37"></a>Connecting to the navigator component</h3></div></div></div><p>The navigator must connect with the animator component to change the Int parameter <code class="literal">NavState</code>. Specifically, our code needs to identify when the camera should move and then make that happen via the animator. Additionally, the navigator should also identify when the camera finishes travelling to its next waypoint. We know the camera is ready to move when all currently attacking zombies are defeated; the next wave of zombies begins again only after the camera has arrived at its next destination. Based on these requirements, there are some limitations to what we can achieve here presently, because we still have lots of dependent functionality to define, like the zombies and attacking behaviors. Consequently, we'll return to the navigator in later chapters to implement the final functionality. However, we know enough here to get started on the navigator and to block in basic functionality. This is absolutely fine; jumping back and forth between connecting and dependent classes, refining their functionality. To get started, we'll retrieve a reference to the navigator component inside the <code class="literal">Awake</code> function.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note24"></a>Note</h3><p>Remember, the <code class="literal">Awake</code> function on an object is always called before start. <code class="literal">Awake</code> is useful for retrieving object references, such as a reference to the navigator, on which later functions (including start) may depend.</p></div><pre class="programlisting">     
+void Awake() 
+    { 
+        ThisInstance = this; 
+        ThisAnimator = GetComponent&lt;Animator&gt; (); 
+    } 
+</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec38"></a>Comments</h3></div></div></div><p>It's always a good idea to retrieve a reference to the animator component inside <code class="literal">Awake</code>, and then store its value in a private class variable, which can be used anywhere throughout the class. An alternative is to call the <code class="literal">GetComponent</code> function wherever you need a reference, but this is comparatively expensive computationally, so avoid it.</p><p>The animator component offers us a method for directly accessing Int parameter; namely <code class="literal">SetInt</code>. This function accepts two arguments: the first identifies which Int parameter must be set (we could have multiple parameters); the second is the value itself, which should be assigned to the parameter. Now, there are two versions of this method, and each differs by how the Int parameter is named. We can name the parameter literally by string (specifying the name of the parameter as it appears in the <span class="strong"><strong>Animator</strong></span> window; for example, <code class="literal">NavState</code>), or by an integer ID. The latter method is preferred, as it doesn't rely on any string processing, which can be computationally expensive. To achieve this, we'll need to generate a hash from the parameter name. Specifically, Unity can generate a hash from a string; a unique number from a string. This is valuable because the generated number is guaranteed to be unique for the specified string, and no other string produces the same number. To achieve this, we can declare a new integer variable for the class as follows:</p><pre class="programlisting">private int AnimStateHash = Animator.StringToHash("NavState"); 
+</pre><p>
+<span class="strong"><strong>Comments</strong></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">AnimStateHash</code> variable is an integer that stores a numerical representation of the <code class="literal">NavState</code> string</p></li><li style="list-style-type: disc"><p>This variable should be used as an argument to the <code class="literal">Animator.SetInt</code> function, to specify the named parameter to change</p></li></ul></div><p>Thus, we can now access the <code class="literal">NavState</code> parameter anywhere in code, as follows:</p><pre class="programlisting">ThisAnimator.SetInteger (AnimStateHash, MyVal); 
+</pre><p>So, we now know how to access the Int parameter in the graph, but when should we do this? For testing purposes, we could implement a call to <code class="literal">SetInteger</code> in the <code class="literal">Update</code> function when a key is pressed. This, at least, means we can easily test the functionality by pressing keys on the keyboard to move the camera on its path. But, in its final implementation, the player must kill all zombies and, when killed, a prompting arrow should appear on screen, which the player can click to move the camera forward. The details of zombie attacks and typing are covered in later chapters. But, for now, we'll focus on the UI which appears when zombies are killed. To implement this behavior, we'll need to work with the Unity UI.</p></div></div>

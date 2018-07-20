@@ -1,0 +1,35 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec58"></a>The seeing function using a collider-based system</h2></div></div><hr /></div><p>This is <a id="id239" class="indexterm"></a>probably the easiest way to <a id="id240" class="indexterm"></a>simulate vision. We take a collider, be it a mesh or a Unity primitive, and use it as the tool for determining whether or not an object is inside the agent's vision range.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec197"></a>Getting ready</h3></div></div></div><p>It's important to have a collider component attached to the same game object using the script on this recipe, as well as the other collider-based algorithms in this chapter. In this case, it's recommended that the collider is a pyramid-based one in order to simulate a vision cone. The fewer the polygons, the faster it will be in the game.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec198"></a>How to do it…</h3></div></div></div><p>We will create a component that is able to see enemies nearby:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Visor</code> component declaring its member variables. It is important to add the following corresponding tags into Unity's configuration:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Visor : MonoBehaviour
+{
+    public string tagWall = "Wall";
+    public string tagTarget = "Enemy";
+    public GameObject agent;
+}</pre></div></li><li><p>Implement <a id="id241" class="indexterm"></a>the function for initializing the game object in case the component is already assigned to it:</p><div class="informalexample"><pre class="programlisting">void Start()
+{
+    if (agent == null)
+        agent = gameObject;
+}</pre></div></li><li><p>Declare the function for checking collisions in every frame, and let's build it in the following steps:</p><div class="informalexample"><pre class="programlisting">public void OnTriggerStay(Collider coll)
+{
+    // next steps here
+}</pre></div></li><li><p>Discard the collision if it is not a target:</p><div class="informalexample"><pre class="programlisting">string tag = coll.gameObject.tag;
+if (!tag.Equals(tagTarget))
+    return;</pre></div></li><li><p>Get the game object's position and compute its direction from the visor:</p><div class="informalexample"><pre class="programlisting">GameObject target = coll.gameObject;
+Vector3 agentPos = agent.transform.position;
+Vector3 targetPos = target.transform.position;
+Vector3 direction = targetPos - agentPos;</pre></div></li><li><p>Compute <a id="id242" class="indexterm"></a>its length and <a id="id243" class="indexterm"></a>create a new ray to be shot soon:</p><div class="informalexample"><pre class="programlisting">float length = direction.magnitude;
+direction.Normalize();
+Ray ray = new Ray(agentPos, direction);</pre></div></li><li><p>Cast the created ray and retrieve all the hits:</p><div class="informalexample"><pre class="programlisting">RaycastHit[] hits;
+hits = Physics.RaycastAll(ray, length);</pre></div></li><li><p>Check for any wall between the visor and target. If none, we can proceed to call our functions or develop our behaviors that are to be triggered:</p><div class="informalexample"><pre class="programlisting">int i;
+for (i = 0; i &lt; hits.Length; i++)
+{
+    GameObject hitObj;
+    hitObj = hits[i].collider.gameObject;
+    tag = hitObj.tag;
+    if (tag.Equals(tagWall))
+        return;
+}
+// TODO
+// target is visible
+// code your behaviour below</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec199"></a>How it works…</h3></div></div></div><p>The collider component checks every frame if it is colliding with any game object in the scene. We leverage the optimizations to Unity's scene graph and engine, and focus only on how to handle the valid collisions.</p><p>After checking, if a target object is inside the vision range represented by the collider, we cast a ray in order to check whether it is really visible or if there is a wall in between.</p><div class="mediaobject"><img src="/graphics/9781783553570/graphics/3570_05_01.jpg" /></div></div></div>

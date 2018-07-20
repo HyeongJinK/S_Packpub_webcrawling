@@ -1,0 +1,160 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec53"></a>Creating a hit-point UI</h2></div></div><hr /></div><p>Now, we <a id="id1124" class="indexterm"></a>are at the last step of this project. We will <a id="id1125" class="indexterm"></a>add the hit-point game object for the player and enemy as well as create the <code class="literal">HitPointUI</code> script.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec115"></a>Engage thrusters</h3></div></div></div><p>Let's get started:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to the folder (for C# users, <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>C#</strong></span> | <span class="strong"><strong>UI</strong></span>, or for JavaScript<a id="id1126" class="indexterm"></a> users, <span class="strong"><strong>Chapter6</strong></span> | <span class="strong"><strong>Scenes</strong></span> | <span class="strong"><strong>JavaScript</strong></span> | <span class="strong"><strong>UI</strong></span>) in the <span class="strong"><strong>Project</strong></span> view, right-click and choose <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span> (for C# users) or <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javasrcript</strong></span> (for JavaScript users), rename it to <code class="literal">HitPoint</code>.</p></li><li><p>Double-click <a id="id1127" class="indexterm"></a>on the <code class="literal">HitPoint</code> script to open it in MonoDevelop. Start by creating all properties and the <code class="literal">Update()</code> function, as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+var ai : AI;
+var player : Player;
+var frameTexture : Texture2D;
+var hpTexture : Texture2D;
+var aiTexture : Texture2D;
+var textHpTexture : Texture2D;
+var textAiTexture : Texture2D;
+function Update() {
+  if ((player.HpPercent &lt;= 0.0f) || (ai.HpPercent &lt;= 0.0f)) {
+    CharacterClass.IS_GAMEOVER = true;
+    StopAllCoroutines();
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class HitPoint : MonoBehaviour {
+  public AI ai;
+  public Player player;
+  public Texture2D frameTexture;
+  public Texture2D hpTexture;
+  public Texture2D aiTexture;
+  public Texture2D textHpTexture;
+  public Texture2D textAiTexture;  
+  void Update() {
+    if ((player.HpPercent &lt;= 0.0f) || (ai.HpPercent &lt;= 0.0f)) {
+      CharacterClass.IS_GAMEOVER = true;
+      StopAllCoroutines();
+    }
+  }
+}</pre></div></li><li><p>Next, we<a id="id1128" class="indexterm"></a> will add the <code class="literal">OnGUI()</code> function to <a id="id1129" class="indexterm"></a>create the hit-point UI as follows: </p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function OnGUI() {
+  GUI.DrawTexture (new Rect (10,10,46,32), textHpTexture);
+  GUI.DrawTexture (new Rect (10,42,95,32), textAiTexture);
+  GUI.BeginGroup (new Rect (110,15,156,21));
+  GUI.DrawTexture(new Rect (0,0,156,21), frameTexture);
+  GUI.BeginGroup (new Rect (0,0,player.HpPercent * 156, 21));
+  GUI.DrawTexture (new Rect (0,0,156,21), hpTexture);
+  GUI.EndGroup ();
+  GUI.EndGroup ();
+  
+  GUI.BeginGroup (new Rect (110,47,156,21));
+  GUI.DrawTexture(new Rect (0,0,156,21), frameTexture);
+  GUI.BeginGroup (new Rect (0,0,ai.HpPercent * 156, 21));
+  GUI.DrawTexture (new Rect (0,0,156,21), aiTexture);
+  GUI.EndGroup ();
+  GUI.EndGroup ();
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void OnGUI() {
+  GUI.DrawTexture (new Rect (10,10,46,32), textHpTexture);
+  GUI.DrawTexture (new Rect (10,42,95,32), textAiTexture);  
+  GUI.BeginGroup (new Rect (110,15,156,21));
+  GUI.DrawTexture(new Rect (0,0,156,21), frameTexture);
+  GUI.BeginGroup (new Rect (0,0,player.HpPercent * 156, 21));
+  GUI.DrawTexture (new Rect (0,0,156,21), hpTexture);
+  GUI.EndGroup ();
+  GUI.EndGroup ();
+
+  GUI.BeginGroup (new Rect (110,47,156,21));
+  GUI.DrawTexture(new Rect (0,0,156,21), frameTexture);  
+  GUI.BeginGroup (new Rect (0,0,ai.HpPercent * 156, 21));
+  GUI.DrawTexture (new Rect (0,0,156,21), aiTexture);
+  GUI.EndGroup ();
+  GUI.EndGroup ();
+}</pre></div><p>In the<a id="id1130" class="indexterm"></a> preceding function, we just <a id="id1131" class="indexterm"></a>use the <code class="literal">GUI.BeginGroup()</code> function<a id="id1132" class="indexterm"></a> to draw the mask for the hit-point bar.</p></li><li><p>Now, we will go back to Unity and drag the <code class="literal">HitPoint</code>
+<span class="strong"><strong> </strong></span>script to the UI game object in the <span class="strong"><strong>Hierarchy</strong></span> view. Then, we will go to its <span class="strong"><strong>Inspector</strong></span> view and set the following:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " colspan="3" align="left" valign="bottom">
+<p>Hit Point UI (Script) </p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>AI</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>robotAI_C# (AI)</strong></span> or <span class="strong"><strong>robotAI_JS (AI)</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Drag the <span class="strong"><strong>robotAI_C#</strong></span> or <span class="strong"><strong>robotAI_JS</strong></span> game object inside the <span class="strong"><strong>Enemy</strong></span> game object to the <span class="strong"><strong>Hierarchy</strong></span> view</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Player</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>robot (Player)</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Drag the <span class="strong"><strong>robot</strong></span> game object to the <span class="strong"><strong>Hierarchy</strong></span> view here</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Frame Texture</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>hitPointFrame</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is located in the <span class="strong"><strong>Resources</strong></span>/<span class="strong"><strong>UI</strong></span> folder</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Hp Texture</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>hitPointBarHP</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is located in the <span class="strong"><strong>Resources</strong></span>/<span class="strong"><strong>UI</strong></span> folder</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Ai Texture</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>hitPointEnemy</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is located in the <span class="strong"><strong>Resources</strong></span>/<span class="strong"><strong>UI</strong></span> folder</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Hp Texture</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>HP</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is located in the <span class="strong"><strong>Resources</strong></span>/<span class="strong"><strong>UI</strong></span> folder</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Text Ai Texture</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>ENEMY</strong></span> </p>
+</td><td style="" align="left" valign="top">
+<p>This is located in the <span class="strong"><strong>Resources</strong></span>/<span class="strong"><strong>UI</strong></span> folder</p>
+</td></tr></tbody></table></div></li></ol></div><p>Now, we have finished our game, so click on <span class="strong"><strong>Play</strong></span> to see the result. We will see that when the player or enemy gets shot, the hit-point bar will decrease.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec116"></a>Objective complete – mini debriefing</h3></div></div></div><p>We just<a id="id1133" class="indexterm"></a> created the UI game object and the script, which <a id="id1134" class="indexterm"></a>we use to control the hit-point UI. We also used <code class="literal">GUI.BeginGroup()</code> to mask the decreasing damage from either the player or enemy hit-points.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec117"></a>Classified intel</h3></div></div></div><p>In this section, we have used <code class="literal">GUI.BeginGroup()</code> to mask out the texture to show how many hit<a id="id1135" class="indexterm"></a> points are left. The <code class="literal">GUI.BeginGroup()</code> function must be close to <code class="literal">GUI. EndGroup()</code>. </p><p>In our code, we basically created the first group to contain the background texture, which is the bar frame. Then, we drew another group on top of the first group, which contains the bar texture as a clip mask. This second group's width will relate to the hit-point value left for the player or enemy, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">//Draw the background group 
+<span class="strong"><strong>GUI.BeginGroup (Rect (110,15,156,21)); </strong></span>
+GUI.DrawTexture(Rect (0,0,156,21), frameTexture); 
+// Create a second Group which will be clipped 
+<span class="strong"><strong>GUI.BeginGroup (Rect (0,0, player.GetHpPercent() * 156, 21)); </strong></span>
+GUI.DrawTexture (Rect (0,0,156,21), hpTexture); 
+//End both Groups 
+<span class="strong"><strong>GUI.EndGroup (); </strong></span>
+<span class="strong"><strong>GUI.EndGroup (); </strong></span>
+</pre></div><p>We can translate the preceding code into  the following diagram:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_06_24.jpg" /></div></div></div>

@@ -1,0 +1,108 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec50"></a>Sending/receiving messages</h2></div></div><hr /></div><p>Once <a id="id211" class="indexterm"></a>connected to a room, we have a connection that can be <a id="id212" class="indexterm"></a>used to send and receive messages. Let's register event handlers for receiving messages, as well as disconnections.</p><p>First, we'll add methods to handle these events:</p><div class="informalexample"><pre class="programlisting">// called when we've disconnected from the room
+void OnDisconnect( object sender, string message )
+{
+  Debug.Log( "Disconnected from room" );
+}
+// called when a message is received
+void OnMessage( object sender, Message e )
+{
+}</pre></div><p>Then we'll modify our <code class="literal">OnGUI</code> method to hook up these event handlers upon connection:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  if( roomConnection != null )
+    return;
+
+  if( GUILayout.Button( "Join Random", GUILayout.Width( 200f ) ) )
+  {
+    client.Multiplayer.CreateJoinRoom( "$service-room$", "MyCode", true, null, null,
+      delegate( Connection connection )
+      {
+        Debug.Log( "Joining room" );
+        roomConnection = connection;
+        roomConnection.OnMessage += new MessageReceivedEventHandler( OnMessage );
+        roomConnection.OnDisconnect += new DisconnectEventHandler( OnDisconnect );
+      },
+      delegate( PlayerIOError error )
+      {
+        Debug.Log( error.Message );
+      } );
+  }
+
+  if( GUILayout.Button( "Create Room", GUILayout.Width( 200f ) ) )
+  {
+    client.Multiplayer.CreateRoom( null, "MyCode", true, null,
+      delegate( string roomID )
+      {
+        Debug.Log( "Room created" );
+        client.Multiplayer.JoinRoom( roomID, null,
+        delegate( Connection connection )
+        {
+        Debug.Log( "Connected to room!" );
+        roomConnection = connection;
+        roomConnection.OnMessage += new MessageReceivedEventHandler( OnMessage );
+        roomConnection.OnDisconnect += new DisconnectEventHandler( OnDisconnect );
+        },
+        delegate( PlayerIOError error )
+        {
+          Debug.Log( error.Message );
+        } );
+      },
+      delegate( PlayerIOError error )
+      {
+        Debug.Log( error.Message );
+      } );
+  }
+
+  if( rooms == null )
+    return;
+
+  foreach( RoomInfo room in rooms )
+  {
+    if( GUILayout.Button( room.Id, GUILayout.Width( 200f ) ) )
+    {
+      client.Multiplayer.JoinRoom( room.Id, null,
+        delegate( Connection connection )
+        {
+        Debug.Log( "Connected to room!" );
+        roomConnection = connection;
+        roomConnection.OnMessage += new MessageReceivedEventHandler( OnMessage );
+        roomConnection.OnDisconnect += new DisconnectEventHandler( OnDisconnect );
+        },
+        delegate( PlayerIOError error )
+        {
+          Debug.Log( error.Message );
+        } );
+    }
+  }
+}</pre></div><p>When the<a id="id213" class="indexterm"></a> room sends a message to the client, the <code class="literal">OnMessage</code> function will be called. If the client is disconnected from the room, the <code class="literal">OnDisconnect</code> function will be called.</p><p>To send <a id="id214" class="indexterm"></a>messages, we simply call the <code class="literal">Send</code> method on the <code class="literal">Connection</code> object. This method can either take a <code class="literal">Message</code> object, or a string Message Type and parameter list. Usually it's easier to simply provide the type and parameter list, but you can also construct a Message via <code class="literal">Message.Create</code>, which takes the same type and parameter list and you can also add parameters via the <code class="literal">Add</code> method (for instance, allow objects to serialize their info by giving them the <code class="literal">Message</code> object and allowing them to add parameters).</p><p>So, at the top of our GUI function, we could add this to allow the user to send a test message while they're in a room:</p><div class="informalexample"><pre class="programlisting">if( roomConnection != null )
+{
+  if( GUILayout.Button( "Send Message", GUILayout.Width( 200f ) ) )
+  {
+    roomConnection.Send( "TestMessage", "Hello, world!" );
+  }
+  return;
+}</pre></div><p>The first parameter is message type, used to identify what kind of message it is (for instance, you <a id="id215" class="indexterm"></a>might have a "move" message type, a "chat" message type, and so on). All other parameters are values added to the message payload (so, for instance a move message might contain X, Y, and Z position values, a chat message would have a single string message, and so on).</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec37"></a>Server-side code</h3></div></div></div><p>The<a id="id216" class="indexterm"></a> Server code handles things a bit differently. You have a single function for processing messages from players (<code class="literal">GotMessage</code>); and can send a message to players either by calling <code class="literal">BroadcastMessage</code> (which broadcasts a message to all players), or by calling <code class="literal">Send</code> on a specific player (which sends to that player only). Note that Player.IO servers are multithreaded, so keep this in mind while writing code to ensure thread safety. The Client API is not multithreaded, however.</p><p>In the included server code, the default GotMessage function looks like this:</p><div class="informalexample"><pre class="programlisting">// This method is called when a player sends a message into the server code
+public override void GotMessage( Player player, Message message )
+{
+  switch( message.Type )
+  {
+    // This is how you would set a players name when they send in their name in a 
+    // "MyNameIs" message
+    case "MyNameIs":
+      player.Name = message.GetString( 0 );
+      break;
+  }
+}</pre></div><p>If you wanted to handle a specific message type, you would likely use cases in a switch-case for each type of message (as shown earlier). So, you might respond to the <code class="literal">TestMessage</code> type message like this:</p><div class="informalexample"><pre class="programlisting">// This method is called when a player sends a message into the server code
+public override void GotMessage( Player player, Message message )
+{
+  switch( message.Type )
+  {
+    // This is how you would set a players name when they send in their name in a 
+    // "MyNameIs" message
+    case "MyNameIs":
+      player.Name = message.GetString( 0 );
+      break;
+    <span class="strong"><strong>case "TestMessage":</strong></span>
+<span class="strong"><strong>      player.Send( "TestResponse", message.GetString( 0 ) );</strong></span>
+<span class="strong"><strong>      break;</strong></span>
+  }
+}</pre></div><p>When the<a id="id217" class="indexterm"></a> player sends a <code class="literal">TestMessage</code> type message, the server responds with a <code class="literal">TestResponse</code> type message, containing the first string value in the <code class="literal">TestMessage</code> type message sent by the player.</p></div></div>

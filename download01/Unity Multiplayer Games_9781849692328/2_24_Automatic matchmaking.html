@@ -1,0 +1,10 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec30"></a>Automatic matchmaking</h2></div></div><hr /></div><p>Many games do<a id="id102" class="indexterm"></a> not use a lobby. For example, console games often opt to randomly match players together rather than allowing them to browse a list of games (which could be unwieldy with a controller), or some games also have a "Quick Play" button<a id="id103" class="indexterm"></a> in the lobby which allows the user to jump right into the action without having to browse the server lists. Usually, players can specify a preference, such as which map to play on, or what game mode they want.</p><p>Luckily, random matchmaking in PUN is very easy.</p><p>In PUN, you can call the <code class="literal">PhotonNetwork.JoinRandomRoom</code> function. This function takes a Hashtable of expected properties, and the desired max player count. It will attempt to join a random room, which will either call <code class="literal">OnJoinedRoom</code> if a room was found and the client was able to connect, or <code class="literal">OnPhotonRandomJoinFailed</code> if no room could be found (usually, this means all rooms are full, or no rooms are available).</p><p>Our lobby example might have a "Quick Play" button to do this:</p><div class="informalexample"><pre class="programlisting">// if quick play button is clicked
+{
+  // attempt to join a random room
+  PhotonNetwork.JoinRoom( filterProperties, 0 );
+}</pre></div><p>If there are no rooms available to join, we can also start a new room.</p><div class="informalexample"><pre class="programlisting">void OnPhotonRandomJoinFailed()
+{
+  // failed to join a room, create a new one
+  // passing a null name autogenerates a unique name.
+  PhotonNetwork.CreateRoom( null, true, true, 8 );
+}</pre></div><p>Now the player can either <a id="id104" class="indexterm"></a>manually find a room, or they can click the quick play button to immediately play. If no room is available, a new one is automatically created with a random name.</p></div>

@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec50"></a>Saving data with flat files</h2></div></div><hr /></div><p>The first <a id="id423" class="indexterm"></a>and more common way to save data (that we will go over) is using the flat file system. In this style, you can save a normal text file with data from your game and load it later on. We will also discuss how to customize our file so that we can have our own extension added to it. For our flat file system, we will save the player's position as well as our statistics that we created earlier in this book. To start off, we will need to create a new C# script and name it <code class="literal">FLAT_Save_System</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec101"></a>Adding the required variables</h3></div></div></div><p>Before <a id="id424" class="indexterm"></a>we start adding our variables and other code, we <a id="id425" class="indexterm"></a>need to make sure that we have all the required <code class="literal">using</code> statements. Add these <code class="literal">using</code> statements to your code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System;
+using System.IO;
+using System.Text;</pre></div><p>For this script, we will only need to create a few public variables; add these to your script:</p><div class="informalexample"><pre class="programlisting">public string sFileName;
+public string sDirectory;
+  
+public GameObject Player;</pre></div><p>The first string will be the file that we will save and load from will be called, the name should also include the extension. The next string is the directory that we will save to and load from—for testing purposes and using the <code class="literal">Desktop</code> directory so that we can easily find it later on. Our final variable, <code class="literal">GameObject</code>, is our player.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec102"></a>Time to save our file</h3></div></div></div><p>Now, we will<a id="id426" class="indexterm"></a> add the function that will allow us to save our flat file. To save our file, we will use the code that we didn't discuss in this book before, as you can see from our new <code class="literal">using</code> statements. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">void WriteToFile(string file = "")
+{
+  if(file != "")
+    sFileName = file;
+
+  if(File.Exists(sDirectory + sFileName))
+  {
+    DeleteFile(sFileName);
+  }
+
+  using(StreamWriter sw = new StreamWriter(sDirectory + sFileName))
+  {
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerKills").ToString());
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerDeaths").ToString());
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerTotalGold").ToString());
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerCurrentGold").ToString());
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerGoldSpent").ToString());
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerLevel").ToString());
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerRoundsWon").ToString());
+    sw.WriteLine(PlayerPrefs.GetInt("PlayerRoundsLost").ToString());
+    sw.WriteLine(PlayerPrefs.GetFloat("PlayerKDR").ToString());
+    sw.WriteLine(PlayerPrefs.GetFloat("PlayerWLR").ToString());
+    sw.WriteLine(PlayerPrefs.GetFloat("PlayerTimePlayed").ToString());
+    sw.WriteLine(Player.transform.position.x.ToString());
+    sw.WriteLine(Player.transform.position.y.ToString());
+    sw.WriteLine(Player.transform.position.z.ToString());
+  }
+}</pre></div><p>This<a id="id427" class="indexterm"></a> function takes in a string. We have set the string to a blank value; this will allow us to call the function with or without sending the value. To start off the function, we check whether the file has a value; if it does, then we will use it as our new filename. If it does not, then we will continue to use the filename we previously set in our public variable.</p><p>After this, we check whether our file already exists. If it does, we run a function that will delete that file; we will create this function later on in this chapter. We delete the file so that we don't have any issues with duplicate files or incorrect filenames being made.</p><p>Next, we<a id="id428" class="indexterm"></a> start the process of creating and saving our file. To do this, we use a <code class="literal">StreamWriter</code> type. <code class="literal">StreamWriter</code> allows us to write data to a file. We use a basic instance of <code class="literal">StreamWriter</code>, but the class also has other options that can expand upon how you write your data.</p><p>To use <code class="literal">StreamWriter</code>, we set the path that we want to write to, or in this case, the stream, and then add lines to that stream that will be written to our file. To add lines to our file, we call the native <code class="literal">WriteLine</code> function from the <code class="literal">StreamWriter</code> class. Within this call, we pass the variable that we want to save. For this instance, we grab <code class="literal">PlayerPrefs</code> we had set earlier as well as the player's transform position.</p></div></div>

@@ -1,0 +1,197 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec103"></a>Surface shaders</h2></div></div><hr /></div><p>To use the surface shaders, you need to define a surface function (<code class="literal">void surf(Input IN, inout SurfaceOutput o)</code>) that takes any UVs or data you need as an input and fills in the <a id="id1381" class="indexterm"></a>output structure, <code class="literal">SurfaceOutput</code>. <code class="literal">SurfaceOutput</code>, which basically describes the properties of the surface (its albedo color, normal, emission, specularity, and so on). Then, you write this code in Cg/HLSL.</p><p>The surface shaders' compiler then figures out what inputs are needed, what outputs are filled, and so on and generates actual vertex and pixel shaders as well as rendering passes to handle forward and deferred rendering.</p><p>The surface shaders placed inside the <code class="literal">CGPROGRAM...ENDCG</code> block are to be placed inside the <code class="literal">SubShader</code> block, and it uses the <code class="literal">#pragma surface ...</code> directive to indicate that it's a surface shader. You will see that the surface shaders are placed inside the <code class="literal">CGPROGRAM</code> and <code class="literal">ENDCG</code> blocks in the following example:</p><div class="informalexample"><pre class="programlisting">Shader "My Lambert" {
+    Properties {
+      _MainTex ("Texture", 2D) = "white" {}
+    }
+    SubShader {
+      Tags { "RenderType"="Opaque" }
+      LOD 200 //Optional that allows the script to turned the shaderon or off when the player's hardware didn't support your shader.
+<span class="strong"><strong>      CGPROGRAM</strong></span>
+<span class="strong"><strong>      #pragma surface surf Lambert</strong></span>
+<span class="strong"><strong>      sampler2D _MainTex;  </strong></span>
+<span class="strong"><strong>  </strong></span>
+<span class="strong"><strong>      struct Input {</strong></span>
+<span class="strong"><strong>        float2 uv_MainTex;</strong></span>
+<span class="strong"><strong>      };</strong></span>
+
+<span class="strong"><strong>      void surf (Input IN, inout SurfaceOutput o) {</strong></span>
+<span class="strong"><strong>        fixed4 c = tex2D (_MainTex, IN.uv_MainTex);</strong></span>
+<span class="strong"><strong>        o.Albedo = c.rgb;</strong></span>
+<span class="strong"><strong>        o.Alpha = c.a;</strong></span>
+<span class="strong"><strong>      }</strong></span>
+<span class="strong"><strong>      ENDCG</strong></span>
+  }
+    FallBack "Diffuse"
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec156"></a>#pragma surface</h3></div></div></div><p>The <code class="literal">#pragma surface</code> directive is used as follows:</p><div class="informalexample"><pre class="programlisting">#pragma surface surfaceFunction lightModel [optionalparams]</pre></div><p>The<a id="id1382" class="indexterm"></a> required parameters to use this directive<a id="id1383" class="indexterm"></a> are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">surfaceFunction</code>: This is used to <a id="id1384" class="indexterm"></a>define which Cg function has the surface<a id="id1385" class="indexterm"></a> shader code. The function should have the form of <code class="literal">void surf (Input IN, inout SurfaceOutput o)</code>, where <code class="literal">Input</code> is a structure you have defined. <code class="literal">Input</code> should contain any texture coordinates and extra automatic variables needed by surface function.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">lightModel</code>: This is used to <a id="id1386" class="indexterm"></a>define a lighting model to be used. The built-in models are <span class="strong"><strong>Lambert</strong></span> (diffuse) and <span class="strong"><strong>BlinnPhong</strong></span> (specular). You can also write your own lighting model using the following custom lighting models:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">half4 LightingName (SurfaceOutput s, half3 lightDir, half atten);</code>: This is used in forward rendering the path for light models that are not view-direction dependent (for example, diffuse)</p></li><li style="list-style-type: disc"><p>
+<code class="literal">half4 LightingName (SurfaceOutput s, half3 lightDir, half3 viewDir, half atten);</code>: This is used in forward rendering path for light models that are view-direction dependent</p></li><li style="list-style-type: disc"><p>
+<code class="literal">half4 LightingName_PrePass (SurfaceOutput s, half4 light);</code>: This is used in the deferred lighting path.</p></li></ul></div></li></ul></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip51"></a>Tip</h3><p>Note that you don't need to declare all functions. A lighting model either uses view <a id="id1387" class="indexterm"></a>direction or it does not. Similarly, if the lighting model does not work in deferred lighting, you just do not declare the <code class="literal">_PrePass</code> function, and all shaders that use it will compile to forward rendering only, such as the shader that we created in <a class="link" href="#" linkend="ch03">Project 3</a>, <span class="emphasis"><em>Shade Your Hero/Heroine</em></span>. We don't need the <code class="literal">_PrePass</code> function because our shader needs the view <a id="id1388" class="indexterm"></a>direction (<code class="literal">viewDir</code>) and the light direction (<code class="literal">lightDir</code>) for our custom lighting function to calculate the ramp effect for the cartoon style shader (toon shader / cel shader), which is only available in forward rendering.</p></div><p>Optional<a id="id1389" class="indexterm"></a> parameters <code class="literal">[optionalparams]</code> to use <code class="literal">#pragma surface</code> are listed in the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Type</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">alpha</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is<a id="id1390" class="indexterm"></a> the alpha blending mode. This is used <a id="id1391" class="indexterm"></a>for semitransparent shaders.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">alphatest:VariableName</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is the <a id="id1392" class="indexterm"></a>alpha<a id="id1393" class="indexterm"></a> testing mode. This is used for transparent-cutout shaders. The cut-off value is in the <code class="literal">float</code> variable with <code class="literal">VariableName</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">vertex:VertexFunction</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This is the<a id="id1394" class="indexterm"></a> custom<a id="id1395" class="indexterm"></a> vertex modification function. See tree bark shader, for example.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">exclude_path:prepass</code> or <code class="literal">exclude_path:forward</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1396" class="indexterm"></a>does <a id="id1397" class="indexterm"></a>not <a id="id1398" class="indexterm"></a>generate <a id="id1399" class="indexterm"></a>passes for the given rendering path.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">addshadow</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1400" class="indexterm"></a>adds shadow caster <a id="id1401" class="indexterm"></a>and collector passes. This is commonly used with custom vertex modification so that shadow casting also gets a procedural vertex animation.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">dualforward</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1402" class="indexterm"></a>uses dual lightmaps<a id="id1403" class="indexterm"></a> in the forward path.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">fullforwardshadows</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1404" class="indexterm"></a> supports <a id="id1405" class="indexterm"></a>all shadow types in the forward rendering path.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">decal:add</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1406" class="indexterm"></a> is<a id="id1407" class="indexterm"></a> an additive decal shader (for example, <code class="literal">terrain AddPass</code>).</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">decal:blend</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1408" class="indexterm"></a> is a semitransparent <a id="id1409" class="indexterm"></a>decal shader.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">softvegetation</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1410" class="indexterm"></a> makes the surface shader <a id="id1411" class="indexterm"></a>render only when soft vegetation is on.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Noambient</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1412" class="indexterm"></a>does not apply<a id="id1413" class="indexterm"></a> any ambient lighting or spherical harmonic lights.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">novertexlights</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1414" class="indexterm"></a>does not apply <a id="id1415" class="indexterm"></a>any spherical harmonics or per-vertex lights in forward rendering.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">nolightmap</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This<a id="id1416" class="indexterm"></a> disables lightmap support in<a id="id1417" class="indexterm"></a> this shader (makes a shader smaller).</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">Noforwardadd</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1418" class="indexterm"></a>disables forward rendering of an <a id="id1419" class="indexterm"></a>additive pass. This makes the shader support one full directional light, with all other lights computed per vertex/SH. This makes shaders smaller as well.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">approxview</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1420" class="indexterm"></a>computes normalized view direction<a id="id1421" class="indexterm"></a> per vertex instead of per pixel for shaders that need it. This is faster, but view direction is not entirely correct when the camera gets close to the surface.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">halfasview</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This <a id="id1422" class="indexterm"></a>passes a half-direction<a id="id1423" class="indexterm"></a> vector into the lighting function instead of view direction. Half direction will be computed and normalized per vertex. This is faster, but not entirely correct.</p>
+</td></tr></tbody></table></div><p>Additionally, you can write <code class="literal">#pragma debug</code> inside the <code class="literal">CGPROGRAM</code> block, and then the surface compiler will spit out a lot of comments of the generated code. You can view them using an open compiled shader in the <span class="strong"><strong>Shader</strong></span> inspector.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec157"></a>Surface shaders input structure</h3></div></div></div><p>The input <a id="id1424" class="indexterm"></a>structure, <code class="literal">Input</code>, generally has any texture coordinates <a id="id1425" class="indexterm"></a>needed by the shader. texture coordinates and must be named <code class="literal">uv</code> followed by a texture name (or start it with <code class="literal">uv2</code> to use the second texture coordinate set).</p><p>An example of surface shader input structure is as follows:</p><div class="informalexample"><pre class="programlisting">Properties {
+    _MainTex ("Texture", 2D) = "white" {}
+}
+……
+    sampler2D _MainTex;
+……
+<span class="strong"><strong>    struct Input {</strong></span>
+<span class="strong"><strong>         float2 uv_MainTex;</strong></span>
+<span class="strong"><strong>    };</strong></span>
+</pre></div><p>We can <a id="id1426" class="indexterm"></a>also have additional values that can be put into the <code class="literal">Input</code> structure, as mentioned in<a id="id1427" class="indexterm"></a> the following <a id="id1428" class="indexterm"></a>table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Type</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float3 viewDir</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain the view direction to compute Parallax effects, rim lighting, and so on.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float4 with COLOR semantic</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain an interpolated per-vertex color.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float4 screenPos</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain the screen space position for reflection effects. This is used by the WetStreet shader in Dark Unity, for example.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float3 worldPos</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain the world space position.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float3 worldRefl</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain the world reflection vector if the surface shader does not write to <code class="literal">o.Normal</code>. See the Reflect-Diffuse shader, for example.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float3 worldNormal</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain the world normal vector if the surface shader does not write to <code class="literal">o.Normal</code>.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float3 worldRefl; INTERNAL_DATA</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain the world reflection vector if the surface shader writes to <code class="literal">o.Normal</code>. To get the reflection vector based on per-pixel normal map, use <code class="literal">WorldReflectionVector (IN, o.Normal)</code>. See the Reflect-Bumped shader for example.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">float3 worldNormal; INTERNAL_DATA</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>This will contain the world normal vector if the surface shader writes to <code class="literal">o.Normal</code>. To get the normal vector based on per-pixel normal map, use <code class="literal">WorldNormalVector (IN, o.Normal)</code>.</p>
+</td></tr></tbody></table></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec158"></a>The SurfaceOutput structure</h3></div></div></div><p>A<a id="id1429" class="indexterm"></a> standard <a id="id1430" class="indexterm"></a>output structure of surface shaders is as follows:</p><div class="informalexample"><pre class="programlisting">struct SurfaceOutput {     
+    fixed3 Albedo;     
+    fixed3 Normal;     
+    fixed3 Emission;     
+    half Specular;     
+    fixed Gloss;     
+    fixed Alpha; 
+};</pre></div><p>You<a id="id1431" class="indexterm"></a> can also find it in the <code class="literal">Lighting.cginc</code> file inside<a id="id1432" class="indexterm"></a> Unity (<code class="literal">unity install path}/Data/CGIncludes/Lighting.cginc</code> in Windows and <code class="literal">/Applications/Unity/Unity.app/Contents/CGIncludes/Lighting.cginc</code> in Mac).</p></div></div>

@@ -1,0 +1,251 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec16"></a>The enemy tank AI</h2></div></div><hr /></div><p>Now let's look at the real code for <a id="id83" class="indexterm"></a>our AI tanks. Let's call our class <code class="literal">SimpleFSM</code>, which inherits <a id="id84" class="indexterm"></a>from our <code class="literal">FSM</code> abstract class.</p><p>The code in the <code class="literal">SimpleFSM.cs</code> file is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class SimpleFSM : FSM 
+{
+
+    public enum FSMState
+    {
+      None,
+      Patrol,
+      Chase,
+      Attack,
+      Dead,
+    }
+
+    //Current state that the NPC is reaching
+    public FSMState curState;
+
+    //Speed of the tank
+    private float curSpeed;
+
+    //Tank Rotation Speed
+    private float curRotSpeed;
+
+    //Bullet
+    public GameObject Bullet;
+
+    //Whether the NPC is destroyed or not
+    private bool bDead;
+    private int health;</pre></div><p>Here, we are declaring a few variables. Our tank AI will have four different states: <code class="literal">Patrol</code>, <code class="literal">Chase</code>, <code class="literal">Attack</code>, and <code class="literal">Dead</code>. Basically, we'll be implementing the FSM that was described as an example in <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Introduction to AI</em></span>.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_01_01.jpg" /><div class="caption"><p>Enemy tank AI's FSM</p></div></div><p>In our <code class="literal">Initialize</code> method, we set up our <a id="id85" class="indexterm"></a>AI tank's properties with default values. Then we store the positions of waypoints in our local variable. We got those waypoints from our scene using the <code class="literal">FindGameObjectsWithTag</code> method, trying to find those objects with the <code class="literal">WandarPoint</code> tag.</p><div class="informalexample"><pre class="programlisting">    //Initialize the Finite state machine for the NPC tank
+    protected override void Initialize () 
+    {
+      curState = FSMState.Patrol;
+      curSpeed = 150.0f;
+      curRotSpeed = 2.0f;
+      bDead = false;
+      elapsedTime = 0.0f;
+      shootRate = 3.0f;
+      health = 100;
+
+      //Get the list of points
+      pointList = 
+      GameObject.FindGameObjectsWithTag("WandarPoint");
+
+      //Set Random destination point first
+      FindNextPoint();
+
+      //Get the target enemy(Player)
+      GameObject objPlayer = 
+      GameObject.FindGameObjectWithTag("Player");
+
+      playerTransform = objPlayer.transform;
+
+      if (!playerTransform)
+        print("Player doesn't exist.. Please add one "+
+        "with Tag named 'Player'");
+
+        //Get the turret of the tank
+        turret = gameObject.transform.GetChild(0).transform;
+        bulletSpawnPoint = turret.GetChild(0).transform;
+      }</pre></div><p>Our update method that gets <a id="id86" class="indexterm"></a>called every frame looks as follows:</p><div class="informalexample"><pre class="programlisting">    //Update each frame
+    protected override void FSMUpdate()
+    {
+      switch (curState)
+      {
+        case FSMState.Patrol: UpdatePatrolState(); break;
+        case FSMState.Chase: UpdateChaseState(); break;
+        case FSMState.Attack: UpdateAttackState(); break;
+        case FSMState.Dead: UpdateDeadState(); break;
+      }
+
+     //Update the time
+     elapsedTime += Time.deltaTime;
+
+     //Go to dead state is no health left
+     if (health &lt;= 0)
+      curState = FSMState.Dead;
+    }</pre></div><p>We check the current state, and then call the appropriate state method. Once the <code class="literal">health</code> object is zero or less than zero, we set the tank to the <code class="literal">Dead</code> state.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec20"></a>The patrol state</h3></div></div></div><p>While our tank is in the <code class="literal">Patrol</code> <a id="id87" class="indexterm"></a>state, we check whether it has reached the destination point. If it has, it'll find the next destination point to follow. The <a id="id88" class="indexterm"></a>
+<code class="literal">FindNextPoint</code> method basically chooses the next random destination point among the waypoints defined. If it's still on the way to the current destination point, <a id="id89" class="indexterm"></a>it'll check the distance with the player's tank. If the player's tank is in range (which is <code class="literal">300</code> here), then it'll change to the <code class="literal">Chase</code> state. The rest of the code just rotates the tank and moves forward.</p><div class="informalexample"><pre class="programlisting">    protected void UpdatePatrolState()
+    {
+      //Find another random patrol point if the current 
+      //point is reached
+      if (Vector3.Distance(transform.position, destPos) &lt;= 
+      100.0f)
+      {
+        print("Reached to the destination point\n"+
+        "calculating the next point");
+
+        FindNextPoint();
+      }
+
+      //Check the distance with player tank
+      //When the distance is near, transition to chase state
+      else if (Vector3.Distance(transform.position, 
+      playerTransform.position) &lt;= 300.0f)
+      {
+        print("Switch to Chase Position");
+        curState = FSMState.Chase;
+      }
+
+      //Rotate to the target point
+      Quaternion targetRotation = 
+      Quaternion.LookRotation(destPos 
+      - transform.position);
+
+      transform.rotation = 
+      Quaternion.Slerp(transform.rotation, 
+      targetRotation, Time.deltaTime * curRotSpeed);
+
+      //Go Forward
+      transform.Translate(Vector3.forward * Time.deltaTime * 
+      curSpeed);
+    }
+    protected void FindNextPoint()
+    {
+      print("Finding next point");
+      int rndIndex = Random.Range(0, pointList.Length);
+      float rndRadius = 10.0f;
+      Vector3 rndPosition = Vector3.zero;
+      destPos = pointList[rndIndex].transform.position + 
+      rndPosition;
+
+      //Check Range to decide the random point 
+      //as the same as before
+      if (IsInCurrentRange(destPos))
+      {
+        rndPosition = new Vector3(Random.Range(-rndRadius, 
+        rndRadius), 0.0f, Random.Range(-rndRadius, 
+        rndRadius));
+        destPos = pointList[rndIndex].transform.position + 
+        rndPosition;
+      }
+    }
+    protected bool IsInCurrentRange(Vector3 pos)
+    {
+      float xPos = Mathf.Abs(pos.x - transform.position.x);
+      float zPos = Mathf.Abs(pos.z - transform.position.z);
+
+      if (xPos &lt;= 50 &amp;&amp; zPos &lt;= 50)
+        return true;
+
+        return false;
+    }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec21"></a>The chase state</h3></div></div></div><p>Similarly while the tank is in the <a id="id90" class="indexterm"></a>
+<code class="literal">Chase</code> state, it'll check its distance with the player tank. If it's close enough, it'll switch to the <code class="literal">Attack</code> state. If the player tank has gone too far, <a id="id91" class="indexterm"></a>then it'll go back to the <code class="literal">Patrol</code> state.</p><div class="informalexample"><pre class="programlisting">    protected void UpdateChaseState()
+    {
+      //Set the target position as the player position
+      destPos = playerTransform.position;
+
+      //Check the distance with player tank When
+      //the distance is near, transition to attack state
+      float dist = Vector3.Distance(transform.position, 
+      playerTransform.position);
+
+      if (dist &lt;= 200.0f)
+      {
+        curState = FSMState.Attack;
+      }
+      //Go back to patrol is it become too far
+      else if (dist &gt;= 300.0f)
+      {
+        curState = FSMState.Patrol;
+      }
+
+      //Go Forward
+      transform.Translate(Vector3.forward * Time.deltaTime * 
+      curSpeed);
+    }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec22"></a>The attack state</h3></div></div></div><p>If the player tank is close enough to <a id="id92" class="indexterm"></a>attack our AI tank, we will rotate the <code class="literal">turret</code> <a id="id93" class="indexterm"></a>object to the player tank, and then start shooting. It'll go back to the <code class="literal">Patrol</code> state, if the player tank is out of range.</p><div class="informalexample"><pre class="programlisting">    protected void UpdateAttackState()
+    {
+      //Set the target position as the player position
+      destPos = playerTransform.position;
+
+      //Check the distance with the player tank
+      float dist = Vector3.Distance(transform.position, 
+      playerTransform.position);
+
+      if (dist &gt;= 200.0f &amp;&amp; dist &lt; 300.0f)
+      {
+        //Rotate to the target point
+        Quaternion targetRotation = 
+        Quaternion.LookRotation(destPos - 
+        transform.position);
+        transform.rotation = Quaternion.Slerp(
+        transform.rotation, targetRotation, 
+        Time.deltaTime * curRotSpeed);  
+
+        //Go Forward
+        transform.Translate(Vector3.forward * 
+        Time.deltaTime * curSpeed);
+
+        curState = FSMState.Attack;
+      }
+      //Transition to patrol is the tank become too far
+      else if (dist &gt;= 300.0f)
+      {
+        curState = FSMState.Patrol;
+      }
+
+      //Always Turn the turret towards the player
+      Quaternion turretRotation = 
+      Quaternion.LookRotation(destPos 
+      - turret.position);
+
+      turret.rotation = 
+      Quaternion.Slerp(turret.rotation, turretRotation, 
+      Time.deltaTime * curRotSpeed); 
+
+      //Shoot the bullets
+      ShootBullet();
+    }
+    private void ShootBullet()
+    {
+      if (elapsedTime &gt;= shootRate)
+      {
+        //Shoot the bullet
+        Instantiate(Bullet, bulletSpawnPoint.position, 
+        bulletSpawnPoint.rotation);
+        elapsedTime = 0.0f;
+      }
+    }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec23"></a>The dead state</h3></div></div></div><p>If the tank has <a id="id94" class="indexterm"></a>reached the <a id="id95" class="indexterm"></a>
+<code class="literal">Dead</code> state, we'll have it explode.</p><div class="informalexample"><pre class="programlisting">    protected void UpdateDeadState()
+    {
+      //Show the dead animation with some physics effects
+      if (!bDead)
+      {
+        bDead = true;
+        Explode();
+      }
+    }</pre></div><p>Here's a small function that will give a nice <a id="id96" class="indexterm"></a>explosion effect. We just apply an <code class="literal">ExplosionForce</code> to our <a id="id97" class="indexterm"></a>
+<code class="literal">rigidbody</code> component with some random directions, given in the following code:</p><div class="informalexample"><pre class="programlisting">    protected void Explode()
+    {
+      float rndX = Random.Range(10.0f, 30.0f);
+      float rndZ = Random.Range(10.0f, 30.0f);
+      for (int i = 0; i &lt; 3; i++)
+      {
+        rigidbody.AddExplosionForce(10000.0f, 
+        transform.position - new Vector3(rndX, 10.0f, 
+        rndZ), 40.0f, 10.0f);
+        rigidbody.velocity = transform.TransformDirection(
+        new Vector3(rndX, 20.0f, rndZ));
+      }
+
+      Destroy(gameObject, 1.5f);
+    }</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec05"></a>Taking damage</h4></div></div></div><p>If the tank is hit by a bullet, then the <code class="literal">health</code> property's value will be deducted, based on the <span class="strong"><strong>Bullet</strong></span> object's <code class="literal">damage</code> value.</p><div class="informalexample"><pre class="programlisting">    void OnCollisionEnter(Collision collision)
+    {
+      //Reduce health
+      if(collision.gameObject.tag == "Bullet")
+      {
+        health -=collision.gameObject.GetComponent 
+        &lt;Bullet&gt;().damage;
+      }
+    }</pre></div><p>You can open <code class="literal">SimpleFSM.scene</code> in Unity, and then you should see the AI tanks patrolling, chasing, and attacking the player. Our player tank doesn't take damage from AI tanks, so it'll never get destroyed. But AI tanks have the <code class="literal">health</code> property, and take damage from the player's bullets. So, you'll see their explosion, once their <code class="literal">health</code> property reaches zero.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_02_06.jpg" /><div class="caption"><p>AI tanks in action</p></div></div></div></div></div>

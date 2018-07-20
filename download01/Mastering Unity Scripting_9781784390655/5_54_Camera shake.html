@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec56"></a>Camera shake</h2></div></div><hr /></div><p>Now, here's an effect we can achieve with the Unity free version: camera shake! For fighting, shooting, and action games generally, a camera shake effect can be important. It conveys impact, danger, action, dynamism, and excitement—a form of kinetic feedback. It can, in fact, be used to stand in for<a id="id418" class="indexterm"></a> lots of other animations too that simulate a pervasive motion and emotion where there really isn't any to be found elsewhere in the scene. To this extent, camera shakes can save us lots of work by creating an overarching animation, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_05_10.jpg" /><div class="caption"><p>Camera shake effects</p></div></div><p>There are many ways to create camera shakes, but all of them involve fluctuation of the camera position between<a id="id419" class="indexterm"></a> a minimum and maximum range using some kind of "randomness" function. Sometimes, the "randomness" is left raw, and sometimes, it's smoothened using the damping functionality to create a slower or more "flowing" shake. Refer to the following code sample 5-10 that can be attached to any camera to create a shake effect:</p><div class="informalexample"><pre class="programlisting"> using UnityEngine;
+ using System.Collections;
+ //---------------------
+ public class CameraShake : MonoBehaviour 
+ {
+    private Transform ThisTransform = null;
+ 
+     //Total time for shaking in seconds
+     public float ShakeTime = 2.0f;
+     //Shake amount - distance to offset in any direction
+     public float ShakeAmount = 3.0f;
+ 
+     //Speed of camera moving to shake points
+     public float ShakeSpeed = 2.0f;
+ 
+    //---------------------
+    // Use this for initialization
+    void Start () 
+    {
+         //Get transform component
+         ThisTransform = GetComponent&lt;Transform&gt;();
+ 
+         //Start shaking
+        StartCoroutine(Shake());
+    }
+    //---------------------
+    //Shake camera
+    public IEnumerator Shake()
+    {
+         //Store original camera position
+         Vector3 OrigPosition = ThisTransform.localPosition;
+ 
+          //Count elapsed time (in seconds)
+          float ElapsedTime = 0.0f;
+  
+         //Repeat for total shake time
+         while(ElapsedTime &lt; ShakeTime)
+         {
+               //Pick random point on unit sphere
+                Vector3 RandomPoint = OrigPosition + Random.insideUnitSphere * ShakeAmount;
+ 
+                //Update Position
+                ThisTransform.localPosition = Vector3.Lerp(ThisTransform.localPosition, RandomPoint, Time.deltaTime * ShakeSpeed);
+ 
+                //Break for next frame
+                yield return null;
+ 
+                //Update time
+                 ElapsedTime += Time.deltaTime;
+         }
+         //Restore camera position
+         ThisTransform.localPosition = OrigPosition;
+    }
+    //---------------------
+ }
+ //---------------------</pre></div></div>

@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec47"></a>Creating a lives counter</h2></div></div><hr /></div><p>The first thing to create is a lives counter, in order to keep track of the number of lives of the player. In fact, the goal of the player is to not allow his or her life to reach zero.</p><p>What we are going to do here is to create a more stable and flexible framework than the lives counter created in <a class="link" href="#" linkend="ch04">
+<span class="emphasis"><em>Chapter 4</em></span>
+</a>, <span class="emphasis"><em>Level Design</em></span>. This is because we need a solution that can be scalable and easily extended if we are planning to create a great Tower Defense game.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec28"></a>Creating and placing the lives counter</h3></div></div></div><p>Let's start by creating a new image, by right-clicking on the <span class="strong"><strong>Hierarchy</strong></span> panel and then <span class="strong"><strong>UI/Image</strong></span>. We should also rename it <code class="literal">LivesCounter</code> and assign to the <span class="strong"><strong>Source Image</strong></span> the <code class="literal">health_square</code> image in our package. We may want to press the <span class="strong"><strong>Set Native Size</strong></span> button and later scale it down to fit the screen. Also, we can make it just a tiny bit transparent, by reducing the alpha channel of the color variable, let's say to <code class="literal">232</code>. Finally, we can drag and drop it in the top-right corner, as shown in the following image:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_003.jpg" /></div><p>
+</p><p>Now, we need to add some text to our counter, so the player can understand how many lives are remaining. Right-click on <code class="literal">LivesCounter</code> and then <span class="strong"><strong>UI/Text</strong></span>. Also, rename it <code class="literal">LivesCounterText</code>. We need to change its setting as shown in the following image:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_004.jpg" /></div><p>
+</p><p>In particular, we have set the color variable to white and the size to <code class="literal">17</code>. In this way, it has the right dimensions and color to fit in our design for the UI. As text, we used a placeholder with just the number <code class="literal">100</code>. At the end, we have to place it just under the heart, but still inside the box, as in the following image:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_005.jpg" /></div><p>
+</p><p>It looks nice so far, but it won't change if we press play. We still need to add a script on it. This will handle the interaction with the counter, by updating it automatically when the number of lives changes. To create the script, select <code class="literal">LivesCounter</code> and, in the <span class="strong"><strong>Inspector</strong></span>, navigate to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>New Script</strong></span>. Name it <code class="literal">LivesCounterScript</code>, and then click on <span class="strong"><strong>Create and Add</strong></span>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec29"></a>Scripting the lives counter</h3></div></div></div><p>Let's open the script by double-clicking on it. In order to be able to use the UI classes, we need to import a namespace. This can be done by adding the following line at the beginning of our code:</p><pre class="programlisting">using UnityEngine.UI; 
+</pre><p>Now that we can also use the <code class="literal">UI</code> classes, we need three variables. One is a public variable that allows us to decide the maximum number of lives. The other two are private, to keep track of the <code class="literal">uiText</code>, in order to write the number of lives, and the number of lives itself:</p><pre class="programlisting">    private Text uiText; 
+    public int maxLives; 
+    private int lives; 
+</pre><p>Since the number of lives is a private variable and we need to retrieve its value, we need to also implement a get function, like the following one:</p><pre class="programlisting">    public int getLives(){ 
+        return lives; 
+    } 
+</pre><p>Next, we have to set a couple of variables in our <code class="literal">Start()</code> function, in particular, the reference to the <code class="literal">uiText</code>, by using the <code class="literal">GetComponent()</code> function and setting the number of lives equal to the maximum. Finally, we call a function to update the counter graphic, but we will see it in a few steps:</p><pre class="programlisting">  void Start () { 
+        lives = maxLives; 
+        uiText = this.GetComponentInChildren&lt;Text&gt;(); 
+        updateLivesCounter(); 
+  } 
+</pre><p>Then, we need to expose a public method that the <span class="strong"><strong>Game Manager</strong></span>, which we will build in the next chapter. In this method, it is possible to reduce the number of lives and check whether it has reached zero. By doing this, we need to keep in mind that the function will return true if the player has no lives. Of course, we also need to update the graphic and keep the number of lives to zero as minimum, as robustness of our code:</p><pre class="programlisting">    public bool loseLife(int damage){ 
+        lives -= damage; 
+        if (lives &gt; 0){ 
+            updateLivesCounter(); 
+            return false; 
+        } 
+        lives = 0; 
+        updateLivesCounter(); 
+        return true; 
+    } 
+</pre><p>Finally, we can write the update function that we have called in the previous function. It just updates the graphic of the <code class="literal">uiText</code> by using the current number of lives:</p><pre class="programlisting">    private void updateLivesCounter(){ 
+        uiText.text = lives.ToString(); 
+    } 
+</pre><p>After we have saved the script, it is ready to be used. Also, remember to assign a maximum number of lives. In this example, we will set it to <code class="literal">100</code>. Our script will be like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_006.jpg" /></div><p>
+</p></div></div>

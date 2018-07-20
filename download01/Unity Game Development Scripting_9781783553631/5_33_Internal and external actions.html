@@ -1,0 +1,128 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec36"></a>Internal and external actions</h2></div></div><hr /></div><p>The actions of a finite state machine can be broken up into internal and external actions. Separating the actions into the two categories makes it easier to define what our AI does in any given situation. The separation is helpful in the planning phase of creating AI, but it can also help in the scripting part as well, since you will know what will and will not be called by other classes and GameObjects. Another way this separation is beneficial is that it eases the work of multiple programmers working on the same AI; each programmer could work on separate parts of the AI without as many conflicts.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec71"></a>External actions</h3></div></div></div><p>External<a id="id286" class="indexterm"></a> actions are functions and activities that are activated when objects outside of the AI object act upon the AI object. Some examples of external actions include being hit by a player, having a spell being cast upon the player, falling from heights, losing the game by an external condition, communicating with external objects, and so on.</p><p>The external <a id="id287" class="indexterm"></a>actions that we will be using for our AI are:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Changing its health</p></li><li style="list-style-type: disc"><p>Raising a stat</p></li><li style="list-style-type: disc"><p>Lowering a stat</p></li><li style="list-style-type: disc"><p>Killing the AI</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec72"></a>Internal actions</h3></div></div></div><p>Internal <a id="id288" class="indexterm"></a>actions are the functions and activities that the AI runs within itself. Examples of these are patrolling a set path, attacking a player, running away from the player, using items, and so on. These are all actions that the AI will choose to do depending on a number of conditions.</p><p>The internal <a id="id289" class="indexterm"></a>actions that we will be using for our AI are:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Patrolling a path</p></li><li style="list-style-type: disc"><p>Attacking a player</p></li><li style="list-style-type: disc"><p>Fleeing from a player</p></li><li style="list-style-type: disc"><p>Searching for a player</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec73"></a>Scripting the actions</h3></div></div></div><p>It's time <a id="id290" class="indexterm"></a>to add some internal and external actions to the script. First, be sure to add the <code class="literal">using</code> statement to the top of your script with the other <code class="literal">using</code> statements:</p><div class="informalexample"><pre class="programlisting">using System.Collections.Generic;</pre></div><p>Now, let's add some variables that will allow us to use the actions:</p><div class="informalexample"><pre class="programlisting">public bool isSuspicious = false;
+public bool isInRange = false;
+public bool FightsRanged = false;
+public List&lt;KeyValuePair&lt;string, int&gt;&gt; Stats = new List&lt;KeyValuePair&lt;string, int&gt;&gt;();
+public GameObject Projectile;</pre></div><p>The first three of our new variables are conditions to be used in finite state machines to determine what function should be called. Next, we have a list of the <code class="literal">KeyValuePair</code> variables, which will hold the stats of our AI GameObject. The last variable is a GameObject, which is what we will use as a projectile for ranged attacks.</p><p>Remember the empty middleman functions that we previously created? Now with these new variables, we will be adding some code to each of them. Add this code so that the empty functions are now filled:</p><div class="informalexample"><pre class="programlisting">void RunIdleNode()
+{
+  Idle();
+}
+
+void RunGuardNode()
+{
+  Guard();
+}
+  
+void RunCombatNode()
+{
+  if(FightsRanged)
+    RangedAttack();
+  else
+    MeleeAttack();
+}
+  
+void RunFleeNode()
+{
+  Flee();
+}</pre></div><p>Two<a id="id291" class="indexterm"></a> of the three boolean variables we just created are being used as conditionals to call different functions, effectively creating finite state machines. Next, we will be adding the rest of our actions; these are what is being called by the middleman functions. Some of these functions will be empty placeholders, but will be filled later on in the chapter:</p><div class="informalexample"><pre class="programlisting">void Idle()
+{
+}
+
+void Guard()
+{
+  if(isSuspicious)
+  {
+    SearchForTarget();
+  }
+  else
+  {
+    Patrol();
+  }
+}
+  
+void Combat()
+{
+  if(isInRange)
+  {
+    if(FightsRanged)
+    {
+      RangedAttack();
+    }
+    else
+    {
+      MeleeAttack();
+    }
+  }
+  else
+  {
+    SearchForTarget();
+  }
+}
+  
+void Flee()
+{
+}
+
+void SearchForTarget()
+{
+}
+
+void Patrol()
+{
+}
+
+void RangedAttack()
+{
+  GameObject newProjectile;
+  newProjectile = Instantiate(Projectile, transform.position, Quaternion.identity) as GameObject;
+}
+
+void MeleeAttack()
+{
+}</pre></div><p>In the <code class="literal">Guard</code> function, we check to see whether the AI notices the player or not. If it does, then <a id="id292" class="indexterm"></a>it will proceed to search for the player; if not, then it will continue<a id="id293" class="indexterm"></a> to patrol along its path. In the <code class="literal">Combat</code> function, we first check<a id="id294" class="indexterm"></a> to see whether the player is within the attacking range; if not, then the AI searches again. If the player is within the attacking range, we check to see whether the AI prefers attacking up close or far away.</p><p>For ranged attacks, we first create a new, temporary <code class="literal">GameObject</code> variable. Then, we set it to an instantiated clone of our <code class="literal">Projectile</code> GameObject. From here, the projectile will run its own scripts to determine what it does. This is how we allow our AI to attack the player from a distance.</p><p>To finish off our actions, we have two more functions to add. The first one will be to change the health of the AI, which is as follows:</p><div class="informalexample"><pre class="programlisting">void ChangeHealth(int Amount)
+{
+  if(Amount &lt; 0)
+  {
+    if(!isSuspicious)
+    {
+      isSuspicious = true;
+      ChangeBehavior(Behaviors.Guard);
+    }
+  }
+  for(int i = 0; i &lt; Stats.Capacity; i++)
+  {
+    if(Stats[i].Key == "Health")
+    {
+      int tempValue = Stats[i].Value;
+      Stats[i] = new KeyValuePair&lt;string, int&gt;(Stats[i].Key, tempValue += Amount);
+      if(Stats[i].Value &lt;= 0)
+      {
+        Destroy(gameObject);
+      }
+      else if(Stats[i].Value &lt; 25)
+      {
+        isSuspicious = false;
+        ChangeBehavior(Behaviors.Flee);
+      }
+      break;
+    }
+  }
+}</pre></div><p>This function <a id="id295" class="indexterm"></a>takes an <code class="literal">int</code> variable, which is the amount by which we want to change the health of the player. The first thing we do is check to see if the amount is negative; if it is, then we make our AI suspicious and change the behavior accordingly. Next, we search for the health stat in our list and set its value to a new value that is affected by the <code class="literal">Amount</code> variable. We then check if the AI's health is below zero to kill it; if not, then we also check if its health is below 25. If the health is that low, we make our AI flee from the player.</p><p>To finish off our actions, we have one last function to add. It will allow us to affect a specific stat of the AI. These modifications will either add to or subtract from a stat. The modifications can be permanent or restored anytime. For the following instance, the modifications will be permanent:</p><div class="informalexample"><pre class="programlisting">void ModifyStat(string Stat, int Amount)
+{
+  for(int i = 0; i &lt; Stats.Capacity; i++)
+  {
+    if(Stats[i].Key == Stat)
+    {
+      int tempValue = Stats[i].Value;
+      Stats[i] = new KeyValuePair&lt;string, int&gt;(Stats[i].Key, tempValue += Amount);
+      break;
+    }
+  }
+  if(Amount &lt; 0)
+  {
+    if(!isSuspicious)
+    {
+      isSuspicious = true;
+      ChangeBehavior(Behaviors.Guard);
+    }
+  }
+}</pre></div><p>This<a id="id296" class="indexterm"></a> function takes a string and an integer. The string is used to search for the specific stat that we want to affect and the integer is how much we want to affect that stat by. It works in a very similar way to how the <code class="literal">ChangeHealth</code> function works, except that we first search for a specific stat. We also check to see if the amount is negative. This time, if it is negative, we change our AI behavior to <code class="literal">Guard</code>. This seems to be an appropriate response for the AI after being hit by something that negated one of its stats!</p></div></div>

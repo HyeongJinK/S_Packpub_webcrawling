@@ -1,0 +1,6 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec72"></a>Adding an HUD</h2></div></div><hr /></div><p>To <a id="id494" class="indexterm"></a>add the HUD that will display lives, score, and time, we <a id="id495" class="indexterm"></a>add the following script to <code class="literal">Spongy.js</code>:</p><div class="informalexample"><pre class="programlisting">function OnGUI()
+{
+  GUI.Box (Rect (10,10,100,30), "Time: "+Time.time);
+  GUI.Box (Rect (500,10,100,30), "Score: "+score);
+  GUI.Box (Rect (600,10,100,30), "Lives: "+lives);
+}</pre></div><p>Using the existing Unity GUI function that gets called automatically, we create a rectangle with a size that we specify consisting of the <span class="emphasis"><em>x</em></span> and <span class="emphasis"><em>y</em></span> starting position of the rectangle followed by the <span class="emphasis"><em>x</em></span> and <span class="emphasis"><em>y</em></span> ending position.</p><p>We then add the string of text that we would like to display within the box followed by the plus sign and the variable. The plus sign concatenates (joins) the variable into the string so that it can be displayed as a string since the <code class="literal">GUI.Box</code> method can only display string types.</p></div>

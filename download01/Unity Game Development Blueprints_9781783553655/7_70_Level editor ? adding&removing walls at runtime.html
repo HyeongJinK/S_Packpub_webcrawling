@@ -1,0 +1,65 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec70"></a>Level editor – adding/removing walls at runtime</h2></div></div><hr /></div><p>Now that our<a id="id573" class="indexterm"></a> level editor will be able to<a id="id574" class="indexterm"></a> load in this data, we now want to have a way to actually modify what we see onscreen. To do this, we'll need to create a GUI interface and functionality for our level editor.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>The first thing we need to do is add a variable to keep track of what item we want to spawn:</p><div class="informalexample"><pre class="programlisting">//The object we are currently looking to spawn
+Transform toCreate;</pre></div></li><li><p>Now, we need to initialize this variable inside our <code class="literal">Start</code> function:</p><div class="informalexample"><pre class="programlisting">toCreate = tiles[0];</pre></div></li><li><p>Next, we <a id="id575" class="indexterm"></a>need to update<a id="id576" class="indexterm"></a> our <code class="literal">Update</code> function and then explain how it's working, as follows:</p><div class="informalexample"><pre class="programlisting">void Update()
+{
+  // Left click - Create object
+  if (Input.GetMouseButton(0) &amp;&amp; GUIUtility.hotControl==0)
+  {
+    Vector3 mousePos = Input.mousePosition;
+
+    //Set the position in the z axis to the opposite of the 
+    // camera's so that the position is on the world so 
+    // ScreenToWorldPoint will give us valid values.
+    mousePos.z = Camera.main.transform.position.z * -1;
+
+    Vector3 pos = Camera.main.ScreenToWorldPoint(mousePos);
+
+    // Deal with the mouse being not exactly on a block
+    int posX = Mathf.FloorToInt(pos.x +.5f);
+    int posY = Mathf.FloorToInt(pos.y + .5f);
+    
+    // Convert from screenspace to worldspace using a Ray
+    Ray ray = Camera.main.ScreenPointToRay(mousePos);
+
+    // We need to check if there is an object already at 
+    // the position we're trying to create at
+    RaycastHit hit = new RaycastHit();
+
+    // If something within a distance of 100 in the 
+    // direction hits something hit will get the data of
+    //the hit object.
+    Physics.Raycast(ray, out hit, 100);
+    
+    if((hit.collider != null) &amp;&amp; (hit.collider.name != "Player"))
+    {
+      //If it's the same, just keep the previous one
+      if(toCreate.name != hit.collider.gameObject.name)
+      {
+        CreateBlock(tiles.IndexOf(toCreate) + 1, Mathf.FloorToInt(hit.collider.gameObject.transform.position.x), Mathf.FloorToInt(hit.collider.gameObject.transform.position.y));
+
+        DestroyImmediate(hit.collider.gameObject);
+      }
+    }
+    else
+    {
+      CreateBlock(tiles.IndexOf(toCreate) + 1, posX, posY);
+    }
+  }
+
+  // Right clicking - Delete object
+  if (Input.GetMouseButton(1) &amp;&amp; GUIUtility.hotControl==0)
+  {      
+    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+    RaycastHit hit = new RaycastHit();
+    
+    Physics.Raycast(ray, out hit, 100);
+
+    // If we hit something other than the player, we 
+    // want to destroy it!
+    if((hit.collider != null) &amp;&amp; (hit.collider.name != "Player"))
+    {
+      Destroy(hit.collider.gameObject);
+    }
+  }
+
+}</pre></div></li></ol></div><p>You'll notice that <a id="id577" class="indexterm"></a>we used something <a id="id578" class="indexterm"></a>called <code class="literal">hotControl</code> when we were checking for input. The reason we did this was that whenever a player holds down a mouse button, it becomes "hot". No other controls are allowed to respond to mouse events while some control is "hot".</p><p>Once the user releases their mouse, <code class="literal">hotControl</code> gets set to <code class="literal">0</code> to indicate that other controls can respond to user input, which will be useful when we implement our GUI system, as we don't want to draw something when we're clicking on our mouse button.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note82"></a>Note</h3><p>For more information<a id="id579" class="indexterm"></a> on <code class="literal">GUIUtility.hotControl</code>, check out <a class="ulink" href="http://docs.unity3d.com/ScriptReference/GUIUtility-hotControl.html" target="_blank">http://docs.unity3d.com/ScriptReference/GUIUtility-hotControl.html</a>.</p></div><p>A lot of the stuff contained in this code is from reusing a lot of the aspects we learned earlier in the book, back when we did our platformer game. Yet, now we are using the same functions to work with the mouse position in the world and converting it to world space.</p><p>We use the <code class="literal">ScreenToWorldPoint</code> function to convert our mouse position from screenspace<a id="id580" class="indexterm"></a> into world space with the Z position<a id="id581" class="indexterm"></a> of the point being the units away from the camera we want the position to be. Since our world is at 0, we want the Z to be negative whatever the camera's Z position is.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note83"></a>Note</h3><p>For more information<a id="id582" class="indexterm"></a> on <a class="ulink" href="http://ScreenToWorldPoint" target="_blank">ScreenToWorldPoint</a> check out <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Camera.ScreenToWorldPoint.html" target="_blank">http://docs.unity3d.com/ScriptReference/Camera.ScreenToWorldPoint.html</a>.</p></div><p>We use this information to get the position we want to place the block at. Once we have this, we can just call <code class="literal">Instantiate</code> and create something; but, we also need to make sure we only have one object per tile, so we will use a raycast to determine if that area already has a block, and if it does, we will destroy it:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Now that we have all this set, let's save the file, and then exit back to the Unity editor and play the game.</p></li><li><p>If you select the GameController object, you'll notice that the checkbox next to the LevelEditor component is unchecked. This is because we disabled it in the Start function. We will enable it again in code later, but just for demonstration purposes, click on the check to activate it once again, and then in the Game tab, click on the screen, and right-click on areas in the level. Have a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783553655/graphics/3655OT_07_05.jpg" /></div></li></ol></div><p>You'll notice <a id="id583" class="indexterm"></a>that now we can draw walls<a id="id584" class="indexterm"></a> anywhere within our scene and delete anything aside from our player!</p></div>

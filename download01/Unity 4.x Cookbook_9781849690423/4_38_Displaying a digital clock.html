@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec41"></a>Displaying a digital clock</h2></div></div><hr /></div><p>Whether<a id="id223" class="indexterm"></a> it is the real-world time, or an in-game clock, many<a id="id224" class="indexterm"></a> games are enhanced by some form of clock or timer display. The most straightforward type of clock to display is a string composed of the integers for hours, minutes, and seconds:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_01.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec131"></a>How to do it...</h3></div></div></div><p>To display a digital clock, please follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Attach the following C# script class to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">// file: ClockDigital.cs
+using UnityEngine;
+using System.Collections;
+
+using System;
+
+public class ClockDigital : MonoBehaviour 
+{
+  void OnGUI () 
+  {
+    DateTime time = DateTime.Now;
+    string hour = LeadingZero( time.Hour );
+    string minute = LeadingZero( time.Minute );
+    string second = LeadingZero( time.Second );
+
+    GUILayout.Label( hour + ":" + minute + ":" +  second);
+  }
+
+
+  /**
+   * given an integer, return a 2-character string
+   * adding a leading zero if required
+   */
+  private string LeadingZero(int n)
+  {
+    return n.ToString().PadLeft(2, '0');
+  }
+}</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec132"></a>How it works...</h3></div></div></div><p>Importing the <code class="literal">System</code> namespace allows the current time to be retrieved from the system using the <code class="literal">DateTime</code> class. The first line of the <code class="literal">OnGUI()</code> method<a id="id225" class="indexterm"></a> retrieves the current time and stores it in a <code class="literal">time</code> <code class="literal">DateTime</code> object.</p><p>Integers for the <a id="id226" class="indexterm"></a>hour, minute, and second are extracted from the <code class="literal">DateTime</code> object, and converted into two-character strings with the <code class="literal">LeadingZero()</code> method<a id="id227" class="indexterm"></a>. This method pads out single digit values with a leading zero if required.</p><p>Finally, a string concatenating the hour, minute, and second strings with a colon separator is displayed via a GUI label.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec133"></a>There's more...</h3></div></div></div><p>Some details you don't want to miss.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec38"></a>Converting to a 12-hour clock</h4></div></div></div><p>If you prefer to <a id="id228" class="indexterm"></a>display the hours in the 12-hour format, this can be calculated by finding the modulo 12 value of the 24-hour clock integer stored in the <code class="literal">DateTime</code> objects:</p><div class="informalexample"><pre class="programlisting">  int hour12 = time.Hour % 12;</pre></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec134"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <span class="emphasis"><em>Displaying an analogue clock</em></span> recipe.</p></li></ul></div></div></div>

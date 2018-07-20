@@ -1,0 +1,59 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec55"></a>Implementing custom mouse cursor icons</h2></div></div><hr /></div><p>Cursor icons <a id="id308" class="indexterm"></a>are often used to<a id="id309" class="indexterm"></a> indicate the nature of the interaction that can be done with the mouse. Zooming, for instance, might be illustrated by a magnifying glass. Shooting, on the other hand, is usually represented by a stylized target. In this recipe, we will learn how to implement custom mouse cursor icons to better illustrate your gameplay—or just to escape the Windows and OS X default GUI.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec190"></a>Getting ready</h3></div></div></div><p>If you need a set of textures to be used as cursor icons, please use the three image files available in the <code class="literal">0423_04_15</code> folder.</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_23.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec191"></a>How to do it...</h3></div></div></div><p>To implement custom mouse cursors, please follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the textures into your Unity project.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> window, select the <span class="strong"><strong>cursorArrow</strong></span> texture.</p></li><li><p>Create a new GUI texture by navigating to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>GUI Texture</strong></span>. Since you had the <span class="strong"><strong>cursorArrow</strong></span> texture selected, the <span class="strong"><strong>GUI Texture</strong></span> will use it.</p></li><li><p>In the <a id="id310" class="indexterm"></a>
+<span class="strong"><strong>Transform</strong></span> component of the <span class="strong"><strong>Inspector</strong></span> view, set the GUI texture's <span class="strong"><strong>Position</strong></span> to (0,0,0), as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_24.jpg" /></div></li><li><p>Create a new C# script class named <code class="literal">CursorScript</code> containing the following code:</p><div class="informalexample"><pre class="programlisting">// file: CursorScript.cs
+using UnityEngine;
+using System.Collections;
+
+public class CursorScript : MonoBehaviour
+{
+    public Texture2D iconArrow;
+    public Vector2 arrowRegPoint;
+    public Texture2D iconZoom;
+    public Vector2 zoomRegPoint;
+    public Texture2D iconTarget;
+    public Vector2 targetRegPoint;
+    private Vector2 mouseReg;
+
+    void Start()
+    {
+        guiTexture.enabled = true;
+        if (iconArrow)
+        {
+            guiTexture.texture = iconArrow;
+            mouseReg = arrowRegPoint;
+            Screen.showCursor = false;
+        }
+    }
+
+    void Update()
+    {
+        Vector2 mouseCoord = Input.mousePosition;
+        Texture mouseTex = guiTexture.texture;
+        guiTexture.pixelInset = new Rect(mouseCoord.x - (mouseReg.x), mouseCoord.y - (mouseReg.y), mouseTex.width, mouseTex.height);
+
+        if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
+        {
+            if (iconTarget)
+            {
+                guiTexture.texture = iconTarget;
+                mouseReg = targetRegPoint;
+            }
+        }
+        else if (Input.GetMouseButton(1))
+        {
+            if (iconZoom)
+            {
+                guiTexture.texture = iconZoom;
+                mouseReg = zoomRegPoint;
+            }
+        }
+        else
+        {
+            if (iconArrow)
+            {
+                guiTexture.texture = iconArrow;
+                mouseReg = arrowRegPoint;
+            }
+        }
+    }
+
+}</pre></div></li><li><p>Save your script and apply it to the GUI texture you have created by dragging it from the <span class="strong"><strong>Project</strong></span> window to the <span class="strong"><strong>GUI Texture</strong></span> game object in the <span class="strong"><strong>Hierarchy</strong></span> window.</p></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span> window, select the GUI texture and disable its <span class="strong"><strong>GUITexture</strong></span> component.</p></li><li><p>Drag the <span class="strong"><strong>cursorArrow</strong></span>, <span class="strong"><strong>cursorZoom</strong></span>, and <span class="strong"><strong>cursorTarget</strong></span> texture files to the <span class="strong"><strong>Icon Arrow</strong></span>, <span class="strong"><strong>Icon Zoom</strong></span>, and <span class="strong"><strong>Icon Target</strong></span> fields respectively.</p></li><li><p>Change the <span class="strong"><strong>Arrow Reg Point</strong></span>, <span class="strong"><strong>Zoom Reg Point</strong></span>, and <span class="strong"><strong>Target Reg Point</strong></span> fields to <span class="strong"><strong>X:0 Y:32</strong></span>, <span class="strong"><strong>X:15 Y:16</strong></span>, and <span class="strong"><strong>X:14 Y:14</strong></span> respectively (use the following <a id="id311" class="indexterm"></a>screenshot for your reference):</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>The <span class="strong"><strong>Reg Point</strong></span> values are actually the pixel coordinates for the focus point of the cursor. When in doubt, open your image editor and check it.</p></div><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_04_25.jpg" /></div></li><li><p>Play your scene. Your operating system's default cursor should be replaced by the <span class="strong"><strong>cursorArrow</strong></span> texture; changed to <code class="literal">cursorZoom</code> when the right mouse button is clicked and to <code class="literal">cursorTarget</code> when any <span class="emphasis"><em>Shift k</em></span>ey is down.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec192"></a>How it works...</h3></div></div></div><p>The script updates the GUI texture's position based on the mouse cursor position and registration points <a id="id312" class="indexterm"></a>for each cursor type. The texture map is chosen according to the user's action (pressing the <span class="emphasis"><em>Shift k</em></span>ey or clicking the right mouse button will change the texture). The script also hides the original mouse cursor, so it won't be on top of your custom one.</p></div></div>

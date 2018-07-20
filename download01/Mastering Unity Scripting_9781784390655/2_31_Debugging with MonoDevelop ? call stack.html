@@ -1,0 +1,41 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec36"></a>Debugging with MonoDevelop – call stack</h2></div></div><hr /></div><p>More complex programs typically involve lots of functions and function calls. During execution, functions can invoke other functions, and these functions can go on to invoke yet more functions in an intricate chain of functions within functions. This means that when setting breakpoints inside<a id="id205" class="indexterm"></a> functions, you can never know how the function was invoked initially when it's actually called at runtime. The breakpoint tells you that program execution has reached the specified line, but it doesn't tell you how execution arrived there in the first place. Sometimes, it might be <a id="id206" class="indexterm"></a>easy to deduce, but at other times it can be much harder, especially when functions are invoked within loops, conditionals, and nested loops and conditionals. Consider the following code sample 2-10, which has been amended from the earlier code sample 2-9. This class contains several functions that invoke other functions:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+ using System.Collections;
+ 
+ public class DebugTest : MonoBehaviour 
+ {
+    // Use this for initialization
+    void Start () 
+    {
+          //Get all game objects in scene
+          Transform[] Objs = Object.FindObjectsOfType&lt;Transform&gt;();
+ 
+         //Cycle through all objects
+         for(int i=0; i&lt;Objs.Length; i++)
+         {
+                //Set object to world origin
+                Objs[i].position = Vector3.zero;
+         }
+ 
+         //Enter Function 01
+         Func01();
+    }
+    //-------------------------------------
+    //Function calls func2
+<span class="strong"><strong>    void Func01()</strong></span>
+    {
+           Func02();
+    }
+    //-------------------------------------
+    //Function calls func3
+    <span class="strong"><strong>void Func02()</strong></span>
+    {
+           Func03();
+    }
+    //-------------------------------------
+    //Function prints message
+    <span class="strong"><strong>void Func03()</strong></span>
+    {
+<span class="strong"><strong>          Debug.Log ("Entered Function 3");</strong></span>
+    }
+    //-------------------------------------
+ }</pre></div><p>If a breakpoint is set in line 38 of code sample 2-10 (highlighted), execution will pause when this line is reached. By reading this sample, we can see that one route to that function is by the<a id="id207" class="indexterm"></a> <code class="literal">Start</code> function<a id="id208" class="indexterm"></a> calling <code class="literal">Func01</code>, <code class="literal">Func01</code> calling <code class="literal">Func02</code>, and then <code class="literal">Func02</code> finally calling <code class="literal">Func03</code>. But how do we know that this is the only route? It's technically possible, for example, for another class and function elsewhere in the project to invoke <code class="literal">Func03</code> directly. So, how can we know the route by which we've reached this function in this step while debugging? Based on the tools examined so far, we can't. However, we can use the <span class="strong"><strong>Call Stack</strong></span> window. This window, displayed by default in the bottom-right corner of the MonoDevelop interface, lists all the function calls that were made to reach the active function for the current step that leads back to the first or initial function call. It gives us a breadcrumb trail of function names that leads from the active function to the first or initial function. Thus, <span class="strong"><strong>Call Stack</strong></span> lists function names upside down, the active or most recent function being at the top<a id="id209" class="indexterm"></a> of the stack that leads <a id="id210" class="indexterm"></a>downwards to the earliest or first function at the bottom of the stack. You can also access the functions at their locations to assess the variables in their scope, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_02_31.jpg" /><div class="caption"><p>Using Call Stack to trace how a function was initiated during program execution</p></div></div></div>

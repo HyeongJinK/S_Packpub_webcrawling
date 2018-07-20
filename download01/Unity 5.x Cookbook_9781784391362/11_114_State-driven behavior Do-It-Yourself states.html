@@ -1,0 +1,141 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec111"></a>State-driven behavior Do-It-Yourself states</h2></div></div><hr /></div><p>Games as a whole, and individual objects or characters, can often be thought of (or modeled as) passing through different <span class="emphasis"><em>states</em></span> or <span class="emphasis"><em>modes</em></span>. Modeling states and changes of state (due to <span class="emphasis"><em>events</em></span> or game conditions) is a very common way to manage the complexity of games and game components. In this recipe, we create a simple three-state game (game playing/game <a id="id1189" class="indexterm"></a>won/game lost) using a single <code class="literal">GameManager</code> class.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec347"></a>How to do it...</h3></div></div></div><p>To use states to manage object behavior, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create two UI buttons at the top middle of the screen. Name one <span class="strong"><strong>Button-win</strong></span> and edit its text to read <span class="strong"><strong>Win Game</strong></span>. Name the second <span class="strong"><strong>Button-lose</strong></span> and edit its text to read <span class="strong"><strong>Lose Game</strong></span>.</p></li><li><p>Create a UI text object at the top left of the screen. Name this <span class="strong"><strong>Text-state-messages</strong></span>, and set its <span class="strong"><strong>Rect Transform</strong></span> height property to <span class="strong"><strong>300</strong></span> and its <span class="strong"><strong>Text (Script) Paragraph Vertical Overflow</strong></span> property to <span class="strong"><strong>Overflow</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_38.jpg" /></div></li><li><p>Add the<a id="id1190" class="indexterm"></a> following C# script class <code class="literal">GameManager</code> to <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System;
+using UnityEngine.UI;
+
+public class GameManager : MonoBehaviour {
+  public Text textStateMessages;
+  public Button buttonWinGame;
+  public Button buttonLoseGame;
+
+  private enum GameStateType {
+    Other,
+    GamePlaying,
+    GameWon,
+    GameLost,
+  }
+
+  private GameStateType currentState = GameStateType.Other;
+  private float timeGamePlayingStarted;
+  private float timeToPressAButton = 5;
+
+  void Start () {
+    NewGameState( GameStateType.GamePlaying );
+  }
+
+  private void NewGameState(GameStateType newState) {
+    // (1) state EXIT actions
+    OnMyStateExit(currentState);
+
+    // (2) change current state
+    currentState = newState;
+
+    // (3) state ENTER actions
+    OnMyStateEnter(currentState);
+
+    PostMessageDivider();
+  }
+
+  public void PostMessageDivider(){
+    string newLine = "\n";
+    string divider = "--------------------------------";
+    textStateMessages.text += newLine + divider;
+  }
+
+  public void PostMessage(string message){
+    string newLine = "\n";
+    string timeTo2DecimalPlaces = String.Format("{0:0.00}", Time.time);
+    textStateMessages.text += newLine + timeTo2DecimalPlaces + " :: " + message;
+  }
+
+  public void BUTTON_CLICK_ACTION_WIN_GAME(){
+    string message = "Win Game BUTTON clicked";
+    PostMessage(message);
+    NewGameState( GameStateType.GameWon );
+  }
+
+  public void BUTTON_CLICK_ACTION_LOSE_GAME(){
+    string message = "Lose Game BUTTON clicked";
+    PostMessage(message);
+    NewGameState( GameStateType.GameLost );
+  }
+
+  private void DestroyButtons(){
+    Destroy (buttonWinGame.gameObject);
+    Destroy (buttonLoseGame.gameObject);
+  }
+
+  //--------- OnMyStateEnter[ S ] - state specific actions
+  private void OnMyStateEnter(GameStateType state){
+    string enterMessage = "ENTER state: " + state.ToString();
+    PostMessage(enterMessage);
+
+    switch (state){
+    case GameStateType.GamePlaying:
+      OnMyStateEnterGamePlaying();
+      break;
+    case GameStateType.GameWon:
+      // do nothing
+      break;
+    case GameStateType.GameLost:
+      // do nothing
+      break;
+    }
+  }
+
+  private void OnMyStateEnterGamePlaying(){
+    // record time we enter state
+    timeGamePlayingStarted = Time.time;
+  }
+
+  //--------- OnMyStateExit[ S ] - state specific actions
+  private void OnMyStateExit(GameStateType state){
+    string exitMessage = "EXIT state: " + state.ToString();
+    PostMessage(exitMessage);
+
+    switch (state){
+    case GameStateType.GamePlaying:
+      OnMyStateExitGamePlaying();
+      break;
+    case GameStateType.GameWon:
+      // do nothing
+      break;
+    case GameStateType.GameLost:
+      // do nothing
+      break;
+    case GameStateType.Other:
+      // cope with game starting in state 'Other'
+      // do nothing
+      break;
+    }
+  }
+
+  private void OnMyStateExitGamePlaying(){
+// if leaving gamePlaying state then destroy the 2 buttons
+    DestroyButtons();
+  }
+
+  //--------- Update[ S ] - state specific actions
+  void Update () {
+    switch (currentState){
+    case GameStateType.GamePlaying:
+      UpdateStateGamePlaying();
+      break;
+    case GameStateType.GameWon:
+      // do nothing
+      break;
+    case GameStateType.GameLost:
+      // do nothing
+      break;
+    }
+  }
+
+  private void UpdateStateGamePlaying(){
+    float timeSinceGamePlayingStarted = Time.time - timeGamePlayingStarted;
+    if(timeSinceGamePlayingStarted &gt; timeToPressAButton){
+      string message = "User waited too long - automatically going to Game LOST state";
+      PostMessage(message);
+      NewGameState(GameStateType.GameLost);
+    }
+  }
+}</pre></div></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span>, select the <span class="strong"><strong>Button-win</strong></span> button, and for its <span class="strong"><strong>Button (Script)</strong></span> component, add <a id="id1191" class="indexterm"></a>an <code class="literal">OnClick</code> action to call the <code class="literal">BUTTON_CLICK_ACTION_WIN_GAME()</code> method from the <span class="strong"><strong>GameManager</strong></span> component in the <span class="strong"><strong>Main Camera</strong></span> GameObject.</p></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span>, select the <span class="strong"><strong>Button-lose</strong></span> button, and for its <span class="strong"><strong>Button (Script)</strong></span> component, add an <code class="literal">OnClick</code> action to call the <code class="literal">BUTTON_CLICK_ACTION_LOSE_GAME() </code>method from the <span class="strong"><strong>GameManager</strong></span> component in the <span class="strong"><strong>Main Camera</strong></span> GameObject.</p></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span>, select the <span class="strong"><strong>Main Camera</strong></span> GameObject. Next, drag into the <span class="strong"><strong>Inspector</strong></span> to ensure that all three <span class="strong"><strong>GameManager (Script)</strong></span> public variables, <span class="strong"><strong>Text State Messages</strong></span>, <span class="strong"><strong>Button Win Game</strong></span>, and<span class="strong"><strong> Button Lose Game</strong></span>, have the corresponding Canvas GameObjects dragged into them (the two buttons and the UI text GameObject).</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec348"></a>How it works...</h3></div></div></div><p>As can be seen in the following state chart figure, this recipe models a simple game, which starts in the <span class="strong"><strong>GAME PLAYING</strong></span> state; then, depending on the button clicked by the user, the game moves either into the <span class="strong"><strong>GAME WON</strong></span> state or the <span class="strong"><strong>GAME LOST</strong></span> state. Also, if the user waits too long to click on a button, the game moves into the <span class="strong"><strong>GAME LOST</strong></span> state.</p><p>The possible states<a id="id1192" class="indexterm"></a> of the system are defined using the enumerated type <code class="literal">GameStateType</code>, and the current state of the system at any point in time is stored in the <code class="literal">currentState</code> variable.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_39.jpg" /></div><p>A fourth state is defined (<code class="literal">Other</code>) to allow us to explicitly set the desired <code class="literal">GamePlaying</code> state in our <code class="literal">Start()</code> method. When we wish the game state to be changed, we call the <code class="literal">NewGameState(…)</code>method, passing the new state the game is to change into. The <code class="literal">NewGameState(…)</code>method first calls the <code class="literal">OnMyStateExit(…)</code>method with the current state, since there may be actions to be performed when a particular state is exited; for example, when the <code class="literal">GamePlaying</code> state is exited, it destroys the two buttons. Next, the <code class="literal">NewGameState(…)</code>method sets the <code class="literal">currentState</code> variable to be assigned the new state. Next, the <code class="literal">OnMyStateEnter(…)</code> method is called, since there may be actions to be performed immediately when a new state is entered. Finally, a message divider is posted to the UI Text box, with a call to the <code class="literal">PostMessageDivider()</code>method.</p><p>When the <code class="literal">GameManager</code> object receives messages (for example, every frame for <code class="literal">Update()</code>), its behavior must be appropriate for the current state. So, we see in this method a <code class="literal">Switch</code> statement, which calls state-specific methods. For example, if the current state is <code class="literal">GamePlaying</code>, then when an <code class="literal">Update() </code>message is received, the <code class="literal">UpdateStateGamePlaying()</code>method will be called.</p><p>The <code class="literal">BUTTON_CLICK_ACTION_WIN_GAME()</code> and <code class="literal">BUTTON_CLICK_ACTION_LOSE_GAME()</code> methods are executed if their corresponding buttons have been clicked. They move the game into the corresponding <span class="strong"><strong>WIN</strong></span> or <span class="strong"><strong>LOSE</strong></span> state.</p><p>Logic has been written in the <code class="literal">UpdateStateGamePlaying() m</code>ethod, so once the <code class="literal">GameManager</code> has been in the <code class="literal">GamePlaying</code> state for more than a certain time (defined in variable <code class="literal">timeToPressAButton</code>), the game will automatically change into the <code class="literal">GameLost</code> state.</p><p>So, for each state, we may need to write methods for state exit, state entry, and update events, and also a main method for each event with a <code class="literal">Switch</code> statement to determine which state method should be called (or not). As can be imagined, the size of our methods and the <a id="id1193" class="indexterm"></a>number of methods in our <code class="literal">GameManager</code> class will grow significantly as more states and a more complex game logic are needed for non-trivial games. The next recipe takes a more sophisticated approach to state-driven games, where each state has its own class.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec349"></a>See also</h3></div></div></div><p>Refer to the next recipe in this chapter for more information on how to manage the complexity of states with class inheritance and the State Design Pattern.</p></div></div>

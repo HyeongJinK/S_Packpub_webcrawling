@@ -1,0 +1,18 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec58"></a>Priority selector</h2></div></div><hr /></div><p>When ticked, a priority selector will <a id="id427" class="indexterm"></a>query the agent through its <code class="literal">SelectTopPriority</code> <a id="id428" class="indexterm"></a>method for the highest priority of its outgoing connections. The priority selector will then tick the connection corresponding to the returned index ID and its return value is passed on. If the ticked connection returns <code class="literal">Running</code>, then the priority selector will not requery priority on next tick. If a priority query returns the <code class="literal">Unknown</code> priority ID or an ID outside the queried set, the priority selector will return <code class="literal">Failure</code>.</p><p>So let's create a tree as shown in the following figure with a priority selector and three actions, <span class="strong"><strong>Eat</strong></span>, <span class="strong"><strong>Sleep</strong></span>, and <span class="strong"><strong>Play</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_09_23.jpg" /><div class="caption"><p>Priority Selector</p></div></div><p>It's important to note that the orders of output connections are important, as their index values will be used to reference from the script. So, in this sample connection index, the eat action would be <code class="literal">0</code>, sleep would be <code class="literal">1</code>, and <a id="id429" class="indexterm"></a>play would be <code class="literal">2</code>. And our <code class="literal">SelectTopPrioirty</code> method is implemented as follows:</p><div class="informalexample"><pre class="programlisting">  private bool isHungry = true;
+  private bool isSleepy = true;
+
+  public int SelectTopPriority (Tree sender, params int[] IDs) {
+    if (isHungry) {
+      isHungry = false;
+      isSleepy = true;
+      return IDs[0]; //eat
+    }
+    else if (isSleepy) {
+      isSleepy = false;
+      return IDs[1]; //sleep
+    }
+    else {
+      isHungry = true;
+      return IDs[2]; //play
+    }
+  }</pre></div><p>We give priority to the eat action if <code class="literal">isHungry</code> is true and the sleep action if <code class="literal">isSleepy</code> is true. Otherwise we choose the play action. Unlike sequences and selectors, priority selectors don't need to go through in order, <a id="id430" class="indexterm"></a>and instead we can straight away return a relevant action based on the conditions.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip05"></a>Tip</h3><p><span class="strong"><strong>What if you need multiple priority selectors in one tree?</strong></span></p><p>A quick Internet search leads to an answer from <span class="emphasis"><em>AngryAnt</em></span> on Github's Bahave issues list that suggests to use a selector's context variable to identify which selector is being called in the <code class="literal">SelectTopPriority</code> method.</p><p>You can find this and other solutions at <a class="ulink" href="https://github.com/AngryAnt/Behave-release/issues/" target="_blank">https://github.com/AngryAnt/Behave-release/issues/</a>.</p></div></div>

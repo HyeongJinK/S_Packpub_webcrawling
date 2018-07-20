@@ -1,0 +1,33 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec19"></a>Falling fatally into death colliders</h2></div></div><hr /></div><p>Like everything in this <a id="id77" class="indexterm"></a>book, there are many possible ways to set up death pits and world boundaries. We are going to go over one option that allows you to specify a world that is nonrectangular and allows death pits and boundaries to exist anywhere. Let's start by adding an empty GameObject to the scene. This is going to be the core of our death trigger. In fact, let's name it that—name it <code class="literal">Death Trigger</code> as it sounds nice and ominous (and could also be a good backup name for my cover band).</p><p>Now, let's allow this <code class="literal">Death Trigger</code> GameObject<a id="id78" class="indexterm"></a> to collide with the player. Add a <span class="strong"><strong>Box Collider 2D</strong></span> component, check the <span class="strong"><strong>Is Trigger</strong></span> checkbox, and set its <span class="strong"><strong>Size</strong></span> to <code class="literal">X: 20</code>, <code class="literal">Y: 1</code>. Now, move its position to underneath the platform and set the <code class="literal">Death Trigger</code> GameObject's <span class="strong"><strong>Y</strong></span> position to <code class="literal">-2.5</code>.</p><p>Let's add a new script. Call this one <code class="literal">DeathTriggerScript</code> and write its code as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class DeathTriggerScript : MonoBehaviour
+{
+    void OnTriggerEnter2D( Collider2DcollidedObject )
+    {    
+        collidedObject.SendMessage("hitDeathTrigger");
+    }   
+}</pre></div><p>OK! Attach that script to the <code class="literal">Death Trigger</code> object, play the game, run your player off the platform and—<span class="emphasis"><em>nothing happens</em></span>! That was pretty anticlimactic. We promised you all kinds of player killing, yet they annoyingly continue to fall.</p><p>We need to do a few <a id="id79" class="indexterm"></a>things here. First, we are going to give the player a <code class="literal">hitDeathTrigger</code> method. To<a id="id80" class="indexterm"></a> do that, open up the <code class="literal">PlayerStateListener</code> script, find somewhere sanitary, and add the following code:</p><div class="informalexample"><pre class="programlisting">public void hitDeathTrigger()
+{
+    onStateChange(PlayerStateController.playerStates.kill);
+}</pre></div><p>Now, the player will accept the message from the trigger. However, we don't have a <code class="literal">Kill</code> state set up yet in the <code class="literal">PlayerStateListener</code> script! Let's do that. Start by scrolling to the <code class="literal">onStateChange</code> function. Inside the <code class="literal">switch</code> condition, add a case for kill:</p><div class="informalexample"><pre class="programlisting">case
+PlayerStateController.playerStates.kill:
+break; 
+
+case
+PlayerStateController.playerStates.resurrect:
+break;  </pre></div><p>Now, add the exact same thing inside the <code class="literal">switch</code> statement inside <code class="literal">onStateCycle</code>. Then, add the following code in <code class="literal">checkForValidStatePair</code>:</p><div class="informalexample"><pre class="programlisting">case PlayerStateController.playerStates.kill:         
+// The only state that can take over from kill is resurrect
+if(newState == PlayerStateController.playerStates.resurrect)
+    returnVal = true;
+else    
+    returnVal = false;
+break;              
+
+case PlayerStateController.playerStates.resurrect:
+// The only state that can take over from resurrect is idle
+if(newState == PlayerStateController.playerStates.idle)
+returnVal = true;
+else
+    returnVal = false;                          
+break; </pre></div></div>

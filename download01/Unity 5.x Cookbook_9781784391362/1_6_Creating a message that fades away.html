@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec13"></a>Creating a message that fades away</h2></div></div><hr /></div><p>Sometimes, we<a id="id42" class="indexterm"></a> want a message to display just for a certain time, and then fade away and disappear, which will appear as shown in this screenshot:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_01_20.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec24"></a>Getting ready</h3></div></div></div><p>This recipe adapts the first recipe in this chapter, so make a copy of that project to work on for this recipe.</p><p>For this recipe, we have prepared the script that you need in a folder named <code class="literal">Scripts</code> in the <code class="literal">1362_01_04</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec25"></a>How to do it...</h3></div></div></div><p>To display a text message that fades away, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the provided C# script class called <code class="literal">CountdownTimer</code>.</p></li><li><p>Ensure that GameObject <span class="strong"><strong>Text-hello</strong></span> is selected in the <span class="strong"><strong>Hierarchy</strong></span> tab. Then, attach an instance of the <code class="literal">CountdownTimer</code> C# script class as a component of this GameObject.</p></li><li><p>Create a C# script class, <code class="literal">FadeAway</code>, containing the following code, and add an instance as a scripted component to the GameObject <span class="strong"><strong>Text-hello</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+
+public class FadeAway : MonoBehaviour {
+  private CountdownTimer countdownTimer;
+  private Text textUI;
+  private int fadeDuration = 5;
+  private bool fading = false;
+
+  void Start (){
+    textUI = GetComponent&lt;Text&gt;();
+    countdownTimer = GetComponent&lt;CountdownTimer&gt;();
+
+    StartFading(fadeDuration);
+  }
+
+  void Update () {
+    if(fading){
+      float alphaRemaining = countdownTimer.GetProportionTimeRemaining();
+      print (alphaRemaining);
+      Color c = textUI.material.color;
+      c.a = alphaRemaining;
+      textUI.material.color = c;
+
+      // stop fading when very small number
+      if(alphaRemaining &lt; 0.01)
+        fading = false;
+    }
+  }
+
+  public void StartFading (int timerTotal){
+    countdownTimer.ResetTimer(timerTotal);
+    fading = true;
+  }
+}</pre></div></li><li><p>When you run the scene, you will now see that the message on the screen slowly fades away, disappearing after 5 seconds.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec26"></a>How it works...</h3></div></div></div><p>An instance<a id="id43" class="indexterm"></a> of the provided <code class="literal">CountdownTimer</code> script class was added as a component to the GameObject <span class="strong"><strong>Text-hello</strong></span>.</p><p>You added to the GameObject <span class="strong"><strong>Text-hello</strong></span> an instance of the scripted class, <code class="literal">FadeAway</code>. The <code class="literal">Start()</code>method caches references to the <code class="literal">Text</code> and <code class="literal">CountdownTimer</code> components in the <code class="literal">countdownTimer</code> and <code class="literal">textUI</code> variables. Then, it calls the <code class="literal">StartFading(…)</code>method, passing in the number 5, so that the message will have faded to invisible after 5 seconds.</p><p>The <code class="literal">StartFading(…)</code> method starts this timer scripted component to countdown to the given number of seconds. It also sets the <code class="literal">fading</code> Boolean flag variable to <code class="literal">true</code>.</p><p>The <code class="literal">Update()</code> method, in each frame, tests if the <code class="literal">fading</code> variable is <code class="literal">true</code>. If it is true, then the alpha (transparency) component of the color of the <span class="strong"><strong>Text-hello</strong></span> object is set to a value between 0.0 <a id="id44" class="indexterm"></a>and 1.0, based on the proportion of the time remaining in the <code class="literal">CountdownTimer</code> object. Finally, if the proportion of time remaining is less than a very small value (0.01), then the <code class="literal">fading</code> variable is set to <code class="literal">false</code> (to save the processing work since the text is now invisible).</p></div></div>

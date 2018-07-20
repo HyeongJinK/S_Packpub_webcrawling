@@ -1,0 +1,57 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec18"></a>Creating the Game Master</h2></div></div><hr /></div><p>As discussed in <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>In the Beginning</em></span>, we are going to need a way to manage our game. We are going to create a script that will be called <code class="literal">GameMaster</code>. This is going to be the core of the game that glues everything together. As we progress with the book you will see how we are going to modify the core to meet our needs.</p><p>For now, we are just going to create a simple C# script and name it <code class="literal">GameMaster.cs</code>. We will then create the code that will be used to handle some of the basic events we want to perform at this point namely navigating from scene to scene.</p><p>From your <span class="strong"><strong>Project Window</strong></span>, under your <code class="literal">scripts </code>folder, right-click and select <span class="strong"><strong>Create|C# Script</strong></span>. Name it <code class="literal">GameMaster.cs</code>. Double-click your script to start your code editor and place the following code in there:</p><pre class="programlisting">using UnityEngine; &#13;
+using UnityEngine.SceneManagement; &#13;
+using System.Collections; &#13;
+ &#13;
+public class GameMaster : MonoBehaviour { &#13;
+ &#13;
+      // Use this for initialization &#13;
+      void Start () { &#13;
+       &#13;
+      } &#13;
+       &#13;
+      // Update is called once per frame &#13;
+      void Update () { &#13;
+       &#13;
+      } &#13;
+ &#13;
+   public void StartGame() &#13;
+   { &#13;
+      // NOTE: You should put in the name of the Scene &#13;
+      // that represents your level 1 &#13;
+      SceneManager.LoadScene("CH1_Awakening"); &#13;
+   } &#13;
+} &#13;
+</pre><p>In the <span class="strong"><strong>Hierarchy</strong></span> window, you will need to create an <span class="emphasis"><em>Empty GameObject</em></span>. The best way to do this, is by right-clicking and selecting <span class="emphasis"><em>
+<span class="strong"><strong>Create Empty</strong></span>
+</em></span>. An empty GameObject will be created. Select it and change the name to <code class="literal">
+<span class="emphasis"><em>_GameMaster</em></span>
+</code>.</p><p>We need to attach our script to the <code class="literal">_GameMaster</code> GameObject in our scene. Select the <code class="literal">GameMaster.cs</code> script and drag and drop it on the <code class="literal">_GameMaster</code>. This will attach the script to the <code class="literal">_GameMaster</code> object and make it available in the scene.</p><p>The next step is creating the event call from the button. This can easily be achieved by selecting the <code class="literal">butStartGame</code> button element and from the <span class="strong"><strong>Inspector</strong></span> window adding a new event call on the <code class="literal">OnClick()</code> component. Click the (<span class="strong"><strong>
+<span class="strong"><strong>+</strong></span>
+</strong></span>) button to create a new event.</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785285004/graphics/image_02_018.jpg" /></div><p>
+</p><p>We need to call the function we created in the <code class="literal">GameMaster.cs</code> script. To do so, we would need to somehow refer to it. This is done really easily. We can drag and drop the <code class="literal">_GameMaster GameObject</code> into the slot as indicated in the screenshot by number <span class="strong"><strong>2</strong></span>.</p><p>Once you place your <code class="literal">_GameMaster</code> GameObject in the slot, you will need to select the script from the drop-down menu as indicated in the screenshot by number <span class="strong"><strong>3</strong></span>.</p><p>That's all there is to it! We have now connected our button click event to the code that will be responsible to load our first level.</p><p>Now is a good time to save your scene and test your application. When you run the application for the first time, you will get an error. Don't be surprised, we have not done anything wrong. But there is one more step that we need to do before we can actually run our game successfully.</p><p>In order to be able to load scenes in the game, you will need to make sure they are listed in the Build Settings. To do so, select <span class="strong"><strong>File | Build Settings...</strong></span> and add the current scene to the list by selecting <span class="strong"><strong>Add Open Scenes</strong></span>. Your Build Setting should look like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781785285004/graphics/image_02_019.jpg" /></div><p>
+</p><p>Load the MainMenu scene once more, and run the application. Nice! It is working as expected. The only other item I would like to add to this chapter before we move on, is the following code in the GameMaster.cs script.</p><pre class="programlisting">using UnityEngine; &#13;
+using UnityEngine.SceneManagement; &#13;
+using System.Collections; &#13;
+ &#13;
+public class GameMaster : MonoBehaviour { &#13;
+ &#13;
+   // Use this for initialization &#13;
+   void Start () { &#13;
+      DontDestroyOnLoad(this); &#13;
+   } &#13;
+       &#13;
+   // Update is called once per frame &#13;
+   void Update () { &#13;
+       &#13;
+   } &#13;
+ &#13;
+   public void StartGame() &#13;
+   { &#13;
+      // NOTE: You should put in the name of the Scene &#13;
+      // that respresents your level 1 &#13;
+      SceneManager.LoadScene("CH1_Awakening"); &#13;
+   } &#13;
+} &#13;
+</pre><p>The single line of code in the <code class="literal">Start()</code> function will make sure that the <code class="literal">_GameMaster GameObject</code> does not get destroyed when we move from one scene to the next. This is important, because we will be storing all of our game configuration and stats and so on. in this particular GameObject. When you run the game now from the <code class="literal">MainMenu</code> scene, you will notice that when you load level 1, the <code class="literal">_GameMaster</code> GameObject comes over automatically from the <code class="literal">MainMenu</code>. This is cool!</p></div>

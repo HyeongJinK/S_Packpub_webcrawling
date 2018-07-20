@@ -1,0 +1,107 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec157"></a>C# addendum</h2></div></div><hr /></div><p>Converting the <code class="literal">TitleGUI</code> JavaScript to C# <a id="id440" class="indexterm"></a>was pretty painless:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>using UnityEngine;</strong></span>
+<span class="strong"><strong>using System.Collections;</strong></span>
+
+<span class="strong"><strong>public class TitleGUICSharp : MonoBehaviour {</strong></span>
+<span class="strong"><strong>private float buttonW = 100; // button width</strong></span>
+<span class="strong"><strong>private float buttonH = 50;  // button height</strong></span>
+<span class="strong"><strong>private float halfScreenW; // half of the Screen width</strong></span>
+<span class="strong"><strong>private float halfButtonW; // half of the button width</strong></span>
+
+<span class="strong"><strong>public GUISkin customSkin;</strong></span>
+<span class="strong"><strong>private void Start()</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>  halfScreenW = Screen.width/2;</strong></span>
+<span class="strong"><strong>  halfButtonW = buttonW/2;</strong></span>
+<span class="strong"><strong>}</strong></span>
+<span class="strong"><strong>private void OnGUI ()</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong> GUI.skin = customSkin;</strong></span>
+<span class="strong"><strong>  if(GUI.Button(new Rect(halfScreenW-halfButtonW, 460,</strong></span>
+<span class="strong"><strong>     buttonW, buttonH), "Play Game"))</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>      Application.LoadLevel("game");</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>}</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>Here are the changes:</p><p>We declared <code class="literal">buttonW</code> and <code class="literal">buttonH</code> as <code class="literal">floats</code> instead of <code class="literal">ints</code>, because the <code class="literal">Rect</code> structure later in the code accepts <code class="literal">float</code>, and we can't be bothered converting the <code class="literal">int</code> values to the <code class="literal">float</code> datatype. It's probably simpler and easier for them to begin their lives as floats anyway.</p><p>Earlier in our JavaScript code, we separated the declaration and definition of a few variables, but we didn't have to. We could have combined the declaration and definition in a single line, like so:</p><div class="informalexample"><pre class="programlisting">var halfScreenW:float = Screen.width/2;</pre></div><p>We can't pull the same monkeyshines with C#.  We're not allowed to simultaneously derive the value of <code class="literal">Screen.width</code>, perform a calculation on it, and store it as the value of <code class="literal">halfScreenW</code>. Just as we did with the JavaScript code, we've declared the variables at the top of the class, and define the variables (give them their values) in the <code class="literal">Start</code> function.</p><p>Note that in order for<a id="id441" class="indexterm"></a> the <code class="literal">customSkin</code> variable to show up in Unity's <span class="strong"><strong>Inspector</strong></span> panel, we need to use the <code class="literal">public</code> access modifier before declaring the variable. Try switching it to <code class="literal">private</code>, and observe that the variable disappears from the <span class="strong"><strong>Inspector</strong></span> panel.</p><p>The only other change to this script, aside from the usual changes mentioned in the previous chapter, is that the <code class="literal">Rect</code> structure requires the <code class="literal">new</code> keyword in front of it in C#.</p><p>There are a few differences in the C# version of the <code class="literal">GameScript</code> script as well:</p><div class="informalexample"><pre class="programlisting">  using UnityEngine;
+  using System.Collections;
+  using System.Collections.Generic;
+  
+  public class GameScriptCSharp : MonoBehaviour {
+  private int cols = 4; // the number of columns in the card grid
+  private int rows = 4; // the number of rows in the card grid
+  private int totalCards = 16;
+  private int matchesNeededToWin;
+  private int matchesMade = 0; // At the outset, the player has not made any matches
+  private int cardW = 100; // Each card's width and height is 100 pixels
+  private List&lt;Card&gt; aCards; // We'll store all the cards wecreate in this array
+  private Card[,] aGrid; // This 2d array will keep track of the shuffled, dealt cards
+  private List&lt;Card&gt; aCardsFlipped; // This generic array list will store the two cards that the player flips over
+  private bool playerCanClick; // We'll use this flag to prevent the player from clicking buttons when we don't want him to
+  private bool playerHasWon = false; // Store whether or not the player has won. This should probably start out false :)	
+  
+  // Use this for initialization
+  private void Start () {
+    matchesNeededToWin = totalCards / 2; // If there are 16 cards, the player needs to find 8 matches to clear the board
+    playerCanClick = true; // We should let the player play, don't you think?
+   
+    // Initialize some empty Lists:
+    aCards = new List&lt;Card&gt;(); // this Generic List is our deck of cards. It can only ever hold instances of the Card class.
+    aGrid = new Card[rows,cols];  // The rows and cols variableshelp us define the dimensions of this 2D array
+    aCardsFlipped = new List&lt;Card&gt;(); // This List will store the two cards the player flips over.
+  
+    // Loop through the total number of rows in our aGrid List:
+    for(int i = 0; i&lt;rows; i++)
+    {
+      // For each individual grid row, loop through the total number of columns in the grid:
+      for(int j = 0; j&lt;cols; j++)
+      {
+        aGrid[i,j] = new Card(); // stuff a new card instance into the 2D array
+      }
+        
+  }
+  private void OnGUI()
+  {
+    GUILayout.BeginArea (new Rect (0,0,Screen.width,Screen.height));
+    BuildGrid();
+    GUILayout.EndArea();
+    print("building grid!");
+  }
+  
+  private void BuildGrid()
+  {
+  
+    GUILayout.BeginVertical();
+    for(int i = 0; i&lt;rows; i++)
+    {
+      GUILayout.BeginHorizontal();
+      for(int j = 0; j&lt;cols; j++)
+      {
+        Card card = aGrid[i,j];      
+
+        if(GUILayout.Button(Resources.Load(card.img) as Texture, GUILayout.Width(cardW)))
+        {
+          Debug.Log(card.img);
+        }
+      }
+      GUILayout.EndHorizontal();   
+    }
+    GUILayout.EndVertical();
+    print ("building grid!");
+  }
+}</pre></div><p>As with the <span class="strong"><strong>TitleGUI</strong></span> script, we've moved the <code class="literal">matchesNeededToWin</code> declaration to the <code class="literal">Awake</code> function, because we need to know the value of <code class="literal">totalCards</code> to define it.</p><p>Here's a subtle difference. When we define the <code class="literal">aCardsFlipped</code> Generic List, note that JavaScript uses a dot, while C# does not:</p><div class="informalexample"><pre class="programlisting">aCardsFlipped = new List.&lt;Card&gt;(); // JavaScript
+aCardsFlipped = new List&lt;Card&gt;(); // C#</pre></div><p>The only other difference<a id="id442" class="indexterm"></a> within this script is the <code class="literal">GUILayout.Button</code> call in the <code class="literal">BuildGrid</code> function:</p><div class="informalexample"><pre class="programlisting">if(GUILayout.Button(Resources.Load(card.img) as Texture, GUILayout.Width(cardW)))</pre></div><p>The first parameter of <code class="literal">GUILayout.Button</code> should be <code class="literal">Texture</code>, but the <code class="literal">Resources.Load</code> method gives us an <code class="literal">Object</code>. Since we know that we're actually loading a valid texture (or pulling out a piece of chicken instead of a tennis shoe), we can explicitly tell Unity that this is, indeed, the <code class="literal">Texture</code> it requires.</p><p>We do that with the help of the <code class="literal">as</code> keyword. By telling Unity that this <code class="literal">Object</code> is, in fact, a valid <code class="literal">Texture</code>, we're said to be casting the <code class="literal">Object</code> to a <code class="literal">Texture</code> via <code class="literal">as</code>.</p><p>Finally, we've moved the <code class="literal">Card</code> class declaration into its very own separate script file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Card {
+  
+  public bool isFaceUp = false;
+  public bool isMatched = false;
+  public string img;
+  
+  public Card()
+  {
+    img = "robot";
+  }
+}</pre></div><p>The sneaky bit here is <a id="id443" class="indexterm"></a>that by default, C# classes in Unity inherit from a class called <code class="literal">MonoBehaviour</code>. When they do that, they can't actually have a constructor function. We can keep the constructor function (<code class="literal">Card()</code>) intact by simply removing the <code class="literal">Monobehaviour</code> bit from the class declaration so that this class stands alone. Everything else in the <code class="literal">Card</code> class is straightforward.</p></div>

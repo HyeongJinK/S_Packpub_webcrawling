@@ -1,0 +1,165 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec65"></a>Weapons</h2></div></div><hr /></div><p>Our player-controlled car has two <a id="id478" class="indexterm"></a>weapons; a missile launcher and a normal gun, while the AI cars only have a normal gun. Let us look at them to see how they're implemented. There are not many AI techniques here though.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec59"></a>Gun</h3></div></div></div><p>The <code class="literal">WeaponGun</code> class <a id="id479" class="indexterm"></a>simply <a id="id480" class="indexterm"></a>spawns bullets upon calling its <code class="literal">Shoot</code> method.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class WeaponGun : MonoBehaviour {
+  public GameObject Bullet;
+  public GameObject[] GunGraphics;
+  public float ratePerSecond;
+  private bool bShoot;
+
+  // Use this for initialization
+  void Start() {
+    bShoot = false;
+  }
+
+  public void Shoot() {
+    bShoot = true;
+
+    foreach (GameObject obj in GunGraphics) {
+      obj.animation.CrossFade("GunShooting", 0.5f);
+    }
+
+    StartCoroutine("ShootBullets");
+  }</pre></div><p>When shooting bullets we don't want to instantiate too many bullets at once because of a high frames per second rating. Instead, we would like to limit the shooting rate to a specific user defined value. We want to wait for a specific duration before spawning another bullet. We can do this by using coroutines in Unity3D.</p><div class="informalexample"><pre class="programlisting">  public void StopShoot() {
+    //Stop the shooting animation
+    if (bShoot) {
+      bShoot = false;
+
+      foreach (GameObject obj in GunGraphics) {
+        obj.animation.Stop("GunShooting");
+      }
+    }
+
+    StopCoroutine("ShootBullets");
+  }</pre></div><p>As explained in the Unity3D <a id="id481" class="indexterm"></a>reference, a <code class="literal">coroutine</code> is a function that can suspend its execution (yield), <a id="id482" class="indexterm"></a>until the given <code class="literal">YieldInstruction</code> finishes. We can start and stop coroutines using the <code class="literal">StartCoroutine</code> <a id="id483" class="indexterm"></a>and <code class="literal">StopCoroutine</code> methods. The following is our <code class="literal">coroutine</code> method, <code class="literal">ShootBullets</code>. In this method, we wait for a certain number of milliseconds based on the specified <code class="literal">ratePerSecond</code> value.</p><div class="informalexample"><pre class="programlisting">  private IEnumerator ShootBullets() {
+    SpawnBullet();
+    yield return new WaitForSeconds(1.0f / ratePerSecond);
+    StartCoroutine("ShootBullets");
+  }</pre></div><p>This <code class="literal">coroutine</code> method <a id="id484" class="indexterm"></a>just calls our <code class="literal">SpawnBullet</code> method that instantiates a new Bullet prefab at a <a id="id485" class="indexterm"></a>random position and rotation along the gun's position.</p><div class="informalexample"><pre class="programlisting">  private void SpawnBullet() {
+    int rndSpawnPoint = Random.Range(0, GunGraphics.Length);
+    Vector3 SpawnPos = 
+        GunGraphics[rndSpawnPoint].transform.position;
+    Quaternion SpawnRot = 
+        GunGraphics[rndSpawnPoint].transform.rotation;
+
+    //Create a new Bullet
+    GameObject objBullet = (GameObject)Instantiate(Bullet,
+        SpawnPos, SpawnRot);
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec60"></a>Bullet</h3></div></div></div><p>The <code class="literal">Bullet</code> object is set <a id="id486" class="indexterm"></a>up as a <a id="id487" class="indexterm"></a>prefab called <code class="literal">PlayerLaser</code>. In the chapter assets, you can find it under <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>Resources</strong></span> | <span class="strong"><strong>Prefabs</strong></span> | <span class="strong"><strong>Bullets</strong></span>.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_11.jpg" /><div class="caption"><p>Location of all our weapons</p></div></div><p>The <code class="literal">Bullet</code> behavior class is added to this laser bullet prefab. It also has a rigid body and box collider components, so that we can detect collision with other objects. We also need a particle effect to be played when it hits something.</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_12.jpg" /><div class="caption"><p>Setup and appearance of our bullet</p></div></div><p>And here's our <code class="literal">Bullet</code> class. The first thing we do in our <code class="literal">Start</code> method is to destroy this bullet game object automatically after two seconds.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Bullet : MonoBehaviour {
+  public GameObject Particle_Hit;
+  public float speed = 100.0f;
+
+  // Use this for initialization
+  void Start() {
+    Destroy(gameObject, 2.0f);
+  }</pre></div><p>And in the <code class="literal">update</code> method, we just <a id="id488" class="indexterm"></a>move advance in the positive Z direction to move forward with a defined speed.</p><div class="informalexample"><pre class="programlisting">  // Update is called once per frame
+  void Update () {
+    transform.Translate(new Vector3(0, 0, speed * 
+        Time.deltaTime));
+  }
+
+  void OnCollisionEnter(Collision collision) {
+    Vector3 contactPoint = collision.contacts[0].point;
+
+    Instantiate(Particle_Hit, contactPoint, Quaternion.identity);
+    Destroy(gameObject);
+  }
+}</pre></div><p>The <code class="literal">OnCollisionEnter</code> method is called when this game object collides with something. We just play the bullet particle effect attached and destroy the bullet object. The other game object being hit by the bullet will handle the damaging taking and state switching tasks.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec61"></a>Launcher</h3></div></div></div><p>The missile launcher weapon is also <a id="id489" class="indexterm"></a>similar to the gun weapon class. It spawns missiles, and <a id="id490" class="indexterm"></a>uses coroutines to wait for a few milliseconds between each missile instantiation. The only difference with the gun weapon is missiles have a mode to lock and chase down the target if the player aims and shoots correctly on an enemy AI car.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class WeaponMissile: MonoBehaviour {
+  public GameObject Missile;
+  public Transform SpawnPoint;
+  private bool bShoot, bHasTarget;
+  private Transform target;
+
+  // Use this for initialization
+  void Start() {
+    bShoot = false;
+    bHasTarget = false;
+  }</pre></div><p>Then, we initialize our properties in the <code class="literal">Start</code> method. And in the <code class="literal">Shoot</code> method we use raycasting to test if there's an AI <a id="id491" class="indexterm"></a>car at the current mouse position.</p><div class="informalexample"><pre class="programlisting">  public void Shoot() {
+    //Check Whether target exist or not
+    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+    RaycastHit hitInfo;
+
+    //RayCast only to AI Car which layer number is 9
+      int layerMask = 1 &lt;&lt; 9;
+
+    if (Physics.Raycast(ray, out hitInfo, 1000.0f, layerMask)) {
+      bHasTarget = true;
+      target = hitInfo.transform;
+    }
+    else {
+      bHasTarget = false;
+    }
+
+    bShoot = true;
+    StartCoroutine("ShootMissiles");
+  }</pre></div><p>The <code class="literal">Raycast</code> method's layer mask parameter determines which layers to test against with the ray generated. AI car layer we set up at layer <a id="id492" class="indexterm"></a>number <code class="literal">9</code> previously. By bit shifting the number one, (…0000000001) in binary, nine places to the left, becomes (…001000000000) in binary. The result is <a id="id493" class="indexterm"></a>that all the layers except layer <code class="literal">9</code> will be neglected while performing raycasting. If that ray hits with an AI car, then we'll set <code class="literal">bHasTarget</code> to <code class="literal">true</code> and set the target transformation. Afterwards, we start the <code class="literal">ShootMissiles</code> coroutine.</p><div class="informalexample"><pre class="programlisting">  public void StopShoot() {
+    //Stop the shooting animation
+    if (bShoot) {
+      bShoot = false;
+    }
+    StopCoroutine("ShootMissiles");
+  }
+
+  private IEnumerator ShootMissiles() {
+    SpawnMissile();
+    yield return new WaitForSeconds(
+        Random.Range(0.3f, 0.6f));
+    StartCoroutine("ShootMissiles");
+  }
+
+  private void SpawnMissile() {
+    //Create a new Missile
+      GameObject objMissile = (GameObject)Instantiate(Missile,
+        SpawnPoint.position, SpawnPoint.rotation);
+
+    objMissile.GetComponent&lt;Missile&gt;().Initialise(bHasTarget,
+      target);
+  }
+}</pre></div><p>Finally, in the <code class="literal">SpawnMissile</code> method, <a id="id494" class="indexterm"></a>we instantiate a new missile prefab at the missile weapon <a id="id495" class="indexterm"></a>position. Then, we get the <code class="literal">Missile</code> script, and tell it if we have a target and what that target is.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec62"></a>Missile</h3></div></div></div><p>Our <code class="literal">WeaponMissile</code> or <code class="literal">launcher weapon</code> class spawns each missile. During initialization we check whether <a id="id496" class="indexterm"></a>there is a <a id="id497" class="indexterm"></a>target object to <a id="id498" class="indexterm"></a>chase and destroy for this missile.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Missile : MonoBehaviour {
+  public GameObject Particle_Hit;
+  public float speed = 20.0f;
+  private Transform target;
+
+  public void Initialise(bool bHasTarget, Transform target 
+      = null) {
+    if (bHasTarget) {
+      this.target = target;
+      Destroy(gameObject, 4.0f);
+    }
+    else {
+      Destroy(gameObject, 2.0f);
+    }
+  }</pre></div><p>If there's a target object then in our <code class="literal">Update</code> <a id="id499" class="indexterm"></a>method, we constantly track the target position and update the direction and <a id="id500" class="indexterm"></a>rotation values of our missile accordingly.</p><div class="informalexample"><pre class="programlisting">  // Update is called once per frame
+  void Update() {
+    if (target != null) {
+      //Make the target position upwards alittle bit
+      Vector3 newTarPos = target.position + 
+          new Vector3(0.0f, 1.0f, 0.0f);
+
+      //Rotate towards the target
+      Vector3 tarDir = newTarPos - transform.position;
+      Quaternion tarRot = Quaternion.LookRotation(tarDir);
+      transform.rotation=Quaternion.Slerp(transform.rotation,
+          tarRot, 3.0f * Time.deltaTime);
+    }
+
+    transform.Translate(new Vector3(0, 0, 
+        speed * Time.deltaTime));
+  }</pre></div><p>Finally, like in our <code class="literal">bullet</code> class, when the missile hits something we just play the explosion particle effect and destroy the <code class="literal">missile</code> object.</p><div class="informalexample"><pre class="programlisting">  void OnCollisionEnter(Collision collision) {
+    Vector3 contactPoint = collision.contacts[0].point;
+
+    Instantiate(Particle_Hit, contactPoint, 
+        Quaternion.identity);
+    Destroy(gameObject);
+  }
+}</pre></div><p>This will produce a cool effect of the target locked missile launched from the side of the car, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849693400/graphics/3400_10_13.jpg" /><div class="caption"><p>Firing missiles at our enemies</p></div></div></div></div>

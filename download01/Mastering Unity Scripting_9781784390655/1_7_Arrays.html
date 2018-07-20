@@ -1,0 +1,48 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec13"></a>Arrays</h2></div></div><hr /></div><p>Lists and sequences are everywhere in games. For this reason, you'll frequently need to keep track of lists of data<a id="id46" class="indexterm"></a> of the same type: all enemies in the level, all weapons that have been collected, all power ups that could be collected, all spells and items in the inventory, and so on. One type of list is the array. Each item in the array is, essentially, a unit of information that has the potential to change during gameplay, and so a variable is suitable to store each item. However, it's useful to collect together all the related variables (all enemies, all weapons, and so on) into a single, linear, and traversable list structure. This is what an array achieves. In C#, there are two kinds of arrays: static and dynamic. Static arrays might hold a fixed and maximum number of possible entries in memory, decided in advance, and this capacity remains unchanged throughout program execution, even if you only need to store fewer items than the capacity. This means some slots or entries could be wasted. Dynamic arrays might grow and shrink in capacity, on demand, to accommodate exactly the number of items required. Static arrays typically perform better and faster, but dynamic arrays feel cleaner and avoid memory wastage. This chapter considers only static arrays, and dynamic arrays are considered later, as shown in the following code sample 1-4:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 
+04 public class MyScriptFile : MonoBehaviour 
+05 {
+06     //Array of game objects in the scene
+07     public GameObject[] MyObjects;
+08 
+09      // Use this for initialization
+10      void Start ()
+11      {
+12       }
+13 
+14       // Update is called once per frame
+15       void Update () 
+16       {
+17       }
+18 }</pre></div><p>In code sample 1-4, line 07 declares a completely empty array of <code class="literal">GameObjects</code>, named <code class="literal">MyObjects</code>. To create this, it uses the <code class="literal">[]</code> syntax after the data type <code class="literal">GameObject</code> to designate an array, that is, to signify that a list of <code class="literal">GameObjects</code> is being declared as opposed to a single <code class="literal">GameObject</code>. Here, the declared array will be a list of all objects in the scene. It begins empty, but you can use the Object Inspector in the Unity Editor to build the array<a id="id47" class="indexterm"></a> manually by setting its maximum capacity and populating it with any objects you need. To do this, select the object to which the script is attached in the scene and type in a <span class="strong"><strong>Size</strong></span> value for the <span class="strong"><strong>My Objects</strong></span> field to specify the capacity of the array. This should be the total number of objects you want to hold. Then, simply drag-and-drop objects individually from the scene hierarchy panel into the array slots in the Object Inspector to populate the list with items, as shown here:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_01_08.jpg" /><div class="caption"><p>Building arrays from the Unity Object Inspector</p></div></div><p>You can also build the array manually in code via the <code class="literal">Start</code> function instead of using the Object Inspector. This <a id="id48" class="indexterm"></a>ensures that the array is constructed as the level begins. Either method works fine, as shown in the following code sample 1-5:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 
+04 public class MyScriptFile : MonoBehaviour 
+05 {
+06     //Array of game objects in the scene
+07     public GameObject[] MyObjects;
+08 
+09     // Use this for initialization
+10     void Start ()
+11     {
+12          //Build the array manually in code
+13          MyObjects = new GameObject[3];
+14          //Scene must have a camera tagged as MainCamera
+15          MyObjects[0] = Camera.main.gameObject; 
+
+16       //Use GameObject.Find function to
+17       //find objects in scene by name
+18       MyObjects[1] = GameObject.Find("Cube"); 
+19       MyObjects[2] = GameObject.Find("Cylinder"); 
+20     }
+21 
+22     // Update is called once per frame
+23     void Update ()
+24     {
+25     }
+26 }</pre></div><p>The following are the comments for code sample 1-5:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 10</strong></span>: The <code class="literal">Start</code> function is executed at level startup. Functions are considered in more depth later in this chapter.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 13</strong></span>: The <code class="literal">new</code> keyword is used to create a new array with a capacity of three. This means that the list can hold no more than three elements at any one time. By default, all elements are set to the starting value of <code class="literal">null</code> (meaning nothing). They are empty.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 15</strong></span>: Here, the first element in the array is set to the main camera object in the scene. Two important points should be noted here. First, elements in the array can be accessed using the array subscript operator <code class="literal">[]</code>. Thus, the first element of <code class="literal">MyObjects</code> can be accessed with <code class="literal">MyObjects[0]</code>. Second, C# arrays are "zero indexed". This means the first element is always at position <code class="literal">0</code>, the next is at <code class="literal">1</code>, the next at <code class="literal">2</code>, and so on. For the <code class="literal">MyObjects</code> three-element array, each<a id="id49" class="indexterm"></a> element can be accessed with <code class="literal">MyObjects[0]</code>, <code class="literal">MyObjects[1]</code>, and <code class="literal">MyObjects[2]</code>. Notice that the last element is <code class="literal">2</code> and not <code class="literal">3</code>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 18 and 19</strong></span>: Elements <code class="literal">1</code> and <code class="literal">2</code> of the <code class="literal">MyObjects</code> array are populated with objects using the function <code class="literal">GameObject.Find</code>. This searches the active scene for game objects with a specified name (case sensitive), inserting a reference to them at the specified element in the <code class="literal">MyObjects</code> array. If no object of a matching name is found, then <code class="literal">null</code> is inserted instead.</p></li></ul></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip04"></a>Tip</h3><p>More information on arrays and <a id="id50" class="indexterm"></a>their usage in C# can be found online at <a class="ulink" href="http://msdn.microsoft.com/en-GB/library/9b9dty7d.aspx" target="_blank">http://msdn.microsoft.com/en-GB/library/9b9dty7d.aspx</a>.</p></div></div>

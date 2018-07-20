@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec38"></a>Enemies – forever!</h2></div></div><hr /></div><p>So, you defeated all your enemies and now find yourself without enemies to defeat. This gets boring fast; so, let's find a way to get more enemies to whack. To do this, we are going to create enemy spawn points in the form of nifty rotating vortexes and have them spit out enemies <a id="id141" class="indexterm"></a>whenever we kill other enemies. It shall be glorious, and we'll never be without friends to give gifts—and by gifts, we mean bullets.</p><p>First things first. We need to make a cool-looking vortex. This vortex will be a stacked, animated visual FX object that is built for a 2D world. Don't worry, we've got you covered on textures, so please go through the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Import the ones in the assets folder under <code class="literal">Sprites\Vortex</code>.</p></li><li><p>Create a new GameObject called <code class="literal">Vortex</code> and add all three of the <code class="literal">Vortex</code> sprites in it, with each of their <span class="strong"><strong>Position</strong></span> values set to <code class="literal">X:0</code>, <code class="literal">Y:0</code>, and <code class="literal">Z:0</code>.</p></li><li><p>Adjust their <span class="strong"><strong>Order in Layer</strong></span> values so that the <span class="strong"><strong>Vortex_Back</strong></span> child is set to <code class="literal">10</code>, <span class="strong"><strong>Vortex_Center</strong></span> is set to <code class="literal">11</code>, and <span class="strong"><strong>Vortex_Front</strong></span> is set to <code class="literal">12</code>. You should now have an object that looks something like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849692564/graphics/2564OT_04_04.jpg" /></div></li><li><p>Go ahead and give it a nice spinning animation by rotating the <span class="strong"><strong>Z </strong></span>axis from <code class="literal">0</code> to <code class="literal">356</code>.</p></li><li><p>Once you're happy with it, create a new script called <code class="literal">EnemyRespawner</code> and code it up as shown in the following code snippet:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class EnemyRespawner : MonoBehaviour
+{
+    public GameObject spawnEnemy = null;
+    float respawnTime = 0.0f;
+    
+    void OnEnable()
+    {
+        EnemyControllerScript.enemyDied += scheduleRespawn;
+    }
+    
+    void OnDisable()
+    {
+        EnemyControllerScript.enemyDied -= scheduleRespawn;
+    }
+    
+    // Note: Even though we don't need the enemyScore, we still // need to accept it because the event passes it
+    void scheduleRespawn(int enemyScore)
+    {
+        // Randomly decide if we will respawn or not
+        if(Random.Range(0,10) &lt; 5)
+            return;
+        
+        respawnTime = Time.time + 4.0f;
+    }
+    
+    void Update()
+    {
+        if(respawnTime &gt; 0.0f)
+        {
+            if(respawnTime &lt; Time.time)
+            {
+                respawnTime = 0.0f;
+                GameObject newEnemy = Instantiate(spawnEnemy) asGameObject;
+                newEnemy.transform.position = transform.position;
+            }
+        }
+    }
+}</pre></div></li></ol></div><p>Now attach the preceding script to your <span class="strong"><strong>Vortex</strong></span> object, populate the <span class="strong"><strong>Spawn Enemy</strong></span> field with the <span class="strong"><strong>Enemy</strong></span> Prefab, <a id="id142" class="indexterm"></a>and save the <span class="strong"><strong>Vortex</strong></span> object as a Prefab. Scatter a bunch of <span class="strong"><strong>Vortex</strong></span> Prefabs around the level and you can get the hydra effect, where killing one enemy will create two more enemies or even more than two!</p><p>Also, if you haven't already done so, you may want to go to the <span class="strong"><strong>Physics Manager</strong></span> option and adjust the settings so that enemies won't collide with other enemies.</p><p>One more thing—those enemies sort of glide out of their portals very awkwardly. Let's boost the gravity so they fall faster. Click on the main <span class="strong"><strong>Enemy</strong></span> Prefab and change the <span class="strong"><strong>Gravity Scale</strong></span> value of the <span class="strong"><strong>RigidBody 2D</strong></span> component to <code class="literal">30</code>. Now, they'll fall properly!</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip17"></a>Tip</h3><p>
+<span class="strong"><strong>Pro tip</strong></span>
+</p><p>There are so many things you can do with enemy spawners that go far, far outside the context of this book. Take a shot at adding some features yourself! Here are a few ideas:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Make the spawn vortexes play a special visual effect when an enemy is spawned</p></li><li style="list-style-type: disc"><p>Give vortexes a range so that they only spawn an enemy if another enemy was killed in their range</p></li><li style="list-style-type: disc"><p>Make vortexes move around the level</p></li><li style="list-style-type: disc"><p>Make vortexes have multiple purposes so that enemies can walk into one and come out another</p></li><li style="list-style-type: disc"><p>Have a special gold enemy worth bonus points spawn after every 100 kills</p></li><li style="list-style-type: disc"><p>Make an enemy that, when defeated, spawns other enemies or even collectable objects that earn the player bonus points!</p></li></ul></div></div></div>

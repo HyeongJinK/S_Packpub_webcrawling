@@ -1,0 +1,198 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec59"></a>Creating a global chatbox application</h2></div></div><hr /></div><p>In many <a id="id265" class="indexterm"></a>ways, our global chatbox will look a lot like the chatbox that we built in Photon. However, rather than having separate chatrooms,<a id="id266" class="indexterm"></a> we'll create one single global chatbox for everyone. There will also be major API differences to keep in mind—in Photon, we were able to use RPCs to conveniently call a function on all connected clients which handled chat messages. However, in PubNub we will need to handle incoming messages, parse them, and process them as chat messages.</p><p>In this chatbox example, we'll expand our chatbox with extra functions such as the <code class="literal">/me</code> command. Additionally, you'll be able to change your name (which will be announced to the room):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Chatbox : MonoBehaviour
+{
+  private string PlayerName;
+  private string _playerName;
+
+  void Start()
+  {
+    // we'll assign a random guest name to the player, or load up their last name from player prefs
+    PlayerName = PlayerPrefs.GetString( "PlayerName", "Guest" + Random.Range( 0, 9999 ) );
+
+    // we use a temporary _playerName to pass to GUILayout.TextField so that we avoid changing our actual name until we've hit the "Change" button.
+    _playerName = PlayerName;
+
+    // subscribe to the chatroom.
+    // if you wanted, you could easily create separate chatrooms, allow the user to pick a chatroom and simply insert the name of the chatroom here.
+    PubNubWrapper.instance.Subscribe( "Chatbox", HandleMessage );
+  }
+
+  // for now we'll simply log messages to the console for testing.
+  void HandleMessage( string message )
+  {
+    Debug.Log( message );
+  }
+  void OnGUI()
+  {
+    _playerName = GUILayout.TextField( _playerName, GUILayout.Width( 200f ) );
+    if( GUILayout.Button( "Change Name", GUILayout.Width( 200f ) ) )
+    {
+      // inform everyone else in the room that the player has changed their name.
+      PubNubWrapper.instance.Publish( PlayerName + " changed their name to " + _playerName, "Chatbox" );
+
+      // assign the new name
+      PlayerName = _playerName;
+    }
+  }
+
+  void OnApplicationQuit()
+  {
+    // when the player quits, save their name to player prefs so when they come back later it's saved for them.
+    PlayerPrefs.SetString( "PlayerName", PlayerName );
+  }
+}</pre></div><p>Let's step through <a id="id267" class="indexterm"></a>this script. Firstly, we load a<a id="id268" class="indexterm"></a> player name, or generate a new one. We then subscribe to the Chatbox channel. In OnGUI, we draw a text field for the player's name and a "Change Name" button. When the player changes their name, it's announced to the chatroom and the player's name is set. Upon quitting, the name is saved. Received messages are debug logged to the console.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec40"></a>Publishing chat messages</h3></div></div></div><p>Next, <a id="id269" class="indexterm"></a>let's add a text field for publishing messages to the chatbox.</p><p>First, we'll add a variable to store the value of the text field. On clicking the <span class="strong"><strong>Send</strong></span> button, the text entered by the user is broadcast to the channel and cleared:</p><div class="informalexample"><pre class="programlisting">private string chatText = "";</pre></div><p>We'll add the text field to the end of our OnGUI call as follows:</p><div class="informalexample"><pre class="programlisting">GUILayout.BeginHorizontal( GUILayout.Width( Screen.width ) );
+{
+  chatText = GUILayout.TextField( chatText, GUILayout.ExpandWidth( true ) );
+  if( GUILayout.Button( "Send", GUILayout.Width( 100f ) ) )
+  {
+    // publish the message the player typed as:
+    // [playername]: [message]
+    PubNubWrapper.instance.Publish( PlayerName + ": " + chatText, "Chatbox" );
+    // clear the textbox
+    chatText = "";
+  }
+}
+GUILayout.EndHorizontal();</pre></div><p>Now you can enter text in the text field and hit <span class="strong"><strong>Send</strong></span>, and you'll soon see the message logged to the console.</p><p>Right now it always <a id="id270" class="indexterm"></a>prefixes the message with your name, but let's change this to support the common <code class="literal">/me</code> command. In our GUI Send button code, we'll make a simple change:</p><div class="informalexample"><pre class="programlisting">if( GUILayout.Button( "Send", GUILayout.Width( 100f ) ) )
+{
+  // did the player type a message like this:
+  // /me [message]?
+  // If so, publish as:
+  // [playername] [message] without the colon.  
+  if( chatText.StartsWith( "/me " ) )
+  {
+    chatText = chatText.Replace( "/me", "" );
+    PubNubWrapper.instance.Publish( PlayerName + chatText, "Chatbox" );
+  }
+  else
+  {
+          // publish the message the player typed as:
+          // [playername]: [message]    PubNubWrapper.instance.Publish( PlayerName + ": " + chatText, "Chatbox" );
+  }
+}
+        chatText = "";"";}</pre></div><p>We simply check if the text begins with "/me", and if so we send the player's name appended to the text without the colon. The full script so far is as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+public class Chatbox : MonoBehaviour
+{
+  private string PlayerName;
+  private string _playerName;
+
+  private string chatText = "";
+
+  void Start()
+  {
+    // we'll assign a random guest name to the player, or load up their last name from player prefs
+    PlayerName = PlayerPrefs.GetString( "PlayerName", "Guest" + Random.Range( 0, 9999 ) );
+
+    // we use a temporary _playerName to pass to GUILayout.TextField so that we avoid changing our actual name until we've hit the "Change" button.
+    _playerName = PlayerName;
+
+    // subscribe to the chatroom.
+    // if you wanted, you could easily create separate chatrooms, allow the user to pick a chatroom and simply insert the name of the chatroom here.
+    PubNubWrapper.instance.Subscribe( "Chatbox", HandleMessage );
+  }
+
+  // for now we'll simply log messages to the console for testing.
+  void HandleMessage( string message )
+  {
+    Debug.Log( message );
+  }
+
+  void OnGUI()
+  {
+    _playerName = GUILayout.TextField( _playerName, GUILayout.Width( 200f ) );
+    if( GUILayout.Button( "Change Name", GUILayout.Width( 200f ) ))
+    {
+      // inform everyone else in the room that the player has changed their name.
+      PubNubWrapper.instance.Publish( PlayerName + " changed their name to " + _playerName, "Chatbox" );
+      
+      // assign the new name
+      PlayerName = _playerName;
+    }
+
+    GUILayout.BeginHorizontal( GUILayout.Width( Screen.width ) );
+    {
+      chatText = GUILayout.TextField( chatText, GUILayout.ExpandWidth( true ) );
+      if( GUILayout.Button( "Send", GUILayout.Width( 100f ) ) )
+      {
+        // did the player type a message like this:
+        // /me [message]?
+        // If so, publish as:
+        // [playername] [message] without the colon.
+        if( chatText.StartsWith( "/me " ) )
+        {
+          chatText = chatText.Replace( "/me", "" );
+          PubNubWrapper.instance.Publish( PlayerName + chatText, "Chatbox" );
+        }
+        else
+        {
+        // publish the message the player typed as:
+        // [playername]: [message]
+          PubNubWrapper.instance.Publish( PlayerName + ": " + chatText, "Chatbox" );
+        }
+        chatText = "";
+      }
+    }
+    GUILayout.EndHorizontal();
+  }
+
+  void OnApplicationQuit()
+  {
+    PlayerPrefs.SetString( "PlayerName", PlayerName );
+  }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec41"></a>Displaying chat logs</h3></div></div></div><p>We've<a id="id271" class="indexterm"></a> finished our basic text commands, so next we'll work on displaying the received messages.</p><p>We'll add received messages to a "List" of strings, and display these in a scroll view.</p><p>First, we'll add some variables:</p><div class="informalexample"><pre class="programlisting">private List&lt;string&gt; messages = new List&lt;string&gt;();
+private Vector2 scrollPosition = Vector2.zero;</pre></div><p>Next, in our HandleMessage function we'll add the message to our list and update the scroll position:</p><div class="informalexample"><pre class="programlisting">void HandleMessage( string message )
+{
+  Debug.Log( message );
+<span class="strong"><strong>  messages.Add( message );</strong></span>
+
+<span class="strong"><strong>  // too many messages? Remove the oldest one</strong></span>
+<span class="strong"><strong>  if( messages.Count &gt; 100 )</strong></span>
+<span class="strong"><strong>    messages.RemoveAt( 0 );</strong></span>
+
+<span class="strong"><strong>  // Unity clamps the scroll value. Setting it sufficiently high will cause it to scroll to bottom.</strong></span>
+<span class="strong"><strong>  scrolPosition.y = messages.Count * 100f;</strong></span>
+}</pre></div><p>And finally, <a id="id272" class="indexterm"></a>in our OnGUI method we'll display the message list in a scroll view:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  _playerName = GUILayout.TextField( _playerName, GUILayout.Width( 200f ) );
+  if( GUILayout.Button( "Change Name", GUILayout.Width( 200f ) ) )
+  {
+    PubNubWrapper.instance.Publish( PlayerName + " changed their name to " + _playerName, "Chatbox" );
+    PlayerName = _playerName;
+  }
+
+<span class="strong"><strong>  scrollPosition = GUILayout.BeginScrollView( scrollPosition, GUILayout.Width( Screen.width ), GUILayout.Height( Screen.height - 75f ) );</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    // display each message</strong></span>
+<span class="strong"><strong>    for( int i = 0; i &lt; messages.Count; i++ )</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      GUILayout.Label( messages[ i ] );</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+<span class="strong"><strong>  GUILayout.EndScrollView();</strong></span>
+  GUILayout.BeginHorizontal( GUILayout.Width( Screen.width ) );
+  {
+    chatText = GUILayout.TextField( chatText, GUILayout.ExpandWidth( true ) );
+    if( GUILayout.Button( "Send", GUILayout.Width( 100f ) ) )
+    {
+      if( chatText.StartsWith( "/me " ) )
+      {
+        chatText = chatText.Replace( "/me", "" );
+        PubNubWrapper.instance.Publish( PlayerName + chatText, "Chatbox" );
+      }
+      else
+      {
+        PubNubWrapper.instance.Publish( PlayerName + ": " + chatText, "Chatbox" );
+      }
+      chatText = "";
+    }
+  }
+  GUILayout.EndHorizontal();
+}</pre></div><p>At this point, <a id="id273" class="indexterm"></a>you now have a fully functional global chatbox made with PubNub. You should now know everything you need to send and receive messages. Some modifications you could make are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Convert your messages to JSON rather than plain text. This allows you to associate all kinds of extra data with a message, such as who sent a message, what time it was sent, and so on.</p></li><li style="list-style-type: disc"><p>Add a whisper function. Converting messages to JSON will make this easier. The chatbox could include "Whisper/Say" tabs. When in Whisper mode, users enter the name of another user to whisper to. Only that user will receive the message.</p></li><li style="list-style-type: disc"><p>Add profile pictures. Users can set their picture URL, and messages they sent will have their picture next to it (if any). Additionally, you could integrate the "Gravatar.com" service by allowing users to specify their email, and calculating their avatar URL.</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note24"></a>Note</h3><p>
+<span class="strong"><strong>Gravatar</strong></span>
+<a id="id274" class="indexterm"></a> is a service for avatars which allows users to tie an avatar to their email address for use by multiple services. Avatar images are requested by calculating an MD5 hash from the user's email address, then using the hash to<a id="id275" class="indexterm"></a> request an image via:</p><p>
+<a class="ulink" href="http://www.gravatar.com/avatar/HASH" target="_blank">http://www.gravatar.com/avatar/HASH</a>
+</p><p>For more information on requesting Gravatar images, see:</p><p>
+<a class="ulink" href="http://en.gravatar.com/site/implement/images/" target="_blank">http://en.gravatar.com/site/implement/images/</a>
+</p></div></div></div>

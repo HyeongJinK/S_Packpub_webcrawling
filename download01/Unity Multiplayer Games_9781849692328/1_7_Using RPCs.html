@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec14"></a>Using RPCs</h2></div></div><hr /></div><p>RPCs are <a id="id24" class="indexterm"></a>useful for single, self-contained messages that need to be sent, such as a<a id="id25" class="indexterm"></a> character firing a gun, or a player saying something in chat.</p><p>In Unity, RPCs are methods marked with the <code class="literal">[RPC]</code> attribute. This can be called by name via <code class="literal">networkView.RPC( "methodName", … )</code>. For example, the following script prints to the console on all machines when the space key is pressed.</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ExampleUnityNetworkCallRPC : MonoBehavior
+{
+  void Update()
+  {
+    // important – make sure not to run if this networkView is notours
+    if( !networkView.isMine )
+      return;
+
+    // if space key is pressed, call RPC for everybody
+    if( Input.GetKeyDown( KeyCode.Space ) )
+      networkView.RPC( "testRPC", RPCMode.All );
+  }
+
+  [RPC]
+  void testRPC( NetworkMessageInfo info )
+  {
+    // log the IP address of the machine that called this RPC
+    Debug.Log( "Test RPC called from " + info.sender.ipAddress );
+  }
+}</pre></div><p>Also note the use of <code class="literal">NetworkView.isMine</code> to determine ownership of an object. All scripts will run 100 percent of the time regardless of whether your machine owns the object or not, so <a id="id26" class="indexterm"></a>you have to be careful to avoid letting some logic run on remote machines; for example, player input code should only run on the machine that owns the object.</p><p>RPCs can either be sent to a number of players at once, or to a specific player. You can either pass an RPCMode to specify which group of players to receive the message, or a specific NetworkPlayer to send the message to. You can also specify any number of parameters to be passed to the RPC method.</p><p>RPCMode includes the following <a id="id27" class="indexterm"></a>entries:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>All</strong></span> (the RPC is called for everyone)</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>AllBuffered</strong></span> (the RPC is called for everyone, and then buffered for when new players connect, until the object is destroyed)</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Others</strong></span> (the RPC is called for everyone except the sender)</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>OthersBuffered</strong></span> (the RPC is called for everyone except the sender, and then buffered for when new players connect, until the object is destroyed)</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Server</strong></span> (the RPC is sent to the host machine)</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note03"></a>Note</h3><p>Note that, with the exception of <code class="literal">RPCMode.All</code> and <code class="literal">RPCMode.AllBuffered</code>, a client cannot send an RPC to itself.</p></div></div>

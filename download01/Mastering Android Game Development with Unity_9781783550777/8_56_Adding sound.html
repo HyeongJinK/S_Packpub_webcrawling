@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec54"></a>Adding sound</h2></div></div><hr /></div><p>For adding sounds, the files are included in the <code class="literal">Resources</code> folder for this chapter. There are three files in total, of which two are sounds effects and one is a music file. The sounds effects are to be used in the game.</p><p>The punch sound is to be played when whether the enemy or the player gets hit. The block sound is to be played when the player or the enemy blocks the attack. The <code class="literal">bgMusic</code> file is the background music file that is to be played when any scene loads. Drag the <code class="literal">Audio</code> folder into the project.</p><p>Now open the MainMenu scene. And drag the <code class="literal">bgMusic</code> file into the scene. Take a look at the <strong class="userinput"><code>Inspector</code></strong> pane:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_08_001.png" /></div><p>The position of the background music doesn't matter, but if you were using the sound for ambience then make sure that you set the location of the sound source.</p><p>The <strong class="userinput"><code>Play On Awake</code></strong> option is checked by default, which is what we want. However, we also want the music to be looped, so make sure to check the <strong class="userinput"><code>Loop</code></strong> checkbox as well.</p><p>If you play the scene, you will hear the sound playing automatically. Do the same for game and options scenes as well. Let's see how to add the punch and block sound effect.</p><p>Whenever we click a button, it is good to give an audio feedback to the player so that they know that the button was clicked.</p><p>For this, drag and drop the punch audio effect into the scene as well. Make sure that none of the options such as <strong class="userinput"><code>Play On Awake</code></strong> are checked on the effect as it would start playing when the scene starts and we don't want that:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_08_002.png" /></div><p>We will be playing the sound via the script. Open the <code class="literal">buttonClicks.cs</code> file. At the top of the class, create a public variable of type <code class="literal">AudioSource</code> called <code class="literal">punchSound</code>, as shown in the following code:</p><pre class="programlisting">    public class buttonClick : MonoBehaviour {  
+<span class="strong"><strong>        public AudioSource punchSound;</strong></span>
+        public IAPManager iapManager; </pre><p>Go to <strong class="userinput"><code>GameObject</code></strong> onto which the script is attached and attach the punch effect to the punch audio source:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_08_003.png" /></div><p>Now, you can call the audio source to be played wherever you want. Suppose, we call the function in the <code class="literal">onButtonClick</code> class, which loads a new scene:</p><pre class="programlisting">    punchSound.Play();</pre><p>But, if you add it you will not hear when the scene changes as before the sound even plays, the game scene loads and you won't hear the punch sound effect. So we will make some changes to the function.</p><p>We will use a co-routine to wait for a while and then load the scene so that the sound effect plays:</p><pre class="programlisting">    public void onButtonClick (string level){  
+        punchSound.Play();  
+<span class="strong"><strong>        StartCoroutine (onSceneLoad(level));        </strong></span>
+    } 
+
+    IEnumerator onSceneLoad (string sceneName) { 
+<span class="strong"><strong>        yield return new WaitForSeconds(0.5f);</strong></span>
+        SceneManager.LoadScene(sceneName); 
+    }  </pre><p>So, in the <code class="literal">onButtonClick</code> function, we start a new co-routine and pass in the function we want to call. Then we create a function to be called, which needs to return an <code class="literal">IEnumerator</code>.</p><p>We then wait for half a second, call the <code class="literal">SceneManager.LoadScene</code> function, and then pass in the level name string to load the level.</p><p>This can be done to the other functions as well while pressing the Achievements, Facebook, and Twitter buttons. I shall leave that up to you guys as you'll gain exercise using it. This also needs to be done for other buttons on other scenes as well.</p><p>Now, let's see how to add the sound effect during gameplay. In the startScene, load both the sound effects into the scene and disable play on awake for both files. In the playerScript, add public variables for the punch and block sound effects:</p><pre class="programlisting">    float totalTime = 0.0f; 
+    float timeSinceLastHit = 0.0f; 
+    float hitTimeInterval = 30.0f * .016f; 
+
+    float screenWidth = Screen.width; 
+
+<span class="strong"><strong>    public AudioSource punchSound;</strong></span><span class="strong"><strong>
+    public AudioSource blockSound; </strong></span></pre><p>On <strong class="userinput"><code>theDude</code></strong> game object on which the playerScript is attached link the punch and block sounds:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_08_004.png" /></div><p>Now, whenever the player gets hit we have to play the punch sound effect and if the player is blocking we play the block sound effect. So, open the playerScript and where we check if the enemy is punching we make the following changes to the code:</p><pre class="programlisting">    if (eScript.isPunching == true) { 
+        if (anim.GetBool("bIsDefending") == false) { 
+            //Debug.Log("player got hit"); 
+            anim.SetTrigger("tGotHit"); 
+            health -= eScript.damage; 
+            Debug.Log("Player Health: " + health); 
+
+<span class="strong"><strong>            punchSound.Play();</strong></span>
+        } else { 
+<span class="strong"><strong>            blockSound.Play();</strong></span>
+        } 
+    }  </pre><p>effects playing as it should. Let's do the same for the enemy as well, as follows:</p><p>When you play the game you will find the sound effects playing as it should. Let's do the same for the enemy as well, as follows:</p><pre class="programlisting">    if (pAnim.GetBool("tIsPunching")) {
+        if (anim.GetBool("bEnemyIsDefending") == false) {
+        // Debug.Log("enemy got hit");
+        anim.SetTrigger("tEnemyGotHit");
+        anim.SetBool("bEnemyIsDefending", true);         
+        health -= pScript.damage;
+        Debug.Log("Enemy Health: " + health);
+        punchSound.Play();         
+        } else {         
+            blockSound.Play();
+        }   
+    }</pre></div>

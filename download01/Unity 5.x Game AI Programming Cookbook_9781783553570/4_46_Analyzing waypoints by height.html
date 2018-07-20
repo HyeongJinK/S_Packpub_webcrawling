@@ -1,0 +1,17 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec50"></a>Analyzing waypoints by height</h2></div></div><hr /></div><p>This recipe lets us <a id="id200" class="indexterm"></a>evaluate a waypoint according to its position. Strategically speaking, lower positions are at a disadvantage. In this case, we will use a flexible algorithm to get the quality of a waypoint, given the heights of its surroundings.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec168"></a>Getting ready</h3></div></div></div><p>This recipe is simple enough, so there is no extra content to be aware of. The algorithm is flexible enough to receive a list of positions, which is given by the waypoint's neighbors or just the complete graph of waypoints. The surroundings heuristic is kept outside for our perusal and it gives the game's specific design.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec169"></a>How to do it…</h3></div></div></div><p>We will implement a function to evaluate a location given its height and its surrounding points:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Declare the function for evaluating the quality:</p><div class="informalexample"><pre class="programlisting">public static float GetHeightQuality (Vector3 location, Vector3[] surroundings)
+{
+    // next steps
+}</pre></div></li><li><p>Initialize the variables for handling the computation:</p><div class="informalexample"><pre class="programlisting">float maxQuality = 1f;
+float minQuality = -1f;
+float minHeight = Mathf.Infinity;
+float maxHeight = Mathf.NegativeInfinity;
+float height = location.y;</pre></div></li><li><p>Traverse the surroundings in order to find the maximum and minimum height:</p><div class="informalexample"><pre class="programlisting">foreach (Vector3 s in surroundings)
+{
+    if (s.y &gt; maxHeight)
+        maxHeight = s.y;
+    if (s.y &lt; minHeight)
+        minHeight = s.y;
+}</pre></div></li><li><p>Compute the quality in the given range:</p><div class="informalexample"><pre class="programlisting">float quality = (height-minHeight) / (maxHeight - minHeight);
+quality *= (maxQuality - minQuality);
+quality += minQuality;
+return quality;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec170"></a>How it works…</h3></div></div></div><p>We traverse the list of surroundings to find the maximum and minimum width and then compute the location <a id="id201" class="indexterm"></a>value in the range of -1, 1. We could change this range to meet our game's design, or invert the importance of the height in the formula.</p></div></div>

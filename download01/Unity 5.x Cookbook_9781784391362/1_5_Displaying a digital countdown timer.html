@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec12"></a>Displaying a digital countdown timer</h2></div></div><hr /></div><p>This recipe<a id="id38" class="indexterm"></a> will show you how to display a digital countdown clock shown here:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_01_07.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec21"></a>Getting ready</h3></div></div></div><p>This recipe adapts the previous one. So, make a copy of the project for the previous recipe, and work on this copy.</p><p>For this recipe, we have prepared the script that you need in a folder named <code class="literal">Scripts</code> in the <code class="literal">1362_01_03</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec22"></a>How to do it...</h3></div></div></div><p>To create a <a id="id39" class="indexterm"></a>digital countdown timer, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>In the <span class="strong"><strong>Inspector</strong></span> panel, remove the scripted component, <code class="literal">ClockDigital,</code> from GameObject <span class="strong"><strong>Text-clock</strong></span>.</p></li><li><p>Create a <code class="literal">DigitalCountdown</code> C# script class containing the following code, and add an instance as a scripted component to GameObject <span class="strong"><strong>Text-clock</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+using System;
+
+public class DigitalCountdown : MonoBehaviour {
+  private Text textClock;
+
+  private float countdownTimerDuration;
+  private float countdownTimerStartTime;
+
+  void Start (){
+    textClock = GetComponent&lt;Text&gt;();
+    CountdownTimerReset(30);
+  }
+
+  void Update (){
+    // default - timer finished
+    string timerMessage = "countdown has finished";
+    int timeLeft = (int)CountdownTimerSecondsRemaining();
+
+    if(timeLeft &gt; 0)
+      timerMessage = "Countdown seconds remaining = " + LeadingZero( timeLeft );
+
+    textClock.text = timerMessage;
+  }
+
+  private void CountdownTimerReset (float delayInSeconds){
+    countdownTimerDuration = delayInSeconds;
+    countdownTimerStartTime = Time.time;
+  }
+
+  private float CountdownTimerSecondsRemaining (){
+    float elapsedSeconds = Time.time - countdownTimerStartTime;
+    float timeLeft = countdownTimerDuration - elapsedSeconds;
+    return timeLeft;
+  }
+
+  private string LeadingZero (int n){
+    return n.ToString().PadLeft(2, '0');
+  }
+}</pre></div></li><li><p>When you run the scene, you will now see a digital clock counting down from 30. When the countdown reaches zero, the message <span class="strong"><strong>countdown has finished</strong></span> will be displayed.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec23"></a>How it works...</h3></div></div></div><p>You added a <span class="strong"><strong>Text</strong></span><a id="id40" class="indexterm"></a> GameObject to a scene. You have added an instance of the <code class="literal">DigitalCountdown</code> C# script class to that GameObject.</p><p>There is one variable, <code class="literal">textClock</code>, which will be a reference to the <code class="literal">Text</code> component, whose text content we wish to update in each frame with a time remaining message (or a timer complete message). Then, a call is made to the <code class="literal">CountdownTimerReset(…)</code> method, passing an initial value of 30 seconds.</p><p>The <code class="literal">Start()</code> method (executed when the scene begins) sets the <code class="literal">textClock</code> variable to find the <code class="literal">Text</code> component in the GameObject where our scripted object has been added.</p><p>The <code class="literal">Update()</code> method is executed in every frame. This method initially sets the <code class="literal">timerMessage</code> variable to a message, stating that the timer has finished (the default message to display). Then the seconds remaining are tested to be greater than zero. And if so, then the message variable has its contents changed to display the integer (whole) number of the seconds remaining in the countdown—retrieved from the <code class="literal">CountdownTimerSecondsRemaining()</code> method. This method finally updates the <code class="literal">text</code> property (that is, the letters and numbers that the user sees) to be a string with a message about the remaining seconds.</p><p>The <code class="literal">CountdownTimerReset(…)</code> method records the number of seconds provided, and the time the method was called.</p><p>The <code class="literal">CountdownTimerSecondsRemaining()</code> method returns an integer value of the number of seconds<a id="id41" class="indexterm"></a> remaining.</p></div></div>

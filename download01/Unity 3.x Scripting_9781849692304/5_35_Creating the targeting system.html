@@ -1,0 +1,53 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec37"></a>Creating the targeting system</h2></div></div><hr /></div><a id="id832" class="indexterm"></a><p>Having an indicator lets you know what your projectile is going to be doing. It is a great asset to have. This targeting system uses a line renderer to show what is happening with the trajectory curve, a reticule target of where it is going to land and the player has control over the steepness of shot, the distance it will shoot, and the horizontal angle.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_05_18.jpg" /></div><p>The following are the steps that we need to take in order to create a targeting system:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the Bezier  equation script.</p></li><li><p>Create the <code class="literal">ArcBehaviour</code> script.</p></li><li><p>Hook it up in editor.</p></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec77"></a>Creating  the Bezier equation script</h3></div></div></div><a id="id833" class="indexterm"></a><a id="id834" class="indexterm"></a><p>The Bezier equation script will handle the equation for setting up the quadratic points to allow us to get a smooth curve along the line renderer. This was brought to my attention recently on a Unity3D forum. This Bezier equation can be written as follows:</p><p>x(t) = axt3 + bxt2 + cxt + x0</p><p>First, we need to create the variables. There are only two, and they are segments. The first one will determine the number of segments along the line, and the second is <code class="literal">lineRenderer</code> of <code class="literal">LineRenderer</code> type:</p><div class="informalexample"><pre class="programlisting">var sections : float = 10.0;
+private var lineRenderer : LineRenderer;</pre></div><p>In the <code class="literal">Awake</code> function, make the <code class="literal">lineRenderer</code> variable<a id="id835" class="indexterm"></a> reference the <code class="literal">LineRenderer</code> component on its <code class="literal">gameObject</code>. After that, set the <code class="literal">lineRenderer</code> vertex count to the number of <code class="literal">segments</code>:</p><div class="informalexample"><pre class="programlisting">function Start(){    
+    lineRenderer = GetComponent(LineRenderer);
+    lineRenderer.SetVertexCount(segments);
+}</pre></div><p>The next function that needs to be created is the <code class="literal">GetQuadraticCoordinates</code> function<a id="id836" class="indexterm"></a>. This function will set up the Bezier equation. The function takes parameters, such as <code class="literal">t</code> for time, <code class="literal">p0</code> being the originating position, <code class="literal">c0</code> for the center position, and <code class="literal">p1</code> for the end position:</p><div class="informalexample"><pre class="programlisting"> function GetQuadraticCoordinates(t : float, p0 : Vector3 , c0 : Vector3 , p1 : Vector3 ) : Vector3
+{
+    return Mathf.Pow(1-t,2)*p0 + 2*t*(1-t)*c0 + Mathf.Pow(t,2)*p1 ;
+}</pre></div><p>The last function to write is the <code class="literal">Plot</code> function, which sets up the location of the points that will be used to determine the positioning of the line renderer:</p><div class="informalexample"><pre class="programlisting">function Plot( p0 : Vector3 , c0 : Vector3 , p1 : Vector3 ){
+   var t : float ;
+   for (var i : int = 0 ; i &lt; segments ; i++ )
+   {
+      t = i/(sections-1) ;
+      lineRenderer.SetPosition (i ,GetQuadraticCoordinates(t , p0 , c0 , p1 ));
+   }
+}<a id="id837" class="indexterm"></a><a id="id838" class="indexterm"></a>
+</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec78"></a>ArcBehaviour</h3></div></div></div><p>The <code class="literal">ArcBehaviour</code> script<a id="id839" class="indexterm"></a><a id="id840" class="indexterm"></a> handles the locations of the beginning, middle, and end of the arch to be created. It then sends the position locations to the <code class="literal">bezier.plot</code> function for calculation.</p><p>The variables to be calculated are <code class="literal">start</code>, <code class="literal">middle</code>, and <code class="literal">end</code> to define the arch and they are of the <code class="literal">Transform</code> type. Other variables are <code class="literal">maxHeight</code> at which the middle point may achieve a reference to the <code class="literal">Bezier</code> script, a reference to the <code class="literal">moveObject</code> script, and the manager of the projectile:</p><div class="informalexample"><pre class="programlisting">public var start : Transform ;
+public var middle : Transform ;
+public var end : Transform ;
+public var maxHeight : float = 200;
+public var playerController: GameObject;
+private var bezier : Bezier;
+private var moveObjectScr : moveObject;</pre></div><p>Inside of the <code class="literal">Awake</code> function, we will have the reference of the <code class="literal">moveObject</code> script from the manager, and the reference of the <code class="literal">Bezier</code> script:</p><div class="informalexample"><pre class="programlisting">function Awake(){
+    moveObjectScr = playerController.GetComponent("moveObject");
+    bezier = GetComponent(Bezier);
+}</pre></div><p>After this function, we will have the <code class="literal">Update</code> function<a id="id841" class="indexterm"></a> declared. In here, we will set the position for the middle. This will determine the trajectory. We will also make the end point follow the mouse. And finally, we will set the coordinates for both the <code class="literal">bezier.plot</code> function and the <code class="literal">moveObject</code> script <code class="literal">GetQuadraticCoordinate</code> function<a id="id842" class="indexterm"></a>:</p><div class="informalexample"><pre class="programlisting">function Update()
+{
+    var mousePos = Input.mousePosition;
+    var yPosition : float ;
+    yPosition = Mathf.Min( Screen.height , Mathf.Max(mousePos.y,0) );
+    middle.position.y = ( yPosition / Screen.height ) * maxHeight ;
+    middle.position.z = -mousePos.x;
+    end.position.z = -mousePos.x;
+    bezier.Plot(start.position , middle.position , end.position );
+    moveObjectScr.GetQuadraticCoordinates(start.position , middle.position , end.position );<a id="id843" class="indexterm"></a>
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec79"></a>The moveObject script</h3></div></div></div><a id="id844" class="indexterm"></a><a id="id845" class="indexterm"></a><p>The <code class="literal">moveObject</code> script will handle the movement of an object along the project trajectory arch.</p><p>To set the script up, we will need some variables. We will need two that are of <code class="literal">GameObject</code> type<a id="id846" class="indexterm"></a>; one for our projectile, the other being for the <code class="literal">arcManager</code>. We will need a reference variable for our <code class="literal">Bezier</code> script and then three variables <code class="literal">start</code>, <code class="literal">middle</code>, and <code class="literal">end</code> of the <code class="literal">Vector3</code> type to represent the start, the middle, and the end of the arch:</p><div class="informalexample"><pre class="programlisting">var mortars : GameObject;
+var arcManager : GameObject;
+private var bezierScr : Bezier;
+private var start : Vector3;
+private var middle : Vector3;
+private var end : Vector3;</pre></div><p>Inside of the <code class="literal">Awake</code> function, we will set the <code class="literal">arcManager</code> script to <code class="literal">Arc</code> <code class="literal">gameObject</code> and <code class="literal">bezierScr</code> will reference the <code class="literal">Bezier</code> script on <code class="literal">arcManager</code>:</p><div class="informalexample"><pre class="programlisting">function Awake(){
+    arcManager = gameObject.Find("Arc");
+    bezierScr = arcManager.GetComponent("Bezier");
+}</pre></div><p>Next, in the <code class="literal">GetQuadraticCoordinates</code> function<a id="id847" class="indexterm"></a>, we need it to have three <code class="literal">Vector3</code> parameters, those being <code class="literal">stP</code>, <code class="literal">midP</code>, and <code class="literal">endP</code>. Inside the function, we have our coinciding variables equal to their matches:</p><div class="informalexample"><pre class="programlisting">function GetQuadraticCoordinates(stP : Vector3, midP : Vector3, endP : Vector3){
+    start = stP;
+    middle = midP;
+    end = endP;
+}</pre></div><p>The <code class="literal">Shoot</code> function<a id="id848" class="indexterm"></a> follows after the preceding section. There is an <code class="literal">if</code> statement in it that checks for the player's input of the left mouse button. If it receives this value, it will create a mortar and fire the projectile along the arch landing in the centre of the reticule:</p><div class="informalexample"><pre class="programlisting">function Shoot(){
+    if(Input.GetMouseButtonDown(0))
+    {
+        var newMortar : GameObject = Instantiate(mortars, Vector3(transform.position.x, transform.position.y +15, transform.position.z), transform.rotation);
+        newMortar.transform.position = bezierScr.GetQuadraticCoordinates(Mathf.Lerp(0.0,1,Time.time) , start ,  middle, end);
+    }
+}</pre></div><a id="id849" class="indexterm"></a><a id="id850" class="indexterm"></a><p>Lastly, we will call the <code class="literal">Shoot</code> function in the <code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">function Update(){Shoot();}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec80"></a>Hooking it up in the editor</h3></div></div></div><a id="id851" class="indexterm"></a><p>Luckily for this project, the trajectory is found already put together for you inside the asset folder for this chapter. It is called <code class="literal">Trajectory</code>. Drag it to the <span class="strong"><strong>Hierarchy</strong></span> view and you will have it set up. Remember that you can modify the end, middle, and start points to change the shape of the arch.</p></div></div>

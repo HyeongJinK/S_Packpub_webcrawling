@@ -1,0 +1,248 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec72"></a>Working with settings</h2></div></div><hr /></div><p>Saving <a id="id1131" class="indexterm"></a>data is always important, especially in games where you need to keep track of the player's progress or at the very least a track record of scores, plays, and other important data.</p><p>Within Unity, there is only one method of storing data natively, and that is <code class="literal">PlayerPrefs</code>. It is very simple to use and very flexible, although it does have a hard limit of 1 MB of storage for the web player. It is possible to serialize data into <code class="literal">PlayerPrefs</code> (and some developers do this), but generally if you need to serialize, most developers build their own system.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec138"></a>Using PlayerPrefs</h3></div></div></div><p><code class="literal">PlayerPrefs</code> is <a id="id1132" class="indexterm"></a>simply a key dictionary to store individual <a id="id1133" class="indexterm"></a>variables as a key in the Unity runtime data store. On its own, it has to read each and every scene at runtime, which is why most games use a static class to keep the state stored in <code class="literal">PlayerPrefs</code> and only use it between scenes for scene-specific configuration.</p><p>Using <code class="literal">PlayerPrefs</code> is very easy and simple. The process is the same as any other dictionary to save a setting for your call:</p><div class="informalexample"><pre class="programlisting">PlayerPrefs.SetInt("PlayerScore", currentScore);
+PlayerPrefs.SetFloat("PlayerDamage", currentDamage);
+PlayerPrefs.SetString("PlayerName", currentPlayerName);</pre></div><p>Loading it back again when you need it again involves the following code:</p><div class="informalexample"><pre class="programlisting">currentScore = PlayerPrefs.GetInt("PlayerScore");
+currentDamage = PlayerPrefs.GetFloat("PlayerDamage");
+currentPlayerName = PlayerPrefs.GetString("PlayerName");</pre></div><p>You can also supply defaults to values with a second parameter if the setting does not yet exist, as follows:</p><div class="informalexample"><pre class="programlisting">currentScore = PlayerPrefs.GetInt("PlayerScore", 0);
+currentDamage = PlayerPrefs.GetFloat("PlayerDamage", 0);
+currentPlayerName = PlayerPrefs.GetString
+  ("PlayerName", "New Player");</pre></div><p>By default, Unity will save the settings to disk when the application is closed. However, it's recommended that you save them intermittently when possible by calling the following:</p><div class="informalexample"><pre class="programlisting">PlayerPrefs.Save()</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note141"></a>Note</h3><p>Saving <a id="id1134" class="indexterm"></a>settings in Unity isn't necessarily a<a id="id1135" class="indexterm"></a> given and should not be treated as safe. The settings file has a hard limit of 1 MB of storage on the web player. If this is exceeded, it will throw an exception. This limit is per application.</p><p>So, you can either drastically limit what settings you store (recommended) or wrap your <code class="literal">SET PlayerPrefs</code> calls in a <code class="literal">try</code>/<code class="literal">catch</code> statement to be safe if you plan to deploy to the web player.</p><p>Other platforms do not have this limitation.</p></div><p>There are also delete functions to remove either a single key or to clear the cache completely.</p><p>For more <a id="id1136" class="indexterm"></a>information about <code class="literal">PlayerPrefs</code>, see the Unity reference guide at <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/PlayerPrefs.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/PlayerPrefs.html</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec139"></a>Serializing your data</h3></div></div></div><p>To store <a id="id1137" class="indexterm"></a>any kind of complicated data or structure, you <a id="id1138" class="indexterm"></a>need to serialize it into a concatenated format. The result can then be stored in <code class="literal">PlayerPref</code> as mentioned previously or saved on a disk or the Web.</p><p>There are several types of serializers you can use, including the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="strong"><strong>Binary serialization</strong></span>: This<a id="id1139" class="indexterm"></a> is binary-formatted<a id="id1140" class="indexterm"></a> output and is non-human readable</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>XML serialization</strong></span>: This <a id="id1141" class="indexterm"></a>is the basic text <a id="id1142" class="indexterm"></a>output formatted into XML and is human readable</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>JSON serialization</strong></span>: This is a compressed standalone output in XML format; it is<a id="id1143" class="indexterm"></a> human readable and allows you to<a id="id1144" class="indexterm"></a> have a manual implementation</p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Custom serialization</strong></span>: This<a id="id1145" class="indexterm"></a> is DIY and is<a id="id1146" class="indexterm"></a> used to build your own serialized output</p></li></ul></div><p>Each serializer has performance or security gains. There isn't a one size fits all; just choose the serializer that fits your purposes.</p><p>For our example, we will enhance our game to save our player's state. First, we will create a<a id="id1147" class="indexterm"></a> helper function to do the serialization for us, so <a id="id1148" class="indexterm"></a>create a new script called <code class="literal">SerializationHelper</code> in <code class="literal">Assets\Scripts\Classes</code> and replace its contents with the following code:</p><div class="informalexample"><pre class="programlisting">using System.IO;
+using System.Xml.Serialization;
+ 
+public class SerilizerHelper {
+}</pre></div><p>Now, in this script, we will add two functions: one to serialize our player (pack it up) and one to deserialize it (unpack it). The serialize function is as follows:</p><div class="informalexample"><pre class="programlisting">public static byte[] Serialise&lt;T&gt;(T input)
+{
+    byte[] output = null;
+    //Create an XML formatter
+    var serializer = new XmlSerializer(typeof(T));
+    try
+    {
+        //Create an in memory stream to hold our serialized output
+        using (var stream = new MemoryStream())
+        {
+            //Serialize the data
+            serializer.Serialize(stream, input);
+            //Get the serialized output
+            output = stream.GetBuffer();
+        }
+    }
+    catch { }
+ 
+    //Return the serialized output
+    return output;
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note142"></a>Note</h3><p>I've implemented the serialization function using C# generics (type <code class="literal">&lt;T&gt;</code>). This allows you to build a function that will work for any type of class you supply it with. This saves us from creating a serialization function for each and every type of data we want to serialize.</p><p>To learn more<a id="id1149" class="indexterm"></a> about generics (a fairly advanced topic), check out the MSDN documentation at <a class="ulink" href="http://msdn.microsoft.com/en-gb/library/512aeb7t.aspx" target="_blank">http://msdn.microsoft.com/en-gb/library/512aeb7t.aspx</a>.</p><p>Not all platforms support all serializers, and also, some classes (such as <code class="literal">MemoryStream</code>) are not available on all platforms. You will sometimes have to tailor the approach you use to work with other platforms. If you do, however, make sure you do it within the helper classes so that all the platform-variant code is in one place and does not clutter up your game. More on supporting multiple platforms is covered in <a class="link" href="#" linkend="ch12">Chapter 12</a>, <span class="emphasis"><em>Deployment and Beyond</em></span>.</p></div><p>The <a id="id1150" class="indexterm"></a>code is commented to explain what each step<a id="id1151" class="indexterm"></a> actually does. If you wish, you can store the output of this function in <code class="literal">PlayerPrefs</code>. It's more likely, however, that you will either save it to the Web or to a disk using a different buffer than <code class="literal">MemoryStream</code> (see the following section). Other serializers work pretty much the same way using a different formatter (for example, binary serialization uses <code class="literal">BinarySerialiser</code>).</p><p>To deserialize the data, we simply do the reverse:</p><div class="informalexample"><pre class="programlisting">public static T DeSerialise&lt;T&gt;(Stream input)
+{
+    T output = default(T);
+    //Create an XML formatter
+    var serializer = new XmlSerializer(typeof(T));
+    try
+    {
+        //Deserialize the data from the stream
+        output = (T)serializer.Deserialize(input);
+    }
+    catch { }
+    //Return the deserialized output
+    return output;
+}</pre></div><p>So as you can see, both patterns are very similar; this just reverses the flow (doesn't cross the streams).</p><p>Serialization is important as it can be used anywhere you need to package data to be saved or even transmitted over the wire for a cloud backup or even network play.</p><p>For <a id="id1152" class="indexterm"></a>more<a id="id1153" class="indexterm"></a> information about<a id="id1154" class="indexterm"></a> serialization, see the MSDN .NET reference guide at <a class="ulink" href="http://msdn.microsoft.com/en-us/library/ms172360(v=vs.110).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/ms172360(v=vs.110).aspx</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec140"></a>Saving data to disk</h3></div></div></div><p>A better <a id="id1155" class="indexterm"></a>way to manage your games to save data is to<a id="id1156" class="indexterm"></a> serialize it to disk, a method you will use to determine<a id="id1157" class="indexterm"></a> how fast and secure this is.</p><p>Instead of using <code class="literal">PlayerPrefs</code>, it is better to manage the saving and loading of your player data to a disk (or the Web; see the following sections). Thankfully, Mono (the C# engine behind Unity3D) and JS provide common functions to access the disk across all the platforms that Unity supports.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note143"></a>Note</h3><p>There are exceptions, however, due to platform limitations or specializations in some platforms (such as Windows 8, where all disks access are accessed asynchronously). In these cases, Unity provides special classes to access platform components, for example, the <code class="literal">UnityEngine.Windows</code> namespace.</p></div><p>You can also write your disk access routines that are more platform-specific if you wish to make them more performant, but this requires you to write an interface and your platform-specific code for each routine (see <a class="link" href="#" linkend="ch12">Chapter 12</a>, <span class="emphasis"><em>Deployment and Beyond</em></span>, for information on DLL import).</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec141"></a>Modeling your saved data</h3></div></div></div><p>If we<a id="id1158" class="indexterm"></a> look to add the saving and loading options to <a id="id1159" class="indexterm"></a>our game, we need to take a few things into account first. Consider that we just had a basic class for our player's state; the following is just an example:</p><div class="informalexample"><pre class="programlisting">[Serializable]
+public struct Player {
+ 
+    public string Name;
+    public int Age;
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note144"></a>Note</h3><p>We attach the <code class="literal">[Serializable]</code> attribute to the class to tell the serializer that it is serializable data. This isn't mandatory as most sterilizers will work with most public classes and serialize the public properties of that class, but not private properties though.</p></div><p>We <a id="id1160" class="indexterm"></a>could then simply save the class directly <a id="id1161" class="indexterm"></a>to the disk. However, because our player definition inherits from our common <code class="literal">Entity</code> class and the <code class="literal">Entity</code> class inherits from <code class="literal">ScriptableObject</code> (so we could use it as a common base for all the characters of our game), this means we cannot perform a simple serialization.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note145"></a>Note</h3><p>If you wish, you could change this implementation, moving all the properties from the <code class="literal">Entity</code> class to the <code class="literal">Player</code> class and then marking it as <code class="literal">[Serializable]</code>; it's your choice. I've kept it this way to show you the considerations needed to also serialize <code class="literal">ScriptableObject</code>. This is especially useful when (like we have in this game) <code class="literal">ScriptableObjects</code> are attached to our player, in this case, the player's inventory (the inventory items are part of the project, and we attach them to the player).</p></div><p>So, as the data we want to serialize is more complex, the best thing to do is build a separate <code class="literal">Save State</code> class, which will model the data we want to save.</p><p>By defining a <code class="literal">Save</code> model, we can also tailor it to contain more than just one type of data; it could contain other specific save information, such as the time in the world, enemy progress (if the enemy AI is also marching through the world), and the current state of the global economy. There is something you should keep in mind: it is a fairly common practice to create a separate <code class="literal">Save</code> model to save data.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip92"></a>Tip</h3><p>Alternatively, it is also a good practice to have several save files, some of which you save very frequently (game/world state) and others you only write when the player asks to (the main save). The implementation comes down to your type of game and your saving/loading needs.</p></div><p>To create a <code class="literal">Save</code> model based on our player class in the game, create a new script called <code class="literal">PlayerSaveState</code> in <code class="literal">Assets\Scripts\Classes</code> and replace its contents with the following code:</p><div class="informalexample"><pre class="programlisting">using System;
+using System.Collections.Generic;
+using UnityEngine;
+ 
+[Serializable]
+public struct PlayerSaveState {
+ 
+    public string Name;
+    public int Age;
+    public string Faction;
+    public string Occupation;
+    public int Level;
+    public int Health;
+    public int Strength;
+    public int Magic;
+    public int Defense;
+    public int Speed;
+    public int Damage;
+    public int Armor;
+    public int NoOfAttacks;
+    public string Weapon;
+    public Vector2 Position;
+    public List&lt;string&gt; Inventory;
+}</pre></div><p>This <a id="id1162" class="indexterm"></a>gives us the basic <code class="literal">Save</code> model for our player. Note<a id="id1163" class="indexterm"></a> that some of the properties are different, specifically the player's inventory. We'll come back to this later.</p><p>Now that we have our model, we need a way to convert an active class in the game, such as the player in it to its savable state and back again. Now we can write static methods in the preceding class; however, there is a better way to do this using <code class="literal">Extension</code> methods (like we did with <code class="literal">WorldExtensions</code> to convert WorldSpace to ScreenSpace coordinates).</p><p>So, add<a id="id1164" class="indexterm"></a> the following code to the very end of the preceding<a id="id1165" class="indexterm"></a> class (you could also just create a new script for this as before, but for now, let's just add it to the same class; this is just so we can see all of the conversion code in one place):</p><div class="informalexample"><pre class="programlisting">public static class PlayerSaveStateExtensions { }</pre></div><p>Next, we need another extension method to convert a <code class="literal">Player</code> class into the new <code class="literal">PlayerSaveState</code> class. So, add the following code to the <code class="literal">PlayerSaveStateExtensions</code> class:</p><div class="informalexample"><pre class="programlisting">public static PlayerSaveState GetPlayerSaveState(this Player input)
+{
+    PlayerSaveState newSaveState = new PlayerSaveState();
+    newSaveState.Age = input.Age;
+    newSaveState.Armor = input.Armor;
+    newSaveState.Damage = input.Damage;
+    newSaveState.Defense = input.Defense;
+    newSaveState.Faction = input.Faction;
+    newSaveState.Health = input.Health;
+    newSaveState.Level = input.Level;
+    newSaveState.Magic = input.Magic;
+    newSaveState.Name = input.Name;
+    newSaveState.NoOfAttacks = input.NoOfAttacks;
+    newSaveState.Occupation = input.Occupation;
+    newSaveState.Position = input.Position;
+    newSaveState.Speed = input.Speed;
+    newSaveState.Strength = input.Strength;
+    newSaveState.Weapon = input.Weapon;
+ 
+    newSaveState.Inventory = new List&lt;string&gt;();
+    foreach (var item in input.Inventory)
+    {
+        newSaveState.Inventory.Add(item.name);
+    }
+ 
+    return newSaveState;
+}</pre></div><p>This is <a id="id1166" class="indexterm"></a>fairly simple; we are just copying the properties <a id="id1167" class="indexterm"></a>across. Of course, you only need to copy savable properties. If there are values the player cannot affect, then there is no need to save them. Of note is that for the player's inventory, where we only capture the asset name of each item. This is because we don't need to serialize <code class="literal">InventoryItems</code> themselves (the game already knows about them), only the ones the player has.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip93"></a>Tip</h3><p>If you have items that can wear out, then you will also need to create a savable state for <code class="literal">InventoryItem</code> so you can save just the important bits or changeable values.</p><p>Instead of creating a <code class="literal">Save</code> model, you can simply tag each property you want to serialize with a <code class="literal">[SerializeField]</code> attribute (including private variables) and those that you don't want to serialize with a <code class="literal">[NonSerialized]</code> attribute.</p><p>However, in practice, this can cause trouble or confusion when debugging your saved data. In my personal experience, it's better to define a separate <code class="literal">Save</code> model so that you always know what you are dealing with.</p></div><p>Then, you simply need another extension method to do the reverse, as follows:</p><div class="informalexample"><pre class="programlisting">public static Player LoadPlayerSaveState(this PlayerSaveState input, Player player)
+{
+    player.Age = input.Age;
+    player.Armor = input.Armor;
+    player.Damage = input.Damage;
+    player.Defense = input.Defense;
+    player.Faction = input.Faction;
+    player.Health = input.Health;
+    player.Level = input.Level;
+    player.Magic = input.Magic;
+    player.Name = input.Name;
+    player.NoOfAttacks = input.NoOfAttacks;
+    player.Occupation = input.Occupation;
+    player.Position = input.Position;
+    player.Speed = input.Speed;
+    player.Strength = input.Strength;
+    player.Weapon = input.Weapon;
+    player.Inventory = new List&lt;InventoryItem&gt;();
+    foreach (var item in input.Inventory)
+    {
+      player.Inventory.Add(
+        (InventoryItem)Resources.Load("Inventory Items/" + item));
+    }
+    return player;
+}</pre></div><p>This is pretty much the same in reverse, except for the inventory. We cannot simply create a new inventory item because each <code class="literal">InventoryItem</code> is a <code class="literal">ScriptableObject</code> that we created in our game in the editor.</p><p>So to give the player the correct <code class="literal">InventoryItems</code> from our game's library, we call <code class="literal">Resources.Load</code> to pull the item from our game project, passing the path to <code class="literal">InventoryItem</code> and its name (which we saved earlier). Then, we add them to the player's inventory.</p><p>Hopefully, you can see why I stuck with the previous model to give you a more in-depth look <a id="id1168" class="indexterm"></a>at how to manage <code class="literal">ScriptableObjects</code> with <a id="id1169" class="indexterm"></a>serialization.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec142"></a>Making your game save and load functions</h3></div></div></div><p>Using the <a id="id1170" class="indexterm"></a>serialization helper we created <a id="id1171" class="indexterm"></a>earlier and our <code class="literal">Save</code> model, we can now <a id="id1172" class="indexterm"></a>implement our <code class="literal">Save</code> and <code class="literal">Load</code> functions. So, <a id="id1173" class="indexterm"></a>open up the <code class="literal">GameState</code> script from <code class="literal">Assets\Scripts\Classes</code> and add the following property to mark our save location on the disk:</p><div class="informalexample"><pre class="programlisting">static string saveFilePath = 
+Application.persistentDataPath + "/playerstate.dat";</pre></div><p>This just saves us from writing this over and over again. Alternatively, if you are using a slot-saving system, then this will need to be a list that would also need to be saved (probably in a <code class="literal">PlayerPrefs</code> property). Next, we will add the <code class="literal">Save</code> function as follows:</p><div class="informalexample"><pre class="programlisting">public static void SaveState()
+{
+    try
+    {
+        PlayerPrefs.SetString("CurrentLocation", 
+          Application.loadedLevelName);
+        using (var file = File.Create(saveFilePath))
+        {
+            var playerSerializedState = 
+              SerializerHelper.Serialise&lt;PlayerSaveState&gt;
+                (CurrentPlayer.GetPlayerSaveState());
+            file.Write(playerSerializedState, 
+               0, playerSerializedState.Length);
+        }
+    }
+    catch
+    {
+        Debug.LogError("Saving data failed");
+    }
+}</pre></div><p>So, <a id="id1174" class="indexterm"></a>when we need to save our game, we perform <a id="id1175" class="indexterm"></a>the following actions:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Save <a id="id1176" class="indexterm"></a>the player's current location to <code class="literal">PlayerPrefs</code> as it is very simple data.</p></li><li><p>Create <a id="id1177" class="indexterm"></a>a save file using Unity's <code class="literal">File</code> function (passing in the path to its location).</p></li><li><p>Create a serialized copy of our player in a new <code class="literal">PlayerSaveState</code> property.</p></li><li><p>Finally, we write our serialized data to our save file.</p></li></ol></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip94"></a>Tip</h3><p>With any operation that writes data outside of your game, always wrap it in a <code class="literal">try</code>/<code class="literal">catch</code> block. This will ensure your game doesn't crash when one out of a million bad things could happen.</p></div><p>This is all very simple. Then, to retrieve the saved data from the disk, first we'll add a little helper function to tell us whether a save file already exists, which we can also use elsewhere in the game, as follows:</p><div class="informalexample"><pre class="programlisting">public static bool SaveAvailable
+{
+    get { return File.Exists(saveFilePath); }
+}</pre></div><p>This just uses another function of the <code class="literal">File</code> class to test the existence of a file. Now, we can add the <code class="literal">Load</code> method as follows:</p><div class="informalexample"><pre class="programlisting">public static void LoadState(Action LoadComplete)
+{
+    try
+    {
+        if (SaveAvailable)
+        {
+            //Get the file
+            using (var stream = File.Open(saveFilePath, 
+              FileMode.Open))
+            {
+              var LoadedPlayer = 
+                SerializerHelper.DeSerialise&lt;PlayerSaveState&gt;
+                  (stream);
+              CurrentPlayer = 
+                LoadedPlayer.LoadPlayerSaveState(currentPlayer);
+            }
+        }
+    }
+    catch
+    {
+        Debug.LogError("Loading data failed, file is corrupt");
+    }
+    LoadComplete();
+}</pre></div><p>Again, this is just the reverse of saving the file with one difference: you have to test whether <a id="id1178" class="indexterm"></a>the save file exists first, else it <a id="id1179" class="indexterm"></a>will result in an error in the worst way possible.</p><p>You <a id="id1180" class="indexterm"></a>should note that we do not return the saved data directly<a id="id1181" class="indexterm"></a> back to the calling function; instead, we use a delegate to tell the caller when it is finished. The reason for this is simple: accessing the disk is slow. So, we need to ensure we have finished loading all of our data before we continue with our game, which is obviously very important. You can, if you want, also do this with the <code class="literal">Save</code> function if you wish as well.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec143"></a>Testing your Save and Load functions</h3></div></div></div><p>As <a id="id1182" class="indexterm"></a>a <a id="id1183" class="indexterm"></a>simple<a id="id1184" class="indexterm"></a> test <a id="id1185" class="indexterm"></a>for our saving and loading functions, we can add a basic menu to our game. So, create a new scene named <code class="literal">MainMenu</code> in <code class="literal">Assets\Scenes</code> and a new script called <code class="literal">MainMenu</code> in <code class="literal">Assets\Scripts</code> and replace its contents with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+ 
+[ExecuteInEditMode]
+public class MainMenu : MonoBehaviour {
+ 
+    bool saveAvailable;
+    void Start()
+    {
+        saveAvailable = GameState.SaveAvailable;
+    }
+}</pre></div><p>Here, we <a id="id1186" class="indexterm"></a>simply <a id="id1187" class="indexterm"></a>start<a id="id1188" class="indexterm"></a> by using a variable to see whether we have a saved file when the menu is loaded.</p><p>Then, we<a id="id1189" class="indexterm"></a> just add an <code class="literal">OnGUI</code> method as follows:</p><div class="informalexample"><pre class="programlisting">void OnGUI () {
+
+  GUILayout.BeginArea(new Rect((Screen.width / 2) - 100,(Screen.height / 2) - 100, 200,200 ));
+  if(GUILayout.Button("New Game"))
+  {
+    NavigationManager.NavigateTo("Home");
+  }
+  GUILayout.Space(50);
+  if (saveAvailable)
+  {
+    if (GUILayout.Button("Load Game"))
+    {
+      GameState.LoadState(() =&gt;
+      {
+        var lastLocation = PlayerPrefs.GetString(
+          "CurrentLocation", "Home");
+          NavigationManager.NavigateTo(lastLocation);
+      });
+    }
+  }
+  GUILayout.EndArea();
+}</pre></div><p>This is a very simple menu with two buttons. The first uses the <code class="literal">NavigationManager</code> script to load the <code class="literal">Home</code> scene, and the other only displays whether there is a load available and then performs the following operations:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Loads the current state of the game.</p></li><li><p>Once the <code class="literal">Load</code> delegate is complete, it also retrieves the player's last location from <code class="literal">PlayerPrefs</code>.</p></li><li><p>Then, it navigates to the last scene the player was in.</p></li></ol></div><p>Attach the script to the camera, save the scene, and add it to the <span class="strong"><strong>Build</strong></span> settings, and we are almost set.</p><p>The last thing to do is ensure that we save the game. You could do this by implementing it via a <a id="id1190" class="indexterm"></a>pause menu in the game, but for simplicity, I <a id="id1191" class="indexterm"></a>just added it to the <code class="literal">NavigationManager</code> script to save the game whenever the player moves from scene to scene.</p><p>So, <a id="id1192" class="indexterm"></a>open <a id="id1193" class="indexterm"></a>up the <code class="literal">NavigationManager</code> script and add <code class="literal">GameState.SaveState()</code> before the call to <code class="literal">FadeInOutManager</code> in both the <code class="literal">NavigateTo</code> and <code class="literal">GoBack</code> methods.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec144"></a>Backing up to the Web</h3></div></div></div><p>An <a id="id1194" class="indexterm"></a>alternative to the basic saving of data to a<a id="id1195" class="indexterm"></a> disk, a lot of games now (especially if they are targeting multiple platforms) support a web backend to store a player's data. It doesn't need to be heavy; just use a player name/ID key and store the serialized data.</p><p>The benefit <a id="id1196" class="indexterm"></a>of this approach is that the player can continue playing on any device, regardless of which device they were last playing on.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip95"></a>Tip</h3><p><span class="emphasis"><em>Halo Spartan Assault</em></span> implemented this feature and its sales skyrocketed because players on Windows Phones could switch to playing on their desktop or Xbox when they got home or vice versa. A big selling point!</p></div><p>Implementing this approach depends on the backend service you use for your data; whether you roll your own or use Azure MWS, Amazon Web Services, or Parse, which all have plugins that work for Unity3D.</p><p>The simplest approach is to use the serialization methods described previously and post your data to a backend web service using the Unity WWW class. As a full example would be too complex to demonstrate, what follows are just some code snippets of the available <a id="id1197" class="indexterm"></a>Unity functions.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note147"></a>Note</h3><p>Granted you will have to write your web service on a server to accept this data, which is out of scope of this book, but if you search on <a class="ulink" href="http://www.codeproject.com" target="_blank">www.codeproject.com</a> or <a class="ulink" href="http://stackoverflow.com" target="_blank">stackoverflow.com</a>, you will find many good examples of such implementations.</p></div><p>You could post the serialized data direct to a service using a function similar to the following<a id="id1198" class="indexterm"></a> code (as an example only):</p><div class="informalexample"><pre class="programlisting">void UploadSaveData1()
+{
+  string url = "http://mybackendserver.com/Upload.php";
+  var playerSerializedState = SerializerHelper.Serialise&lt;PlayerSaveState&gt;
+  (CurrentPlayer.GetPlayerSaveState());
+  WWW www = new WWW(url, playerSerializedState);
+ 
+  StartCoroutine(WaitForRequest(www));
+}
+IEnumerator WaitForRequest(WWW www)
+{
+  yield return www;
+ 
+  //check for errors
+  if (www.error == null)
+  {
+    Debug.Log("Successful: " + www.text);
+  }
+  else
+  {
+    Debug.Log("Error: " + www.error);
+  }
+}</pre></div><p>This simply takes the byte array of the serialized saved data and posts it to your server.</p><p>Alternatively, you can post data to the server as a form (more common):</p><div class="informalexample"><pre class="programlisting">void WebPost2()
+{
+  string url = "http://mybackendserver.com/Upload.php";
+  var playerSerializedState = SerializerHelper.Serialise&lt;PlayerSaveState&gt;
+  (CurrentPlayer.GetPlayerSaveState());
+  var data = Convert.ToBase64String(playerSerializedState);
+
+  WWWForm saveForm = new WWWForm();
+  saveForm.AddField("saveData", data);
+  WWW www = new WWW(url, saveForm);
+
+  StartCoroutine(WaitForRequest(www));
+}</pre></div><p>This makes a traditional HTTP post with parameters in the body of the request.</p><p>Getting<a id="id1199" class="indexterm"></a> the data from the server is much <a id="id1200" class="indexterm"></a>simpler. To do so, write a simple coroutine to download the data that you can call when it's needed:</p><div class="informalexample"><pre class="programlisting">IEnumerator GetSavedDataFromWWW()
+{
+  string url = "http://mybackendserver.com/DownloadSaveData.php";
+  WWW www = new WWW(url);
+  yield return www;
+
+  if (www.error == null)
+  {
+    var restoredData = DeserializePlayerState(www.bytes);
+  }
+  else
+  {
+    Debug.LogError("Error: " + www.error);
+  }
+}</pre></div><p>Note that the examples are over-simplified to show you how the WWW class works.</p><p>For more <a id="id1201" class="indexterm"></a>information about the WWW class, see the Unity scripting reference guide at <a class="ulink" href="https://docs.unity3d.com/Documentation/ScriptReference/WWW.html" target="_blank">https://docs.unity3d.com/Documentation/ScriptReference/WWW.html</a>.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip96"></a>Tip</h3><p>If you would rather not roll your services, you can use backends such as Azure for which some <a id="id1202" class="indexterm"></a>budding teams have put together plugins for Unity3D. Check them out at <a class="ulink" href="http://www.bitrave.com/azure-mobile-services-for-unity-3d/" target="_blank">http://www.bitrave.com/azure-mobile-services-for-unity-3d/</a>.</p><p>There is <a id="id1203" class="indexterm"></a>even a promising Unity implementation<a id="id1204" class="indexterm"></a> that connects<a id="id1205" class="indexterm"></a> to Google Services as well at <a class="ulink" href="https://github.com/kimsama/Unity-GoogleData" target="_blank">https://github.com/kimsama/Unity-GoogleData</a>.</p><p>I've not seen any implementation for AWS as yet, but keep an eye out for this or use the previous examples as a primer to start your own; if you do see any, please share!</p></div></div></div>

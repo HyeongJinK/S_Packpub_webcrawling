@@ -1,0 +1,73 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec36"></a>Creating an Anisotropic Specular type</h2></div></div><hr /></div><p><span class="strong"><strong>Anisotropic</strong></span> is a type of Specular or <span>reflection</span><a id="id325209572" class="indexterm"></a> that simulates the directionality of grooves in a surface and modifies/stretches the Specular in the perpendicular direction. It is very useful when you want to simulate brushed metals, not a metal with a clear, smooth, and polished surface. Imagine the Specular <span>that</span><a id="id325209580" class="indexterm"></a> you see when you look at the data side of a CD or DVD or the way Specular is shaped at the bottom of a pot or pan. You will notice that if you carefully examine the surface, there is a direction to the grooves, usually in the way the metal was brushed. When you apply a Specular to this surface, you get a Specular stretched in the perpendicular direction.</p><p>This recipe will introduce you to the concept of augmenting your Specular highlights to achieve different types of brushed surfaces. In future recipes, we will look at the ways in which we can use the concepts of this recipe to achieve other effects, such as stretched reflections and hair, but here, you are going to learn the fundamentals of the technique first. We will be using this shader as a reference for our own custom Anisotropic Shader:<span><a class="ulink" href="http://wiki.unity3d.com/index.php?title=Anisotropic_Highlight_Shader" target="_blank">http://wiki.unity3d.com/index.php?title=Anisotropic_Highlight_Shader</a>.</span>The following diagram shows examples of different types of Specular effects <span>that</span><a id="id325209598" class="indexterm"></a> you can achieve using Anisotropic Shaders in Unity:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/ea7b2a02-dea8-4d72-abaf-0cd524408f68.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec80"></a>Getting ready</h3></div></div></div><p>Let's start this recipe by creating a shader, its material, and some lights for our scene:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create a new scene with some objects and lights so <span>that</span><a id="id325453693" class="indexterm"></a> we can visually debug our shader. In this case, we will be using some capsules, a sphere, and a cylinder.</li><li>Then create a new shader and material, and hook them up to your objects:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/c2504efa-e8f8-48f4-857d-04b1b6920bd7.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Lastly, we will need some sort of normal map that will indicate the directionality of our Anisotropic Specular highlight.</li><li>The following screenshot shows the Anisotropy normal map we will be using for this recipe. It is available from this book's support page at <span><a class="ulink" href="https://www.packtpub.com/books/content/support" target="_blank">https://www.packtpub.com/books/content/support</a></span>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788396233/graphics/d3583554-c99a-4786-9692-863cf4b5b201.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec81"></a>How to do it...</h3></div></div></div><p>To create an Anisotropic effect, we need to make the <span>following</span><a id="id325453783" class="indexterm"></a> changes to the shader previously created:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>We first need to remove the old properties and then add the properties that we are going to need for our shader. These will allow a lot of artistic control over the final appearance of the surface:</li></ol></div><pre class="programlisting">Properties 
+{ 
+  _MainTint ("Diffuse Tint", Color) = (1,1,1,1) 
+  _MainTex ("Base (RGB)", 2D) = "white" {} 
+  _SpecularColor ("Specular Color", Color) = (1,1,1,1) 
+  _Specular ("Specular Amount", Range(0,1)) = 0.5 
+  _SpecPower ("Specular Power", Range(0,1)) = 0.5 
+  _AnisoDir ("Anisotropic Direction", 2D) = "" {} 
+  _AnisoOffset ("Anisotropic Offset", Range(-1,1)) = -0.2 
+} </pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>We then need to make the connection between our <code class="literal">Properties</code> block and
+our <code class="literal">SubShader{}</code> block so that we can use the data being provided by the <code class="literal">Properties</code> block:</li></ol></div><pre class="programlisting">sampler2D _MainTex; 
+sampler2D _AnisoDir; 
+float4 _MainTint; 
+float4 _SpecularColor; 
+float _AnisoOffset; 
+float _Specular; 
+float _SpecPower; </pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Now we can create our <code class="literal">Lighting</code> function that will produce the correct Anisotropic effect on our surface. We will use the following code for this:</li></ol></div><pre class="programlisting">fixed4 LightingAnisotropic(SurfaceAnisoOutput s, fixed3 
+   lightDir, half3 viewDir, fixed atten) 
+{ 
+  fixed3 halfVector = normalize(normalize(lightDir) + 
+     normalize(viewDir)); 
+  float NdotL = saturate(dot(s.Normal, lightDir)); 
+ 
+  fixed HdotA = dot(normalize(s.Normal + s.AnisoDirection), 
+     halfVector);  float aniso = max(0, sin(radians((HdotA + _AnisoOffset) * 
+     180)));  float spec = saturate(pow(aniso, s.Gloss * 128) * 
+     s.Specular); 
+ 
+  fixed4 c; 
+  c.rgb = ((s.Albedo * _LightColor0.rgb * NdotL) + 
+     (_LightColor0.rgb * _SpecularColor.rgb * spec)) * 
+     atten; 
+  c.a = s.Alpha; 
+  return c; 
+} </pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>In order to use this new <code class="literal">Lighting</code> function, we need to <span>tell</span><a id="id325454835" class="indexterm"></a> the subshader's <code class="literal">#pragma</code> statement to look for it instead of using one of the built-in <code class="literal">Lighting</code> functions: </li></ol></div><pre class="programlisting">CGPROGRAM 
+#pragma surface surf Anisotropic </pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>We have also given the Anisotropic normal map its own UVs by declaring the following code in the <code class="literal">struct Input</code>. This isn't entirely necessary as we could just use the UVs from the main texture, but this gives us independent control over the tiling of our brushed metal effect so that we can scale it to any size we want:</li></ol></div><pre class="programlisting">struct Input  
+{ 
+  float2 uv_MainTex; 
+  float2 uv_AnisoDir; 
+}; </pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>We also need to add the <code class="literal">struct SurfaceAnisoOutput</code>:</li></ol></div><pre class="programlisting">struct SurfaceAnisoOutput 
+{ 
+  fixed3 Albedo; 
+  fixed3 Normal; 
+  fixed3 Emission; 
+  fixed3 AnisoDirection; 
+  half Specular; 
+  fixed Gloss; 
+  fixed Alpha; 
+}; </pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Finally, we need to use the <code class="literal">surf()</code> function to pass the correct data to our <code class="literal">Lighting</code> function. Hence, we will get the per-pixel information from our Anisotropic normal map and set our Specular parameters as follows:</li></ol></div><pre class="programlisting">void surf(Input IN, inout SurfaceAnisoOutput o) 
+{ 
+  half4 c = tex2D(_MainTex, IN.uv_MainTex) * _MainTint; 
+  float3 anisoTex = UnpackNormal(tex2D(_AnisoDir, 
+     IN.uv_AnisoDir)); 
+ 
+  o.AnisoDirection = anisoTex; 
+  o.Specular = _Specular; 
+  o.Gloss = _SpecPower; 
+  o.Albedo = c.rgb; 
+  o.Alpha = c.a; 
+} </pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Save your script and <span>return</span><a id="id325457710" class="indexterm"></a> to the Unity editor. Select the <code class="literal">AnisotropicMat</code> material and assign the <strong class="userinput"><code>Anisotropic Direction</code></strong> property to the texture we talked about in the <span class="emphasis"><em><span>Getting ready</span></em></span> section of this recipe. Afterward, adjust the Anisotopic <code class="literal">Offset</code> property using the slider and notice the changes.</li></ol></div><p>The Anisotropic normal map allows us to give the surface direction and helps us disperse the Specular highlight around the surface. The following screenshot demonstrates the result of our Anisotropic Shader:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/bcfedc17-1961-480e-a4da-906266857380.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec82"></a>How it works...</h3></div></div></div><p>Let's break down this shader into its core components and explain why we are getting the effect. We will mostly be covering the custom Lighting function here, as the rest of the shader should be pretty self-explanatory at this point.</p><p>We first start by declaring our own <code class="literal">SurfaceAnisoOutput struct</code><span>.</span> We need to do this in order to get the per-pixel information from the Anisotropic normal map, and the only way we can do this in a Surface Shader is to use a <code class="literal">tex2D()</code> function in the <code class="literal">surf()</code> function. The following code shows the custom surface output <span>structure</span><a id="id325463145" class="indexterm"></a> used in our shader:</p><pre class="programlisting">struct SurfaceAnisoOutput 
+{ 
+  fixed3 Albedo; 
+  fixed3 Normal; 
+  fixed3 Emission; 
+  fixed3 AnisoDirection; 
+  half Specular; 
+  fixed Gloss; 
+  fixed Alpha; 
+}; </pre><p>We can use the <code class="literal">SurfaceAnisoOutput</code> struct as a way of interacting between the Lighting function and the surface function. In our case, we are storing the per-pixel texture information in the variable called <code class="literal">anisoTex</code> in our <code class="literal">surf()</code> function and then passing this data to the <code class="literal">SurfaceAnisoOutput</code> struct by storing it in the <code class="literal">AnisoDirection</code> variable. Once we have this, we can use the per-pixel information in the <code class="literal">Lighting</code> function using <code class="literal">s.AnisoDirection</code>.</p><p>With this data connection set up, we can move on to our actual lighting calculations. This begins by getting the usual out of the way, the half vector, so that we don't have to do the full reflection calculation and diffuse lighting, which is the vertex normal dotted with the light vector or direction. This is done in Cg with the following lines:</p><pre class="programlisting">fixed3 halfVector = normalize(normalize(lightDir) + 
+                    normalize(viewDir)); 
+float NdotL = saturate(dot(s.Normal, lightDir)); </pre><p>Then, we start the actual modification to the Specular to get the right look. We first dot the normalized sum of the vertex normal and per-pixel vectors from our Anisotropic normal map with the <code class="literal">halfVector</code> calculated in the previous step. This gives us a float value that gives a value of <code class="literal">1</code> as the surface normal, which is modified by the Anisotropic normal map as it becomes parallel with <code class="literal">halfVector</code> and <code class="literal">0</code> as it is perpendicular. Finally, we modify this value with a <code class="literal">sin()</code> function so that we can basically get a darker middle highlight and ultimately a ring effect based on <code class="literal">halfVector</code>. All the previously mentioned operations are summarized in the following two lines of Cg code:</p><pre class="programlisting">fixed HdotA = dot(normalize(s.Normal + s.AnisoDirection), 
+                  halfVector); 
+float aniso = max(0, sin(radians((HdotA + _AnisoOffset) * 180))); </pre><p>Finally, we scale the effect of the <code class="literal">aniso</code> value by taking it to a power of <code class="literal">s.Gloss</code>, and then globally decrease its strength by multiplying it by <code class="literal">s.Specular</code>:</p><pre class="programlisting">float spec = saturate(pow(aniso, s.Gloss * 128) * s.Specular); </pre><p>This effect is great for creating more advanced metal type surfaces, especially the ones that are brushed and appear to have directionality to them. It also works well for hair or any sort of soft surface with directionality to it. The following screenshot shows the result of displaying the final Anisotropic <span>lighting</span><a id="id325209670" class="indexterm"></a> calculation:</p><div class="mediaobject"><img src="/graphics/9781788396233/graphics/53785a37-8771-4e0c-948d-5af6908cc423.png" /></div><p> </p></div></div>

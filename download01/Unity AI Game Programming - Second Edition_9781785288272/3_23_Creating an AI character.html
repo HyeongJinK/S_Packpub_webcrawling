@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec27"></a>Creating an AI character</h2></div></div><hr /></div><p>Our AI character <a id="id93" class="indexterm"></a>will be roaming around the scene in a random direction. It'll have two senses:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The perspective sense will check whether the enemy aspect is within a set visible range and distance</p></li><li style="list-style-type: disc"><p>Touch sense will detect if the enemy aspect has collided with the box collider, soon to be surrounding our AI character</p></li></ul></div><p>As we have seen previously, our player tank will have the <code class="literal">Enemy</code> aspect. So, these senses will be triggered when they detect the player tank.</p><p>The code in the <a id="id94" class="indexterm"></a>
+<code class="literal">Wander.cs</code> file can be shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Wander : MonoBehaviour {
+  private Vector3 tarPos;
+
+  private float movementSpeed = 5.0f;
+  private float rotSpeed = 2.0f;
+  private float minX, maxX, minZ, maxZ;
+
+  // Use this for initialization
+  void Start () {
+    minX = -45.0f;
+    maxX = 45.0f;
+
+    minZ = -45.0f;
+    maxZ = 45.0f;
+
+    //Get Wander Position
+    GetNextPosition();
+  }
+  
+  // Update is called once per frame
+  void Update () {
+    // Check if we're near the destination position
+    if (Vector3.Distance(tarPos, transform.position) &lt;= 5.0f)
+      GetNextPosition(); //generate new random position 
+
+    // Set up quaternion for rotation toward destination
+    Quaternion tarRot = Quaternion.LookRotation(tarPos - 
+        transform.position);
+
+    // Update rotation and translation
+    transform.rotation = Quaternion.Slerp(transform.rotation, tarRot, 
+        rotSpeed * Time.deltaTime);
+
+    transform.Translate(new Vector3(0, 0, 
+        movementSpeed * Time.deltaTime));
+  }
+
+  void GetNextPosition() {
+    tarPos = new Vector3(Random.Range(minX, maxX), 0.5f, 
+        Random.Range(minZ, maxZ));
+  }
+}</pre></div><p>The <code class="literal">Wander</code> script generates a new random position in a specified range whenever the AI character <a id="id95" class="indexterm"></a>reaches its current destination point. The <code class="literal">Update</code> method will then rotate our enemy and move it toward this new destination. Attach this script to our AI character so that it can move around in the scene.</p></div>

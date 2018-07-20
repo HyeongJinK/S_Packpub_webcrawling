@@ -1,0 +1,14 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec22"></a>Consider caching Transform changes</h2></div></div><hr /></div><p>The Transform<a id="id172" class="indexterm"></a> Component only stores data relative to its own parent. This means that accessing and modifying a Transform Component's <code class="literal">position</code>, <code class="literal">rotation</code>, and <code class="literal">scale</code> properties can result in a lot of unanticipated matrix multiplication calculations to generate the correct Transform representation for the object through its parents' Transforms. The deeper the object is in the Hierarchy, the more calculations are needed to determine the final result. To make matters worse, changes to a Transform Component also send internal notifications to colliders, rigid bodies, lights, and cameras, which must be processed.</p><p>However, this also means that using <code class="literal">localPosition</code>, <code class="literal">localRotation</code>, and <code class="literal">localScale</code> have a relatively trivial cost associated with them, because the values can be retrieved and written as they are passed in. Therefore, these local property values should be used whenever possible. However, changing our mathematical calculations from world space to local space can overcomplicate what were originally simple (and solved!) problems, so making such changes risks breaking our implementation and introducing a lot of unexpected bugs. Sometimes it's worth absorbing a minor performance hit in order to solve a complex 3D mathematical problem more easily!</p><p>In addition, it is not uncommon, during some complex event, we replace a Transform's properties multiple times in the same frame (although this is probably a warning sign of over-engineered design). We can consider minimizing the number of times we modify the Transform values by caching them in a member variable and committing them only at the end of the frame, as follows:</p><div class="informalexample"><pre class="programlisting">private bool _positionChanged;
+private Vector3 _newPosition;
+
+public void SetPosition(Vector3 position) {
+  _newPosition = position;
+  _positionChanged = true;
+}
+
+void FixedUpdate() {
+  if (_positionChanged) {
+    transform.position = _newPosition;
+    _positionChanged = false;
+  }
+}</pre></div><p>This code will only commit changes to the position in the next <code class="literal">FixedUpdate()</code> method.</p><p>Note that this will <span class="emphasis"><em>not</em></span> result in sluggish-looking behavior during gameplay, since all physics calculations are<a id="id173" class="indexterm"></a> performed immediately after <code class="literal">FixedUpdate()</code>. There would not be any frames rendered before the physics engine gets a chance to respond to the Transform change.</p></div>

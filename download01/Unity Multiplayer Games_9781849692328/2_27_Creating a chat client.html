@@ -1,0 +1,365 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec33"></a>Creating a chat client</h2></div></div><hr /></div><p>We're <a id="id108" class="indexterm"></a>going to put what we've learned about Photon to use, creating a chat client from scratch. Players can choose from a list of running chatrooms, create a new chatroom, or join a random chatroom (if there are none available, one is created). While in a chatroom, players can chat with everybody in the chatroom. From the main menu, players can also manage a list of "friends" (they can add and remove names). They can see the online states of each friend, as well as join friends if they are in a room.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec22"></a>The Connect screen</h3></div></div></div><p>The first <a id="id109" class="indexterm"></a>screen<a id="id110" class="indexterm"></a> the user is presented with is the <span class="strong"><strong>Connect</strong></span> screen.</p><div class="mediaobject"><img src="/graphics/9781849692328/graphics/2328OT_02_02.jpg" /></div><p>Here, they enter their username and connect to Photon. It will automatically remember the last username they entered, since they are likely to want to use it again.</p><p>This script accomplishes the <span class="strong"><strong>Connect</strong></span> screen. This goes on an empty game object. After the user connects, it will disable itself and activate the lobby screen on another game object:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ConnectToPhoton : MonoBehaviour
+{
+  public GameObject LobbyScreen;
+
+  private string username = "";
+
+  private bool connecting = false;
+  private string error = null;
+
+  void Start()
+  {
+    // load the last username the player entered
+    username = PlayerPrefs.GetString( "Username", "" );
+  }
+
+  void OnGUI()
+  {
+    // in the process of connecting...
+    if( connecting )
+    {
+      GUILayout.Label( "Connecting..." );
+      return;
+    }
+
+    // an error occurred, display it
+    if( error != null )
+    {
+      GUILayout.Label( "Failed to connect: " + error );
+      return;
+    }
+
+    // let the user enter their username
+    GUILayout.Label( "Username" );
+    username = GUILayout.TextField( username, GUILayout.Width( 200f ) );
+
+    if( GUILayout.Button( "Connect" ) )
+    {
+      // remember username for next time
+      PlayerPrefs.SetString( "Username", username );
+
+      // in the process of connecting
+      connecting = true;
+
+      // set username, connect to photon
+      PhotonNetwork.playerName = username;
+      PhotonNetwork.ConnectUsingSettings( "v1.0" );
+    }
+  }
+
+  void OnJoinedLobby()
+  {
+    // joined the lobby, show lobby screen
+
+    connecting = false;
+    gameObject. SetActiveRecursively ( false );
+    LobbyScreen. SetActiveRecursively ( true );
+  }
+
+  void OnFailedToConnectToPhoton( DisconnectCause cause )
+  {
+    // failed to connect, store error for display
+
+    connecting = false;
+    error = cause.ToString();
+  }
+}</pre></div><p>Right now, if you run this, <a id="id111" class="indexterm"></a>you can enter your username and connect. It will then display <span class="strong"><strong>Connecting...</strong></span> until it connects, or an error occurs. If an error occurs it will be displayed. Otherwise, the message goes away and we're left with a blank screen. You'll also notice a null reference exception in the console, as our lobby screen is not yet defined. Let's remedy these by creating our lobby script.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec23"></a>The Lobby screen</h3></div></div></div><p>The<a id="id112" class="indexterm"></a> lobby screen will allow the user to join a random game, host a game, or browse available games<a id="id113" class="indexterm"></a> to manually join. We'll also add a button that will show the user's friends list, for now it won't do anything.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note15"></a>Note</h3><p>Earlier in this chapter, we covered filtering room lists by preference. A good use case for our chatroom might be to allow players to specify a language upon creating a room. For instance, add buttons for English, Spanish, or French. The room could be created with a <code class="literal">Language</code> key containing the user-specified language. This can then be filtered in the Lobby, so the user could either select All, English, Spanish, or French to join rooms of a specific language.</p></div><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class LobbyScreen : MonoBehaviour
+{
+  Vector2 lobbyScroll = Vector2.zero;
+
+  void Awake()
+  {
+    // as explained before, we use automaticallySyncScene to ensure all players load the same level automatically
+    PhotonNetwork.automaticallySyncScene = true;
+  }
+
+  void OnGUI()
+  {
+    // allow the player to join a random room if they don't feel like browsing room lists
+    if( GUILayout.Button( "Join Random", GUILayout.Width( 200f ) ) )
+    {
+      PhotonNetwork.JoinRandomRoom();
+    }
+
+    // create a new room
+    if( GUILayout.Button( "Create Room", GUILayout.Width( 200f ) ) )
+    {
+      // create a room with the user's name, visible in the lobby, allow other players to join, maximum of 32 players allowed.
+      PhotonNetwork.CreateRoom( PlayerPrefs.GetString( "Username" ) + "'s Room", true, true, 32 );
+    }
+    
+    // TODO: show the friends list management page
+    GUILayout.Button( "Friends", GUILayout.Width( 200f ) );
+
+    // get a list of rooms currently open
+    RoomInfo[] rooms = PhotonNetwork.GetRoomList();
+    // no rooms available, inform the user
+    if( rooms.Length == 0 )
+    {
+      GUILayout.Label( "No Rooms Available" );
+    }
+    else
+    {
+      // show a scrollable list of rooms
+
+      lobbyScroll = GUILayout.BeginScrollView( lobbyScroll, GUILayout.Width( 220f ), GUILayout.ExpandHeight( true ) );
+
+      // iterate over each room and display a line for that room, in addition to an "Enter" button
+      foreach( RoomInfo room in PhotonNetwork.GetRoomList() )
+      {
+        GUILayout.BeginHorizontal( GUILayout.Width( 200f ) );
+
+        // display room name and number of players / capacity
+        GUILayout.Label( room.name + " - " + room.playerCount + "/" + room.maxPlayers );
+
+        // connect to the room if the player clicks the "Enter" button
+        if( GUILayout.Button( "Enter" ) )
+        {
+          PhotonNetwork.JoinRoom( room );
+        }
+
+        GUILayout.EndHorizontal();
+      }
+
+      GUILayout.EndScrollView();
+    }
+  }
+
+  // if no room could be randomly joined, create a new room
+  void OnPhotonRandomJoinFailed()
+  {
+    // create a new room with the player's name, visible to the lobby, open to other players, maximum of 32 players.
+    PhotonNetwork.CreateRoom( PlayerPrefs.GetString( "Username" ) + "'s Room", true, true, 32 );
+  }
+
+  // after creating the room, load the chat room scene
+  void OnCreatedRoom()
+  {
+    // load the chatroom scene via PhotonNetwork.LoadLevel, this way everyone who joins will automatically load the level.
+    PhotonNetwork.LoadLevel( "ChatRoom" );
+  }
+}</pre></div><p>Attach this to an<a id="id114" class="indexterm"></a> empty game object, drag the game object onto the <span class="strong"><strong>LobbyScreen</strong></span> slot of the <span class="strong"><strong>Connect</strong></span> script, and deactivate the lobby screen game object.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec24"></a>The chat room</h3></div></div></div><p>Note <a id="id115" class="indexterm"></a>that<a id="id116" class="indexterm"></a> either Join Random or Create Room will both result in an error, that the "ChatRoom" scene does not exist. Let's find a remedy to this.</p><p>Save the current scene as <code class="literal">Main</code> and add it to the build settings. Then, create a new scene, save it as <code class="literal">ChatRoom</code>, and add it to the build settings as well.</p><p>Now we can create our chatroom script and add it to this scene shown as follows:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Chatbox : Photon.MonoBehaviour
+{
+  // keep up to this many messages, after which older messages start to be deleted
+  public int MaxMessages = 100;
+
+  private Vector2 chatScroll = Vector2.zero;
+  private List&lt;string&gt; chatMessages = new List&lt;string&gt;();
+
+  private string message = "";
+
+  void OnGUI()
+  {
+    if( GUILayout.Button( "Leave Room" ) )
+    {
+      // leave the room we're in
+      PhotonNetwork.LeaveRoom();
+    }
+
+    // display a scrolling list of chat messages
+    chatScroll = GUILayout.BeginScrollView( chatScroll, GUILayout.Width( Screen.width ), GUILayout.ExpandHeight( true ) );
+
+    foreach( string msg in chatMessages )
+    {
+      GUILayout.Label( msg );
+    }
+
+    GUILayout.EndScrollView();
+
+    GUILayout.BeginHorizontal();
+
+    // let the user type a message
+    message = GUILayout.TextField( message, GUILayout.ExpandWidth( true ) );
+
+    if( GUILayout.Button( "Send", GUILayout.Width( 100f ) ) )
+    {
+      // tell everybody to add this message
+      photonView.RPC( "AddChat", PhotonTargets.All, message );
+      message = "";
+    }
+
+    GUILayout.EndHorizontal();
+  }
+
+  [RPC]
+  void AddChat( string message, PhotonMessageInfo info )
+  {
+    // store the received message
+    chatMessages.Add( info.sender.name + ": " + message );
+
+    // enforce maximum stored messages
+    if( chatMessages.Count &gt; MaxMessages )
+    {
+      chatMessages.RemoveAt( 0 );
+    }
+
+    // set scroll Y to a really big value
+    // Unity will automatically clamp this, having the effect of scrolling to the bottom
+    chatScroll.y = 10000;
+  }
+
+  // if the user leaves, go back to the main scene
+  void OnLeftRoom()
+  {
+    Application.LoadLevel( "Main" );
+  }
+}</pre></div><p>What happens here is that the user is allowed to type a message. On clicking the <span class="strong"><strong>Send</strong></span> button this <a id="id117" class="indexterm"></a>message is passed to an RPC (<code class="literal">PhotonTargets.All</code> will call the RPC for every player in the room). This RPC will add the new message, prefixed with the player name (<code class="literal">PhotonMessageInfo.sender.name</code> is the name of the player who sent the RPC), to the list of messages (which it also limits to a maximum count), and scroll the chatbox to the bottom.</p><p>Our chat script is now fully functional. Next, we're going to add the friends list functionality to our chatroom app.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec03"></a>Adding friends lists</h4></div></div></div><p>Players<a id="id118" class="indexterm"></a> can add and remove friends from the main menu. They can also view a list of friends, online states, and optionally join their friends if the friend is inside a chatroom. The actual list of friends is persisted to PlayerPrefs as a comma-delimited string:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class FriendsScreen : MonoBehaviour
+{
+  public GameObject LobbyScreen;
+
+  private string addFriendName = "";
+
+  private List&lt;string&gt; friends = new List&lt;string&gt;();
+
+  private Dictionary&lt;string, bool&gt; onlineStates = new Dictionary&lt;string, bool&gt;();
+  private Dictionary&lt;string, string&gt; rooms = new Dictionary&lt;string, string&gt;();
+
+  void Awake()
+  {
+    // load friends from PlayerPrefs
+    string stored_friends = PlayerPrefs.GetString( "FriendsList", "" );
+    if( !string.IsNullOrEmpty( stored_friends ) )
+    {
+      friends.AddRange( stored_friends.Split( ',' ) );
+    }
+
+    // request friend states
+    if( friends.Count &gt; 0 )
+    {
+      PhotonNetwork.FindFriends( friends.ToArray() );
+    }
+  }
+
+  void OnGUI()
+  {
+    // go back to the lobby screen
+    if( GUILayout.Button( "Back", GUILayout.Width( 200f ) ) )
+    {
+      gameObject. SetActiveRecursively ( false );
+      LobbyScreen. SetActiveRecursively ( true );
+    }
+
+    GUILayout.Label( "Add Friend:" );
+
+    GUILayout.BeginHorizontal();
+
+    // let the player type in a friend name
+    addFriendName = GUILayout.TextField( addFriendName, GUILayout.Width( 200f ) );
+
+    // add player name to friends list, request friend states
+    if( GUILayout.Button( "Add", GUILayout.Width( 100f ) ) )
+    {
+      AddFriend( addFriendName );
+    }
+
+    GUILayout.EndHorizontal();
+
+    if( PhotonNetwork.Friends != null )
+    {
+      foreach( FriendInfo friend in PhotonNetwork.Friends )
+      {
+        GUILayout.BeginHorizontal();
+
+        GUILayout.Label( friend.Name + " [" + ( GetOnlineState( friend ) ? "Online]" : "Offline]" ) );
+
+        if( GetIsInRoom( friend ) )
+        {
+          if( GUILayout.Button( "Join", GUILayout.Width( 50f ) ) )
+          {
+            // join the friend in whatever room they are in
+            PhotonNetwork.JoinRoom( GetRoom( friend ) );
+          }
+        }
+
+        // remove the friend from the friends list, and fetch friend states
+        if( GUILayout.Button( "Remove", GUILayout.Width( 100f ) ) )
+        {
+          RemoveFriend( friend.Name );
+        }
+
+        GUILayout.EndHorizontal();
+      }
+    }
+  }
+
+  void Update()
+  {
+    if( PhotonNetwork.FriendsListAge &gt;= 1000 )
+    {
+      PhotonNetwork.FindFriends( friends.ToArray() );
+    }
+  }
+
+  // while updating a friends list, Photon will temporarily set isOnline and isInRoom to false
+  // if you update on a timer, you will notice state rapidly switching between offline and online
+  // therefore, we will store online state and room in a dictionary and wait until an update is actually received
+  // and store the updated value
+  void OnUpdatedFriendList()
+  {
+    foreach( FriendInfo friend in PhotonNetwork.Friends )
+    {
+      onlineStates[ friend.Name ] = friend.IsOnline;
+      rooms[ friend.Name ] = friend.IsInRoom ? friend.Room : "";
+    }
+  }
+
+  bool GetOnlineState( FriendInfo friend )
+  {
+    if( onlineStates.ContainsKey( friend.Name ) )
+      return onlineStates[ friend.Name ];
+    else
+      return false;
+  }
+
+  bool GetIsInRoom( FriendInfo friend )
+  {
+    if( rooms.ContainsKey( friend.Name ) )
+      return !string.IsNullOrEmpty( rooms[ friend.Name ] );
+    else
+      return false;
+  }
+
+  string GetRoom( FriendInfo friend )
+  {
+    if( rooms.ContainsKey( friend.Name ) )
+      return rooms[ friend.Name ];
+    else
+      return "";
+  }
+
+  void AddFriend( string friendName )
+  {
+    friends.Add( friendName );
+    PhotonNetwork.FindFriends( friends.ToArray() );
+
+    // save friends to PlayerPrefs
+    PlayerPrefs.SetString( "FriendsList", string.Join( ",", friends.ToArray() ) );
+  }
+
+  void RemoveFriend( string friendName )
+  {
+    friends.Remove( friendName );
+    PhotonNetwork.FindFriends( friends.ToArray() );
+
+    // save friends to PlayerPrefs
+    PlayerPrefs.SetString( "FriendsList", string.Join( ",", friends.ToArray() ) );
+  }
+}</pre></div><p>Place this script on an empty game object, and deactivate the game object. Drag the lobby screen game object onto the <span class="strong"><strong>LobbyScreen</strong></span> slot.</p><p>Finally, let's<a id="id119" class="indexterm"></a> modify our lobby script to go to the friends list screen.</p><p>Firstly, we'll add a reference to the friends list object:</p><div class="informalexample"><pre class="programlisting">public GameObject FriendsListScreen;</pre></div><p>And in OnGUI, we'll add a button to display the friends list:</p><div class="informalexample"><pre class="programlisting">if( GUILayout.Button( "Friends", GUILayout.Width( 200 ) ) )
+{
+  gameObject.SetActiveRecursively( false );
+  FriendsListScreen.SetActiveRecursively( true );
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note16"></a>Note</h3><p>Note that as of Unity 4, <code class="literal">SetActiveRecursively</code> is deprecated. You should instead use <code class="literal">SetActive</code>. However, this function does not exist in Unity 3.</p></div><p>Drag the friends list game object onto the new <span class="strong"><strong>FriendsListScreen</strong></span> slot.</p><p>The chatbox example is now completely functional.</p></div></div></div>

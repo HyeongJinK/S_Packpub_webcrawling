@@ -1,0 +1,88 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec47"></a>Adding enemies to the Dungeon Board</h2></div></div><hr /></div><p>There are a few things to <a id="id298" class="indexterm"></a>consider when switching to the Dungeon Board and spawning new enemies. First, we need to determine what will happen when<a id="id299" class="indexterm"></a> the enemies are off screen. On the world board, we simply destroyed the enemies. We can justify this action because new enemies will be generated as the player discovers new tiles on the world board. However, the player doesn't generate new tiles with movement in the dungeon.</p><p>For simplicity, we'll want to generate the dungeon enemies at the same time we generate the dungeon. This means that most enemies generated in a dungeon are generated off screen. If we kept the same offscreen check we had for the world board, we would end up generating enemies and then destroying most of them before the player had a turn to move. Instead, we'll just disable the movement of offscreen enemies while in the dungeon.</p><p>We will also have to<a id="id300" class="indexterm"></a> figure out what to do with the enemies left on the world board when we enter the dungeon and vice versa. In order to keep the number of enemies that we track to a minimum, it might be in our best interest to destroy enemies left <a id="id301" class="indexterm"></a>on the world board as we enter a dungeon. And since we cannot re-enter a dungeon once we exit, it makes sense that we destroy all the enemies left in a dungeon as we return to the world board.</p><p>So, now that we have a plan, let's implement the functionality that will spawn enemies in our dungeons. We can begin with the <code class="literal">DungeonManager</code> class so open the <code class="literal">DungeonManager.cs</code> file for editing. <span class="emphasis"><em>Code-Snip 7.4</em></span> shows the changes needed for this feature:</p><div class="informalexample"><pre class="programlisting">1 public enum TileType {
+2   essential, random, empty, chest, enemy
+3 }
+4
+5 private void BuildRandomPath () {
+...
+
+6        if (!gridPositions.ContainsKey(newRPathPos)) {
+7          if (Random.Range (0, 20) == 1) {
+8            gridPositions.Add (newRPathPos, TileType.enemy);
+9          } else {
+10            gridPositions.Add (newRPathPos, TileType.empty);
+11          }
+12
+13          PathTile newRPath = new PathTile (TileType.random, newRPathPos, minBound, maxBound, gridPositions);
+14          pathQueue.Add (newRPath);
+15        }
+16      }
+17    }
+18  });
+19 }</pre></div><p>In <span class="emphasis"><em>Code Snip 7.4</em></span>, we first add the enumeration enemy to <code class="literal">TileType</code>. We use this enumeration to discern information about the format of our generated dungeon. Then, we make a small change to the <code class="literal">BuildRandomPath</code> function. Take note that the full <code class="literal">BuildRandomPath</code> function is not present in <span class="emphasis"><em>Code Snip 7.4</em></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Lines 7-10</code>: We add another condition that gives us the chance to place a tile marked as <code class="literal">TileType</code> enemy. The <code class="literal">BoardManager</code> class will see this tile and place an enemy on it.</p></li></ul></div><p>That's all for the <code class="literal">DungeonManager</code> class. We added a new <code class="literal">TileType</code> though, and those are also used by the<a id="id302" class="indexterm"></a> <code class="literal">BoardManager</code> class to place tile on the boards. So let's open the <code class="literal">BoardManager.cs</code> script for editing. <span class="emphasis"><em>Code Snip 7.5</em></span> shows the change <a id="id303" class="indexterm"></a>needed to handle the enemy <code class="literal">TileType</code> enum:</p><div class="informalexample"><pre class="programlisting">1 public void SetDungeonBoard (Dictionary&lt;Vector2,TileType&gt; dungeonTiles, int bound, Vector2 endPos) {
+2  boardHolder.gameObject.SetActive (false);
+3  dungeonBoardHolder = new GameObject ("Dungeon").transform;
+4  GameObject toInstantiate, instance;
+5
+6  foreach(KeyValuePair&lt;Vector2,TileType&gt; tile in dungeonTiles) {
+7    toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
+8    instance = Instantiate (toInstantiate, new Vector3 (tile.Key.x, tile.Key.y, 0f), Quaternion.identity) as GameObject;
+9    instance.transform.SetParent (dungeonBoardHolder);
+10
+11    if (tile.Value == TileType.chest) {
+12      toInstantiate = chestTile;
+13      instance = Instantiate (toInstantiate, new Vector3 (tile.Key.x, tile.Key.y, 0f), Quaternion.identity) as GameObject;
+14      instance.transform.SetParent (dungeonBoardHolder);
+15    }
+16    else if (tile.Value == TileType.enemy) {
+17      toInstantiate = enemy;
+18      instance = Instantiate (toInstantiate, new Vector3 (tile.Key.x, tile.Key.y, 0f), Quaternion.identity) as GameObject;
+19      instance.transform.SetParent (dungeonBoardHolder);
+20    }
+21  }
+...</pre></div><p>The only change we need to make will take place in the <code class="literal">SetDungeonBoard</code> function. Note that <span class="emphasis"><em>Code Snip 7.5</em></span> does not show the whole function. On <code class="literal">lines 16-20</code>, we will need to check whether the tile has spawned an enemy and if so, we place that enemy on the board.</p><p>Lastly, we need to run everything in the <code class="literal">GameManager</code> class. We will be handling where the enemies are spawned and when they are cleaned up here. Go ahead and open the <code class="literal">GameManager.cs</code> script for <a id="id304" class="indexterm"></a>editing. <span class="emphasis"><em>Code Snip 7.6</em></span> shows the changes<a id="id305" class="indexterm"></a> we will be making:</p><div class="informalexample"><pre class="programlisting">1 private bool playerInDungeon;
+2
+3 void InitGame() {
+4   enemies.Clear();
+5   boardScript.BoardSetup();
+6   playerInDungeon = false;
+7 }
+8
+9 IEnumerator MoveEnemies() {
+10  enemiesMoving = true;
+11  yield return new WaitForSeconds(turnDelay);
+12  if (enemies.Count == 0) {
+13    yield return new WaitForSeconds(turnDelay);
+14  }
+15  List&lt;Enemy&gt; enemiesToDestroy = new List&lt;Enemy&gt;();
+16  for (int i = 0; i &lt; enemies.Count; i++) {
+17    if (playerInDungeon) {
+18      if ((!enemies[i].getSpriteRenderer().isVisible)) {
+19        if (i == enemies.Count - 1)
+20          yield return new WaitForSeconds(enemies[i].moveTime); 
+21        continue;
+22      }
+23    } else {
+24      if ((!enemies[i].getSpriteRenderer().isVisible) || (!boardScript.checkValidTile (enemies[i].transform.position))) {
+25        enemiesToDestroy.Add(enemies[i]);
+26        continue;
+27      }
+28    }
+...
+29 public void enterDungeon () {
+30   dungeonScript.StartDungeon ();
+31   boardScript.SetDungeonBoard (dungeonScript.gridPositions, dungeonScript.maxBound, dungeonScript.endPos);
+32   playerScript.dungeonTransition = false;
+33   playerInDungeon = true;
+34
+35  for (int i = 0; i &lt; enemies.Count; i++) {
+36    Destroy(enemies[i].gameObject);
+37  }
+38  enemies.Clear ();
+39 }
+40
+41 public void exitDungeon () {
+42   boardScript.SetWorldBoard ();
+43   playerScript.dungeonTransition = false;
+44   playerInDungeon = false;
+45   enemies.Clear ();
+46 }</pre></div><p>Let's jump right in to what's happening in <span class="emphasis"><em>Code Snip 7.6</em></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 1</code>: We<a id="id306" class="indexterm"></a> are adding a <code class="literal">bool</code> variable to flag when the player is in a dungeon. We are going to need this to determine whether we want to stop the movement of offscreen enemies and destroy them, removing them from the game</p></li><li style="list-style-type: disc"><p><code class="literal">Line 6</code>: Inside the <code class="literal">InitGame</code> function, we are going to set the <code class="literal">playerInDungeon</code> variable initially to <code class="literal">false</code>, since we always start on the world board.</p></li><li style="list-style-type: disc"><p><code class="literal">Lines 17-23</code>: In the<a id="id307" class="indexterm"></a> <code class="literal">MoveEnemies</code> function, we are going to create a conditional statement that if <code class="literal">playerInDungeon</code> is true, then we want to simply halt the enemy movement until they are back on screen. Otherwise, we add them to the destroy list.</p></li><li style="list-style-type: disc"><p><code class="literal">Lines 19-20</code>: This nested condition is important. If we are in the dungeon and all of the enemies are off screen (when we first enter, this will most likely be the case) we need to add a time delay. This condition will cause a time delay on the very last enemy to go through the check. If this condition wasn't present, we would see the player moving too fast and taking half steps that cause a recalculation and jitter effect.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 33</code>: During the <code class="literal">enterDungeon</code> function is when we will set the <code class="literal">playerInDungeon</code> to <code class="literal">true</code>.</p></li><li style="list-style-type: disc"><p><code class="literal">Lines 35-38</code>: When we enter a dungeon, we'll want to clear all the enemies from the world board.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 40</code>: During the <code class="literal">exitDungeon</code> function is when we will set the <code class="literal">playerInDungeon</code> to <code class="literal">false</code>.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 45</code>: Since the Dungeon Board is completely destroyed upon exiting, all we need to do to clean up the enemies is clear the list.</p></li></ul></div><p>And now we have enemies spawning on the Dungeon Board as well. We can give this a quick test by playing the game and entering a dungeon. You should check whether you can move far enough<a id="id308" class="indexterm"></a> away from an enemy to place it off screen and <a id="id309" class="indexterm"></a>discontinue its movement. You can then move back and see that the enemy remained in place.</p><div class="mediaobject"><img src="/graphics/9781785287473/graphics/B04808_07_05.jpg" /><div class="caption"><p>Enemies on Dungeon Board</p></div></div><p>There are now plenty of enemies in our game to challenge the player. However, at the moment, the player can only flee. We made awesome modular weapons in the previous chapter for this very reason, so it's time to put them to work.</p></div>

@@ -1,0 +1,79 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec49"></a>Logging in to our game via Facebook</h2></div></div><hr /></div><p>One of the things we can do using the Facebook API is allow our users to log in to the game using their Facebook account. Then, we can use their name and image automatically within our project:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Let's first open up our Main Menu level by going to the <strong class="userinput"><code>Project</code></strong> window and open the <code class="literal">Assets/Scenes</code> folder and then double-click on the <code class="literal">MainMenu</code> file.</li><li>From there, let's click on the <strong class="userinput"><code>2D</code></strong> button to go into 2D mode if you haven't done so previously.</li></ol></div><p>What we will do is remove the original menu and instead have a button for players to log in via Facebook or play as a guest when the game starts.</p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Go to the <strong class="userinput"><code>Hierarchy</code></strong> window and select the <strong class="userinput"><code>Canvas - Scale Physical</code></strong> object and expand it. Select the Panel child and rename it <code class="literal">Menu Options</code>.</li><li>Then, duplicate it by pressing <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span>. Then, rename the newly created object <code class="literal">Facebook Login</code>. Select the <strong class="userinput"><code>Menu Options</code></strong> again and then disable it by going to the <strong class="userinput"><code>Inspector</code></strong> tab and then clicking on the check beside its name:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/f76797de-b724-4579-a6b8-a7e5513ee2ce.png" /></div><p>We will have the <code class="literal">Facebook Login</code> object turn the menu on when needed.</p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Next, open the <strong class="userinput"><code>Facebook Login</code></strong> options and remove the Restore and Button objects. Click on the <strong class="userinput"><code>Remove Ads</code></strong> button, right-click on the IAP Button component, and then select Remove component. Duplicate the Remove Ads button by pressing the <span class="emphasis"><em>Ctrl</em></span> + <span class="emphasis"><em>D</em></span> keys. Then, name those two buttons <strong class="userinput"><code>Facebook Login</code></strong> and <strong class="userinput"><code>Continue as Guest</code></strong>, changing the text as well:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/fb4a0518-fe59-47e4-b80c-d52f50a4091b.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Now that we have the buttons working correctly, we need to write the script that will allow us to log in. Go to the <code class="literal">Scripts</code> folder and open our <code class="literal">Main Menu Behaviour</code> script.</li><li>We will use the <code class="literal">List</code> class to hold the permissions we want to access on Facebook and the content of the <code class="literal">FB</code> class in the Facebook SDK. So, to do that, we'll first add the following to the top of the script:</li></ol></div><pre class="programlisting">using System.Collections.Generic; // List 
+using Facebook.Unity; // FB</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Now, add the following code within the class:</li></ol></div><pre class="programlisting">#region Facebook 
+ 
+        public void Awake() 
+    { 
+        // We only call FB Init once, so check if it has been called  
+        // already 
+        if (!FB.IsInitialized) 
+        { 
+            FB.Init(OnInitComplete, OnHideUnity); 
+        } 
+    } 
+    /// &lt;summary&gt; 
+    /// Once initialized, will inform if logged in on Facebook 
+    /// &lt;/summary&gt; 
+    void OnInitComplete() 
+    { 
+        if (FB.IsLoggedIn) 
+        { 
+            print("Logged into Facebook"); 
+ 
+            // Close Login and open Main Menu 
+            ShowMainMenu(); 
+        } 
+    } 
+ 
+    /// &lt;summary&gt; 
+    /// Called whenever Unity loses focus 
+    /// &lt;/summary&gt; 
+    /// &lt;param name="active"&gt;If the gmae is currently active&lt;/param&gt; 
+    void OnHideUnity(bool active) 
+    { 
+        // Set TimeScale based on if the game is paused 
+        Time.timeScale = (active) ? 1 : 0; 
+    } 
+ 
+    /// &lt;summary&gt; 
+    /// Attempts to log in on Facebook 
+    /// &lt;/summary&gt; 
+    public void FacebookLogin() 
+    { 
+        List&lt;string&gt; permissions = new List&lt;string&gt;(); 
+ 
+        // Add permissions we want to have here 
+        permissions.Add("public_profile"); 
+ 
+        FB.LogInWithReadPermissions(permissions, FacebookCallback); 
+    } 
+ 
+    /// &lt;summary&gt; 
+    /// Called once facebook has logged in, or not 
+    /// &lt;/summary&gt; 
+    /// &lt;param name="result"&gt;The result of our login request&lt;/param&gt; 
+    void FacebookCallback(IResult result) 
+    { 
+        if (result.Error == null) 
+        { 
+            OnInitComplete(); 
+        } 
+        else 
+        { 
+            print(result.Error); 
+        } 
+    } 
+ 
+    [Header("Object References")] 
+    public GameObject mainMenu; 
+    public GameObject facebookLogin; 
+ 
+    public void ShowMainMenu() 
+    { 
+        if (facebookLogin != null &amp;&amp; mainMenu != null) 
+        { 
+            facebookLogin.SetActive(false); 
+            mainMenu.SetActive(true); 
+        } 
+    } 
+ 
+#endregion </pre><p>In this case, we are accessing the player's public profile, which contains information such as their name and their profile picture.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note70"></a>Note</h3><p>For all of the properties that we can get access to, check out <span><a class="ulink" href="https://developers.facebook.com/docs/facebook-login/permissions#reference-public_profile" target="_blank">https://developers.facebook.com/docs/facebook-login/permissions#reference-public_profile</a>.</span></p></div><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Save your script and go to the <strong class="userinput"><code>Facebook Login</code></strong> button and change the button's <strong class="userinput"><code>OnClick()</code></strong> action to now call your function by clicking on the + button and then dragging and dropping the <strong class="userinput"><code>Main Menu</code></strong> object in and then selecting <strong class="userinput"><code>Main Menu Behaviour</code></strong> | <strong class="userinput"><code>Facebook Login</code></strong> instead:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/1aa54f1d-fe4c-4034-b402-2a6a7970cfd3.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>Then, on the <strong class="userinput"><code>Continue as Guest</code></strong> button under the <strong class="userinput"><code>Button</code></strong>component, go to the <strong class="userinput"><code>On Click ()</code></strong> section and then click on the <strong class="userinput"><code>+</code></strong> button. Drag and drop the <strong class="userinput"><code>Main Menu</code></strong> object into it and select the <strong class="userinput"><code>MainMenuBehaviour</code></strong> | <strong class="userinput"><code>ShowMainMenu</code></strong> function:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/df173237-024e-44b7-b919-3f4bf845f234.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>Finally, we will need to set the variables we created. Select the <strong class="userinput"><code>Main Menu</code></strong> object in the <strong class="userinput"><code>Hierarchy</code></strong> window and then set the <strong class="userinput"><code>Main Menu</code></strong> and <strong class="userinput"><code>Facebook Login</code></strong> properties:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/5ba393c9-c5ec-40b6-bbf6-2716f9995636.png" /></div><p>Ensure that the <strong class="userinput"><code>Facebook Login</code></strong> is set to the panel object holding both buttons.</p><div class="orderedlist"><ol class="orderedlist arabic" start="12" type="1"><li>Save your scene and start the game and click on the <strong class="userinput"><code>Facebook Login</code></strong> button:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/ed73c154-d0ae-484c-afda-135e52bc4cfa.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note71"></a>Note</h3><p>To see everything properly within the editor, it's a good idea to maximize the <strong class="userinput"><code>Game</code></strong> tab, which you can do by right-clicking on the Game tab and selecting <strong class="userinput"><code>Maximize</code></strong> or checking the <strong class="userinput"><code>Maximize On Play</code></strong> option on the toolbar.</p></div><p>Now, you should see a menu, which is asking for a user access token, a value that every profile has that we can associate with. We'll need to go to Facebook to get that, so that's what we'll do next.</p><div class="orderedlist"><ol class="orderedlist arabic" start="13" type="1"><li>Click on the <strong class="userinput"><code>Find Access Token</code></strong> page, and a web browser will open with a new page:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/c72cd9a9-c14b-4e29-90f8-827750887af0.png" /></div><p></p><div class="orderedlist"><ol class="orderedlist arabic" start="14" type="1"><li>You'll then need to click on the need to grant permissions link and then on <strong class="userinput"><code>Continue</code></strong> and you'll see a string of characters under user token. Copy that and then paste it into Unity and then click on the <strong class="userinput"><code>Send Success</code></strong> button:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/e6127be2-47f9-4bfb-89e0-a8c70f3bf623.png" /></div><p>Now, you'll note that the console has printed that we've logged into Facebook and the menu has closed when we've sent the key.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note72"></a>Note</h3><p>For more information on user access tokens, check out <a class="ulink" href="https://developers.facebook.com/docs/facebook-login/access-tokens/#usertokens" target="_blank">https://developers.facebook.com/docs/facebook-login/access-tokens/#usertokens</a>.</p></div></div>

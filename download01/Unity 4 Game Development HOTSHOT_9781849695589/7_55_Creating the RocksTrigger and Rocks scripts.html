@@ -1,0 +1,185 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec60"></a>Creating the RocksTrigger and Rocks scripts</h2></div></div><hr /></div><p>Now, we are at the last step of this project. We will create the <code class="literal">RocksTrigger</code> and <code class="literal">Rocks</code> scripts to make the rock fall down.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec132"></a>Engage thrusters</h3></div></div></div><p>Let's create the <a id="id1185" class="indexterm"></a>
+<code class="literal">RocksTrigger</code> script first by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to the <code class="literal">Scripts</code> folder in the <span class="strong"><strong>Project</strong></span> view to create the script by right-clicking and navigating to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span>  (for C# users) or <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for JavaScript users) and rename it <code class="literal">RocksTrigger</code>.</p></li><li><p>Double-click on the <span class="strong"><strong>RocksTrigger</strong></span> script to open it in MonoDevelop and start adding the script as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+private var _isTrigger : boolean = false;
+static var onTrigger : JSDelegate = new JSDelegate();
+
+function OnTriggerEnter(collider : Collider) : void {
+  if ((collider.transform.tag == "Player") &amp;&amp; (_isTrigger == false)) {
+    _isTrigger = true;
+    onTrigger.Invoke();
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class RocksTrigger : MonoBehaviour {
+  bool _isTrigger = false;
+  public delegate void OnRocksTrigger ();
+  public static event OnRocksTrigger onTrigger;
+
+  public void OnTriggerEnter(Collider collider) {
+    if ((collider.transform.tag == "Player") &amp;&amp; (_isTrigger == false)) {
+      _isTrigger = true;
+      onTrigger();
+    }
+  }
+}</pre></div><p>Here, we've used the <code class="literal">delegate</code> and <code class="literal">event</code> methods (available only in C#), which basically call the <code class="literal">onTrigger()</code> function on any object that has the event listener. However, in JavaScript, we don't have the <code class="literal">delegate</code> and <code class="literal">event</code> methods, so we use the custom class called <code class="literal">JSDelegate</code>, which<a id="id1186" class="indexterm"></a> is already present in with the project's package. We can go to the <code class="literal">Chapter7/Scripts/Javascript/Utils</code> folder in the <span class="strong"><strong>Project</strong></span> view and open <code class="literal">JSDelegate</code> to check out this class. We will <a id="id1187" class="indexterm"></a>get more details on this in the <span class="emphasis"><em>Classified intel</em></span> section.</p></li><li><p>We already have the <code class="literal">trigger</code> script. Next, we need the <code class="literal">listener</code> script to listen to the trigger and make the rocks fall down. We will create a new script by going to the <code class="literal">Scripts</code> folder in the <span class="strong"><strong>Project</strong></span> view to create a script by right-clicking and navigating to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C#</strong></span> (for C# users) or <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Javascript</strong></span> (for JavaScript user) and rename it <code class="literal">Rocks</code>.</p></li><li><p>Double-click<a id="id1188" class="indexterm"></a> on the <a id="id1189" class="indexterm"></a>
+<span class="strong"><strong>Rocks</strong></span> script to open it in MonoDevelop and start adding the script as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+#pragma strict
+@Range(-100, 0)
+var downForce : int = -80;
+private var _rigidbodys : Rigidbody[];
+
+function OnEnable () : void
+{
+  RocksTrigger.onTrigger.Add(OnTrigger);
+}
+
+function OnDisble () : void
+{
+  RocksTrigger.onTrigger.Remove(OnTrigger);
+}
+
+function OnTrigger () : void
+{
+  EnabledRigidbody();
+}
+
+function Awake () : void {
+  _rigidbodys = gameObject.GetComponentsInChildren.&lt;Rigidbody&gt;();
+}
+
+function Start () : void {
+  DisabledRigidBody();
+}
+
+function EnabledRigidbody () : void {
+  for (var r : Rigidbody in _rigidbodys) {
+    r.useGravity = true;
+    r.isKinematic = false;
+    r.AddForce(new Vector3(0,downForce,0),ForceMode.VelocityChange);
+  }
+}
+
+function DisabledRigidBody() : void {
+  for (var r : Rigidbody in _rigidbodys) {
+    r.useGravity = false;
+    r.isKinematic = true;
+  }
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+using UnityEngine;
+using System.Collections;
+
+public class Rocks : MonoBehaviour {
+  [Range(-100, 0)]
+  public int downForce = -80;
+
+  Rigidbody[] _rigidbodys;
+
+  void OnEnable ()
+  {
+    RocksTrigger.onTrigger += OnTrigger;
+  }
+
+  void OnDisble ()
+  {
+    RocksTrigger.onTrigger -= OnTrigger;
+  }
+
+  void OnTrigger ()
+  {
+    EnabledRigidbody();
+  }
+
+  void Awake ()  {
+    _rigidbodys = gameObject.GetComponentsInChildren&lt;Rigidbody&gt;();
+  }
+  
+  void Start ()  {
+    DisabledRigidBody();
+  }
+  
+  public void EnabledRigidbody () {
+    foreach (Rigidbody r in _rigidbodys) {
+      r.useGravity = true;
+      r.isKinematic = false;
+      r.AddForce(new Vector3(0,downForce,0),ForceMode.VelocityChange);
+    }
+  }
+  
+  public void DisabledRigidBody() {
+    foreach (Rigidbody r in _rigidbodys) {
+      r.useGravity = false;
+      r.isKinematic = true;
+    }
+  }
+}</pre></div><p>In the preceding function, we create the event listener and then apply a down force to <a id="id1190" class="indexterm"></a>make the rock fall down faster by using the <code class="literal">OnEnable()</code> and <code class="literal">OnDisable()</code> functions to add and remove<a id="id1191" class="indexterm"></a> the event listener. <code class="literal">OnEnable()</code> gets called every time the game object is enabled or active. On the other hand, <code class="literal">OnDisable()</code> will be called every time the game object is disabled or inactive.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip35"></a>Tip</h3><p>We also use the <code class="literal">[Range(Min,Max)]</code> function in C# or <code class="literal">@Range(Min,Max)</code> followed by the <code class="literal">int</code>, <code class="literal">float</code>, or <code class="literal">double</code> variables to create the limit-value slider in the editor.</p></div><p>This is a very convenient way to create the slider without creating a custom inspector as we did in <a class="link" href="#" linkend="ch06">Project 6</a>, <span class="emphasis"><em>Make AI Appear Smart</em></span>. We can see the result in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_28.jpg" /></div></li><li><p>Now we are finished with the script. We will go back to Unity, go to the <span class="strong"><strong>Hierarchy</strong></span> view, and click on the <span class="strong"><strong>TriggerArea</strong></span> game object. Then, we will drag the <span class="strong"><strong>RocksTrigger</strong></span> script on this game object, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_29.jpg" /></div></li><li><p>Still in the <span class="strong"><strong>Hierarchy</strong></span> view, we will click on the <span class="strong"><strong>Break</strong></span> game object and then drag the <span class="strong"><strong>Rocks</strong></span><a id="id1192" class="indexterm"></a> script on it, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_30.jpg" /></div><p>Now that we are<a id="id1193" class="indexterm"></a> done with the project, we can click on play to see the result. We will see that if we are entering the trigger area, the rocks will start falling down, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849695589/graphics/5589OT_07_31.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec133"></a>Objective complete – mini debriefing</h3></div></div></div><p>We just created the <code class="literal">RocksTrigger</code> and <code class="literal">Rocks</code> scripts, which are used to trigger the <code class="literal">rockslide</code> event when the player hits the trigger area. First, we created the <code class="literal">Rocks</code> script and used <code class="literal">OnTriggerEnter()</code> to check whether the <a id="id1194" class="indexterm"></a>player has entered the trigger area or not. Then, we call the <code class="literal">onTrigger()</code> event function to send the event to the listener, which is <code class="literal">RocksTrigger</code>, using the <code class="literal">delegate</code> and <code class="literal">event</code> functions in C#.</p><p>However, there are no <code class="literal">delegate</code> and <code class="literal">event</code> functions in Unity JavaScript. So, we have to use our custom script, which is<a id="id1195" class="indexterm"></a> the <code class="literal">JSDelegate</code> script available in the <code class="literal">Chapter7/Scripts/Javascript</code> folder in the <span class="strong"><strong>Project</strong></span> view, which already comes with the project's package.</p><p>Next, we listen to the trigger by adding the following script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>// Unity JavaScript user:</strong></span>
+
+function OnEnable () : void
+{
+  RocksTrigger.onTrigger.Add(OnTrigger);
+}
+
+function OnDisble () : void
+{
+  RocksTrigger.onTrigger.Remove(OnTrigger);
+}
+
+function OnTrigger () : void
+{
+  EnabledRigidbody();
+}
+
+
+<span class="strong"><strong>// C# user:</strong></span>
+
+void OnEnable ()
+{
+  RocksTrigger.onTrigger += OnTrigger;
+}
+
+void OnDisble ()
+{
+  RocksTrigger.onTrigger -= OnTrigger;
+}
+
+void OnTrigger ()
+{
+  EnabledRigidbody();
+}</pre></div><p>We used the <code class="literal">OnEnable()</code> function<a id="id1196" class="indexterm"></a> to add a function that will be called when the event is triggered. We use the <a id="id1197" class="indexterm"></a>
+<code class="literal">OnDisable()</code> function to<a id="id1198" class="indexterm"></a> remove a function when the game object is inactive. Then, the <code class="literal">OnTrigger()</code> function<a id="id1199" class="indexterm"></a> is the function that will be called when the event is triggered, which we call the <code class="literal">EnabledRigidbody()</code> function, to make the<a id="id1200" class="indexterm"></a> rock slide.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip36"></a>Tip</h3><p>The <code class="literal">delegate</code> and <code class="literal">event</code> methods are better than the <code class="literal">BroadcastMessage</code> method that we've used in <a class="link" href="#" linkend="ch05">Project 5</a>, <span class="emphasis"><em>Build a Rocket Launcher!</em></span>, because we don't have to set up the listener as a child of the event trigger. Also, the <code class="literal">BroadcastMessage</code> method is<a id="id1201" class="indexterm"></a> slower than the <code class="literal">delegate</code> and <code class="literal">event</code> methods because it needs to iterate to all the children in this game object to be able to call the function.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec134"></a>Classified intel</h3></div></div></div><p>In this section, we have used the <code class="literal">delegate</code> and <code class="literal">event</code> functions to<a id="id1202" class="indexterm"></a> set the event and event listener. The basic idea of the <code class="literal">delegate</code> and <code class="literal">event</code> functions in<a id="id1203" class="indexterm"></a> C# is that we can call the functions from other scripts by having it to listen to the event function. We do this by first creating the <code class="literal">delegate</code> function as follows:</p><div class="informalexample"><pre class="programlisting">public delegate void OnDelegateFunction();</pre></div><p>Then, we create a <code class="literal">static</code> event of the <code class="literal">delegate</code> function that we just created:</p><div class="informalexample"><pre class="programlisting">public static event OnDelegateFunction myEvent;</pre></div><p>We use <code class="literal">static</code> because we want to have the same event for every listener. This way, we can have multiple listeners listen to the same event. Next, we trigger this event by calling <code class="literal">myEvent();</code>.</p><p>Then, we use the plus (<span class="emphasis"><em>+</em></span>) sign to add the function to the event and use the negative (<span class="emphasis"><em>-</em></span>) sign to remove it from the event that is calling.</p><p>For a Unity JavaScript user, if we go to the <code class="literal">Chapter7/Scripts/Javascript</code> folder in the <span class="strong"><strong>Project</strong></span> view, we will see the <code class="literal">JSDelegate</code> script there. Double-click on this script to open it and you will see the following code:</p><div class="informalexample"><pre class="programlisting">import System.Collections.Generic;
+
+class JSDelegate {
+  private var _callbacks : List.&lt;Function&gt; = new List.&lt;Function&gt;();
+  function Add (callback : Function) : void {
+    _callbacks.Add(callback);
+  }
+  function Remove (callback : Function) : void {
+    _callbacks.Remove(callback);
+  }
+  function Clear () : void {
+    _callbacks.Clear();
+  }
+  function Invoke () : void {
+    for (var callback in _callbacks) {
+      callback();
+    }
+  }
+}</pre></div><p>If we check out this script, we will see that this script uses <code class="literal">List&lt;T&gt;</code>, which is available in the C# generic library, so we need to use <code class="literal">import System.Collections.Generic;</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note84"></a>Note</h3><p>
+<code class="literal">List&lt;T&gt;</code> is basically similar to JavaScript's the <code class="literal">Array</code> or <code class="literal">ArrayList</code> type, but we need to specify the <code class="literal">&lt;T&gt;</code> type. This<a id="id1204" class="indexterm"></a> also performs significantly faster than JavaScript's <code class="literal">Array</code> and <code class="literal">ArrayList</code>. A good link to understand which type of array to use in Unity is as follows:</p><p>
+<a class="ulink" href="http://wiki.unity3d.com/index.php?title=Which_Kind_Of_Array_Or_Collection_Should_I_Use?" target="_blank">http://wiki.unity3d.com/index.php?title=Which_Kind_Of_Array_Or_Collection_Should_I_Use?</a>
+</p></div><p>We will see that<a id="id1205" class="indexterm"></a> we have <code class="literal">List</code> to store the <code class="literal">Function</code> type. Then, we have <code class="literal">Add</code>, <code class="literal">Remove</code>, <code class="literal">Clear</code>, and <code class="literal">Invoke</code> functions. The <code class="literal">Invoke()</code> function is basically to call all the functions in <code class="literal">List</code>. This is similar to the <code class="literal">delegate</code> and <code class="literal">event</code> functions in C#.</p></div></div>

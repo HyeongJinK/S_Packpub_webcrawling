@@ -1,0 +1,91 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec12"></a>Conditional statements</h2></div></div><hr /></div><p>Variables change in <a id="id23" class="indexterm"></a>potentially many different circumstances: when the player changes their position, when enemies are destroyed, when the level changes, and so on. Consequently, you'll frequently need to check the value of a variable to branch the execution of your scripts that perform different sets of actions, depending on the value. For example, if <code class="literal">PlayerHealth</code> reaches 0 percent, you'll perform a death sequence, but if <code class="literal">PlayerHealth</code> is at 20 percent, you might only display a warning message. In this specific example, the <code class="literal">PlayerHealth</code> variable drives the script in a specified direction. C# offers two main conditional statements to achieve a program branching like this. These are the <code class="literal">if</code> statement and the <code class="literal">Switch</code> statement. Both are highly useful.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec08"></a>The if statement</h3></div></div></div><p>The <code class="literal">if</code> statement has various forms. The most basic form checks for a condition and will perform a subsequent block <a id="id24" class="indexterm"></a>of code if, and only if, that<a id="id25" class="indexterm"></a> condition is <code class="literal">true</code>. Consider the following code sample 1-2:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 
+04 public class MyScriptFile : MonoBehaviour 
+05 {
+06     public string PlayerName = "";
+07     public int PlayerHealth = 100;
+08     public Vector3 Position = Vector3.zero;
+09 
+10     // Use this for initialization
+11     void Start () {
+12     }
+13 
+14     // Update is called once per frame
+15     void Update () 
+16     {
+17         //Check player health - the braces symbol {} are option for one-line if-statements
+18         if(PlayerHealth == 100)
+19         {
+20         Debug.Log ("Player has full health");
+21         }
+22     }
+23 }</pre></div><p>The preceding code is executed like all other types of code in Unity, by pressing the <span class="strong"><strong>Play</strong></span> button from the toolbar, as long as the script file has previously been instantiated on an object in the active scene. The <code class="literal">if</code> statement at line 18 continually checks the <code class="literal">PlayerHealth</code> class variable for its current value. If the <code class="literal">PlayerHealth</code> variable is exactly equal to (<code class="literal">==</code>) <code class="literal">100</code>, then the code inside the <code class="literal">{}</code> braces (in lines 19–21) will be executed. This works because all conditional checks result in a Boolean value of either <code class="literal">true</code> or <code class="literal">false</code>; the<a id="id26" class="indexterm"></a> conditional statement is really checked to see whether the queried condition (<code class="literal">PlayerHealth == 100</code>) is <code class="literal">true</code>. The code inside the braces can, in theory, span across multiple lines<a id="id27" class="indexterm"></a> and expressions. However, here, there is just a single line in line 20: the <code class="literal">Debug.Log</code> Unity function outputs the <span class="strong"><strong>Player has full health</strong></span> string to the console, as shown in the following screenshot. Of course, the <code class="literal">if</code> statement could potentially have gone the other way, that is, if <code class="literal">PlayerHealth</code> was not equal to <code class="literal">100</code> (perhaps, it was <code class="literal">99</code> or <code class="literal">101</code>), then no message would be printed. Its execution always depends on the previous <code class="literal">if</code> statement evaluating to <code class="literal">true</code>.</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_01_06.jpg" /><div class="caption"><p>The Unity Console is useful for printing and viewing debug messages</p></div></div><p>More<a id="id28" class="indexterm"></a> information on the <code class="literal">if</code> statements, the <code class="literal">if-else</code> statement, and<a id="id29" class="indexterm"></a> their usage in C# can be found online at <a class="ulink" href="http://msdn.microsoft.com/en-GB/library/5011f09h.aspx" target="_blank">http://msdn.microsoft.com/en-GB/library/5011f09h.aspx</a>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note05"></a>Note</h3><p>
+<span class="strong"><strong>Unity Console</strong></span>
+</p><p>As you can see in the preceding screenshot, the console is a debugging tool in Unity. It's a place where <a id="id30" class="indexterm"></a>messages can be printed from the code using the <code class="literal">Debug.Log</code> statement (or the<a id="id31" class="indexterm"></a> <code class="literal">Print</code> function) to be viewed by developers. They are helpful to<a id="id32" class="indexterm"></a> diagnose issues at runtime and compile time. If you get a compile time or runtime error, it should be listed in the <span class="strong"><strong>Console</strong></span> tab. The <span class="strong"><strong>Console</strong></span> tab should be visible in the Unity Editor by default, but it can be displayed manually by selecting <span class="strong"><strong>Console</strong></span> in<a id="id33" class="indexterm"></a> the <span class="strong"><strong>Window</strong></span> menu from the Unity application file menu. More information on the <code class="literal">Debug.Log</code> function can be found at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Debug.Log.html" target="_blank">http://docs.unity3d.com/ScriptReference/Debug.Log.html</a>.</p></div><p>You can, of course, check for more conditions than just equality (<code class="literal">==</code>), as we did in code sample 1-2. You can use the <code class="literal">&gt;</code> and <code class="literal">&lt;</code> operators to check whether a variable is greater than or less than another value, respectively. You can also use the <code class="literal">!=</code> operator to check whether a variable is not equal to another value. Further, you can even combine multiple conditional checks into the same <code class="literal">if</code> statement using the <code class="literal">&amp;&amp;</code> (AND) operator and the <code class="literal">||</code> (OR) operator. For example, check out the following <code class="literal">if</code> statement. It performs the code block between the <code class="literal">{}</code> braces only if the <code class="literal">PlayerHealth</code> variable is between <code class="literal">0</code> and <code class="literal">100</code> and is not equal to <code class="literal">50</code>, as shown here:</p><div class="informalexample"><pre class="programlisting">if(PlayerHealth &gt;= 0 &amp;&amp; PlayerHealth &lt;= 100 &amp;&amp; PlayerHealth !=50)
+{
+Debug.Log ("Player has full health");
+}</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note06"></a>Note</h3><p>
+<span class="strong"><strong>The if-else statement</strong></span>
+</p><p>One variation <a id="id34" class="indexterm"></a>of the <code class="literal">if</code> statement is the <code class="literal">if-else</code> statement. The <code class="literal">if</code> statement performs a code block if its condition evaluates to <code class="literal">true</code>. However, the <code class="literal">if-else</code> statement extends this. It would perform an <code class="literal">X</code> <a id="id35" class="indexterm"></a>code block if its <a id="id36" class="indexterm"></a>condition is <code class="literal">true</code> and a <code class="literal">Y</code> code block if its condition is <code class="literal">false</code>:</p><div class="informalexample"><pre class="programlisting">if(MyCondition)
+{
+//X - perform my code if MyCondition is true
+}
+else
+{
+//Y – perform my code if MyCondition is false
+}</pre></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec09"></a>The switch statement</h3></div></div></div><p>As we've seen, the <code class="literal">if</code> statement is useful to determine whether a single and specific condition is <code class="literal">true</code> or <code class="literal">false</code> and to perform a specific code block on the basis of this. The <code class="literal">switch</code> statement, in<a id="id37" class="indexterm"></a> contrast, lets you check a variable for multiple possible conditions or states, and then lets you branch the program in one of many possible directions, not just one or two as is<a id="id38" class="indexterm"></a> the case with <code class="literal">if</code> statements. For example, if you're creating an enemy character that can be in one of the many possible states of action (<code class="literal">CHASE</code>, <code class="literal">FLEE</code>, <code class="literal">FIGHT</code>, <code class="literal">HIDE</code>, and so on), you'll probably need to branch your code appropriately to handle each state specifically. The <code class="literal">break</code> keyword is used to exit from a state returning to the end of the <code class="literal">switch</code> statement. The following code sample 1-3 handles a sample enemy using enumerations:</p><div class="informalexample"><pre class="programlisting">01 using UnityEngine;
+02 using System.Collections;
+03 
+04 public class MyScriptFile : MonoBehaviour 
+05 {
+06     //Define possible states for enemy using an enum
+07     public enum EnemyState {CHASE, FLEE, FIGHT, HIDE};
+08 
+09     //The current state of enemy
+10     public EnemyState ActiveState = EnemyState.CHASE;
+11 
+12     // Use this for initialization
+13     void Start () {
+14     }
+15 
+16     // Update is called once per frame
+17     void Update () 
+18     {
+19          //Check the ActiveState variable
+20          switch(ActiveState)
+21          {
+22          case EnemyState.FIGHT:
+23          {
+24                //Perform fight code here
+25                Debug.Log ("Entered fight state");
+26          }
+27                break;
+28 
+29 
+30          case EnemyState.FLEE:
+31          case EnemyState.HIDE:
+32          {
+33               //Flee and hide performs the same behaviour
+34               Debug.Log ("Entered flee or hide state");
+35          }
+36               break;
+37 
+38          default:
+39          {
+40               //Default case when all other states fail
+41               //This is used for the chase state
+42               Debug.Log ("Entered chase state");
+43           }
+44               break;
+45           }
+46     }
+47 }</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note07"></a>Note</h3><p>
+<span class="strong"><strong>Enumerations</strong></span>
+</p><p>This line 07 in code sample <a id="id39" class="indexterm"></a>1-3 declares an enumeration (enum) named <code class="literal">EnemyState</code>. An enum is a special structure used to store a range of potential values for one or more other variables. It's not a variable itself per se, but a way of specifying the limits of values that a <a id="id40" class="indexterm"></a>variable might have. In code sample 1-3, the <code class="literal">ActiveState</code> variable declared in line 10 makes use of <code class="literal">EnemyState</code>. Its value can be any valid value from the <code class="literal">ActiveState</code> enumeration. Enums are a great way of helping you validate your variables, limiting their values within a specific range and <a id="id41" class="indexterm"></a>series of options.</p></div><p>Another great<a id="id42" class="indexterm"></a> benefit of enums is that variables based on them have their values appear as selectable options from drop-down boxes in the Object Inspector, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781784390655/graphics/0655OT_01_07.jpg" /><div class="caption"><p>Enumerations offer you drop-down options for your variables from the Object Inspector</p></div></div><p>More information on enums and their<a id="id43" class="indexterm"></a> usage in C# can be found online at <a class="ulink" href="http://msdn.microsoft.com/en-us/library/sbbt4032.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/sbbt4032.aspx</a>.</p><p>The following are the comments for code sample 1-3:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 20</strong></span>: The <code class="literal">switch</code> statement begins. Parentheses, <code class="literal">()</code>, are used to select the variable whose value or state must be checked. In this case, the <code class="literal">ActiveState</code> variable is being queried.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 22</strong></span>: The first case statement is made inside the <code class="literal">switch</code> statement. The following block of code (lines 24 and 25) will be executed if the <code class="literal">ActiveState</code> variable is set to <code class="literal">EnemyState.Fight</code>. Otherwise, the code will be ignored.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 30 and 31</strong></span>: Here, two case statements follow one another. The code block in lines 33 and 34 will be executed if, and only if, <code class="literal">ActiveState</code> is either <code class="literal">EnemyState.Flee</code> or <code class="literal">EnemyState.Hide</code>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Line 38</strong></span>: The default statement is optional for a <code class="literal">switch</code> statement. When included, it will be entered if no other case statements are <code class="literal">true</code>. In this case, it would apply if <code class="literal">ActiveState</code> is <code class="literal">EnemyState.Chase</code>.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Lines 27, 36, and 44</strong></span>: The <code class="literal">break</code> statement should occur at the end of a case statement. When it is<a id="id44" class="indexterm"></a> reached, it will exit the complete <code class="literal">switch</code> statement to which it belongs, resuming program execution in the line after the <code class="literal">switch</code> statement, in this case, line 45.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip03"></a>Tip</h3><p>More information on the <a id="id45" class="indexterm"></a>
+<code class="literal">switch</code> statement and its usage in C# can be found at <a class="ulink" href="http://msdn.microsoft.com/en-GB/library/06tc147t.aspx" target="_blank">http://msdn.microsoft.com/en-GB/library/06tc147t.aspx</a>.</p></div></li></ul></div></div></div>

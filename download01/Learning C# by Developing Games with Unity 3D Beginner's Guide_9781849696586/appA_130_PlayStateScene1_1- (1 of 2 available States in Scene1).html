@@ -1,0 +1,37 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec125"></a>PlayStateScene1_1: (1 of 2 available States in Scene1)</h2></div></div><hr /></div><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using Assets.Code.Interfaces;
+
+namespace Assets.Code.States
+{
+  public class PlayStateScene1_1 : IStateBase
+  {
+    private StateManager manager;
+
+    public PlayStateScene1_1 (StateManager managerRef)
+    {
+      manager = managerRef;
+      if(Application.loadedLevelName != "Scene1")
+        Application.LoadLevel("Scene1");
+    }
+    
+    public void StateUpdate()
+    {
+      if (Input.GetKeyUp (KeyCode.Space))
+      {
+      manager.SwitchState (new 
+        WonStateScene1 (manager));
+      }
+
+      if (Input.GetKeyUp (KeyCode.Return))
+      {
+        manager.SwitchState (new 
+          LostStateScene1 (manager));
+      }
+    }
+
+    public void ShowIt()
+    {
+      Debug.Log("In PlayStateScene1_1");
+    }
+  }
+}</pre></div></div>

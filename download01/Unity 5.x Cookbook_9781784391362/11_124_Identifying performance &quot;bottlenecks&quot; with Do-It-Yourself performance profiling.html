@@ -1,0 +1,31 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec121"></a>Identifying performance "bottlenecks" with Do-It-Yourself performance profiling</h2></div></div><hr /></div><p>
+<span class="strong"><strong>Optimization principal 4</strong></span>: Use <a id="id1270" class="indexterm"></a>performance data to drive design and coding decisions.</p><p>The Unity 5 performance <a id="id1271" class="indexterm"></a>profiler is great, but there may be times where we wish to have completed control over the code we are running and how it displays or logs data. In this recipe, we explore how to use a freely available script for DIY performance profiling. While it's not quite as fancy as the graphical and detailed profiling of the performance profiler from Unity, it still provides low-level data about the time required for each frame by named parts of scripts, which is sufficient for making code design decisions to improve game performance.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_11_32.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec383"></a>Getting ready</h3></div></div></div><p>For this recipe, we have provided C# script <code class="literal">Profile.cs</code> in the <code class="literal">1362_11_14</code> folder. This is the DIY profiling script from Michael Garforth, kindly published under <span class="emphasis"><em>Creative Commons</em></span> on the Unify <a id="id1272" class="indexterm"></a>Wiki at <a class="ulink" href="http://wiki.unity3d.com/index.php/Profiler" target="_blank">http://wiki.unity3d.com/index.php/Profiler</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec384"></a>How to do it...</h3></div></div></div><p>To record processing requirements using Do-It-Yourself code profiling, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Start a new project, and import the <code class="literal">Profile.cs</code> script.</p></li><li><p>Add the following C# script class <code class="literal">DIYProfiling</code> to the <span class="strong"><strong>Main Camera</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class DIYProfiling : MonoBehaviour {
+  public int outerLoopIterations = 20;
+  public int innerLoopMaxIterations = 100;
+
+  void Update(){
+    string profileName = "MATT_calculations";
+    Profile.StartProfile(profileName);
+
+    for (int i = 0; i &lt; outerLoopIterations; i++){
+      int innerLoopIterations = Random.Range(2,innerLoopMaxIterations);
+      for (int j = 0; j &lt; innerLoopIterations; j++){
+        float n = Random.Range(-1000f, 1000f);
+      }
+    }
+
+    Profile.EndProfile(profileName);
+  }
+
+
+  private void OnApplicationQuit() {
+    Profile.PrintResults();
+  }
+}</pre></div></li><li><p>Run the game for a few seconds.</p></li><li><p>Stop the game running. You should now see in the <span class="strong"><strong>Console</strong></span> a summary message stating<a id="id1273" class="indexterm"></a> total processing time for our named Profile, average time, and number of iterations, and also the total time for which the game was run.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec385"></a>How it works...</h3></div></div></div><p>As you can see, the script is almost identical to that used with the Unity profiling in the previous recipe. Rather than calling the Unity <span class="strong"><strong>Profiler</strong></span>, we call static (class) methods of Michael Garforth's <code class="literal">Profile</code> class.</p><p>We call <code class="literal">Profile</code> class<a id="id1274" class="indexterm"></a> methods <code class="literal">StartProfile(…)</code> and <code class="literal">EndProfile(…)</code> with the string name for what is to be analyzed (in this example, <code class="literal">MATT_calculations</code>).</p><p>Finally, the <code class="literal">OnApplicationQuit()</code>method is executed when the game is terminated, calling the <code class="literal">PrintResuls()</code> method of the <code class="literal">Profile</code> class, which prints to the console the summary performance information.</p><p>The <code class="literal">Profile</code> class records how many times, and how long between Start and End, each named profile is called, outputting summary information about these executions when <code class="literal">PrintResuls()</code> is called.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec386"></a>See also</h3></div></div></div><p>Refer to the following recipes<a id="id1275" class="indexterm"></a> in this chapter<a id="id1276" class="indexterm"></a> for more information:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="emphasis"><em>Evaluating performance by measuring max and min frame rates (FPS)</em></span>
+</p></li><li style="list-style-type: disc"><p>
+<span class="emphasis"><em>Identifying performance bottlenecks with the Unity performance Profiler</em></span>
+</p></li></ul></div></div></div>

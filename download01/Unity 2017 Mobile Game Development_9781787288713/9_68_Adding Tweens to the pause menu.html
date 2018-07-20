@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec60"></a>Adding Tweens to the pause menu</h2></div></div><hr /></div><p>Now that we have the main menu finished, let's continue doing this with the pause menu:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Go ahead and open up our <strong class="userinput"><code>Gameplay</code></strong> scene. Update the <code class="literal">PauseScreenBehaviour</code> script to have the following implementation of <code class="literal">SetPauseMenu</code>:</li></ol></div><pre class="programlisting">/// &lt;summary&gt; 
+/// Will turn our pause menu on or off 
+/// &lt;/summary&gt; 
+/// &lt;param name="isPaused"&gt;&lt;/param&gt; 
+public void SetPauseMenu(bool isPaused) 
+{
+   paused = isPaused; 
+
+   // If the game is paused, timeScale is 0, otherwise 1 
+   Time.timeScale = (paused) ? 0 : 1; 
+<span class="strong"><strong>   if(paused) 
+   {
+       SlideMenuIn(pauseMenu); 
+   } 
+   else 
+   { 
+      SlideMenuOut(pauseMenu); 
+   }</strong></span>
+}</pre><p>Note that because <code class="literal">PauseMenuBehaviour</code> inherits from <code class="literal">MainMenuBehaviour</code>, it also can call the <code class="literal">SlideMenuIn</code> and <code class="literal">SlideMenuOut</code> functions, respectively, as long as they are marked as <code class="literal">protected</code> or <code class="literal">public</code>.</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Now if we run the game, nothing will appear to happen when we hit the pause menu. This is because—as I mentioned previously—Tweens are scaled by <code class="literal">Time.timeScale</code>, which we just changed. To fix this, we can make use of another iTween property called <code class="literal">ignoretimescale</code>, which we will set to <code class="literal">true</code> in both functions we wrote previously in the <code class="literal">MainMenuBehaviour</code>:</li></ol></div><pre class="programlisting">/// &lt;summary&gt; 
+/// Will move an object from the left side of the screen 
+/// to the center 
+/// &lt;/summary&gt; 
+/// &lt;param name="obj"&gt;The UI element we would like to 
+/// move&lt;/param&gt; 
+public void SlideMenuIn(GameObject obj) 
+{
+   obj.SetActive(true);
+   var rt = obj.GetComponent&lt;RectTransform&gt;(); 
+
+   // Set the object's position offscreen 
+   var pos = rt.position; pos.x = -rt.rect.width; rt.position = pos; 
+
+   // Move the object to the center of the screen 
+   iTween.MoveTo(obj, iTween.Hash("x", Screen.width / 2, "easeType",  
+                                  "easeInOutExpo", "time", 1.5f<span class="strong"><strong>,</strong></span><span class="strong"><strong>
+                                  "ignoretimescale", true</strong></span> )); 
+} 
+
+/// &lt;summary&gt; 
+/// Will move an object from the center of the screen 
+/// to the right 
+/// &lt;/summary&gt; 
+/// &lt;param name="obj"&gt;The UI element we would like to 
+/// move&lt;/param&gt; 
+public void SlideMenuOut(GameObject obj) 
+{
+   var rt = obj.GetComponent&lt;RectTransform&gt;(); 
+
+   // Set the object's position offscreen 
+   var pos = rt.position; 
+   pos.x = Screen.width / 2; 
+   rt.position = pos; 
+
+   // Move the object to the center of the screen 
+   iTween.MoveTo(obj, iTween.Hash("x", Screen.width + (rt.rect.width), 
+                                  "easeType", "easeOutQuad", 
+                                  "time", 1.5, 
+                                  "oncomplete", "OnHidden", 
+                                  "oncompletetarget", gameObject, 
+                                  "oncompleteparams", obj<span class="strong"><strong>,</strong></span><span class="strong"><strong>
+                                  "ignoretimescale", true</strong></span> )); 
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Save both scripts and dive into the editor and try it out:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787288713/graphics/20710834-1676-48f9-ba2b-38da6191eca9.png" /></div><p>Perfect! We now how the screen flying in just like we wanted it to.</p></div>

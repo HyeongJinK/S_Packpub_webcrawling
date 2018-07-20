@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec52"></a>Playing videos inside a scene</h2></div></div><hr /></div><p>TV sets, projectors, monitors.... If you want complex animated materials in your level, you can play video files as texture maps. In this recipe, we will learn how to apply a video texture to a cube. We will also implement a simple control scheme that plays or pauses the video whenever that cube is clicked on.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec138"></a>Getting ready</h3></div></div></div><p>Unity imports video files through Apple Quicktime. If you don't have it installed in your machine, please download it at <a class="ulink" href="http://www.apple.com/quicktime/download/" target="_blank">http://www.apple.com/quicktime/download/</a>.</p><p>Also, if you need a video file to follow this recipe, please use the <code class="literal">videoTexture.mov</code> included in the folder <code class="literal">1632_04_08</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec139"></a>How to do it...</h3></div></div></div><p>Follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add a cube to the scene through the <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>3D Object</strong></span> | <span class="strong"><strong>Cube</strong></span> menu.</p></li><li><p>Import the provided <code class="literal">videoTexture.mov</code> file.</p></li><li><p>From the <span class="strong"><strong>Project</strong></span> view, use the <span class="strong"><strong>Create</strong></span> drop-down menu to create a new <span class="strong"><strong>Material</strong></span>. Rename it <code class="literal">Video_MAT</code> and, from the <span class="strong"><strong>Inspector</strong></span> view, change its <span class="strong"><strong>Shader</strong></span> to <span class="strong"><strong>Unlit/Texture</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_04_58.jpg" /></div></li><li><p>Apply <code class="literal">videoTexture</code> to the texture slot of <code class="literal">Video_MAT</code> by dragging it from the <span class="strong"><strong>Project</strong></span> view into the appropriate slot.</p></li><li><p>Apply the <code class="literal">Video_MAT</code> to the <span class="strong"><strong>Cube</strong></span> you have previously created.</p></li><li><p>Expand <code class="literal">videoTexture</code> on the <span class="strong"><strong>Project</strong></span> view to reveal its correspondent <span class="strong"><strong>Audio Clip</strong></span>. Then, apply that audio clip to the <span class="strong"><strong>Cube</strong></span> (you can do it by dragging it from the <span class="strong"><strong>Project</strong></span> view to the <span class="strong"><strong>Cube</strong></span> in the <span class="strong"><strong>Hierarchy</strong></span> view, or a <span class="strong"><strong>Scene</strong></span> view).</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_04_59.jpg" /></div></li><li><p>Select the <span class="strong"><strong>Cube</strong></span>. Make sure there is a <span class="strong"><strong>Collider</strong></span> component visible from the <span class="strong"><strong>Inspector</strong></span> view. In case there isn't one, add it via the <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Box Collider</strong></span> menu. Colliders are needed for mouse collision detection.</p></li><li><p>Now we need to create a script for controlling the movie texture and associated audio clip. From <span class="strong"><strong>Project</strong></span> view, use the <span class="strong"><strong>Create</strong></span> drop-down menu to add a <span class="strong"><strong>C# Script</strong></span>. Name it <code class="literal">PlayVideo</code>.</p></li><li><p>Open the script and replace it with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+[RequireComponent(typeof(AudioSource))]
+
+public class PlayVideo : MonoBehaviour {
+
+  public bool loop = true;
+  public bool playFromStart = true;
+  public MovieTexture video;
+    public AudioClip audioClip;
+  private AudioSource audio;
+
+  void Start () {
+    audio = GetComponent&lt;AudioSource&gt; ();
+
+    if (!video)
+      video = GetComponent&lt;Renderer&gt;().material.mainTexture as MovieTexture;
+
+    if (!audioClip)
+        audioClip = audio.clip;
+
+    video.Stop ();
+    audio.Stop ();
+    video.loop = loop;
+    audio.loop = loop;
+
+    if(playFromStart)
+      ControlMovie();
+  }
+  
+  void OnMouseUp(){
+    ControlMovie();
+  }
+
+  public void ControlMovie(){
+  
+    if(video.isPlaying){
+      video.Pause();
+      audio.Pause();
+    } else {
+      video.Play();
+      audio.Play();
+    }
+  }
+}</pre></div></li><li><p>Save your script and attach it to the <span class="strong"><strong>Cube</strong></span>.</p></li><li><p>Test your scene. You should be able to see the movie being played in the cube face, and also pause/play it by clicking on it.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec140"></a>How it works...</h3></div></div></div><p>By default, our script makes the movie texture play in loop mode. There is, however, a Boolean variable than can be changed through the <span class="strong"><strong>Inspector</strong></span> panel, where it is represented by a check box. Likewise, there is a check box that can be used to prevent the movie from playing when the level starts.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec141"></a>There's more...</h3></div></div></div><p>There are some other movie texture commands and parameters that can be played with. Don't forget to check out Unity's scripting guide at <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/MovieTexture.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/MovieTexture.html</a>.</p></div></div>

@@ -1,0 +1,90 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec50"></a>Upgrading the towers</h2></div></div><hr /></div><p>Upgrading and selling the towers might be a little bit tricky. For this reason, this section is completely optional and you can feel free to skip it. Furthermore, the code here could be optimized, but it has been left without optimization for the sake of learning. In fact, this way it is easier to understand. Once all the key concepts that have been covered in this section are clear, the reader is invited to improve the code as an exercise.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec35"></a>How it works</h3></div></div></div><p>Every time the player selects a tower, a menu appears and gives the player the possibility of upgrading or selling the tower. Therefore, the menu that we are going to create in this section will be disabled from the beginning, and it will be enabled when a tower is selected. We will see how a tower is selected in the next chapter, but the key idea is that every time a tower is selected, it has to be communicated to our menu which tower it is. In this way, our menu can correctly upgrade the tower, or destroy it if the player decides to sell it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec36"></a>Creating and placing the tower menu</h3></div></div></div><p>As for the previous UI elements that we have created so far, let's start by creating an UI Image and renaming it <code class="literal">TowerMenu</code>. Change its <span class="strong"><strong>Source Image</strong></span> to <code class="literal">tower1_rect</code> from our package. Scale it properly and place it in the screen as in the following image:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_017.jpg" /></div><p>
+</p><p>Next, we need to create two buttons, one for upgrading the tower and the other for selling it. Rename <code class="literal">UpgradeButton</code>, along with its text, as <code class="literal">UpgradeButtonText</code>, and <code class="literal">SellButton</code>, along with its text, as <code class="literal">SellButtonText</code>. For both, we should use as <span class="strong"><strong>Source Image</strong></span> the <code class="literal">empty_rect</code> from the package. As for the text, we can use the same settings we used for the <span class="strong"><strong>BuyButton</strong></span>, and replace the text variable with <code class="literal">upgrade</code> and <code class="literal">sell</code>. It should now appear like this:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_018.jpg" /></div><p>
+</p><p>Please note that the text of the two buttons has moved slightly up. This is because we now have to add a UI text to each button and rename them, respectively, <code class="literal">UpgradePriceText</code> and <code class="literal">SellPriceText</code>. Their font size should be smaller than the other one, a good value being <code class="literal">12</code>. So our <span class="strong"><strong>Tower Menu</strong></span> should appear like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_019.jpg" /></div><p>
+</p><p>Since we have added a lot of components, here is the recap on how the <span class="strong"><strong>Hierarchy</strong></span> Panel should be:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_020.jpg" /></div><p>
+</p><p>Now, we need to add a script to it. This will handle all the interaction with the player, by giving him or her the possibility to upgrade or sell a tower, and with the towers themselves. To create the script, select <span class="strong"><strong>TowerMenu</strong></span> and, in the <span class="strong"><strong>Inspector</strong></span>, navigate to <span class="strong"><strong>Add Component</strong></span> | <span class="strong"><strong>New Script</strong></span>. Name it <code class="literal">TowerMenuScript</code>, and then click on <span class="strong"><strong>Create and Add</strong></span>. Double-click to open it.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec37"></a>Scripting the tower menu</h3></div></div></div><p>Since we are going to use the UI, as we did with the other sections in this chapter, we need to add the following line at the beginning of our script:</p><pre class="programlisting">using UnityEngine.UI; 
+</pre><p>As result, we will be able to use the <code class="literal">UI</code> classes.</p><p>This script has many variables, so let's break them down. The first one is a variable to store the <code class="literal">MoneyCounter</code>, as we did in the <code class="literal">TowerBuyScript</code>. We need this reference, since by upgrading or selling the player's tower, his amount of money will change:</p><pre class="programlisting">    MoneyCounterScript moneyCounter; 
+</pre><p>Then, we need a public variable that is the current selected tower. It has to be public, since it will be set by another script that we will see in the next chapter. However, since we don't need to change it through the <span class="strong"><strong>Inspector</strong></span>, we can hide it using an attribute:</p><pre class="programlisting">    [HideInInspector] 
+    public TowerScript currentTower; 
+</pre><p>Next, we need some variables to store our UI components. In particular, we need a private variable to store the Image where this script is attached. Since it is easy to get, we will leave this to the <code class="literal">Awake()</code> function. The other two are for the two prices, the upgrade price and the selling price:</p><pre class="programlisting">    private Image uiImage; 
+    public Text upgradePriceText; 
+    public Text sellPriceText; 
+</pre><p>Now, we need all the different settings for each level of the upgrades. These include the graphic needed to change the menu and the price values. Since there are three different levels of upgrade, we need to repeat these variables three times. To visualize them better in the Inspector, we could use a <code class="literal">Header</code> attribute for each group. So, this is the first one:</p><pre class="programlisting">    [Header("Level 0 Settings")] 
+    public Sprite menuLevel0; 
+    public int upgradePriceLevel0; 
+    public int sellPriceLevel0; 
+</pre><p>And this is the second one:</p><pre class="programlisting">    [Header("Level 1 Settings")] 
+    public Sprite menuLevel1; 
+    public int upgradePriceLevel1; 
+    public int sellPriceLevel1; 
+</pre><p>Finally, this is the third group of variables. Of course, we don't need the price to upgrade it, since it is the maximum level:</p><pre class="programlisting">    [Header("Level 2 Settings")] 
+    public Sprite menuLevel2; 
+    public int sellPriceLevel2; 
+</pre><p>The last variables we need are just internal values to store and take into account the current situation of the tower. Their names are quite self-explanatory:</p><pre class="programlisting">    private int level; 
+    private int currentUpgradePrice; 
+    private int currentSellPrice; 
+</pre><p>After so many variables, its time to start to writing our functions. The first one is the <code class="literal">Awake()</code> one. We don't use <code class="literal">Start(),</code> since this component will start disabled. Here, we just take the references to the <code class="literal">MoneyCounter</code> and the Image component where this script is attached:</p><pre class="programlisting">  void Awake () { 
+        moneyCounter = GameObject.Find("MoneyCounter").GetComponent&lt;MoneyCounterScript&gt;(); 
+        uiImage = GetComponent&lt;Image&gt;(); 
+  } 
+</pre><p>Then, we need to write an <code class="literal">OnEnable()</code> function, which is called every time the component is enabled again. This happens when a tower is selected. Here, we need to retrieve the current level of upgrading of the tower and update all the graphics of the component, including the prices. This can be done using a <code class="literal">switch</code> statement:</p><pre class="programlisting">    void OnEnable() { 
+     if (!currentTower) 
+            return; 
+        level = currentTower.upgradeLevel; 
+        switch (level) { 
+            case 0: 
+                uiImage.sprite = menuLevel0; 
+                upgradePriceText.text = "$" + upgradePriceLevel0.ToString(); 
+                currentUpgradePrice = upgradePriceLevel0; 
+                sellPriceText.text = "$" + sellPriceLevel0.ToString(); 
+                currentSellPrice = sellPriceLevel0; 
+                break; 
+            case 1: 
+                uiImage.sprite = menuLevel1; 
+                upgradePriceText.text = "$" + upgradePriceLevel1.ToString(); 
+                currentUpgradePrice = upgradePriceLevel1; 
+                sellPriceText.text = "$" + sellPriceLevel1.ToString(); 
+                currentSellPrice = sellPriceLevel1; 
+                break; 
+            case 2: 
+                uiImage.sprite = menuLevel2; 
+                upgradePriceText.text = "-"; 
+                sellPriceText.text = "$" + sellPriceLevel2.ToString(); 
+                currentSellPrice = sellPriceLevel2; 
+                break; 
+        } 
+    } 
+</pre><p>The next function we have to write is called when the <code class="literal">UpgradeButton</code> has been pressed. Here, we just have to check whether the player has enough money, and eventually call the <code class="literal">Upgrade()</code> function on the tower. Probably, the compiler will give you an error, because that function is not defined yet in the <code class="literal">TowerScript</code>. We will create it in the next chapter:</p><pre class="programlisting">    public void upgrade() { 
+        if (level == 2) 
+            return; 
+        int money = moneyCounter.getMoney(); 
+        if (money &gt;= currentUpgradePrice) { 
+            moneyCounter.changeMoney(-currentUpgradePrice); 
+            currentTower.Upgrade(); 
+            gameObject.SetActive(false); 
+        } 
+    } 
+</pre><p>The last function is called when the <code class="literal">SellButton</code> has been pressed to sell the tower. Here, we just give the player the money back and destroy the tower:</p><pre class="programlisting">    public void sell() { 
+            moneyCounter.changeMoney(currentSellPrice); 
+            Destroy(currentTower.gameObject); 
+            gameObject.SetActive(false); 
+    } 
+</pre><p>Finally, we have finished this long script. Let's save it and come back to Unity, where we still have to set all its values.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec38"></a>Finalizing the tower menu</h3></div></div></div><p>If we look at the <span class="strong"><strong>Inspector</strong></span>, we should see our script with all the visible variables:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_021.jpg" /></div><p>
+</p><p>Let's start to drag and drop inside the <span class="strong"><strong>Upgrading Price Text</strong></span>, our <code class="literal">UpgradePriceText</code> from the <span class="strong"><strong>Hierarchy</strong></span> panel and inside our <span class="strong"><strong>Sell Price Text</strong></span>, our <code class="literal">SellPriceText</code>, always from the <span class="strong"><strong>Hierarchy</strong></span> panel. Now, our script should look like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_022.jpg" /></div><p>
+</p><p>The next step is to fill, for each level, the graphic for the menu. Of course, for level zero we use the one we used as placeholder, the <code class="literal">tower1_rect</code> from our package. For the other two levels, we always use <code class="literal">tower2_rect</code> and <code class="literal">tower3_rect</code> respectively, from our package:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_023.jpg" /></div><p>
+</p><p>Here, we can fill the remaining variables according to our game. In this example, we are going to use the following values:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_024.jpg" /></div><p>
+</p><p>Finally, we need to disable the entire <code class="literal">TowerMenu</code>, by unchecking the small box next to its name in the <span class="strong"><strong>Inspector</strong></span>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_025.jpg" /></div><p>
+</p><p>The last thing to do is to assign the right functions to the buttons that we have created.</p><p>Select <span class="strong"><strong>UpgradeButton</strong></span>, and, in the <span class="strong"><strong>Inspector</strong></span>, add a new event in the <span class="strong"><strong>On Click ()</strong></span> tab. Drag the <span class="strong"><strong>TowerMenu</strong></span> into the <code class="literal">Object</code> variable and, from the drop-down menu, select <span class="strong"><strong>TowerMenuScript.upgrade</strong></span>. As a result, we should see this in the <span class="strong"><strong>Inspector</strong></span>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_026.jpg" /></div><p>
+</p><p>Similarly, select <span class="strong"><strong>SellButton</strong></span> and add a new event in the <span class="strong"><strong>On Click ()</strong></span> tab. Drag the <span class="strong"><strong>TowerMenu</strong></span> again into the Object variable, and this time, from the drop-down menu, select <span class="strong"><strong>TowerMenuScript.sell</strong></span>. Here is the final result in the <span class="strong"><strong>Inspector</strong></span>:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781784393106/graphics/image_08_027.jpg" /></div><p>
+</p><p>Congratulations on having completed this optional section to integrate the possibility of selling and upgrading the towers into your game. Of course, to finish what we have started in this section, we have to follow the optional section in the next chapter as well.</p></div></div>

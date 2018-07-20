@@ -1,0 +1,191 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec33"></a>Following a path</h2></div></div><hr /></div><p>Paths are usually <a id="id104" class="indexterm"></a>created by connecting waypoints together. So, we'll set up a simple path, as shown in the following screenshot, and then make our cube entity follow along the path smoothly. Now, there are many ways to build such a path. The one we are going to implement here could arguably be the simplest one. We'll write a script called <code class="literal">Path.cs</code> and store all the waypoint positions in a <code class="literal">Vector3</code> array. Then, from the editor, we'll enter those positions manually. It's bit of a tedious process right now. One option is to use the position of an empty game object as waypoints. Or, if you want, you can create your own editor plugins to automate these kind of tasks, but that is outside the scope of this book. For now, it should be fine to just enter the waypoint information manually, since the number of waypoints that we are creating here are not that substantial.</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_01.jpg" /><div class="caption"><p>An object path</p></div></div><p>First, we create an empty game entity and add our path script component, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_02.jpg" /><div class="caption"><p>The organized Hierarchy</p></div></div><p>Then, we populate our <a id="id105" class="indexterm"></a>
+<span class="strong"><strong>Point A</strong></span> variable with all the points we want to be included in our path:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_03.jpg" /><div class="caption"><p>Properties of our path script</p></div></div><p>The preceding list shows the waypoints needed to create the path that was described earlier. The other two properties are <code class="literal">debug mode</code> and <code class="literal">radius</code>. If the <code class="literal">debug mode</code> property is checked, the path formed by the positions entered will be drawn as gizmos in the editor window. The <code class="literal">radius</code> property is a range value for the path-following entities to <a id="id106" class="indexterm"></a>use so that they can know when they've reached a particular waypoint if they are in this radius range. Since to reach an exact position can be pretty difficult, this range radius value provides an effective way for the path-following agents to navigate through the path.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec24"></a>The path script</h3></div></div></div><p>So, let's take a <a id="id107" class="indexterm"></a>look at the path script itself. It will be responsible for managing the path for our objects. Look at the following code in the <code class="literal">Path.cs</code> file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Path : MonoBehaviour {
+  public bool bDebug = true;
+  public float Radius = 2.0f;
+  public Vector3[] pointA;
+
+  public float Length {
+    get {
+      return pointA.Length;
+    }
+  }
+
+  public Vector3 GetPoint(int index) {
+    return pointA[index];
+  }
+
+  void OnDrawGizmos() {
+    if (!bDebug) return;
+
+    for (int i = 0; i &lt;pointA.Length; i++) {
+      if (i + 1&lt;pointA.Length) {
+        Debug.DrawLine(pointA[i], pointA[i + 1],
+          Color.red);
+      }
+    }
+  }
+}</pre></div><p>As you can see, this is a very simple script. It has a <code class="literal">Length</code> property that returns the length and size of the waypoint array if requested. The <code class="literal">GetPoint</code> method returns the <code class="literal">Vector3</code> position of a particular waypoint at a specified index in the array. Then, we have the <code class="literal">OnDrawGizmos</code> <a id="id108" class="indexterm"></a>method that is called by Unity frame to draw components in the editor environment. The drawing here won't be rendered in the game view unless gizmos, located in the top-right corner of the game view, are turned on.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec25"></a>Using the path follower</h3></div></div></div><p>Next, we have our <a id="id109" class="indexterm"></a>vehicle entity, which is just a simple cube object in this example. We can replace the cube later with whatever 3D models we want. After we create the script, we add the <code class="literal">VehicleFollowing</code> script component, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_04.jpg" /><div class="caption"><p>The properties of our VehicleFollowing script</p></div></div><p>The script takes a couple of parameters. First is the reference to the path object it needs to follow. Then, the <code class="literal">Speed</code> and <code class="literal">Mass</code> properties, which are needed to calculate its acceleration properly. The <code class="literal">IsLooping</code> flag is a flag that makes this entity follow the path continuously if it's checked. Let's take a look at the following code in the <code class="literal">VehicleFollowing.cs</code> file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class VehicleFollowing : MonoBehaviour {
+  public Path path;
+  public float speed = 20.0f;
+  public float mass = 5.0f;
+  public bool isLooping = true;
+
+  //Actual speed of the vehicle
+  private float curSpeed;
+
+  private int curPathIndex;
+  private float pathLength;
+  private Vector3 targetPoint;
+
+  Vector3 velocity;</pre></div><p>First, we initialize the properties and set up the direction of our <code class="literal">velocity</code> vector with the entity's <code class="literal">forward</code> vector in the <code class="literal">Start</code> method, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">  void Start () {
+    pathLength = path.Length;
+    curPathIndex = 0;
+
+    //get the current velocity of the vehicle
+    velocity = transform.forward;
+  }</pre></div><p>There are only two <a id="id110" class="indexterm"></a>methods that are important in this script, the <code class="literal">Update</code> and <code class="literal">Steer</code> methods. Let's take a look at the following code:</p><div class="informalexample"><pre class="programlisting">  void Update () {
+    //Unify the speed
+    curSpeed = speed * Time.deltaTime;
+
+    targetPoint = path.GetPoint(curPathIndex);
+
+    //If reach the radius within the path then move to next
+      //point in the path
+        if (Vector3.Distance(transform.position, targetPoint) &lt;
+          path.Radius) {
+          //Don't move the vehicle if path is finished
+        if (curPathIndex &lt; pathLength - 1) curPathIndex++;
+          else if (isLooping) curPathIndex = 0;
+          else return;
+    }
+
+    //Move the vehicle until the end point is reached in
+      //the path
+        if (curPathIndex &gt;= pathLength ) return;
+
+    //Calculate the next Velocity towards the path
+        if (curPathIndex &gt;= pathLength-1&amp;&amp; !isLooping)
+          velocity += Steer(targetPoint, true);
+          else velocity += Steer(targetPoint);
+
+    //Move the vehicle according to the velocity
+      transform.position += velocity;
+    //Rotate the vehicle towards the desired Velocity
+      transform.rotation = Quaternion.LookRotation(velocity);
+  }</pre></div><p>In the <code class="literal">Update</code> method, we check whether our entity has reached a particular waypoint by calculating the distance between its current position and the path's radius range. If it's in the range, we just increase the index to look it up from the waypoints array. If it's the last waypoint, we check if the <code class="literal">isLooping</code> flag is set. If it is set, we set the target to the starting waypoint; otherwise, we just stop at that point. Though, if we wanted, we could make it so that our object turned around and went back the way it came. In <a id="id111" class="indexterm"></a>the next part, we will calculate the acceleration from the <code class="literal">Steer</code> method. Then, we rotate our entity and update the position according to the speed and direction of the velocity:</p><div class="informalexample"><pre class="programlisting">  //Steering algorithm to steer the vector towards the target
+    public Vector3 Steer(Vector3 target,
+      bool bFinalPoint = false) {
+    //Calculate the directional vector from the current
+      //position towards the target point
+    Vector3 desiredVelocity = (target -transform.position);
+    float dist = desiredVelocity.magnitude;
+
+    //Normalise the desired Velocity
+    desiredVelocity.Normalize();
+
+    //Calculate the velocity according to the speed
+    if (bFinalPoint&amp;&amp;dist&lt;10.0f) desiredVelocity *= 
+      (curSpeed * (dist / 10.0f));
+      else desiredVelocity *= curSpeed;
+
+    //Calculate the force Vector
+    Vector3 steeringForce = desiredVelocity - velocity; 
+    Vector3 acceleration = steeringForce / mass;
+
+    return acceleration;
+  }
+}</pre></div><p>The <code class="literal">Steer</code> method takes the parameter target, which is a <code class="literal">Vector3</code> position representing the final waypoint in the path. The first thing we do is to calculate the remaining distance from the current position to the target position. The target position vector minus the current position vector gives a vector toward the target position vector. The magnitude of this vector is the remaining distance. We then normalize this vector just to preserve the <code class="literal">direction</code> property. Now, if this is the final waypoint, and the distance is less than 10 of a number we just decided to use, we slow down the velocity gradually according to the remaining distance to our point until the velocity finally becomes zero, otherwise, we just update the target velocity with the specified speed value. By subtracting the current velocity vector from this target velocity vector, we can calculate the new steering vector. Then, by dividing this vector with the mass value of our entity, we get the acceleration.</p><p>If you run the scene, you <a id="id112" class="indexterm"></a>should see your cube object following the path. You can also see the path that is drawn in the editor view. Play around with the speed and mass value of the follower and radius values of the path and see how they affect the overall behavior of the system.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec26"></a>Avoiding obstacles</h3></div></div></div><p>In this <a id="id113" class="indexterm"></a>section, we'll set up a scene, as shown in the following screenshot, and make our AI entity avoid the obstacles while trying to reach the target point. The algorithm presented here using the raycasting method is very simple, so it can only avoid the obstacles blocking the path in front of it. The following screenshot will show us our scene:</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_05.jpg" /><div class="caption"><p>A sample scene setup</p></div></div><p>To create this, we make a <a id="id114" class="indexterm"></a>few cube entities and group them under an empty game object called <code class="literal">Obstacles</code>. We also create another cube object called <code class="literal">Agent</code> and give it our obstacle avoidance script. We then create a ground plane object to assist in finding a target position.</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_06.jpg" /><div class="caption"><p>The organized Hierarchy</p></div></div><p>It is worth noting that this <code class="literal">Agent</code> object is not a pathfinder. As such, if we set too many walls up, our <a id="id115" class="indexterm"></a>
+<code class="literal">Agent</code> might have a hard time finding the target. Try a few wall setups and see how our <code class="literal">Agent</code> performs.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec27"></a>Adding a custom layer</h3></div></div></div><p>We will now add <a id="id116" class="indexterm"></a>a custom layer to our object. To add a new layer, we navigate to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Tags</strong></span>. Assign the name <code class="literal">Obstacles</code> to <span class="strong"><strong>User Layer 8</strong></span>. Now, we go back to our cube entity and set its <code class="literal">layer</code> property to <code class="literal">Obstacles</code>.</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_07.jpg" /><div class="caption"><p>Creating a new layer</p></div></div><p>This is our new layer, which is added to Unity. Later, when we do the raycasting to detect obstacles, we'll only check for these entities using this particular layer. This way, we can ignore some objects that are not obstacles that are being hit by a ray, such as bushes or vegetation.</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_08.jpg" /><div class="caption"><p>Assigning our new layer</p></div></div><p>For larger projects, our game objects probably already have a layer assigned to them. So, instead of changing the object's layer to <code class="literal">Obstacles</code>, we would instead make a list using bitmaps of layers for our cube entity to use when detecting obstacles. We will talk more about bitmaps in the next section.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note02"></a>Note</h3><p>Layers are most commonly used by cameras to render a part of the scene, and by lights to illuminate only some parts of the scene. But, they can also be used by <a id="id117" class="indexterm"></a>raycasting to selectively ignore colliders or create collisions. You can learn more about this at <a class="ulink" href="http://docs.unity3d.com/Documentation/Components/Layers.html" target="_blank">http://docs.unity3d.com/Documentation/Components/Layers.html</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec28"></a>Implementing the avoidance logic</h3></div></div></div><p>Now it is time to <a id="id118" class="indexterm"></a>make the script that will help our cube entity avoid these walls.</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_09.jpg" /><div class="caption"><p>The properties of our VehicleAvoidance (script)</p></div></div><p>As usual, we first initialize our entity script with the default properties and draw a GUI text in our <code class="literal">OnGUI</code> method. Let's take a look at the following code in the <code class="literal">VehicleAvoidance.cs</code> file:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class VehicleAvoidance : MonoBehaviour {
+  public float speed = 20.0f;
+  public float mass = 5.0f;
+  public float force = 50.0f;
+  public float minimumDistToAvoid = 20.0f;
+
+  //Actual speed of the vehicle
+  private float curSpeed;
+  private Vector3 targetPoint;
+
+  // Use this for initialization
+  void Start () {
+    mass = 5.0f;
+    targetPoint = Vector3.zero;
+  }
+
+  void OnGUI() {
+    GUILayout.Label("Click anywhere to move the vehicle.");
+  }</pre></div><p>Then in our <code class="literal">Update</code> method, we update the agent entity's position and rotation, based on the direction vector returned by the <code class="literal">AvoidObstacles</code> method:</p><div class="informalexample"><pre class="programlisting">  //Update is called once per frame
+  void Update () {
+    //Vehicle move by mouse click
+    RaycastHit hit;
+    var ray = Camera.main.ScreenPointToRay 
+        (Input.mousePosition);
+
+    if (Input.GetMouseButtonDown(0) &amp;&amp; 
+      Physics.Raycast(ray, out hit, 100.0f)) {
+      targetPoint = hit.point;
+    }
+
+    //Directional vector to the target position
+    Vector3 dir = (targetPoint - transform.position);
+    dir.Normalize();
+
+    //Apply obstacle avoidance
+    AvoidObstacles(ref dir);
+
+    //...
+
+  }</pre></div><p>The first thing we do in our <code class="literal">Update</code> method is retrieve the mouse click position so that we can move our AI <a id="id119" class="indexterm"></a>entity. We do this by shooting a ray from the camera in the direction it's looking. Then, we take the point where the ray hit the ground plane as our target position. Once we get the target position vector, we can calculate the direction vector by subtracting the current position vector from the target position vector. Then, we call the <code class="literal">AvoidObstacles</code> method and pass in this direction vector:</p><div class="informalexample"><pre class="programlisting">  //Calculate the new directional vector to avoid
+    //the obstacle
+  public void AvoidObstacles(ref Vector3 dir) {
+    RaycastHit hit;
+
+    //Only detect layer 8 (Obstacles)
+    int layerMask = 1&lt;&lt;8;
+
+    //Check that the vehicle hit with the obstacles within
+      //it's minimum distance to avoid
+    if (Physics.Raycast(transform.position,
+      transform.forward, out hit,
+      minimumDistToAvoid, layerMask)) {
+    //Get the normal of the hit point to calculate the
+      //new direction
+      Vector3 hitNormal = hit.normal;
+      hitNormal.y = 0.0f; //Don't want to move in Y-Space
+
+      //Get the new directional vector by adding force to 
+      //vehicle's current forward vector
+     dir = transform.forward + hitNormal * force;
+    }
+  }
+}</pre></div><p>The <code class="literal">AvoidObstacles</code> method is also quite simple. The only trick to note here is that raycasting interacts selectively with the <code class="literal">Obstacles</code> layer that we specified at <span class="strong"><strong>User Layer 8</strong></span> in our <a id="id120" class="indexterm"></a>Unity TagManager. The <code class="literal">Raycast</code> method accepts a layer mask parameter to determine which layers to ignore and which to consider during raycasting. Now, if you look at how many layers you can specify in TagManager, you'll find a total of 32 layers. Therefore, Unity uses a 32-bit integer number to represent this layer mask parameter. For example, the following would represent a zero in 32 bits:</p><div class="informalexample"><pre class="programlisting">0000 0000 0000 0000 0000 0000 0000 0000</pre></div><p>By default, Unity uses the first eight layers as built-in layers. So, when you raycast without using a layer mask parameter, it'll raycast against all those eight layers, which could be represented like the following in a bitmask:</p><div class="informalexample"><pre class="programlisting">0000 0000 0000 0000 0000 0000 1111 1111</pre></div><p>Our <code class="literal">Obstacles</code> layer was set at layer 8 (9th index), and we only want to raycast against this layer. So, we'd like to set up our bitmask in the following way:</p><div class="informalexample"><pre class="programlisting">0000 0000 0000 0000 0000 0001 0000 0000</pre></div><p>The easiest way to set up this bitmask is by using the bit shift operators. We only need to place the 'on' bit or 1 at the 9th index, which means we can just move that bit <code class="literal">8</code> places to the left. So, we use the left shift operator to move the bit <code class="literal">8</code> places to the left, as shown in the following code:</p><div class="informalexample"><pre class="programlisting">int layerMask = 1&lt;&lt;8;</pre></div><p>If we wanted to use multiple layer masks, say layer <code class="literal">8</code> and layer <code class="literal">9</code>, an easy way would be to use the bitwise <code class="literal">OR</code> operator like this:</p><div class="informalexample"><pre class="programlisting">int layerMask = (1&lt;&lt;8) | (19);</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip04"></a>Tip</h3><p>You can also find a good discussion on using layermasks on Unity3D online. The question and answer site can be found at <a class="ulink" href="http://answers.unity3d.com/questions/8715/how-do-i-use-layermasks.html" target="_blank">http://answers.unity3d.com/questions/8715/how-do-i-use-layermasks.html</a>.</p></div><p>Once we have the layer mask, we call the <code class="literal">Physics.Raycast</code> method from the current entity's position and in the forward direction. For the length of the ray, we use our <code class="literal">minimumDistToAvoid</code> variable so that we'll only avoid those obstacles that are being hit by the ray within this distance.</p><p>Then, we take the normal vector of the hit ray, multiply it with the force vector, and add it to the current <a id="id121" class="indexterm"></a>direction of our entity to get the new resultant direction vector, which we return from this method.</p><div class="mediaobject"><img src="/graphics/9781785288272/graphics/B04204_04_10.jpg" /><div class="caption"><p>The cube entity avoids a wall</p></div></div><p>Then in our <code class="literal">Update</code> method, we use this new direction after avoiding obstacles to rotate the AI entity and update the position according to the speed value:</p><div class="informalexample"><pre class="programlisting">  void Update () {
+
+    //...
+
+    //Don't move the vehicle when the target point
+      //is reached
+    if (Vector3.Distance(targetPoint, 
+      transform.position) &lt; 3.0f) return;
+
+      //Assign the speed with delta time
+      curSpeed = speed * Time.deltaTime;
+
+      //Rotate the vehicle to its target
+        //directional vector
+    var rot = Quaternion.LookRotation(dir);
+    transform.rotation = Quaternion.Slerp
+      (transform.rotation, rot, 5.0f * 
+      Time.deltaTime);
+
+      //Move the vehicle towards
+        transform.position += transform.forward * 
+          curSpeed;
+  }</pre></div></div></div>

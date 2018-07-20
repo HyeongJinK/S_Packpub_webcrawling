@@ -1,0 +1,112 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec68"></a>Implementing server authoritative movement</h2></div></div><hr /></div><p>Now that <a id="id295" class="indexterm"></a>we have our script structured the way we need, we can go ahead and implement the rest. First, we'll create a structure to hold move commands:</p><div class="informalexample"><pre class="programlisting">// represents a move command sent to the server
+private struct move
+{
+  public float HorizontalAxis;
+  public float VerticalAxis;
+  public double Timestamp;
+
+  public move( float horiz, float vert, double timestamp )
+  {
+    this.HorizontalAxis = horiz;
+    this.VerticalAxis = vert;
+    this.Timestamp = timestamp;
+  }
+}</pre></div><p>On the server, we'll store a buffer of move states sent from the client. We'll also keep a reference to our <code class="literal">Player</code> script for the client and server:</p><div class="informalexample"><pre class="programlisting">// a history of move states sent from client to server
+List&lt;move&gt; moveHistory = new List&lt;move&gt;();
+
+// a reference to the Player script attached to the game object.
+Player playerScript;
+
+// get the Player component
+void Start()
+{
+  playerScript = GetComponent&lt;Player&gt;();
+}</pre></div><p>Now, in <code class="literal">FixedUpdate</code> we'll grab the current move state, buffer it, call the <code class="literal">Simulate</code> function, then send the move state<a id="id296" class="indexterm"></a> and the resulting position to the server. This part runs on the client:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>  void FixedUpdate()</strong></span>
+<span class="strong"><strong>  {</strong></span>
+<span class="strong"><strong>    if( networkView.isMine )</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      // get current move state</strong></span>
+<span class="strong"><strong>      move moveState = new move( playerScript.horizAxis, playerScript.vertAxis, Network.time );</strong></span>
+
+<span class="strong"><strong>      // buffer move state</strong></span>
+<span class="strong"><strong>      moveHistory.Insert( 0, moveState );</strong></span>
+
+<span class="strong"><strong>      // cap history at 200</strong></span>
+<span class="strong"><strong>      if( moveHistory.Count &gt; 200 )</strong></span>
+<span class="strong"><strong>      {</strong></span>
+<span class="strong"><strong>        moveHistory.RemoveAt( moveHistory.Count - 1 );</strong></span>
+<span class="strong"><strong>      }</strong></span>
+
+<span class="strong"><strong>      // simulate</strong></span>
+<span class="strong"><strong>      playerScript.Simulate();</strong></span>
+
+<span class="strong"><strong>      // send state to server</strong></span>
+<span class="strong"><strong>      networkView.RPC( "ProcessInput", RPCMode.Server, moveState.HorizontalAxis, moveState.VerticalAxis, transform.position );</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>  }</strong></span>
+</pre></div><p>On the server, we simulate the player, then compare the resulting position with the position sent by the player. If the position sent by the player is too far apart from the position calculated by the server, a message is sent to the client telling them to correct their state.</p><div class="informalexample"><pre class="programlisting">[RPC]
+void ProcessInput( float horizAxis, float vertAxis, Vector3 position, NetworkMessageInfo info )
+{
+  if( networkView.isMine )
+    return;
+  if( !Network.isServer )
+    return;
+    
+  // execute input
+  playerScript.horizAxis = horizAxis;
+  playerScript.vertAxis = vertAxis;
+  playerScript.Simulate();
+  
+  // compare results
+  if( Vector3.Distance( transform.position, position ) &gt; 0.1f )
+  {
+    // error is too big, tell client to rewind and replay
+    networkView.RPC( "CorrectState", info.sender, transform.position );
+  }
+}</pre></div><p>Finally, on the <a id="id297" class="indexterm"></a>client we'll receive this <code class="literal">CorrectState</code> message, rewind back to the correct position, and replay all inputs from that point on to the current time.</p><div class="informalexample"><pre class="programlisting">[RPC]
+void CorrectState( Vector3 correctPosition, NetworkMessageInfo info )
+{
+  // find past state based on timestamp
+  int pastState = 0;
+  for( int i = 0; i &lt; moveHistory.Count; i++ )
+  {
+    if( moveHistory[ i ].Timestamp &lt;= info.timestamp )
+    {
+      pastState = i;
+      break;
+    }
+  }
+  
+  // rewind
+  transform.position = correctPosition;
+  // replay
+  for( int i = pastState; i &gt;= 0; i-- )
+  {
+    playerScript.horizAxis = moveHistory[ i ].HorizontalAxis;
+    playerScript.vertAxis = moveHistory[ i ].VerticalAxis;
+    playerScript.Simulate();
+  }
+  
+  // clear
+  moveHistory.Clear();
+}</pre></div><p>We're not done yet, however. Our client is still sending raw position to other clients, rather than the server. In order to implement full server authority in Unity Networking, we'll have to scrap the <code class="literal">OnSerialize</code> function in favor of RPCs. Unfortunately, this means our entire <a id="id298" class="indexterm"></a>networking system will rely on reliable messages—The network libraries covered in this book are not well suited to this style of networking as they do not support unreliable RPCs, but for this example Unity Networking will do to teach the concepts. In a production game there are many similar alternatives, which would work better, such as <span class="strong"><strong>uLink</strong></span> or <span class="strong"><strong>TNet</strong></span> as they support unreliable messages. So, instead of utilizing <code class="literal">OnSerializeNetworkView</code>, we'll create a new RPC <code class="literal">netUpdate</code>. This will broadcast state information to clients:</p><div class="informalexample"><pre class="programlisting">[RPC]
+void netUpdate( Vector3 position, NetworkMessageInfo info )
+{
+  if( !networkView.isMine )
+  {
+    bufferState( new networkState( position, info.timestamp ) );
+  }
+}</pre></div><p>And, we'll broadcast this from our <code class="literal">Update</code> function, 10 times per second:</p><div class="informalexample"><pre class="programlisting">private float updateTimer = 0f;
+void Update()
+{
+  // is this the server? send out position updates every 1/10th of a second.
+  updateTimer += Time.deltaTime;
+  if( updateTimer &gt;= 0.1f )
+  {
+    updateTimer = 0f;
+    networkView.RPC( "netUpdate" RPCMode.Others, transform.position );
+  }
+
+  // [snip]
+}</pre></div><p>And now, our networking system is fully server authoritative, with no client-side lag and in almost all cases no "rubber banding" at all.</p></div>

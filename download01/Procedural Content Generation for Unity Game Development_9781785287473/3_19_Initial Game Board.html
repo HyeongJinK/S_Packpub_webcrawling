@@ -1,0 +1,210 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec23"></a>Initial Game Board</h2></div></div><hr /></div><p>Now that we<a id="id118" class="indexterm"></a> have our algorithm designed and the Unity Editor setup, we can start our code implementation. We'll approach the task in small pieces. First, let's put down a small starting area for our player. As stated before, we will make a 5 x 5 grid to lay floor tiles on. The lower-left corner will be placed at (0,0) and the upper-right corner at (4,4) with the player character at (2,2).</p><p>We'll start by building our <code class="literal">BoardManager</code> class. Open up <code class="literal">BoardManager.cs</code> for editing. Currently, there is only a public class called <code class="literal">Count</code>, but we are about to change that. <span class="emphasis"><em>Code Snip 3.1</em></span> shows the additions we want to make to <code class="literal">BoardManager.cs</code>:</p><div class="informalexample"><pre class="programlisting">1 using UnityEngine;
+2 using System;
+3 using System.Collections.Generic; 
+4 using Random = UnityEngine.Random;
+5
+6 public class BoardManager : MonoBehaviour {
+7   [Serializable]
+8   public class Count {
+9     public int minimum;
+10    public int maximum;
+11    
+12    public Count (int min, int max) {
+13      minimum = min;
+14      maximum = max;
+15    }
+16  }
+17
+18  public int columns = 5;
+19  public int rows = 5;
+20  public GameObject[] floorTiles;
+21  private Transform boardHolder;
+22  private Dictionary&lt;Vector2, Vector2&gt; gridPositions = new Dictionary&lt;Vector2, Vector2&gt; ();
+23  
+24  public void BoardSetup () {
+25  boardHolder = new GameObject ("Board").transform;
+26    
+27  for(int x = 0; x &lt; columns; x++) {
+28    for(int y = 0; y &lt; rows; y++) {
+29      gridPositions.Add(new Vector2(x,y), new Vector2(x,y));
+30      
+31      GameObject toInstantiate = floorTiles[Random.Range (0,floorTiles.Length)];
+32     
+33      GameObject instance = Instantiate (toInstantiate, new Vector3 (x, y, 0f), Quaternion.identity) as GameObject;
+34        
+35      instance.transform.SetParent (boardHolder);
+36    }
+37  }
+38 }
+39 }</pre></div><p>So our original <code class="literal">BoardManager</code> class has doubled in size. Let's take a look at what we added:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 18-19</code>: Here are two public integer variables called <code class="literal">row</code> and <code class="literal">column</code>, which represent our<a id="id119" class="indexterm"></a> starting Game Board grid.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 20</code>: <code class="literal">floorTiles</code> is a public GameObject array that will hold all the floor prefabs.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 21</code>: <code class="literal">boardHolder</code> is a private transform that will hold all the tiles.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 22</code>: <code class="literal">gridPositions</code> is a private dictionary, which is our chosen data structure to hold the list of references to every tile our game lays out.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 24-39</code>: <code class="literal">BoardSetup</code> is a public function that returns void. This function will create our initial Game Board and add the tile references to our dictionary.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 27-28</code>: This <code class="literal">for</code> loop nested within another <code class="literal">for</code> loop will iterate over every cell in our initial 5 x 5 grid.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 31</code>: <code class="literal">toInstantiate</code> will randomly choose a tile from our array of floor tiles.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 33</code>: <code class="literal">instance</code> will instantiate our randomly chosen floor tile and lay it at the coordinates provided by the <code class="literal">for</code> loops.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 35</code>: Finally, we make the instance of the floor tile a child of <code class="literal">boardHolder</code>, our Game Board transform.</p></li></ul></div><p>So, our Game Board is able to set up an initial 5 x 5 board, but the functionality isn't fully integrated yet. We need to make some adjustments to our <code class="literal">GameManager</code> script as well. We can see the changes needed in <span class="emphasis"><em>Code Snip 3.2</em></span>. Keep in mind that <span class="emphasis"><em>Code Snip 3.2</em></span> is not the full file:</p><div class="informalexample"><pre class="programlisting">7 public class GameManager : MonoBehaviour {
+8
+9   public float turnDelay = 0.1f;
+10  public int healthPoints = 100;
+11  public static GameManager instance = null;
+12  [HideInInspector] public bool playersTurn = true;
+13
+14  private BoardManager boardScript;
+15  private List&lt;Enemy&gt; enemies;
+16  private bool enemiesMoving;
+17
+18  void Awake() {
+19    if (instance == null)
+20      instance = this;
+21    else if (instance != this)
+22      Destroy(gameObject);  
+23    
+24    DontDestroyOnLoad(gameObject);
+25    
+26    enemies = new List&lt;Enemy&gt;();
+27
+28    boardScript = GetComponent&lt;BoardManager&gt;();
+29    
+30    InitGame();
+31  }
+...
+56  void InitGame() {
+57    enemies.Clear();
+58
+59    boardScript.BoardSetup();
+60 }</pre></div><p>There's only a few key lines here to integrate the <code class="literal">BoardManager</code> class with the rest of the game. Let's see what the changes are:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 14</code>: <code class="literal">boardScript</code> is the variable we will use to keep a reference to our <code class="literal">BoardManager</code> script.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 28</code>: Inside the <code class="literal">Awake</code> function, we will have <code class="literal">boardScript</code> reference the <code class="literal">BoardManager</code> script that we will add to our <code class="literal">GameManager</code> prefab.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 59</code>: Inside<a id="id120" class="indexterm"></a> the <code class="literal">InitGame</code> function, we will call the <code class="literal">BoardSetup</code> function from our attached <code class="literal">BoardManager</code> script.</p></li></ul></div><p>So, now the <code class="literal">BoardManager</code> script functionality will be called from the <code class="literal">GameManager</code> script. However, when you press play, there is still no Game Board. We are still missing a few connections, which we will need to set up in the Unity Editor.</p><p>In the <span class="strong"><strong>Project</strong></span> tab, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Select the <span class="strong"><strong>Prefabs</strong></span> folder.</p></li><li><p>Select the <span class="strong"><strong>GameManager</strong></span> prefab.</p></li><li><p>In the <span class="strong"><strong>Inspector</strong></span> tab, select the <span class="strong"><strong>Add Component</strong></span> button.</p></li><li><p>From the <span class="strong"><strong>Add Component</strong></span> dropdown, navigate to <span class="strong"><strong>Script</strong></span> | <span class="strong"><strong>BoardManager</strong></span>.</p></li></ol></div><p>These steps add the <code class="literal">BoardManager</code> script to our <span class="strong"><strong>GameManager</strong></span> prefab, but we need to add the floor tile<a id="id121" class="indexterm"></a> references now.</p><p>In the <span class="strong"><strong>Board Manager</strong></span> script component of the <span class="strong"><strong>GameManager</strong></span> prefab, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Set <span class="strong"><strong>Size</strong></span> under <span class="strong"><strong>Floor Tiles</strong></span> to <code class="literal">8</code> and press <span class="emphasis"><em>Enter</em></span>.</p></li><li><p>Then, drag and drop <span class="strong"><strong>Floor1</strong></span> to <span class="strong"><strong>Floor8</strong></span> into the newly created <span class="strong"><strong>Element0</strong></span> to <span class="strong"><strong>Element7</strong></span> under <span class="strong"><strong>Floor Tiles</strong></span>.</p></li></ol></div><p>Now, we can press the play button and we'll see our player character standing on our initial 5 x 5 Game Board. Notice that because our initial Game Board is procedurally generated, it is made up of a different combination of tiles every time we play the game. However, this isn't the end of our PCG game world. We want the Game Board to expand as the player explores.</p><div class="mediaobject"><img src="/graphics/9781785287473/graphics/B04808-03-16.jpg" /><div class="caption"><p>Initial Game Board</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec18"></a>Connecting code</h3></div></div></div><p>We now need to<a id="id122" class="indexterm"></a> add the functionality of our expanding Game Board. As per our algorithm design, we need to track the player character's position. When the player moves, we need to send the player character's position and direction to the <code class="literal">BoardManager</code> class. So let's start with the additions needed in the <code class="literal">Player</code> script shown in <span class="emphasis"><em>Code Snip 3.3</em></span>:</p><div class="informalexample"><pre class="programlisting">7 public class Player : MovingObject {
+8   public int wallDamage = 1;
+9   public Text healthText;
+10  private Animator animator;
+11  private int health;
+12  <span class="strong"><strong>public static Vector2 position;</strong></span>
+13  
+14  protected override void Start () {
+15
+16    animator = GetComponent&lt;Animator&gt;();
+17    
+18    health = GameManager.instance.healthPoints;
+19    
+20    healthText.text = "Health: " + health;
+21
+22    <span class="strong"><strong>position.x = position.y = 2;</strong></span>
+23    
+24    base.Start ();
+25  }
+26  private void Update () {
+27    if(!GameManager.instance.playersTurn) return;
+28    
+29    int horizontal = 0;
+30    int vertical = 0;
+31
+32    <span class="strong"><strong>bool canMove = false;</strong></span>
+33    
+34    horizontal = (int) (Input.GetAxisRaw ("Horizontal"));
+35    vertical = (int) (Input.GetAxisRaw ("Vertical"));
+36    
+37    if(horizontal != 0)
+38    {
+39      vertical = 0;
+40    }
+41    if(horizontal != 0 || vertical != 0)
+42    {
+43      <span class="strong"><strong>canMove = AttemptMove&lt;Wall&gt; (horizontal, vertical);</strong></span>
+44      if(canMove) {
+45        position.x += horizontal;
+46        position.y += vertical;
+47        GameManager.instance.updateBoard(horizontal, vertical);
+48      }
+49    }
+50  }
+51
+52  protected override bool AttemptMove &lt;T&gt; (int xDir, int yDir) {
+53    bool hit = base.AttemptMove &lt;T&gt; (xDir, yDir);
+54    
+55    GameManager.instance.playersTurn = false;
+56
+57    return hit;
+58  }</pre></div><p>In <span class="emphasis"><em>Code Snip 3.3</em></span>, we are changing some of the structure of our base code. These changes will force us to change <a id="id123" class="indexterm"></a>how some other functions operate. So let's see the new changes and how they'll affect the rest of our development:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 12</code>: <code class="literal">position</code> is a public static <code class="literal">Vector2</code> that will hold the current coordinates of our player. It is static so that we can access this variable from any script in the game.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 22</code>: We set the <code class="literal">x</code> and <code class="literal">y</code> value of position to <code class="literal">2</code> because we know that at the start of the game, the player character will always begin on (2,2) of our Game Board.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 32</code>: We create a Boolean variable called <code class="literal">canMove</code>, which will tell us whether the player is blocked from moving or not. We will calculate this value at every update so it is set to <code class="literal">false</code> by default.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 43</code>: Here, we set <code class="literal">canMove</code> equal to our <code class="literal">AttemptMove</code> function. However, <code class="literal">AttemptMove</code> returns void so this will be something we need to fix coming up.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 45-46</code>: <code class="literal">position</code> is updated by adding in the values we obtain for <code class="literal">horizontal</code> and <code class="literal">vertical</code>. <code class="literal">horizontal</code> and <code class="literal">vertical</code> come from <code class="literal">Input.GetAxisRaw</code>, which returns <code class="literal">1</code> if the player moves in the positive direction or <code class="literal">-1</code> if the player moves in the negative direction.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 47</code>: We call our instance of the <code class="literal">GameManager</code> class and invoke the <code class="literal">updateBoard</code> function, which doesn't yet exist. We will put this here as a place holder and write the <code class="literal">updateBoard</code> function later.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 52</code>: We need to rewrite <code class="literal">AttemptMove</code> to return a bool. We will start by declaring that the function will return bool.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 53</code>: We are going to create a Boolean variable to hold the bool that <code class="literal">base.AttemptMove</code> will return. This again is a place holder as <code class="literal">base.AttemptMove</code> does not yet return a bool. We also need to remove <code class="literal">RaycastHit2D hit</code>.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 57</code>: Return the <a id="id124" class="indexterm"></a>newly created bool value.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>We are using a public static variable for the player position so that we can access it from anywhere at anytime. It is, however, a best practice to make these types of values private and accessible through a <code class="literal">get</code> function. Having a variable be public static means it can also be changed from anywhere in the code.</p><p>This can cause problems if you have more than one person working on a single code base and another developer using the public static variable in a way you didn't intend. It is best to be very deliberate in your code. By forcing a variable to be private and only accessible via a <code class="literal">get</code> function, you protect the variable from changing in a way that it shouldn't.</p><p>With that said, we are going to use the player position as a public static because it is easier and makes our code less bloated. Of course, you are encouraged to revise the code later to make this variable private.</p></div></li></ul></div><p>At this point, there are going to be some errors in the Unity Editor because of some conflicts we created. So let's work on clearing the errors. Once everything is working again, we can work on the new functionality.</p><p>First, we should fix our bool return value conflict in the <code class="literal">AttemptMove</code> function of the <code class="literal">MovingObject</code> class. Remember, <code class="literal">MovingObject</code> is the base class for both <code class="literal">Player</code> and <code class="literal">Enemy</code>. We will have to adjust the <code class="literal">AttemptMove</code> function in all three files, as it is a <code class="literal">virtual</code> function.</p><p>Let's start by fixing the <code class="literal">AttemptMove</code> function of <code class="literal">MovingObject</code>. Open <code class="literal">MovingObject.cs</code> for editing. <span class="emphasis"><em>Code Snip 3.4</em></span> shows the changes that need to be made to the file:</p><div class="informalexample"><pre class="programlisting">91 protected virtual bool AttemptMove &lt;T&gt; (int xDir, int yDir)
+92   where T : Component
+93 {
+94  RaycastHit2D hit;
+95    
+96  bool canMove = Move (xDir, yDir, out hit);
+97    
+98  if(hit.transform == null)
+99    return true;
+100
+101 T hitComponent = hit.transform.GetComponent &lt;T&gt; ();
+102    
+103 if(!canMove &amp;&amp; hitComponent != null)
+104  OnCantMove (hitComponent);
+105
+106 return false;
+107 }</pre></div><p>We only need to adjust the one function within the <code class="literal">MovingObject</code> class. Let's take a look at how it changed in <span class="emphasis"><em>Code Snip 3.4</em></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 91</code>: We need to change the <code class="literal">void</code> return type to <code class="literal">bool</code></p></li><li style="list-style-type: disc"><p><code class="literal">Line 99</code>: Return the bool value as <code class="literal">true</code> if the player hit an object</p></li><li style="list-style-type: disc"><p><code class="literal">Line 106</code>: Return <code class="literal">false</code> if we reached the end of the function, meaning that the player didn't hit anything</p></li></ul></div><p>If you return to the Unity Editor, you should see some new errors. One will be complaining that the <code class="literal">Enemy</code> class has implemented <code class="literal">AttemptMove</code> incorrectly. So let's address this next.</p><p>Our <code class="literal">Enemy</code> class at the moment is only a place holder. If you remember from <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Roguelike Games</em></span>, we are <a id="id125" class="indexterm"></a>using the <code class="literal">Enemy</code> class as a way to dictate movement turns. Because our game is turn based, we need the player to wait for each visible enemy to move before the player can move again. The base code has implemented a scan for enemies, each turn using the <code class="literal">Enemy</code> class place holder so we won't have to do it later.</p><p>So the adjustment to the <code class="literal">Enemy</code> class is fairly simple. <span class="emphasis"><em>Code Snip 3.5</em></span> shows the changes:</p><div class="informalexample"><pre class="programlisting">6 protected override bool AttemptMove &lt;T&gt; (int xDir, int yDir)
+7 {
+8   return true;
+9 }</pre></div><p>The explanation for <span class="emphasis"><em>Code Snip 3.5</em></span> is equally simple. Keep in mind though that this is still a place holder class and we will do a full implementation later on. Let's take a look at the changes made:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 6</code>: The return type is changed from <code class="literal">void</code> to <code class="literal">bool</code>.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 8</code>: Return <code class="literal">true</code> so that we are returning the correct value at the end of the function. We need to return a bool value at the end of the function so the compiler will pass this as a nonerror. However, the bool value doesn't matter as it is not used yet.</p></li></ul></div><p>We are almost done mending our code. We have one more error to handle before we put in our expanding Game Board functionality. Returning to the Unity Editor yet again will reveal that we called a function (that doesn't exist) from the <code class="literal">Player</code> class to the <code class="literal">GameManager</code> class. We need to add the <code class="literal">updateBoard</code> function to the <code class="literal">GameManager</code> class  as a connection from the <code class="literal">Player</code> class to the <code class="literal">BoardManager</code> class.</p><p>Add <span class="emphasis"><em>Code Snip 3.6</em></span> at the end of your <code class="literal">GameManager</code> definition:</p><div class="informalexample"><pre class="programlisting">public void updateBoard (int horizantal, int vertical) {}</pre></div><p><code class="literal">updateBoard</code> is called<a id="id126" class="indexterm"></a> from the <code class="literal">Player</code> class whenever the player makes a successful move. Since <code class="literal">updateBoard</code> is a method of the <code class="literal">GameManager</code> class, we can call a public method of the <code class="literal">BoardManager</code> class here. We will use this connection to develop our PCG Game Board functionality.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec19"></a>The PCG Game Board</h3></div></div></div><p>We are all set to write the core functionality of our PCG Game Board. The goal is to have tiles laid out in the direction the player character walks. We designed our algorithm in such a way that the Game Board will expand as the player explores.</p><p>We connected our <a id="id127" class="indexterm"></a>scripts so that when the player moves, the <code class="literal">Player</code> class will update the player position and send it to the <code class="literal">GameManager</code> class. The <code class="literal">GameManager</code> class will then call a method in the <code class="literal">BoardManager</code> class to update the Game Board and pass along the player position and direction. We now need to write the code that will update the Game Board based on the player position.</p><p>Let's start by adding the function that will update the Game Board in the <code class="literal">BoardManager</code> class. Open up <code class="literal">BoardManager.cs</code> for editing. <span class="emphasis"><em>Code Snip 3.7</em></span> shows the function that needs to be added:</p><div class="informalexample"><pre class="programlisting">77 public void addToBoard (int horizontal, int vertical) {
+78  if (horizontal == 1) {
+79    //Check if tiles exist
+80    int x = (int)Player.position.x;
+81    int sightX = x + 2;
+82    for (x += 1; x &lt;= sightX; x++) {
+83      int y = (int)Player.position.y;
+84      int sightY = y + 1;
+85      for (y -= 1; y &lt;= sightY; y++) {
+86        addTiles(new Vector2 (x, y));
+87      }
+88    }
+89  } 
+90  else if (horizontal == -1) {
+91    int x = (int)Player.position.x;
+92    int sightX = x - 2;
+93    for (x -= 1; x &gt;= sightX; x--) {
+94      int y = (int)Player.position.y;
+95      int sightY = y + 1;
+96      for (y -= 1; y &lt;= sightY; y++) {
+97        addTiles(new Vector2 (x, y));
+98      }
+99    }
+100 }
+101 else if (vertical == 1) {
+102  int y = (int)Player.position.y;
+103  int sightY = y + 2;
+104  for (y += 1; y &lt;= sightY; y++) {
+105    int x = (int)Player.position.x;
+106    int sightX = x + 1;
+107    for (x -= 1; x &lt;= sightX; x++) {
+108      addTiles(new Vector2 (x, y));
+109    }
+110  }
+111 }
+112 else if (vertical == -1) {
+113  int y = (int)Player.position.y;
+114  int sightY = y - 2;
+115  for (y -= 1; y &gt;= sightY; y--) {
+116    int x = (int)Player.position.x;
+117    int sightX = x + 1;
+118    for (x -= 1; x &lt;= sightX; x++) {
+119      addTiles(new Vector2 (x, y));
+120    }
+121  }
+122 }
+123 }</pre></div><p>This function contains a switch driven by direction. The base code is set up to return only one directional<a id="id128" class="indexterm"></a> value at a time. This means our player character can only move one direction at a time. Either the player moves horizontally in the positive or negative <code class="literal">x</code> direction forcing the vertical direction to return <code class="literal">0</code>, or vice versa along the <code class="literal">y</code> direction.</p><p>Let's take a closer look at the code:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 77</code>: <code class="literal">addToBoard</code> is a public function returning void. This will be our entry point from the <code class="literal">GameManager</code> class. From the <code class="literal">GameManager</code> class, we pass the player direction to this function as arguments.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 78</code>: This is our first switch point. If <code class="literal">horizontal</code> equals <code class="literal">1</code>, then we know <code class="literal">vertical</code> is <code class="literal">0</code>. This corresponds to the player moving to the right on screen.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 80-85</code>: We are using a <code class="literal">for</code> loop nested within a <code class="literal">for</code> loop to iterate over the player's line of sight. Remember the line of sight is the six tile spaces directly in front<a id="id129" class="indexterm"></a> of the player's movement direction. The line of sight makes up a 2 x 3 grid.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 86</code>: For each tile space we iterate over, we will call the method <code class="literal">addTiles</code> and pass in the <code class="literal">Vector2</code> produced by our <code class="literal">for</code> loops. <code class="literal">addTiles</code> does not exist yet but we will be writing it next.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 90-122</code>: The rest of the function is simply a variation of <code class="literal">Lines 78-86</code>. If the player did not move to the right, then we check the other directions and set up the line of sight for that direction.</p></li></ul></div><p>Next, we will complete our expanding Game Board functionality by writing the <code class="literal">addTiles</code> function used in the <code class="literal">addToBoard</code> function you just wrote. The main objective of this function is to check our dictionary for the line of sight tiles and if they are not there, we add them. <span class="emphasis"><em>Code Snip 3.8</em></span> shows the function as part of the <code class="literal">BoardManager</code> class:</p><div class="informalexample"><pre class="programlisting">61 private void addTiles(Vector2 tileToAdd) {
+62   if (!gridPositions.ContainsKey (tileToAdd)) {
+63    gridPositions.Add (tileToAdd, tileToAdd);
+64    GameObject toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
+65    GameObject instance = Instantiate (toInstantiate, new Vector3 (tileToAdd.x, tileToAdd.y, 0f), Quaternion.identity) as GameObject;
+66
+67    instance.transform.SetParent (boardHolder);
+68  }
+69 }</pre></div><p>This code should seem familiar. We do similar calls in the <code class="literal">BoardSetup</code> function of the <code class="literal">BoardManager</code> class. <code class="literal">Line 62</code> is the main difference. Here, we check the dictionary for the tile before we proceed. If the tile is in the dictionary, we return out of the function. This prevents us from overwriting tiles that have already been placed in the game.</p><div class="mediaobject"><img src="/graphics/9781785287473/graphics/B04808-03-17.jpg" /><div class="caption"><p>PCG Game Board</p></div></div><p>You can now return to the Unity Editor and test the new functionality. Click on the play button to try it out. As per our algorithm design, whenever the player moves, more tiles are revealed in that direction.</p><p>This Game Board isn't very interesting, though. We can walk in a single direction forever with no opposition. This terrain would also make it very easy to run away from enemies. We should add some wall tiles for obstacles.</p><p>Let's return to<a id="id130" class="indexterm"></a> editing the <code class="literal">BoardManager.cs</code> file. We are going to add onto our <code class="literal">addTiles</code> function by putting in a condition that adds wall tiles to newly placed floor tiles. <span class="emphasis"><em>Code Snip 3.9</em></span> shows the code addition:</p><div class="informalexample"><pre class="programlisting">29 <span class="strong"><strong>public GameObject[] wallTiles;</strong></span>
+...
+62 private void addTiles(Vector2 tileToAdd) {
+63  if (!gridPositions.ContainsKey (tileToAdd)) {
+64    gridPositions.Add (tileToAdd, tileToAdd);
+65    GameObject toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
+66    GameObject instance = Instantiate (toInstantiate, new Vector3 (tileToAdd.x, tileToAdd.y, 0f), Quaternion.identity) as GameObject;
+67
+68    instance.transform.SetParent (boardHolder);
+69      
+70      <span class="strong"><strong>//Choose at random a wall tile to lay</strong></span>
+71<span class="strong"><strong>    if (Random.Range (0, 3) == 1) {</strong></span>
+72<span class="strong"><strong>      toInstantiate = wallTiles[Random.Range (0,wallTiles.Length)];</strong></span>
+<span class="strong"><strong>      instance = Instantiate (toInstantiate, new Vector3 (tileToAdd.x, tileToAdd.y, 0f), Quaternion.identity) as GameObject;</strong></span>
+73<span class="strong"><strong>    instance.transform.SetParent (boardHolder);</strong></span>
+74    <span class="strong"><strong>}</strong></span>
+75  }
+76 }</pre></div><p>Let's take a look at what we added in <span class="emphasis"><em>Code Snip 3.9</em></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">Line 29</code>: Like the floor tiles, we are going to add an array of <code class="literal">GameObject</code> to hold our wall tile prefabs.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 62-68</code>: This is our original <code class="literal">addTiles</code> function.</p></li><li style="list-style-type: disc"><p><code class="literal">Line 71</code>: This condition uses random numbers to create a probability. We randomly choose a number between 0 and 2. If the number is 1, then we add a wall tile to the newly created floor tile. There is a 1 in 3 or 33 percent chance that a wall tile is added.</p></li><li style="list-style-type: disc"><p>Line 72-74: We instantiate the wall tiles as we do the floor tiles.</p></li></ul></div><p>So, if we return to<a id="id131" class="indexterm"></a> the Unity Editor and play the game, we get some errors. This is because we added the array for the wall tiles, but it is currently empty. You will need to add the wall tiles to the <code class="literal">GameManager</code> prefab the same way you did the floor tiles.</p><p>In the <code class="literal">BoardManager</code> script component of the <code class="literal">GameManager</code> prefab, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Set <span class="strong"><strong>Size</strong></span> under <span class="strong"><strong>Wall Tiles</strong></span> to <code class="literal">8</code> and press <span class="emphasis"><em>Enter</em></span>.</p></li><li><p>Then, drag and drop <span class="strong"><strong>Wall1</strong></span> to <span class="strong"><strong>Wall8</strong></span> into the newly created <span class="strong"><strong>Element0</strong></span> to <span class="strong"><strong>Element7</strong></span> under <span class="strong"><strong>Wall Tiles</strong></span>.</p></li></ol></div><p>Finally, the Game Board is fully functional! Press the play button to test it out. The Game Board will expand as the player explores. Every time you play the game, you will experience a different Game Board.</p><div class="mediaobject"><img src="/graphics/9781785287473/graphics/B04808-03-18.jpg" /><div class="caption"><p>PCG Game Board plus wall tiles</p></div></div><p>With the addition<a id="id132" class="indexterm"></a> of high frequency wall spawning, there are plenty of obstacles. These walls will also make it more difficult to run from enemies. The PCG nature of the Game Board makes for a unique play of the game every time.</p></div></div>

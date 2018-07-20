@@ -1,0 +1,39 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec28"></a>Creating and joining rooms</h2></div></div><hr /></div><p>Let us have a look at how to create rooms.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec18"></a>Creating rooms</h3></div></div></div><p>To<a id="id88" class="indexterm"></a> create<a id="id89" class="indexterm"></a> a room in PUN, use the <code class="literal">CreateRoom</code> function:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Example_CreateRoom : MonoBehaviour
+{
+  void OnGUI()
+  {
+    // if we're not inside a room, let the player create a room
+    if( PhotonNetwork.room == null )
+    {
+      
+      // if create room button clicked
+      {
+        // create a room called "RoomNameHere", visible to the lobby, allows other players to join, and allows up to 8 players
+        PhotonNetwork.CreateRoom( "RoomNameHere", true, true, 8 );
+      }
+    }
+    else
+    {
+      // we're connected to a room, display some info such as room name, player count, etc. 
+
+      // disconnect from the current room
+      // if disconnect button clicked
+      {
+        PhotonNetwork.LeaveRoom();
+      }
+    }
+  }
+}</pre></div><p>Creating<a id="id90" class="indexterm"></a> a<a id="id91" class="indexterm"></a> room triggers the following callbacks:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">OnCreatedRoom</code>, if the room is successfully created.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">OnPhotonCreateRoomFailed</code>, if the call to CreateRoom failed. Unfortunately, no parameters are sent, so it's impossible to truly know the reason (however, the most likely reason is that the room name is already in use).</p></li><li style="list-style-type: disc"><p>Note that there is no naming convention for rooms, but room names must be unique (otherwise the room creation will fail). Uniqueness is enforced on a per-app basis. You can also provide <code class="literal">null</code> to have a unique room name generated for you.</p></li></ul></div><p>You can also specify a maximum number of players for the room. Unlike Unity Networking, this is exactly the number of players which can play, including the host (whereas in Unity networking, this number does not include the host, so specifying 8 players allows 9 players to play if the host participates).</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note12"></a>Note</h3><p>Photon Cloud will automatically close rooms if all players leave the game.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec19"></a>Joining rooms</h3></div></div></div><p>Joining a <a id="id92" class="indexterm"></a>room<a id="id93" class="indexterm"></a> is just as easy as creating a room. We could modify our lobby example, so that clicking a room calls the <code class="literal">JoinRoom</code> function, such as:</p><div class="informalexample"><pre class="programlisting">foreach( RoomInfo room in PhotonNetwork.GetRoomList() )
+{
+  // if this room's join room button is clicked
+  {
+    PhotonNetwork.JoinRoom( room );
+  }
+}</pre></div><p>Joining a room triggers the following callbacks:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">OnJoinedRoom</code>, if the client has successfully connected to the given room.</p></li><li style="list-style-type: disc"><p>
+<code class="literal">OnPhotonJoinRoomFailed</code>, if the client could not join the room. Again, no parameters are provided, so it's impossible to know the exact cause, but the most likely reason is that either the room no longer exists, or it is full.</p></li></ul></div></div></div>

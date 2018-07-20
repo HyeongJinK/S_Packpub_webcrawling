@@ -1,0 +1,41 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec31"></a>Finding friends</h2></div></div><hr /></div><p>Let's say<a id="id105" class="indexterm"></a> your game features a friends list, and you want to know if a friend is online or offline, or perhaps even want to join your friend if they are playing in a room. Luckily Photon Cloud recently added easy support for this via the <code class="literal">FindFriends</code> feature, which allows you to query the online states of a given list of users, as well the rooms the users are currently in, if any. The following example will locate and display a list of friends as defined in the inspector (in a real use case, these would likely be fetched from a database or some other source):</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Example_FindFriends : MonoBehaviour
+{
+  public string[] Friends = new string[ 0 ];
+
+  void OnJoinedLobby()
+  {
+    // Set our player name
+    // Note that player names are not enforced to be unique. For the most part, this is used for screen names, but is also used for the FindFriends call
+    // You can also change the name at any time
+    PhotonNetwork.playerName = "TestPlayerName";
+
+    // fetch the friends list from Photon
+    // note that this is asynchronous, when the friends list is downloaded the results will be available via PhotonNetwork.Friends
+    PhotonNetwork.FindFriends( Friends );
+  }
+
+  void OnGUI()
+  {
+    if( !PhotonNetwork.connected )
+      return;
+
+    if( PhotonNetwork.Friends == null )
+      return;
+
+    
+    foreach( FriendInfo friend in PhotonNetwork.Friends )
+    {
+      
+      // display information about this friend
+      // you can get the friend's name via friend.Name
+      // friend.IsOnline is the online status of the friend
+      // friend.IsInRoom indicates whether the friend is currently connected to a room
+      // friend.Room indicates which room the friend is in, if any
+    }
+
+    GUILayout.EndArea();
+  }
+}</pre></div><p>In order for this to work, each player will need to set their name via <code class="literal">PhotonNetwork.playerName</code>. <code class="literal">FindFriends</code> will attempt to find the status of each friend by their username. There <a id="id106" class="indexterm"></a>is no harm in including users that don't exist; they will simply show up as offline.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>Note that <code class="literal">FindFriends</code> cannot be called before connecting to the lobby. That is, calling <code class="literal">FindFriends</code> in <code class="literal">OnConnectedToPhoton</code> will result in an error, but <code class="literal">OnJoinedLobby</code> will work fine.</p></div></div>

@@ -1,0 +1,119 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec47"></a>Displaying the achievements on screen</h2></div></div><hr /></div><p>Just as<a id="id413" class="indexterm"></a> we did with the stats, we will have a new menu for achievements. First, we'll start by adding a couple of variables:</p><div class="informalexample"><pre class="programlisting">public bool showAchievements = false;
+public Rect achRect = new Rect(Screen.width / 2, Screen.height / 2, 700, 700);</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec100"></a>Adding the GUI functions</h3></div></div></div><p>Now, we <a id="id414" class="indexterm"></a>will add the functions to show the <a id="id415" class="indexterm"></a>achievements on the screen. The first function is the <code class="literal">OnGUI</code> function, which we will add now:</p><div class="informalexample"><pre class="programlisting">void OnGUI()
+{
+  if(showAchievements)
+  {
+    achRect = GUI.Window(0, achRect, AchGUI, "Achievements");
+  }
+}</pre></div><p>Just as in the stats menu, we check whether we want to show the achievements menu. If we do it, is shown on screen; if not, we hide it.</p><p>Next, we will add the <code class="literal">AchGUI</code> function that is being called in the <code class="literal">OnGUI</code> function. This is a large <a id="id416" class="indexterm"></a>function, but it will allow us to show<a id="id417" class="indexterm"></a> the achievements that we need. It is similar to the stat menu, except <a id="id418" class="indexterm"></a>we will show buttons instead of a number. We use buttons just as a proof of concept; normally, you would use an image for your achievements.</p><p>What this function will do is use a switch statement to check the level of each achievement that we track. Then, it will show the number of achievement buttons onscreen according to what level the player is at, within that achievement. Let's add the new function now:</p><div class="informalexample"><pre class="programlisting">void AchGUI(int ID)
+{
+  GUILayout.BeginArea(new Rect(15, 25, 700, 700));
+  
+  GUILayout.BeginVertical();
+  GUILayout.Label("Level");
+  GUILayout.Label("Kills");
+  GUILayout.Label("Total Gold");
+  GUILayout.Label("Gold Spent");
+  GUILayout.Label("Rounds Won");
+  GUILayout.Label("Time Played");
+  GUILayout.EndVertical();
+  
+  GUILayout.EndArea();
+
+  GUILayout.BeginArea(new Rect(50, 25, 700, 700));
+  
+  GUILayout.BeginHorizontal();
+  if(achLvl &gt;= 1)
+      GUILayout.Button("Level 1", GUILayout.Height(25), GUILayout.Width(75));
+    if(achLvl &gt;= 2)
+      GUILayout.Button("Level 2", GUILayout.Height(25), GUILayout.Width(75));
+    if(achLvl &gt;= 3)
+      GUILayout.Button("Level 3", GUILayout.Height(25), GUILayout.Width(75));
+    if(achLvl &gt;= 4)
+      GUILayout.Button("Level 4", GUILayout.Height(25), GUILayout.Width(75));
+    if(achLvl &gt;=5)
+      GUILayout.Button("Level 5", GUILayout.Height(25), GUILayout.Width(75));
+    if(achLvl &gt;=6)
+      GUILayout.Button("Level 6", GUILayout.Height(25), GUILayout.Width(75));
+  GUILayout.EndHorizontal();
+
+  GUILayout.BeginHorizontal();
+  if(achKills &gt;= 1)
+      GUILayout.Button("Kills 1", GUILayout.Height(25), GUILayout.Width(75));
+    if(achKills &gt;= 2)
+      GUILayout.Button("Kills 2", GUILayout.Height(25), GUILayout.Width(75));
+    if(achKills &gt;= 3)
+      GUILayout.Button("Kills 3", GUILayout.Height(25), GUILayout.Width(75));
+    if(achKills &gt;= 4)
+      GUILayout.Button("Kills 4", GUILayout.Height(25), GUILayout.Width(75));
+    if(achKills &gt;=5)
+      GUILayout.Button("Kills 5", GUILayout.Height(25), GUILayout.Width(75));
+    if(achKills &gt;=6)
+      GUILayout.Button("Kills 6", GUILayout.Height(25), GUILayout.Width(75));
+  GUILayout.EndHorizontal();
+  GUILayout.EndArea();
+  
+  GUILayout.BeginArea(new Rect(90, 80, 700, 700));
+  GUILayout.BeginHorizontal();
+  if(achTotGold &gt;= 1)
+      GUILayout.Button("Total Gold 1", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTotGold &gt;= 2)
+      GUILayout.Button("Total Gold 2", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTotGold &gt;= 3)
+      GUILayout.Button("Total Gold 3", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTotGold &gt;= 4)
+      GUILayout.Button("Total Gold 4", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTotGold &gt;=5)
+      GUILayout.Button("Total Gold 5", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTotGold &gt;=6)
+      GUILayout.Button("Total Gold 6", GUILayout.Height(25), GUILayout.Width(75));
+  GUILayout.EndHorizontal();
+  
+  GUILayout.BeginHorizontal();
+  if(achGoldSpnt &gt;= 1)
+      GUILayout.Button("Gold Spent 1", GUILayout.Height(25), GUILayout.Width(75));
+    if(achGoldSpnt &gt;= 2)
+      GUILayout.Button("Gold Spent 2", GUILayout.Height(25), GUILayout.Width(75));
+    if(achGoldSpnt &gt;= 3)
+      GUILayout.Button("Gold Spent 3", GUILayout.Height(25), GUILayout.Width(75));
+    if(achGoldSpnt &gt;= 4)
+      GUILayout.Button("Gold Spent 4", GUILayout.Height(25), GUILayout.Width(75));
+    if(achGoldSpnt &gt;=5)
+      GUILayout.Button("Gold Spent 5", GUILayout.Height(25), GUILayout.Width(75));
+    if(achGoldSpnt &gt;=6)
+      GUILayout.Button("Gold Spent 6", GUILayout.Height(25), GUILayout.Width(75));
+  GUILayout.EndHorizontal();
+  
+  GUILayout.BeginHorizontal();
+  if(achRndsW &gt;= 1)
+      GUILayout.Button("Rounds Won 1", GUILayout.Height(25), GUILayout.Width(75));
+    if(achRndsW &gt;= 2)
+      GUILayout.Button("Rounds Won 2", GUILayout.Height(25), GUILayout.Width(75));
+    if(achRndsW &gt;= 3)
+      GUILayout.Button("Rounds Won 3", GUILayout.Height(25), GUILayout.Width(75));
+    if(achRndsW &gt;= 4)
+      GUILayout.Button("Rounds Won 4", GUILayout.Height(25), GUILayout.Width(75));
+    if(achRndsW &gt;=5)
+      GUILayout.Button("Rounds Won 5", GUILayout.Height(25), GUILayout.Width(75));
+    if(achRndsW &gt;=6)
+      GUILayout.Button("Rounds Won 6", GUILayout.Height(25), GUILayout.Width(75));
+  GUILayout.EndHorizontal();
+  
+  GUILayout.BeginHorizontal();
+  if(achTime &gt;= 1)
+      GUILayout.Button("Time Played 1", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTime &gt;= 2)
+      GUILayout.Button("Time Played 2", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTime &gt;= 3)
+      GUILayout.Button("Time Played 3", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTime &gt;= 4)
+      GUILayout.Button("Time Played 4", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTime &gt;=5)
+      GUILayout.Button("Time Played 5", GUILayout.Height(25), GUILayout.Width(75));
+    if(achTime &gt;=6)
+      GUILayout.Button("Time Played 6", GUILayout.Height(25), GUILayout.Width(75));
+  GUILayout.EndHorizontal();
+  
+  GUILayout.EndArea();
+}
+</pre></div><p>For<a id="id419" class="indexterm"></a> testing purposes, I made the achievement <a id="id420" class="indexterm"></a>level variables public and set them to various values. Drag the script onto the camera, remove the stats script, and set the <code class="literal">showAchievements</code> Boolean value to <code class="literal">true</code>. If you run the scene, you should see the following results:</p><div class="mediaobject"><img src="/graphics/9781783553631/graphics/3631OT_06_02.jpg" /></div><p>You will probably have slightly different results, based on what you assigned each of the achievement level variables.</p></div></div>

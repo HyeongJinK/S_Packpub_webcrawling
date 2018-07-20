@@ -1,0 +1,198 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec127"></a>An editor extension to allow pickup type (and parameters) to be changed at design time via a custom Inspector UI</h2></div></div><hr /></div><p>The use of <span class="strong"><strong>enums</strong></span> and corresponding drop-down menus in the Inspector panel to restrict changes to one of a limited set often works fine (for example, pickup types for a pickup object). However, the trouble with this approach is, when two or more properties are related and need to be changed together, there is a danger of changing one property, for example, pickup type from <span class="strong"><strong>Heart</strong></span> to <span class="strong"><strong>Key</strong></span>, but forgetting to change corresponding properties; for example, leaving the <span class="strong"><strong>Sprite Renderer</strong></span> component still showing a <span class="strong"><strong>Heart sprite</strong></span>. Such mismatches cause problems both in terms of messing up intended level design and, of course, the frustration for the player when they collide with something showing one pickup image, but a different kind of pickup type is added to the inventory!</p><p>If a class of GameObject has several related properties or components, which all need to be changed together, then a good strategy is to use Unity Editor extensions to do all the associated changes each time a different choice is made from a drop-down menu showing the defined set of enumerated choices.</p><p>In this recipe, we introduce <a id="id1330" class="indexterm"></a>an Editor extension for PickUp components of GameObjects.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_41.jpg" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec400"></a>Getting ready</h3></div></div></div><p>This recipe assumes you are starting with project <code class="literal">Simple2Dgame_SpaceGirl</code> setup from the first recipe in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Inventory GUIs</em></span>. A copy of this Unity project is provided in a folder named <code class="literal">unityProject_spaceGirlMiniGame</code> in the <code class="literal">1362_12_01</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec401"></a>How to do it...</h3></div></div></div><p>To create an editor<a id="id1331" class="indexterm"></a> extension to allow pickup type (and parameters) to be changed at design-time via a custom Inspector UI, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Start with a new copy of mini-game <code class="literal">Simple2Dgame_SpaceGirl</code>.</p></li><li><p>In the <span class="strong"><strong>Project</strong></span> panel, create a new folder named <code class="literal">EditorSprites</code>. Move the following images from folder <code class="literal">Sprites</code> into this new folder: <code class="literal">star</code>, <code class="literal">healthheart</code>, <code class="literal">icon_key_green_100</code>, <code class="literal">icon_key_green_32</code>, <code class="literal">icon_star_32</code>, and <code class="literal">icon_heart_32</code>.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_55.jpg" /></div></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span> panel, rename GameObject <code class="literal">star</code> to be named <code class="literal">pickup</code>.</p></li><li><p>Edit the tags, changing tag <span class="strong"><strong>Star </strong></span>to <span class="strong"><strong>Pickup</strong></span>. Ensure the <code class="literal">pickup</code> GameObject now has the tag <span class="strong"><strong>Pickup</strong></span>.</p></li><li><p>Add the following C# script <code class="literal">PickUp</code> to GameObject <code class="literal">pickup</code> in the <span class="strong"><strong>Hierarchy</strong></span>:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System;
+using System.Collections;
+
+public class PickUp : MonoBehaviour {
+  public enum PickUpType {
+    Star, Health, Key
+  }
+
+  [SerializeField]
+  public PickUpType type;
+
+  public void SetSprite(Sprite newSprite){
+    SpriteRenderer spriteRenderer = GetComponent&lt;SpriteRenderer&gt;();
+    spriteRenderer.sprite = newSprite;
+  }
+}</pre></div></li><li><p>In the <span class="strong"><strong>Project</strong></span> panel, create a new folder named <code class="literal">Editor</code>. Inside this new folder, create a<a id="id1332" class="indexterm"></a> new C# script class named <code class="literal">PickUpEditor</code>, with the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System;
+using UnityEditor;
+using System.Collections.Generic;
+
+[CanEditMultipleObjects]
+[CustomEditor(typeof(PickUp))]
+public class PickUpEditor : Editor
+{
+  public Texture iconHealth;
+  public Texture iconKey;
+  public Texture iconStar;
+
+  public Sprite spriteHealth100;
+  public Sprite spriteKey100;
+  public Sprite spriteStar100;
+
+  UnityEditor.SerializedProperty pickUpType;
+
+  private Sprite sprite;
+  private PickUp pickupObject;
+
+  void OnEnable () {
+    iconHealth = AssetDatabase.LoadAssetAtPath("Assets/EditorSprites/icon_heart_32.png", typeof(Texture)) as Texture;
+    iconKey = AssetDatabase.LoadAssetAtPath("Assets/EditorSprites/icon_key_32.png", typeof(Texture)) as Texture;
+    iconStar = AssetDatabase.LoadAssetAtPath("Assets/EditorSprites/icon_star_32.png", typeof(Texture)) as Texture;
+
+    spriteHealth100 = AssetDatabase.LoadAssetAtPath("Assets/EditorSprites/healthheart.png", typeof(Sprite)) as Sprite;
+    spriteKey100 = AssetDatabase.LoadAssetAtPath("Assets/EditorSprites/icon_key_100.png", typeof(Sprite)) as Sprite;
+    spriteStar100 = AssetDatabase.LoadAssetAtPath("Assets/EditorSprites/star.png", typeof(Sprite)) as Sprite;
+
+    pickupObject = (PickUp)target;
+    pickUpType = serializedObject.FindProperty ("type");
+  }
+
+
+  public override void OnInspectorGUI()
+  {
+    serializedObject.Update ();
+
+    string[] pickUpCategories = TypesToStringArray();
+    pickUpType.enumValueIndex = EditorGUILayout.Popup("PickUp TYPE: ", pickUpType.enumValueIndex, pickUpCategories);
+
+    PickUp.PickUpType type = (PickUp.PickUpType)pickUpType.enumValueIndex;
+    switch(type)
+    {
+    case PickUp.PickUpType.Health:
+      InspectorGUI_HEALTH();
+      break;
+
+    case PickUp.PickUpType.Key:
+      InspectorGUI_KEY();
+      break;
+
+    case PickUp.PickUpType.Star:
+    default:
+      InspectorGUI_STAR();
+      break;
+    }
+
+    serializedObject.ApplyModifiedProperties ();
+  }
+
+  private void InspectorGUI_HEALTH()
+  {
+    GUILayout.BeginHorizontal();
+    GUILayout.FlexibleSpace();
+    GUILayout.Label(iconHealth);
+    GUILayout.Label("HEALTH");
+    GUILayout.Label(iconHealth);
+    GUILayout.Label("HEALTH");
+    GUILayout.Label(iconHealth);
+    GUILayout.FlexibleSpace();
+    GUILayout.EndHorizontal();
+
+    pickupObject.SetSprite(spriteHealth100);
+  }
+
+  private void InspectorGUI_KEY()
+  {
+    GUILayout.BeginHorizontal();
+    GUILayout.FlexibleSpace();
+    GUILayout.Label(iconKey);
+    GUILayout.Label("KEY");
+    GUILayout.Label(iconKey);
+    GUILayout.Label("KEY");
+    GUILayout.Label(iconKey);
+    GUILayout.FlexibleSpace();
+    GUILayout.EndHorizontal();
+
+    pickupObject.SetSprite(spriteKey100);
+  }
+
+  private void InspectorGUI_STAR()
+  {
+    GUILayout.BeginHorizontal();
+    GUILayout.FlexibleSpace();
+    GUILayout.Label(iconStar);
+    GUILayout.Label("STAR");
+    GUILayout.Label(iconStar);
+    GUILayout.Label("STAR");
+    GUILayout.Label(iconStar);
+    GUILayout.FlexibleSpace();
+    GUILayout.EndHorizontal();
+
+    pickupObject.SetSprite(spriteStar100);
+  }
+  private string[] TypesToStringArray(){
+    var pickupValues = (PickUp.PickUpType[])Enum.GetValues(typeof(PickUp.PickUpType));
+
+    List&lt;string&gt; stringList = new List&lt;string&gt;();
+
+    foreach(PickUp.PickUpType pickupValue in pickupValues){
+      string stringName = pickupValue.ToString();
+      stringList.Add(stringName);
+    }
+
+    return stringList.ToArray();
+  }
+}</pre></div></li><li><p>In the <span class="strong"><strong>Inspector</strong></span> panel, select GameObject <code class="literal">pickup</code> and choose different values of the drop-down menu <span class="strong"><strong>PickUp Type</strong></span>. You should see corresponding <a id="id1333" class="indexterm"></a>changes in the image and icons in the <span class="strong"><strong>Inspector</strong></span> for the <span class="strong"><strong>Pick Up (Script)</strong></span> component (three icons with the name of the type in between). The <span class="strong"><strong>Sprite</strong></span> property of the <span class="strong"><strong>Sprite Renderer</strong></span> component for this GameObject should change. Also, in the <span class="strong"><strong>Scene</strong></span> panel, you'll see the image in the scene change to the appropriate image for the pickup type you have chosen.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_42.jpg" /></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec402"></a>How it works...</h3></div></div></div><p>Our script class <code class="literal">PickUp</code> has the enum <code class="literal">PickUpType</code> with the three values: <code class="literal">Star</code>, <code class="literal">Health</code>, and <code class="literal">Key</code>. Also, there is the variable <code class="literal">type</code>, storing the type of the parent GameObject. Finally, there is a <code class="literal">SetSprite(…)</code> method that sets the <span class="strong"><strong>Sprite Renderer</strong></span> component of the parent GameObject to be set to the provided <code class="literal">Sprite</code> parameter. It is this method that is called from the editor script each time the pickup type is changed from the drop-down menu (with the corresponding sprite for the new type being passed).</p><p>The vast majority of the work<a id="id1334" class="indexterm"></a> for this recipe is the responsibility of the script class <code class="literal">PickUpEditor</code>. While there is a lot in this script, its work is relatively straightforward: for each frame, via method <code class="literal">OnInspectorGUI()</code>, a dropdown<a id="id1335" class="indexterm"></a> list of <code class="literal">PickUpType</code> values is presented to the user. Based on the value selected from this drop-down list, one of three methods is executed: <code class="literal">InspectorGUI_HEALTH()</code>, <code class="literal">InspectorGUI_KEY()</code>, <code class="literal">InspectorGUI_STAR()</code>. Each of these methods displays three icons and the name of the type in the Inspector beneath the drop-down menu and ends by calling the <code class="literal">SetSprite(…)</code> method of the GameObject being edited in the Inspector to update the <span class="strong"><strong>Sprite Renderer</strong></span> component of the parent GameObject with the appropriate sprite.</p><p>The C# attribute <code class="literal">[CustomEditor(typeof(PickUp))]</code> appearing before our class is declared, tells Unity to use this special editor script to display component properties in the <span class="strong"><strong>Inspector</strong></span> panel for <span class="strong"><strong>Pick Up (Script)</strong></span> components of GameObjects, rather than Unity's default <span class="strong"><strong>Inspector</strong></span> which displays public variables of such scripted components.</p><p>Before and after its main work, the <code class="literal">OnInspectorGUI()</code> method first ensures that any variables relating to the object being edited in the Inspector have been updated —<code class="literal">serializedObject.Update()</code>. The last statement of this method correspondingly ensures that any changes to variables in the editor script have been copied back to the GameObject being edited—<code class="literal">serializedObject.ApplyModifiedProperties()</code>.</p><p>The <code class="literal">OnEnable()</code> method of <a id="id1336" class="indexterm"></a>script class <code class="literal">PickUpEditor</code> loads the three small icons (for display in the <span class="strong"><strong>Inspector</strong></span>) and the three larger sprite images (to update the <span class="strong"><strong>Sprite Renderer</strong></span> for display in the <span class="strong"><strong>Scene/Game</strong></span> panels). The <code class="literal">pickupObject</code> variable is set to be a reference to the <code class="literal">PickUp</code> scripted component, allowing us to call the <code class="literal">SetSprite(…)</code> method. The <code class="literal">pickUpType</code> variable is set to be linked to the type variable of the <code class="literal">PickUp</code> scripted component whose special <span class="strong"><strong>Inspector</strong></span> editor view makes this script possible—<code class="literal">serializedObject.FindProperty ("type")</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec403"></a>There's more...</h3></div></div></div><p>Here are some<a id="id1337" class="indexterm"></a> details you don't want to miss.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec116"></a>Offer the custom editing of pickup parameters via Inspector</h4></div></div></div><p>Many pickups have additional properties, rather than simply being an item being carried. For example, a health pickup <a id="id1338" class="indexterm"></a>may add health "points" to the player's character, a coin pickup may add money "points" to the characters bank balance, and so on. So, let's add an integer <code class="literal">points</code> variable to our <code class="literal">PickUp</code> class and offer the user the ability to easily edit this points value via a GUI slider in our customer Inspector editor.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_49.jpg" /></div><p>To add an editable points property to our <code class="literal">PickUp</code> objects, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following extra line into C# script <code class="literal">PickUp</code> to create our new integer <code class="literal">points</code> variable:</p><div class="informalexample"><pre class="programlisting">public int points;</pre></div></li><li><p>Add the following extra line into C# script <code class="literal">PickUpEditor</code> to work with our new integer <code class="literal">points</code> variable:</p><div class="informalexample"><pre class="programlisting">UnityEditor.SerializedProperty points;</pre></div></li><li><p>Add the following extra line into the <code class="literal">OnEnable()</code> method in C# script <code class="literal">PickUpEditor</code> to associate our new <code class="literal">points</code> variable with its corresponding value in the <code class="literal">PickUp</code> scripted component of the GameObject being edited:</p><div class="informalexample"><pre class="programlisting">void OnEnable () {
+  points = serializedObject.FindProperty ("points");
+  pickUpType = serializedObject.FindProperty ("type");
+  // rest of method as before…</pre></div></li><li><p>Now we can add an extra line into each GUI method for the different PickUp types. For example, we can add a statement to display an <span class="strong"><strong>IntSlider</strong></span> to the user to be able to see and modify the points value for a <span class="strong"><strong>Health PickUp</strong></span> object. We add a new statement at the end of the <code class="literal">InspectorGUI_HEALTH()</code>method in C# script <code class="literal">PickUpEditor</code> to display a modifiable <span class="strong"><strong>IntSlider</strong></span> representing our new <code class="literal">points</code> variable as follows:</p><div class="informalexample"><pre class="programlisting">private void InspectorGUI_HEALTH(){
+  // beginning of method just as before…
+
+  pickupObject.SetSprite(spriteHealth100);
+
+// now display Int Slider for points
+  points.intValue = EditorGUILayout.IntSlider ("Health points", points.intValue, 0, 100);
+}</pre></div></li></ol></div><p>We provide four parameters to the <code class="literal">IntSlider(…)</code> method. The first is the text label the user will see next to the slider. The second is the initial value the slider displays. The last two are the maximum and minimum values. In our example, we are permitting values from 0 to 100, but if health pickups only offer one, two, or three health points, then we'd just call with <code class="literal">EditorGUILayout.IntSlider ("Health points", points.intValue, 1, 5)</code>. This method returns a new integer value based on where the slider has been <a id="id1339" class="indexterm"></a>positioned, and this new value is stored back into the integer value part of our <code class="literal">SerializedProperty</code> variable points.</p><p>Note that the loading and saving of values from the scripted component in the GameObject and our editor script is all part of the work undertaken by our calls to the <code class="literal">Update()</code> method and the <code class="literal">ApplyModifiedProperties()</code> method on the serialized object in the <code class="literal">OnInspectorGUI()</code> method.</p><p>Note that since points may not have any meaning for some pickups, for example, keys, then we simply would not display any slider for the GUI Inspector editor when the user is editing <span class="strong"><strong>PickUp</strong></span> objects of that type.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec117"></a>Offer a drop-down list of tags for key-pickup to fit via Inspector</h4></div></div></div><p>While the<a id="id1340" class="indexterm"></a> concept of "points" may have no meaning for a key pickup, the concept of the type of lock that a given key fits is certainly something we may wish to implement in a game. Since Unity offers us a defined (and editable) list of string tags for any GameObject, often it is sufficient, and straightforward, to represent the type of lock or door corresponding to a key via its tag. For example, a green key might fit all objects tagged <span class="strong"><strong>LockGreen</strong></span> and so on.</p><div class="mediaobject"><img src="/graphics/9781784391362/graphics/1362OT_12_50.jpg" /></div><p>Therefore, it is very useful to be able to offer a custom Inspector editor for a string property of key pickups that stores the tag of the lock(s) the key can open. This task combines several actions, including using C# to retrieve an array of tags from the Unity editor, then the building <a id="id1341" class="indexterm"></a>and offering of a drop-down list of these tags to the user, with the current value already selected in this list.</p><p>To add a selectable list of strings for the tag for lock(s) that a key fits, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Add the following extra line into C# Script <code class="literal">PickUp</code> to create our new integer <code class="literal">fitsLockTag</code> variable:</p><div class="informalexample"><pre class="programlisting">public string fitsLockTag;</pre></div></li><li><p>Add the following extra line into C# script <code class="literal">PickUpEditor</code> to work with our new integer <code class="literal">fitsLockTag</code> variable:</p><div class="informalexample"><pre class="programlisting">UnityEditor.SerializedProperty fitsLockTag;</pre></div></li><li><p>Add the following extra line into the <code class="literal">OnEnable()</code>method in C# script <code class="literal">PickUpEditor</code> to associate our new <code class="literal">fitsLockTag</code> variable with its corresponding value in the PickUp scripted component of the GameObject being edited:</p><div class="informalexample"><pre class="programlisting">void OnEnable () {
+  fitsLockTag = serializedObject.FindProperty ("fitsLockTag");
+  points = serializedObject.FindProperty ("points");
+  pickUpType = serializedObject.FindProperty ("type");
+  // rest of method as before…</pre></div></li><li><p>Now we need to add some extra lines of code into the GUI method for key PickUps. We need to add several statements to the end of method <code class="literal">InspectorGUI_KEY()</code> in C# script <code class="literal">PickUpEditor</code> to set up and display a selectable popup drop-down list representing our new <code class="literal">fitsLockTag</code> variable as follows. Replace the <code class="literal">InspectorGUI_KEY()</code> method with the following code:</p><div class="informalexample"><pre class="programlisting">private void InspectorGUI_KEY() {
+  GUILayout.BeginHorizontal();
+  GUILayout.FlexibleSpace();
+  GUILayout.Label(iconKey);
+  GUILayout.Label("KEY");
+  GUILayout.Label(iconKey);
+  GUILayout.Label("KEY");
+  GUILayout.Label(iconKey);
+  GUILayout.FlexibleSpace();
+  GUILayout.EndHorizontal();
+
+  pickupObject.SetSprite(spriteKey100);
+
+  string[] tags = UnityEditorInternal.InternalEditorUtility.tags;
+  Array.Sort(tags);
+  int selectedTagIndex = Array.BinarySearch(tags, fitsLockTag.stringValue);
+  if(selectedTagIndex &lt; 0)  selectedTagIndex = 0;
+  selectedTagIndex = EditorGUILayout.Popup("Tag of door key fits: ", selectedTagIndex, tags);
+
+  fitsLockTag.stringValue = tags[selectedTagIndex];
+}</pre></div></li></ol></div><p>We've added several statements to the end of this method. First <code class="literal">tags</code>, an array of strings, is created (and sorted), containing the list of tags currently available in the Unity editor for the current game. We then attempt to find the location in this array of the current value of <code class="literal">fitsLockTag</code> — we can use the <code class="literal">BinarySearch(…)</code> method of built-in script class <code class="literal">Array</code> because<a id="id1342" class="indexterm"></a> we have alphabetically sorted our array (which also makes it easier for the user to navigate). If the string in <code class="literal">fitsLockTag</code> cannot be found in array <code class="literal">tags</code>, then the first item will be selected by default (index 0).</p><p>The user is then shown the drop-down list via the<a id="id1343" class="indexterm"></a> <code class="literal">GUILayout</code> method <code class="literal">EditorGUILayout.Popup(…)</code>, and this method returns the index of whichever item is selected. The selected index is stored into <code class="literal">selectedTagIndex</code>, and the last statement in the method extracts the corresponding string and stores that string into the <code class="literal">fitsLockTag</code> variable.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note62"></a>Note</h3><p>Note: Rather than displaying all possible tags, a further refinement might remove all items from array 'tags' that do not have the prefix 'Lock'. So the user is only presented with tags such as 'LockBlue' and 'LockGreen', and so on.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec118"></a>Logic to open doors with keys based on fitsLockTag</h4></div></div></div><p>In our player collision logic, we can now search through our inventory to see if any key items fit the lock we have collided with. For example, if a green door was collided with, and the player was carrying a key that could open such doors, then that item should be removed from the inventory <code class="literal">List&lt;&gt;</code> and the door should be opened.</p><p>To implement this, you <a id="id1344" class="indexterm"></a>would need to add an <code class="literal">if</code> test inside the <code class="literal">OnTriggerEnter()</code> method to detected collision with the item tagged <code class="literal">Door</code>, and then logic to attempt to open the door, and, if unsuccessful, do the appropriate action (for example, play sound) to inform the player they cannot open the door yet (we'll assume we have written a door animation controller that plays the appropriate animation and sounds and when a door is to be opened):</p><div class="informalexample"><pre class="programlisting">if("Door" == hitCollider.tag){
+  if(!OpenDoor(hitCollider.gameObject))
+    DoorNotOpenedAction();
+}</pre></div><p>The <code class="literal">OpenDoor()</code> method would <a id="id1345" class="indexterm"></a>need to identify which item (if any) in the inventory can open such a door, and, if found, then that item should be removed from the <code class="literal">List&lt;&gt;</code> and the door should be opened by the appropriate method:</p><div class="informalexample"><pre class="programlisting">private bool OpenDoor(GameObject doorGO){
+  // search for key to open the tag of doorGO
+  int colorKeyIndex = FindItemIndex(doorGO.tag);
+  if( colorKeyIndex &gt; -1 ){
+    // remove key item from inventory List&lt;&gt;
+    inventory.RemoveAt( colorKeyIndex );
+
+    // now open the door...
+    DoorAnimationController doorAnimationController = doorGO.GetComponent&lt;&gt;(DoorAnimationController);
+    doorAnimationController.OpenDoor();
+
+    return true;
+  }
+
+  return false;
+}</pre></div><p>The following is the code for a method to find the inventory list key item fitting a door tag:</p><div class="informalexample"><pre class="programlisting">private int FindItemIndex(string doorTag){
+  for (int i = 0; i &lt; inventory.Count; i++){
+    PickUp item = inventory[i];
+    if( (PickUp.PickUpType.Key == item.type) &amp;&amp; (item.fitsLockTag == doorTag))
+      return i;
+  }
+
+  // not found
+return -1;
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec119"></a>The need to add [SerializeField] for private properties</h4></div></div></div><p>Note that if we wished to create editor extensions to work with private variables, then we'd need to explicitly add <code class="literal">[SerializeField] </code>in the line immediately before the variable to be changed by the<a id="id1346" class="indexterm"></a> editor script. Public variables are serialized by default in Unity, so this was not required for our public <code class="literal">type</code> variable in script class <code class="literal">PickUp</code>, although it's good practice to flag ALL variables that are changeable via an Editor Extension in this way.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec120"></a>Learn more from the Unity documentation</h4></div></div></div><p>Unity provides <a id="id1347" class="indexterm"></a>documentation pages about editor scripts at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/Editor.html" target="_blank">http://docs.unity3d.com/ScriptReference/Editor.html</a>.</p></div></div></div>

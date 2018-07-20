@@ -1,0 +1,167 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec71"></a>Corrections</h2></div></div><hr /></div><p>While testing, we stated the following issues:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Autorotation is enabled. We <a id="id854" class="indexterm"></a>should remove it for our game.</p></li><li style="list-style-type: disc"><p>Android's back button exits the game instead of enabling the game to pause.</p></li><li style="list-style-type: disc"><p>The character does not move when objects are clicked on.</p></li><li style="list-style-type: disc"><p>The elemental switch UI must be displayed differently than with a right-click.</p></li></ul></div><p>We will correct them one by one. Let's start with the autorotation in the <span class="strong"><strong>Player</strong></span> settings.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec131"></a>Autorotation</h3></div></div></div><p>Open the <span class="strong"><strong>Player</strong></span> settings window<a id="id855" class="indexterm"></a> by navigating to <span class="strong"><strong>Edit</strong></span> | <span class="strong"><strong>Project Settings</strong></span> | <span class="strong"><strong>Player</strong></span>, as shown in<a id="id856" class="indexterm"></a> the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783552979/graphics/2979OT_08_05.jpg" /></div><p>In the <span class="strong"><strong>Inspector</strong></span> panel, enter <a id="id857" class="indexterm"></a>your name and set the <span class="strong"><strong>Default Orientation</strong></span> value to <span class="strong"><strong>Landscape Left</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781783552979/graphics/2979OT_08_06.jpg" /></div><p>Good. The game will now <a id="id858" class="indexterm"></a>be forced in the landscape left orientation. Let's correct the Android back button issue now.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec132"></a>Back button</h3></div></div></div><p>The fact that the game exits when the back button is pressed comes from our main menu; the <span class="strong"><strong>UI Root</strong></span> | <span class="strong"><strong>Main</strong></span> | <span class="strong"><strong>Buttons</strong></span> | <span class="strong"><strong>Exit</strong></span> button<a id="id859" class="indexterm"></a> is active with <code class="literal">UIKeyBinding</code> enabled.</p><p>Consequently, when you<a id="id860" class="indexterm"></a> hit the <span class="emphasis"><em>Esc</em></span> button, which is the back button on Android devices, it's as if you clicked on the main menu's <span class="strong"><strong>Exit</strong></span> button.</p><p>The simplest way to correct this is to disable the <span class="strong"><strong>UI Root</strong></span> | <span class="strong"><strong>Main</strong></span> GameObject as soon as the <span class="strong"><strong>Game</strong></span> scene is loaded, and re-enable it when the player returns to the main menu.</p><p>Let's take care of this now. Open the <code class="literal">MenuManager.cs</code> script, and add these lines at the very beginning of the <code class="literal">LoadGameScene()</code> method:</p><div class="informalexample"><pre class="programlisting">// Disable all objects in enableAtAwake array
+<span class="strong"><strong>foreach(GameObject currentGO in enableAtAwake)</strong></span>
+{
+<span class="strong"><strong>  currentGO.SetActive(false);</strong></span>
+}</pre></div><p>The preceding code disables all objects in the <code class="literal">enableAtAwake</code> array, which contains the <span class="strong"><strong>UI Root</strong></span> | <span class="strong"><strong>Main</strong></span> GameObject.</p><p>We should now make sure that the main menu's <span class="strong"><strong>Main</strong></span> GameObject is re-enabled when we go back to the main menu. Open the <code class="literal">GameManager.cs</code> script, and add these lines at the end of the <code class="literal">EnterMenu()</code> coroutine, just below the <code class="literal">Application.LoadLevel("Menu")</code> line:</p><div class="informalexample"><pre class="programlisting">// Enable all objects in enableAtAwake array
+<span class="strong"><strong>foreach(GameObject currentGO in MenuManager.Instance.enableAtAwake)</strong></span>
+{
+<span class="strong"><strong>  currentGO.SetActive(true);</strong></span>
+}
+// Destroy the GameManager on game exit
+<span class="strong"><strong>Destroy(this.gameObject);</strong></span>
+</pre></div><p>The preceding code enables all objects in the <code class="literal">MenuManager</code> method's <code class="literal">enableAtAwake</code> array when we return to the main menu and makes sure that <code class="literal">GameManager</code> is destroyed, as we won't need it anymore in the main menu.</p><p>Save the script, and that's it! The main menu is now disabled when the game is launched and re-enabled when the player returns to the main menu.</p><p>Now, let's see why the character movement doesn't work.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec133"></a>Character movement</h3></div></div></div><p>The character movement is<a id="id861" class="indexterm"></a> triggered by the <code class="literal">Approach On Click</code> component. Open the <code class="literal">ApproachOnClick.cs</code> script now.</p><p>You will notice that inside the <code class="literal">OnPress()</code> method, we used <code class="literal">UICamera.currentTouchID == -1</code> to check whether the click event was triggered with a left-click. That's the source of our issue: on<a id="id862" class="indexterm"></a> mobile devices, <code class="literal">touchID</code> is an <code class="literal">int</code> value to identify the current touch. This <code class="literal">int</code> value is equal to <code class="literal">0</code> for the first touch, <code class="literal">1</code> for the second touch if there are two simultaneously, and so on—which means that it can never be equal to <code class="literal">-1</code>.</p><p>Here, we can use the <code class="literal">Application.isEditor</code> Boolean variable to check whether it's a left-click while we're playing inside the editor, but simply check whether it's a single-finger tap otherwise.</p><p>Replace the content of the <code class="literal">if(pressed)</code> statement instructions with the following code:</p><div class="informalexample"><pre class="programlisting">if(pressed)
+{
+  // Declare a default ID to check
+<span class="strong"><strong>  int idToCheck = 0;</strong></span>
+  // If we're in the editor
+<span class="strong"><strong>  if(Application.isEditor)</strong></span>
+  {
+    // Set idToCheck to left click
+<span class="strong"><strong>    idToCheck = -1;</strong></span>
+  }
+
+  // Check if touchID is the one to check
+<span class="strong"><strong>  if(UICamera.currentTouchID == idToCheck)</strong></span>
+  {
+    // Set it to be a valid movement request
+<span class="strong"><strong>    validMoveRequest = true;</strong></span>
+  }
+  // If it's not
+  else
+  {
+    // Set it to be an invalid movement request
+    <span class="strong"><strong>validMoveRequest = false;</strong></span>
+  }
+}</pre></div><p>Save the script. The preceding code checks whether the click was a left-click while in editor and simply checks whether it's the first finger tap in the final build. The character movement will now work correctly in <a id="id863" class="indexterm"></a>both the editor and the final Android build. Now, let's talk about the elemental switch UI.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec134"></a>The elemental switch UI</h3></div></div></div><p>The issue we have here is that right-click<a id="id864" class="indexterm"></a> is an impossible input on mobile devices. A good alternative is to set a touch and hold system on power sources to display the elemental switch UI <a id="id865" class="indexterm"></a>after a 0.5-second wait.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch08lvl3sec86"></a>The waiting feedback icon</h4></div></div></div><p>We need the player to know that they <a id="id866" class="indexterm"></a>are currently holding<a id="id867" class="indexterm"></a> their finger on an interactive element, which will trigger an event as soon as the wait is complete.</p><p>We'll display a circle around the player's finger that fills up gradually to represent the wait status:</p><div class="mediaobject"><img src="/graphics/9781783552979/graphics/2979OT_08_07.jpg" /></div><p>A filled sprite can be used to achieve the preceding sprite configuration. Before we create it, we need to add the <code class="literal">Circle</code> sprite to our <code class="literal">Game</code> atlas, as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open <span class="strong"><strong>Atlas Maker</strong></span> by navigating to <span class="strong"><strong>NGUI</strong></span> | <span class="strong"><strong>Open</strong></span> | <span class="strong"><strong>Atlas Maker</strong></span>.</p></li><li><p>Within the <span class="strong"><strong>Project</strong></span> view, select our <code class="literal">Assets/Resources/Textures/Circle</code> texture file.</p></li><li><p>Click on the <span class="strong"><strong>Add/Update</strong></span> button in our <span class="strong"><strong>Atlas Maker</strong></span> window.</p></li></ol></div><p>Ok, good. We now have<a id="id868" class="indexterm"></a> the new <code class="literal">Circle</code> sprite in the<a id="id869" class="indexterm"></a> <code class="literal">Game</code> atlas. We can now create the hold feedback icon, as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open our <span class="strong"><strong>Game</strong></span> scene.</p></li><li><p>Select our <span class="strong"><strong>InGame2DUI</strong></span> GameObject.</p></li><li><p>Create a new empty child with <span class="emphasis"><em>Alt</em></span> + <span class="emphasis"><em>Shift</em></span> + <span class="emphasis"><em>N</em></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Rename this new child to <code class="literal">HoldFeedback</code>
+</p></li></ul></div></li><li><p>With <code class="literal">HoldFeedback</code> selected, hit <span class="emphasis"><em>Alt</em></span> + <span class="emphasis"><em>Shift</em></span> + <span class="emphasis"><em>S</em></span> to create a new sprite:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Change its <span class="strong"><strong>Atlas</strong></span> value to the <span class="strong"><strong>Game</strong></span> atlas</p></li><li style="list-style-type: disc"><p>Change its <span class="strong"><strong>Sprite</strong></span> value to the <span class="strong"><strong>Circle</strong></span> sprite</p></li><li style="list-style-type: disc"><p>Set <span class="strong"><strong>Type</strong></span> to <span class="strong"><strong>Filled</strong></span>
+</p></li><li style="list-style-type: disc"><p>Change <span class="strong"><strong>Fill Dir</strong></span> to <span class="strong"><strong>Radial360</strong></span>
+</p></li><li style="list-style-type: disc"><p>Check the <span class="strong"><strong>Invert Fill</strong></span> option</p></li><li style="list-style-type: disc"><p>Change <span class="strong"><strong>Color Tint</strong></span> to {R: <code class="literal">255</code>, G: <code class="literal">200</code>, B: <code class="literal">140</code>, A: <code class="literal">210</code>}</p></li><li style="list-style-type: disc"><p>Set its <span class="strong"><strong>Size</strong></span> to <code class="literal">400 x 400</code>
+</p></li></ul></div></li></ol></div><p>Ok. We'll need this sprite to display over the currently touched power source. We'll use the <code class="literal">FollowObject</code> component. Let's add and configure it now:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Select our <span class="strong"><strong>InGame2DUI</strong></span> | <span class="strong"><strong>HoldFeedback</strong></span> | <span class="strong"><strong>Sprite</strong></span> GameObject.</p></li><li><p>In the <span class="strong"><strong>Inspector</strong></span> panel, click on the <span class="strong"><strong>Add Component</strong></span> button.</p></li><li><p>Type <code class="literal">foll</code> to display components with that name.</p></li><li><p>Select <span class="strong"><strong>Follow Object</strong></span> and hit your keyboard's <span class="emphasis"><em>Enter</em></span> key.</p></li><li><p>Drag the <span class="strong"><strong>GameCamera</strong></span> GameObject to its <span class="strong"><strong>Main Camera</strong></span> field.</p></li><li><p>Drag <span class="strong"><strong>InGame2DUI</strong></span> | <span class="strong"><strong>Camera</strong></span> in its <span class="strong"><strong>Ui Camera</strong></span> field.</p></li></ol></div><p>Good. Now that we have our filled sprite ready, we need to implement the touch and hold feedback code to fill it gradually before the elemental switch UI is displayed.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch08lvl3sec87"></a>Code implementation</h4></div></div></div><p>In order to fill our <code class="literal">HoldFeedback</code> sprite gradually, we'll modify the <code class="literal">PowerSource</code>, <code class="literal">Approach On Click</code>, and <code class="literal">GameManager</code> components. Unity<a id="id870" class="indexterm"></a> preprocessor instructions will be used to make sure that the game works both on Windows and mobile devices.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch08lvl4sec22"></a>The PowerSource component</h5></div></div></div><p>Open the <code class="literal">PowerSource.cs</code> script and replace<a id="id871" class="indexterm"></a> the <code class="literal">OnPress()</code> method<a id="id872" class="indexterm"></a> with this one:</p><div class="informalexample"><pre class="programlisting">// If the power source triggers the OnPress event
+<span class="strong"><strong>void OnPress(bool pressed)</strong></span>
+{
+  // If the power source is pressed
+  if(pressed)
+  {
+    // Re-enable all buttons
+<span class="strong"><strong>    GameManager.Instance.EnableAllButtons();</strong></span>
+    // Disable this power source's element button
+<span class="strong"><strong>    GameManager.Instance.SetButtonState(type, false);</strong></span>
+    // Request to hide the elemental switch
+<span class="strong"><strong>    GameManager.Instance.ShowElementalSwitch(null);</strong></span>
+
+    //If in editor 
+<span class="strong"><strong>    if(Application.isEditor)</strong></span>
+    {
+      // If it's a right click
+<span class="strong"><strong>      if(UICamera.currentTouchID == -2 &amp;&amp; available)</strong></span>
+      {
+        // Request to display the elemental switch
+      <span class="strong"><strong>  GameManager.Instance.ShowElementalSwitch(transform);</strong></span>
+      }
+    }
+    // If we're on the final build
+    else
+    {
+      // If it's a one-finger touch
+<span class="strong"><strong>      if(UICamera.currentTouchID == 0 &amp;&amp; available)</strong></span>
+      {
+        // Parameters to pass to the Coroutine
+<span class="strong"><strong>        object[] parameters = new object[2]{transform, 0.5f};</strong></span>
+        // Cancel hold feedback if there is one
+<span class="strong"><strong>        GameManager.Instance.CancelHoldFeedback();</strong></span>
+        // Start the HoldFeedback
+      <span class="strong"><strong>  GameManager.Instance.StartCoroutine("HoldFeedbackRoutine", parameters);</strong></span>
+      }
+    }
+  }
+  // If power source is released
+  else
+  {
+    // Cancel hold feedback if there is one
+<span class="strong"><strong>    GameManager.Instance.CancelHoldFeedback();</strong></span>
+  }
+}</pre></div><p>In the preceding code, a right-click displays the elemental switch UI when the game runs within the editor.</p><p>If the game runs on the final build, a touch starts the <code class="literal">GameManager</code> component's <code class="literal">HoldFeedbackRoutine()</code> coroutine with the <a id="id873" class="indexterm"></a>clicked power source and necessary hold duration as parameters. The <code class="literal">HoldFeedbackRoutine()</code> coroutine will gradually fill the <code class="literal">HoldFeedback</code> sprite.</p><p>If the power source<a id="id874" class="indexterm"></a> receives the <code class="literal">OnPress(false)</code> event, the hold feedback process is cancelled.</p><p>Now, we must add the following new <code class="literal">OnDrag()</code> method to cancel the hold feedback process if the power source is dragged:</p><div class="informalexample"><pre class="programlisting">// If the power source is dragged
+<span class="strong"><strong>void OnDrag(Vector2 delta)</strong></span>
+{
+  // Cancel the hold feedback process
+<span class="strong"><strong>  GameManager.Instance.CancelHoldFeedback();</strong></span>
+}</pre></div><p>Save the script. Let's see what we need to update within the <code class="literal">GameManager</code> component.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch08lvl4sec23"></a>The GameManager component</h5></div></div></div><p>We need to add the necessary methods <a id="id875" class="indexterm"></a>and coroutines in the <code class="literal">GameManager.cs</code> script. Open <code class="literal">GameManager</code>
+<code class="literal">.cs</code> and declare<a id="id876" class="indexterm"></a> these global variables:</p><div class="informalexample"><pre class="programlisting">// We need the HoldFeedback filled sprite
+<span class="strong"><strong>public UISprite holdFeedback;</strong></span>
+// We need the HoldFeedback's FollowObject
+<span class="strong"><strong>private FollowObject holdFeedbackFollowObject;</strong></span>
+</pre></div><p>OK. At the start, we need to both retrieve the <code class="literal">holdFeedback</code> routine's <code class="literal">FollowObject</code> component and hide<a id="id877" class="indexterm"></a> the <code class="literal">HoldFeedback</code> sprite. Add these instructions to the <code class="literal">Start()</code> method of <code class="literal">GameManager</code>:</p><div class="informalexample"><pre class="programlisting">// Retrieve the HoldFeedback's FolloObject
+<span class="strong"><strong>holdFeedbackFollowObject =</strong></span>
+<span class="strong"><strong>  holdFeedback.GetComponent&lt;FollowObject&gt;();</strong></span>
+// Hide the HoldFeedback sprite
+<span class="strong"><strong>holdFeedback.enabled = false;</strong></span>
+</pre></div><p>Good. Now, add this new <code class="literal">HoldFeedbackRoutine</code> coroutine:</p><div class="informalexample"><pre class="programlisting">// Routine that displays the touch hold feedback
+<span class="strong"><strong>public IEnumerator HoldFeedbackRoutine(object[] parameters)</strong></span>
+{
+  // Current fill amount to set
+<span class="strong"><strong>  float currentFillAmount = 0;</strong></span>
+  // Retrieve concerned object's transform
+<span class="strong"><strong>  Transform concernedObject = parameters[0] as Transform;</strong></span>
+  // The touch hold duration
+<span class="strong"><strong>  float holdDuration = (float)(parameters[1]);</strong></span>
+  // Delay before the hold process starts
+<span class="strong"><strong>  float delay = 0.2f;</strong></span>
+  
+  // Retrieve concerned object's ApproachOnClick
+<span class="strong"><strong>  ApproachOnClick approachOnClick =</strong></span>
+<span class="strong"><strong>    concernedObject.GetComponent&lt;ApproachOnClick&gt;();</strong></span>
+  // Retrieve concerned object's PowerSource
+<span class="strong"><strong>  PowerSource powerSource =</strong></span>
+<span class="strong"><strong>    concernedObject.GetComponent&lt;PowerSource&gt;();</strong></span>
+  
+  // Set filled sprite's fill amount to zero
+<span class="strong"><strong>  holdFeedback.fillAmount = 0;</strong></span>
+  // Show the hold feedback sprite
+<span class="strong"><strong>  holdFeedback.enabled = true;</strong></span>
+  
+  // Make the hold feedback follow the power source
+<span class="strong"><strong>  holdFeedbackFollowObject.target = concernedObject;</strong></span>
+  
+  // Wait before starting sprite filling process
+<span class="strong"><strong>  yield return new WaitForSeconds(delay);</strong></span>
+  
+  // Make sure the release doesn't move the player
+  if(approachOnClick != null)
+  {
+<span class="strong"><strong>    approachOnClick.CancelMovementRequest();</strong></span>
+  }
+  
+  // While holdFeedback sprite isn't filled...
+  while(currentFillAmount&lt; 1)
+  {
+    // Increase the currentFillAmount
+<span class="strong"><strong>    currentFillAmount += (Time.deltaTime / holdDuration);</strong></span>
+    // Update the holdFeedback's filled sprite
+<span class="strong"><strong>    holdFeedback.fillAmount = currentFillAmount;</strong></span>
+    // Wait for next frame
+<span class="strong"><strong>    yield return null;</strong></span>
+  }
+  
+  /* ...Once the currentFillAmount&gt;= 1
+   Hide the holdFeedback sprite */
+<span class="strong"><strong>  holdFeedback.enabled = false;</strong></span>
+  
+  // If the hold concerns a power source
+  if(powerSource != null)
+  {
+    // Show the elemental switch UI now
+<span class="strong"><strong>    ShowElementalSwitch(concernedObject);</strong></span>
+  }
+}</pre></div><p>In the preceding code, the <a id="id878" class="indexterm"></a>highlighted lines are the most important steps for the <code class="literal">HoldFeedback</code> sprite's filling process.</p><p>First, we wait for <a id="id879" class="indexterm"></a>a 0.2-second delay, then the <code class="literal">HoldFeedback</code> sprite is displayed empty. The sprite's fill amount increases each frame in order to be full in the timespan defined by the second parameter in the <code class="literal">object</code> array. Once it's filled, the elemental switch UI is displayed above the concerned <a id="id880" class="indexterm"></a>power source.</p><p>Now, we can add the required <code class="literal">CancelHoldFeedback()</code> method that was called from the <code class="literal">PowerSource</code> component:</p><div class="informalexample"><pre class="programlisting">// Method that cancels the hold process
+<span class="strong"><strong>public void CancelHoldFeedback()</strong></span>
+{
+  // Stop the coroutine
+<span class="strong"><strong>  StopCoroutine("HoldFeedbackRoutine");</strong></span>
+  // Hide the holdFeedback sprite
+<span class="strong"><strong>  holdFeedback.enabled = false;</strong></span>
+}</pre></div><p>Good. We can move<a id="id881" class="indexterm"></a> on to the last script edit, which concerns <code class="literal">ApproachOnClick.cs</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch08lvl4sec24"></a>The ApproachOnClick component</h5></div></div></div><p>Finally, we need to add the <code class="literal">CancelMovementRequest()</code> method within the <code class="literal">ApproachOnClick.cs</code> script. This <a id="id882" class="indexterm"></a>will help us<a id="id883" class="indexterm"></a> prevent the character from moving towards the power source on which the player wanted to display the elemental switch UI.</p><p>Open the <code class="literal">ApproachOnClick.cs</code> script and add the following method:</p><div class="informalexample"><pre class="programlisting">// Method that cancels the movement request
+<span class="strong"><strong>public void CancelMovementRequest()</strong></span>
+{
+  // Cancel the movement request
+<span class="strong"><strong>  validMoveRequest = false;</strong></span>
+}</pre></div><p>Great. Save all the scripts and return to Unity. We can assign the <code class="literal">holdFeedback</code> variable as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Select our <span class="strong"><strong>GameManager</strong></span> GameObject.</p></li><li><p>Drag <span class="strong"><strong>InGame2DUI</strong></span> | <span class="strong"><strong>HoldFeedback</strong></span> | <span class="strong"><strong>Sprite</strong></span> in its <span class="strong"><strong>Hold Feedback</strong></span> field.</p></li></ol></div><p>Hit Unity's play button. The game still works as before within the editor: a right-click displays the elemental switch UI instantly.</p><p>Build the game, install it, and run it on your mobile device. Now, holding your finger on a power source displays a <a id="id884" class="indexterm"></a>waiting feedback sprite around it. When the feedback sprite is filled entirely (2 seconds later), the elemental switch UI appears!</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip20"></a>Tip</h3><p>If you don't have any mobile device to test the game with, simply remove the entire <code class="literal">if(Application.isEditor)</code> statement (with its <code class="literal">else</code> line and associated closing bracket) from the <code class="literal">PowerSource.cs</code> script.</p><p>Then, change the <code class="literal">if(UICamera.currentTouchID == 0)</code> line just below it to <code class="literal">if(UICamera.currentTouchID == -1)</code>.</p><p>With the preceding modifications, the touch-and-hold process will work with a left mouse button on a power source. Remember to undo these script modifications as soon as you're finished testing.</p></div><p>Good. Now that we have<a id="id885" class="indexterm"></a> adapted some controls to mobile devices, we can talk about customizable user interface.</p></div></div></div></div>

@@ -1,0 +1,58 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec63"></a>Applying ragdoll physics to a character</h2></div></div><hr /></div><p>Action games<a id="id407" class="indexterm"></a> often make use of ragdoll physics to simulate <a id="id408" class="indexterm"></a>the character's body reaction to being unconsciously under the effect of a hit or explosion. In this recipe, we will learn how to set up and activate ragdoll physics for our character whenever he steps on a landmine object. We will also use this opportunity to reset the character's position and animations a number of seconds after that event.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec216"></a>Getting ready</h3></div></div></div><p>For this recipe, <a id="id409" class="indexterm"></a>we have prepared a project <a id="id410" class="indexterm"></a>named <code class="literal">MixamoProject</code> containing several assets such as levels, animated characters, and props. You can find it inside the <code class="literal">0423_05_codes</code> folder.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec217"></a>How to do it...</h3></div></div></div><p>To apply ragdoll physics to your character, follow these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open the <span class="strong"><strong>MixamoProject</strong></span> project, and then open the level named <span class="strong"><strong>05_07</strong></span> (in the <span class="strong"><strong>Levels</strong></span> folder).</p></li><li><p>You should see Mixamo's animated S.W.A.T. soldier and two cylinders (the landmine and the spawn point).</p></li><li><p>First, let's set up our ragdoll. Go to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Create Other</strong></span> | <span class="strong"><strong>Ragdoll...</strong></span>. The Ragdoll Wizard should pop up.</p></li><li><p>Assign the transforms as follows (these are also shown in the following screenshot):</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="strong"><strong>Root</strong></span>: <span class="strong"><strong>swat:Hips</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Left Hips</strong></span>: <span class="strong"><strong>swat:LeftUpLeg</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Left Knee</strong></span>: <span class="strong"><strong>swat:LeftLeg</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Left Foot</strong></span>: <span class="strong"><strong>swat:LeftFoot</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Right Hips</strong></span>: <span class="strong"><strong>swat:RightUpLeg</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Right Knee</strong></span>: <span class="strong"><strong>swat:RightLeg</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Right Foot</strong></span>: <span class="strong"><strong>swat:RightFoot</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Left Arm</strong></span>: <span class="strong"><strong>swat:LeftArm</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Left Elbow</strong></span>: <span class="strong"><strong>swat:LeftForeArm</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Right Arm</strong></span>: <span class="strong"><strong>swat:RightArm</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Right Elbow</strong></span>: <span class="strong"><strong>swat:RightForeArm</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Middle Spine</strong></span>: <span class="strong"><strong>swat:Spine1</strong></span></p></li><li style="list-style-type: disc"><p><span class="strong"><strong>Head</strong></span>: <span class="strong"><strong>swat:Head</strong></span></p></li></ul></div><div class="mediaobject"><img src="/graphics/9781849690423/graphics/0423_05_42.jpg" /></div></li><li><p>In the <span class="strong"><strong>Project</strong></span> view, create a new C# script named <code class="literal">RagdollCharacter.cs</code>.</p></li><li><p>Open<a id="id411" class="indexterm"></a> the <a id="id412" class="indexterm"></a>script and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class RagdollCharacter : MonoBehaviour {
+    private float hitTime;
+    private bool wasHit = false;
+
+    void Start () {
+        DeactivateRagdoll();
+    }
+    void Update () {
+        if(wasHit){
+            if(Time.time &gt;= hitTime + 5.0f)
+                DeactivateRagdoll();
+            }
+        }
+    public void ActivateRagdoll(){
+        this.GetComponent&lt;BasicController&gt;().enabled = false;
+        this.GetComponent&lt;Animator&gt;().enabled = false;
+        foreach(Rigidbody bone in GetComponentsInChildren&lt;Rigidbody&gt;()){
+            bone.isKinematic = false;
+            bone.detectCollisions = true;
+        }
+        wasHit = true;
+        hitTime = Time.time;
+    }
+    public void DeactivateRagdoll(){
+        this.GetComponent&lt;BasicController&gt;().enabled = true;
+        this.GetComponent&lt;Animator&gt;().enabled = true;
+
+        foreach(Rigidbody bone in GetComponentsInChildren&lt;Rigidbody&gt;()){
+            bone.isKinematic = true;
+            bone.detectCollisions = false;
+        }
+        transform.position = GameObject.Find("Spawnpoint").transform.position;
+        transform.rotation = GameObject.Find("Spawnpoint").transform.rotation;
+        wasHit = false;
+    }
+}</pre></div></li><li><p>Save and close the script.</p></li><li><p>Attach<a id="id413" class="indexterm"></a> the <span class="strong"><strong>RagdollCharacter.cs</strong></span> script to the <span class="strong"><strong>Character</strong></span> game object.</p></li><li><p>In the <a id="id414" class="indexterm"></a>
+<span class="strong"><strong>Project</strong></span> view, create a new C# script named <code class="literal">Landmine.cs</code>.</p></li><li><p>Open the script and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Landmine : MonoBehaviour {
+    public float range = 50.0f;
+    public float force = 2000.0f;
+
+    void OnTriggerEnter ( Collider collision ){
+        if(collision.gameObject.tag == "Player"){
+collision.GetComponent&lt;RagdollCharacter&gt;().ActivateRagdoll();
+            Vector3 explosionPos = transform.position;
+            Collider[] colliders = Physics.OverlapSphere(explosionPos, range);
+            foreach (Collider hit in colliders) {
+                if (hit.rigidbody)
+                    hit.rigidbody.AddExplosionForce(force, explosionPos, range, 3.0F);
+            }
+        }
+    }
+}</pre></div></li><li><p>Save and close the script.</p></li><li><p>Attach<a id="id415" class="indexterm"></a> the script to the <span class="strong"><strong>Landmine</strong></span> game object.</p></li><li><p>Play the <a id="id416" class="indexterm"></a>scene. Use the WASD keyboard control scheme to direct the character to the <span class="strong"><strong>Landmine</strong></span> game object. Colliding with it will activate the character's ragdoll physics and apply an explosive force to it. As a result, the character will be thrown to a considerable distance.</p></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec218"></a>How it works...</h3></div></div></div><p>Unity's Ragdoll Wizard assigns the Collider, Rigidbody, and Character Joint components to selected transforms. When<a id="id417" class="indexterm"></a> used in conjunction with each other, these components make ragdoll physics possible. However, they must be disabled whenever we want our character to be animated or controlled by the player. In our case, we switch those components on and off using the <code class="literal">RagdollCharacter</code> script and its two functions, <code class="literal">ActivateRagdoll()</code><a id="id418" class="indexterm"></a> and <code class="literal">DeactivateRagdoll()</code><a id="id419" class="indexterm"></a> the latter includes instructions to re-spawn our character in the appropriate place.</p><p>For testing purposes, we have also created the Landmine script, which calls RagdollCharacter's function, <code class="literal">ActivateRagdoll()</code>. It also applies an explosive force to our ragdoll character, violently throwing him outside the explosion site.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec219"></a>There's more...</h3></div></div></div><p>Instead of resetting the character's transform settings, you could have destroyed his game object and instantiated a new one over the re-spawn point using tags. For more information on that subject, check Unity's documentation at the following location: <a class="ulink" href="http://docs.unity3d.com/Documentation/ScriptReference/GameObject.FindGameObjectsWithTag.html" target="_blank">http://docs.unity3d.com/Documentation/ScriptReference/GameObject.FindGameObjectsWithTag.html</a></p></div></div>

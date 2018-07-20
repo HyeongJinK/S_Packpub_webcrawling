@@ -1,0 +1,245 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec47"></a>Enemy statistics, shooting, and behaviors</h2></div></div><hr /></div><p>Now that we have our enemies moving and following a path, we should set up some statistics for them, and allow them to take damage and fire bullets. Then at the end of this section, we will write the <code class="literal">aiSimpleBehaviour</code> script. This script will give some more believability to our enemies in how they react to the situations they are in and give them unique behaviors. First up to be written is the <code class="literal">enemyStats</code> script.</p><p>In this section we will look into the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Creating the <code class="literal">enemyStats</code> script</p></li><li style="list-style-type: disc"><p>Hooking up the <code class="literal">enemyStats</code> script on <span class="strong"><strong>Inspector</strong></span> of each enemy</p></li><li style="list-style-type: disc"><p>Creating the <code class="literal">Shoot</code> script</p></li><li style="list-style-type: disc"><p>Hooking up the <code class="literal">Shoot</code> script on <span class="strong"><strong>Inspector</strong></span> of each enemy</p></li><li style="list-style-type: disc"><p>Writing the <code class="literal">aiSimpleBehaviour</code> script</p></li><li style="list-style-type: disc"><p>Hooking up the <code class="literal">aiSimpleBehaviour</code> script on <span class="strong"><strong>Inspector</strong></span> of each enemy</p></li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec90"></a>The enemyStats script</h3></div></div></div><a id="id1048" class="indexterm"></a><p>The <code class="literal">enemyStats</code> script will hold and track our enemy's health and ammo, and shut down the enemy if his health drops to zero. This script will also return the current values of health and ammo, and increment or decrement the ammo and health.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec58"></a>Setting up variables</h4></div></div></div><a id="id1049" class="indexterm"></a><a id="id1050" class="indexterm"></a><p>There are a few variables for this script. We have one to represent the health, one for the ammo, and another one that will be the reference variable to the <code class="literal">aiSimplePath</code> script.</p><p>The <code class="literal">health</code> variable should be <code class="literal">public</code> and an integer; the same can be done for the <code class="literal">ammo</code> variable. The <code class="literal">pathScr</code> variable<a id="id1051" class="indexterm"></a> can be <code class="literal">private</code>, but make sure that it has as its type the name of the <code class="literal">aiSimplePath</code> script as follows:</p><div class="informalexample"><pre class="programlisting">public var health : int = 100;
+public var ammo : int = 100;
+private var pathScr : aiSimplePath;</pre></div><p>Once we are finished with the variables, it's time to write our functions.<a id="id1052" class="indexterm"></a><a id="id1053" class="indexterm"></a></p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec59"></a>Setting up functions</h4></div></div></div><a id="id1054" class="indexterm"></a><a id="id1055" class="indexterm"></a><p>All the functions in this script are relatively short and mainly consist of one line. Up first is the <code class="literal">Awake</code> function<a id="id1056" class="indexterm"></a>.</p><p>The <code class="literal">Awake</code> function makes the <code class="literal">pathScr</code> variable reference to the <code class="literal">aiSimplePath</code> script:</p><div class="informalexample"><pre class="programlisting">function Awake(){pathScr = gameObject.GetComponent("aiSimplePath");}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec60"></a>Retrieving functions</h4></div></div></div><a id="id1057" class="indexterm"></a><a id="id1058" class="indexterm"></a><p>The <code class="literal">Get</code> function<a id="id1059" class="indexterm"></a>s will help us retrieve health and ammo information from robots. The retrieving functions are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">The GetHealth</code> function<a id="id1060" class="indexterm"></a> returns the current <code class="literal">health</code> value:</p><div class="informalexample"><pre class="programlisting">function GetHealth(){return health;}  </pre></div></li><li style="list-style-type: disc"><p><code class="literal">The GetAmmo</code> function<a id="id1061" class="indexterm"></a> returns the current <code class="literal">ammo</code> value:</p><div class="informalexample"><pre class="programlisting">function GetAmmo(){return ammo;}</pre></div></li><li style="list-style-type: disc"><p><code class="literal">The RepairBot</code> function<a id="id1062" class="indexterm"></a> will increase the <code class="literal">health</code> of an enemy by <code class="literal">2</code> when it is called:</p><div class="informalexample"><pre class="programlisting">function RepairBot(){health += 2;}</pre></div></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec61"></a>Manipulation functions</h4></div></div></div><a id="id1063" class="indexterm"></a><a id="id1064" class="indexterm"></a><p>The manipulation functions will allow us to manipulate health and ammo. They are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>The <code class="literal">ReceiveAmmo</code> function<a id="id1065" class="indexterm"></a> will increase <code class="literal">ammo</code> by the amount given in the function's parameter variable—<code class="literal">ammoAmount</code>:</p><div class="informalexample"><pre class="programlisting">function ReceiveAmmo(ammoAmount : int) {ammo += ammoAmount; }</pre></div></li><li style="list-style-type: disc"><p>The <code class="literal">DecrementAmmo</code> function<a id="id1066" class="indexterm"></a> will decrease <code class="literal">ammo</code> by the amount given in the function's parameter variable—<code class="literal">decrementAmount</code>:</p><div class="informalexample"><pre class="programlisting">function DecrementAmmo(decrementAmount : int) {ammo -= decrementAmount;}</pre></div></li><li style="list-style-type: disc"><p>The <code class="literal">DecrementHealth</code> function<a id="id1067" class="indexterm"></a> will decrease <code class="literal">health</code> by the amount given in the function's parameter variable—<code class="literal">decrementAmount</code>:</p><div class="informalexample"><pre class="programlisting">function DecrementHealth(decrementAmount : int) {health -= decrementAmount;}</pre></div></li><li style="list-style-type: disc"><p>The <code class="literal">CheckCurrentHealth</code> function<a id="id1068" class="indexterm"></a> will make sure that <code class="literal">health</code> is not greater than <code class="literal">100</code> and not less than <code class="literal">0</code>. It will also shut down the robot if the enemy's health does reach <code class="literal">0</code>. To do this, we have one <code class="literal">if</code> statement and the <code class="literal">Mathf.Clamp</code> function. If the enemy's health decreases below <code class="literal">0</code>, we will call the <code class="literal">ShutDownRobot</code> function from the path script with the function parameter of <code class="literal">true</code>.</p><p>The complete <code class="literal">CheckCurrentHealth</code> function should look like the following code snippet:</p><div class="informalexample"><pre class="programlisting">function CheckCurrentHealth(){    
+health = Mathf.Clamp(health, 0,100);
+    if(health == 0){
+        pathScr.ShutDownRobot(true);
+    }
+}</pre></div></li><li style="list-style-type: disc"><a id="id1069" class="indexterm"></a><a id="id1070" class="indexterm"></a><p>The <code class="literal">CheckAmmo</code> function<a id="id1071" class="indexterm"></a> will make sure that <code class="literal">ammo</code> is not greater than <code class="literal">100</code> and not less than <code class="literal">0</code>. We will use two <code class="literal">if</code> statements to check the ammo count. One <code class="literal">if</code> statement will make sure that <code class="literal">ammo</code> is not greater than <code class="literal">100</code> and the other <code class="literal">if</code> statement will make sure that the <code class="literal">ammo</code> count is not less than <code class="literal">0</code>.</p><p>The <code class="literal">CheckAmmo</code> function should look like the following code snippet:</p><div class="informalexample"><pre class="programlisting">function CheckAmmo(){
+    ammo = Mathf.Clamp(ammo, 0, 100);
+}</pre></div></li></ul></div><p>The <code class="literal">Update</code> function<a id="id1072" class="indexterm"></a> calls the <code class="literal">CheckCurrentHealth</code> and <code class="literal">CheckAmmo</code> functions as follows:</p><div class="informalexample"><pre class="programlisting">function Update (){
+    CheckCurrentHealth();
+    CheckAmmo();
+}</pre></div><p>Congrats, the <code class="literal">enemyStats</code> script is complete. We will not have to revisit this script in the future and we can now stop our enemy if their health drops to zero.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec62"></a>Hooking up the enemyStats script on Inspector</h4></div></div></div><a id="id1073" class="indexterm"></a><a id="id1074" class="indexterm"></a><p>To test the script now, drag it onto the enemies and press <span class="strong"><strong>Play</strong></span>. Go over to one enemy and make the <code class="literal">health</code> variable <code class="literal">0</code>. The enemy should stop. If you increase it even to 1, the enemy should resume its pathfinding.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304_07_05.jpg" /></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec91"></a>The Shoot script</h3></div></div></div><p>The <code class="literal">Shoot</code> script will set up the type of weapon that the enemy is firing with, where the projectiles are to be instantiated at, how fast they are to be fired, and the amount of ammo each projectile fired uses up.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec63"></a>Setting up the script</h4></div></div></div><a id="id1075" class="indexterm"></a><p>The following are the variables that we need to put together in this script:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Weapon variables</p></li><li style="list-style-type: disc"><p>Shooting variables</p></li><li style="list-style-type: disc"><p>Script reference variable</p></li></ul></div><p>There is an enumeration as well for our weapon type. The weapon variables are all <code class="literal">public</code>. The <code class="literal">EnemyWeapon</code> variable<a id="id1076" class="indexterm"></a> has the type of <code class="literal">weaponType</code>. The <code class="literal">currentWeapon</code> variable<a id="id1077" class="indexterm"></a> determines the weapon that an enemy is using from <code class="literal">enum</code> <code class="literal">Weapon</code>. The enemies can have weapons such as <code class="literal">FlameThrower</code>, <code class="literal">shortRange</code>, and <code class="literal">longRange</code>. The <code class="literal">projectile</code> variable<a id="id1078" class="indexterm"></a> is of the <code class="literal">GameObject</code> type. The last <code class="literal">public</code> variable is <code class="literal">launcherLoc</code>, which is for the launcher's location and is of the <code class="literal">Transform</code> type.</p><p>The shooting variables consist of the speed at which the bullet will fly, the amount of ammo consumed when fired, the cooldown time between each bullet fired, the initial timer for the separation, and the <code class="literal">canShoot</code> variable<a id="id1079" class="indexterm"></a>. <code class="literal">speed</code> is <code class="literal">public</code> and <code class="literal">float</code>; <code class="literal">ammoConsumeValue</code> is an integer; <code class="literal">bulletSeparationTime</code> is <code class="literal">public</code> and <code class="literal">float</code>; <code class="literal">currentTimer</code> is <code class="literal">private</code> and <code class="literal">float</code>; and <code class="literal">canShoot</code> is <code class="literal">private</code> and <code class="literal">boolean</code>. The default value of <code class="literal">canShoot</code> should be set to <code class="literal">false</code>.</p><p>The script reference variable is to reference the <code class="literal">enemyStats</code> script. It can be <code class="literal">private</code>, and make sure that its type is the name of the <code class="literal">enemyStats</code> script.</p><p><code class="literal">enum</code> is for the <code class="literal">weaponType</code>. In here, put the different types of weapons that the enemy could possibly use:<a id="id1080" class="indexterm"></a></p><div class="informalexample"><pre class="programlisting">public var EnemyWeapon : weaponType;
+public enum Weapon{
+FlameThrower,
+shortRange,
+longRange
+}
+public var currentWeapon : int;
+public var projectile : GameObject;
+public var launcherLoc : Transform;
+public var speed : float;
+public var AmmoConsumeValue : int = 1;
+public var bulletSeparationTime : float = 1;
+private var currentTimer : float = 0;
+private var canShoot : boolean = false;
+private var enemyStatScr : enemyStats;
+enum weaponType{
+    Projectile,
+    Special
+}</pre></div><p>The <code class="literal">Awake</code> function will handle the script reference variable—<code class="literal">enemyStatScr</code> with the <code class="literal">enemyStats</code> script.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec64"></a>Writing shooting functionality</h4></div></div></div><a id="id1081" class="indexterm"></a><p>There are two functions that we are going to write in this section—<code class="literal">Shoot</code> and <code class="literal">incrementTime</code>. These functions will determine if an enemy can shoot and what type of weapon to use. They also manage bullet separation time. Let's begin.</p><p>The <code class="literal">Shoot</code> function will check if the enemy can shoot, and if he can, it will "fire" the projectile based upon the weapon type. After checking if he can shoot, the <code class="literal">incrementTime</code> function<a id="id1082" class="indexterm"></a> is called and it handles bullet separation.</p><p>If the weapon is <code class="literal">shortRange</code>, it checks if <code class="literal">weaponType</code> is <code class="literal">special</code>, and in our case it is. It's <code class="literal">FlameThrower</code>. We will set the <code class="literal">canShoot</code> variable<a id="id1083" class="indexterm"></a> to <code class="literal">false</code> so that bullet separation can happen. The <code class="literal">FlameThrower</code> emits a flame from the specified launcher and turns on a collider to handle particle collision, and lastly, we will decrement the ammo count based upon the specified ammo usage for the weapon.</p><p>If the weapon is <code class="literal">longRange</code>, we will again set the <code class="literal">canShoot</code> variable to <code class="literal">false</code> for bullet separation, then we will create a new bullet with the <code class="literal">Instantiate</code> function. We will create the projectile at the muzzle's position with the muzzle rotation. Then we will take <code class="literal">rigidbody.velocity</code> and multiply it by our bullet's <code class="literal">speed</code>, and assign that to <code class="literal">tempBullet.rigidbody.velocity</code>. Then we will decrement the ammo count.</p><p>Lastly, if we cannot shoot, we will put an <code class="literal">else</code> statement at the end, and in this case, with the flamethrower, we will turn off the flame emitter and disable the particle collision detection.<a id="id1084" class="indexterm"></a></p><p>The code for the <code class="literal">Shoot</code> function is as follows:</p><div class="informalexample"><pre class="programlisting">function Shoot(fire : boolean){
+    if(fire){    
+        incrementTime();
+        if(canShoot){
+            if(currentWeapon == Weapon.shortRange){
+                if(EnemyWeapon.Special &amp;&amp; currentWeapon == Weapon.FlameThrower){
+                    canShoot = false;
+                    projectile.particleEmitter.emit = true;
+                    projectile.collider.enabled = true;
+                    enemyStatScr.DecrementAmmo(AmmoConsumeValue);
+                }
+            }
+            if(currentWeapon == Weapon.longRange){    
+                canShoot = false;
+                var tempBullet : GameObject = Instantiate(projectile,    launcherLoc.position,  launcherLoc.rotation);
+                if((rigidbody.velocity).magnitude &gt; 1){
+                    tempBullet.rigidbody.velocity = rigidbody.velocity * speed;
+                }
+                else{
+                    tempBullet.rigidbody.velocity = (rigidbody.velocity *  speed) * 1000;
+                }
+                    enemyStatScr.DecrementAmmo(AmmoConsumeValue);
+            }
+        }
+    }
+    else {
+        if(currentWeapon == Weapon.FlameThrower)    {
+            projectile.collider.enabled = false;
+            projectile.particleEmitter.emit = false;
+        }
+    }
+}</pre></div><p>The <code class="literal">incrementTime</code> function<a id="id1085" class="indexterm"></a> will increment a timer up to the bullet separation time by <code class="literal">Time.deltaTime</code> added to itself to get seconds. If timer equals the bullet separation time, the enemy can shoot and the timer resets back to <code class="literal">0</code>.</p><p>The <code class="literal">Increment</code> function<a id="id1086" class="indexterm"></a> should look like the following code snippet: <a id="id1087" class="indexterm"></a></p><div class="informalexample"><pre class="programlisting">function incrementTime(){
+    if(currentTimer &lt; bulletSeparationTime){
+        currentTimer += Time.deltaTime * 2;
+    }
+    else{
+        canShoot = true;
+        currentTimer = 0;
+    }
+}    </pre></div><p>Congrats, the <code class="literal">Shoot</code> script is complete and we don't have to modify it for this tutorial again. However, now that the script is written, we have to hook it up on enemy's <span class="strong"><strong>Inspector</strong></span>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec65"></a>Hooking up the Shoot script on Inspector</h4></div></div></div><a id="id1088" class="indexterm"></a><a id="id1089" class="indexterm"></a><p>With the <code class="literal">Shoot</code> script done, we can now go ahead and drag it to each enemy's <span class="strong"><strong>Inspector</strong></span>. What you should see is the <code class="literal">enum</code> variable<a id="id1090" class="indexterm"></a> at the top, allowing you to select the type of weapon the enemy will have; the <code class="literal">FlameThrower</code> boolean<a id="id1091" class="indexterm"></a> should follow after. The <code class="literal">projectile</code> variable needs you to drag the <span class="strong"><strong>bullet</strong></span> prefab to be instantiated onto it. You then need to specify if it is <code class="literal">shortRange</code> or <code class="literal">longRange</code> and drag the <span class="strong"><strong>Muzzle</strong></span> on to the launcher location variable. The speed of the bullet has to be defined along with how much ammo each bullet consumes and, lastly, the amount of time between each bullet.</p><p>Once everything is defined and hooked up, when you press <code class="literal">Play</code>, nothing will happen. That is because the behavior script runs the shooting script. With that being said, let's now start the <code class="literal">aiSimpleBehaviour</code> script.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304_07_06.jpg" /></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec92"></a>The aiSimpleBehaviour script</h3></div></div></div><a id="id1092" class="indexterm"></a><p>The <code class="literal">aiSimpleBehaviour</code> script will set up the behaviors that the enemies can have, the behavior effects, the enemy's awareness range, and the function to locate and detect injured bots and ammo.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec66"></a>Setting up the script</h4></div></div></div><a id="id1093" class="indexterm"></a><p>The types of variables found in this script are enemy behavior, enemy range, time, attacking, reference, and locate variables.</p><p>The behavior variables are <code class="literal">passive</code> (the enemy does not attack the player), <code class="literal">defensive</code> (the enemy will attack only if attacked and only for a period of time), and <code class="literal">aggressive</code> (the enemy will attack the player if the player is within range). All these variables are <code class="literal">public</code> and <code class="literal">boolean</code>. A <code class="literal">private</code> <code class="literal">botType</code> variable<a id="id1094" class="indexterm"></a> with a <code class="literal">String</code> type is defined as well.</p><p>The enemy range variables are <code class="literal">enemyRange</code> (the enemy's awareness range), <code class="literal">defaultRange</code> (this is equal to the enemy's range), and <code class="literal">maxRange</code> (used to locate ammo). All these range variables are of the <code class="literal">float</code> type and only the <code class="literal">enemyRange</code> variable is <code class="literal">public</code>, the other two being <code class="literal">private</code>.</p><p>The single variable used for locating ammo is <code class="literal">lookForAmmo</code>, and it is <code class="literal">private</code> and <code class="literal">boolean</code>. It is used to determine if an enemy should look for ammo.</p><p>The time variables are <code class="literal">pursueTimeAfterAttack</code> (the time for which a defensive enemy will pursue the instigator), <code class="literal">currentTimer</code> (starts the pursue time at <code class="literal">0</code>), and <code class="literal">pursueTime</code> (used to start the pursue timer). <code class="literal">pursueTimeAfterAttack</code>
+<a id="id1095" class="indexterm"></a> and <code class="literal">currentTimer</code>
+<a id="id1096" class="indexterm"></a> are of the <code class="literal">float</code> type and <code class="literal">pursueTime</code> is <code class="literal">boolean</code>. The <code class="literal">pursueTime</code> and <code class="literal">currentTimer</code> variables are <code class="literal">private</code>.</p><p>Next, the attacking variables are <code class="literal">engagingPlayer</code> (used to check if the enemy should attack the player), <code class="literal">disengagedPlayer</code> (used to check if the enemy should disengage from attacking the player), and <code class="literal">playerEngaging</code> (used to see if the player is attacking the enemy). All these variables are of the <code class="literal">boolean</code> type and they are <code class="literal">private</code>.</p><p>Lastly, we have our reference variables and they are <code class="literal">pathingScr</code> (it has type of <code class="literal">aiSimplePath</code> and references the <code class="literal">aiSimplePath</code> script), <code class="literal">enemyStatScr</code> (it has type of <code class="literal">enemyStats</code> and references the <code class="literal">enemyStats</code> script), and <code class="literal">shootScr</code> (it has type of <code class="literal">Shoot</code> and references the <code class="literal">Shoot</code> script).</p><div class="informalexample"><pre class="programlisting">public var passive : boolean;
+public var aggresive : boolean;
+public var defensive : boolean;
+private var botType : String;
+public var enemyRange : float;
+private var defaultRange : float;
+private var maxRange : float = 100;
+private var lookForAmmo : boolean;
+public var pursueTimeAfterAttack : float = 3;
+private var currentTimer : float = 0;
+private var pursueTime : boolean;
+private var engagingPlayer : boolean = true;
+private var disengagedPlayer : boolean = false;
+private var playerEngaging : boolean = false;
+private var pathingScr : aiSimplePath;
+private var enemyStatScr : enemyStats;
+private var shootScr : Shoot;</pre></div><a id="id1097" class="indexterm"></a><p>The <code class="literal">Awake</code> function will set the script reference variables, set the default range to the specified enemy range, and call the <code class="literal">ReturnBotType</code> function<a id="id1098" class="indexterm"></a> as follows:</p><div class="informalexample"><pre class="programlisting">function Awake(){
+    pathingScr = GetComponent("aiSimplePath");
+    enemyStatScr = GetComponent("enemyStats");
+    shootScr = GetComponent("Shoot");
+    defaultRange = enemyRange;
+    ReturnBotType();
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec67"></a>Behavior functions</h4></div></div></div><p>The following behavior functions<a id="id1099" class="indexterm"></a><a id="id1100" class="indexterm"></a> will handle the bot's behavior control:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><code class="literal">ReturnBotType</code></p></li><li style="list-style-type: disc"><p><code class="literal">SetIfPlayerIsAttacking</code></p></li><li style="list-style-type: disc"><p><code class="literal">CheckPlayerDistanceToEnemy</code></p></li><li style="list-style-type: disc"><p><code class="literal">PassiveBot</code></p></li><li style="list-style-type: disc"><p><code class="literal">FindAmmo</code></p></li></ul></div><p>The preceding functions may sound self-explanatory, if not, don't worry; we will look deeper into them right now.</p><p>The <code class="literal">ReturnBotType</code> function<a id="id1101" class="indexterm"></a><a id="id1102" class="indexterm"></a> will set the <code class="literal">botType</code> variable based upon the behavior type of the enemy and return it to the <code class="literal">SetEnemyType</code> function<a id="id1103" class="indexterm"></a> parameter of the path script as <a id="id1104" class="indexterm"></a>follows:</p><div class="informalexample"><pre class="programlisting">function ReturnBotType(){
+    if(passive){
+        botType = "Passive";
+    }
+    else if(aggresive)    {
+        botType = "Aggressive";
+    }
+    else if(defensive)    {
+        botType = "Defensive";
+    }
+    pathingScr.SetEnemyType(botType);
+}  </pre></div><p>The <code class="literal">SetIfPlayerIsAttacking</code> function<a id="id1105" class="indexterm"></a><a id="id1106" class="indexterm"></a> will set the <code class="literal">playerEngaging</code> variable to its true/false parameter—<code class="literal">isAttacking</code> as follows:</p><div class="informalexample"><pre class="programlisting">function SetIfPlayerIsAttacking(isAttacking : boolean){
+        playerEngaging = isAttacking;
+}    </pre></div><p>The <code class="literal">CheckPlayerDistanceToEnemy</code> function<a id="id1107" class="indexterm"></a><a id="id1108" class="indexterm"></a> will get the current distance between the player and the enemy using the <code class="literal">Vector3.Distance</code> function and give it to the function variable—<code class="literal">distanceToPlayer</code>. It will then compare this distance to the enemy's range to see if it is less, and therefore, within the enemy's awareness zone. It will then check the behavior type of enemy.</p><p>As our passive bot does not care for the player, we do not need to check if the player is in its range.</p><p>For aggressive enemies, we will skip right to checking if the enemy has enough ammo to shoot and that their health is greater than <code class="literal">0</code>. If the enemy is defensive, we will first check if he is engaging the player before moving on to checking ammo and health. If the health is greater than <code class="literal">0</code> and if we do have ammo to shoot, we will call the <code class="literal">GetBehaviourInfo</code> function with the <code class="literal">pathingScr</code> variable<a id="id1109" class="indexterm"></a> and assign it the <code class="literal">engagingPlayer</code> variable<a id="id1110" class="indexterm"></a>. After that, we will call the <code class="literal">Shoot</code> function with the <code class="literal">shootScr</code> variable and assign it <code class="literal">true</code> for the function parameter. The same is done for the defensive enemy.</p><p>If it happens that there is no ammo, or the enemy's health is greater than <code class="literal">0</code>, we will call the <code class="literal">FindAmmo</code> function<a id="id1111" class="indexterm"></a><a id="id1112" class="indexterm"></a> with <code class="literal">true</code> as the function parameter. Call the <code class="literal">Shoot</code> function from the <code class="literal">Shoot</code> script and set the function parameter to <code class="literal">false</code>. Lastly, extend the enemy's range to <code class="literal">maxRange</code> to search for ammo. The same <code class="literal">else</code> statement is used for defensive enemies.</p><p>Next, we will check if the player is outside of the enemy's range, and if so, we tell the path script that we are disengaging from the player with the <code class="literal">GetBehaviourInfo</code> function<a id="id1113" class="indexterm"></a> and the <code class="literal">disengagedPlayer</code> variable<a id="id1114" class="indexterm"></a> as the function parameter. Then we will set the <code class="literal">Shoot</code> function to <code class="literal">false</code> to make the enemy stop shooting.</p><p>Lastly, we want to check if our ammo count is greater than <code class="literal">0</code>, and if it is, we will set our <code class="literal">enemyRange</code> variable back to the <code class="literal">defaultRange</code> variable<a id="id1115" class="indexterm"></a> and tell the enemy to stop searching for ammo. We will then set the <code class="literal">AmmoToLocate</code> function<a id="id1116" class="indexterm"></a> of the path script with the parameters of <code class="literal">null</code> and <code class="literal">false</code> to clear the data of the last ammo that was located.</p><a id="id1117" class="indexterm"></a><p>The complete <code class="literal">CheckPlayerDistanceToEnemy</code> function should look like the following code snippet:</p><div class="informalexample"><pre class="programlisting">function CheckPlayerDistanceToEnemy(){
+        var distanceToPlayer = Vector3.Distance(gameObject.FindWithTag("Player").transform.position,transform.position);
+    if(distanceToPlayer &lt; enemyRange)    {        
+        if(aggresive)    {
+            if(enemyStatScr.GetAmmo() &gt; 0 &amp;&amp; enemyStatScr.GetHealth() &gt; 1){
+                pathingScr.GetBehaviourInfo(engagingPlayer);
+                shootScr.Shoot(true);
+            }
+            else    {
+                FindAmmo(true);
+                shootScr.Shoot(false);
+                enemyRange = maxRange;
+            }
+        }
+        else if(defensive)	{
+            if(playerEngaging){
+                if(enemyStatScr.GetAmmo() &gt; 0 &amp;&amp; enemyStatScr.GetHealth() &gt; 1){
+                pathingScr.GetBehaviourInfo(engagingPlayer);
+                    shootScr.Shoot(true);
+                }
+                else {
+                    FindAmmo(true);
+                    shootScr.Shoot(false);
+                    enemyRange = maxRange;
+                }
+            }
+        }
+    }
+    else if(distanceToPlayer &gt; enemyRange)
+    {
+        pathingScr.GetBehaviourInfo(disengagedPlayer);
+        shootScr.Shoot(false);
+    }
+    if(enemyStatScr.GetAmmo() &gt; 0)
+    {
+        enemyRange = defaultRange;
+        FindAmmo(false);
+        pathingScr.AmmoToLocate(null, false);
+    }
+}     </pre></div><p>The <code class="literal">PassiveBot</code> function<a id="id1118" class="indexterm"></a><a id="id1119" class="indexterm"></a> is for the bot having passive behavior. This bot acts as a medic and will seek out injured enemies and heal them.</p><p>To start off, we will set three array variables. The first variable grabs all the enemies in the level with the <code class="literal">FindGameObjectsWithTag</code> function<a id="id1120" class="indexterm"></a><a id="id1121" class="indexterm"></a> and is called <code class="literal">getEnemies</code>, the second one is defined for distance and is called <code class="literal">distanceArray</code>, and the third one is defined for bots that need help and is called <code class="literal">botArray</code>.</p><p>We then check each enemy in the <code class="literal">getEnemies</code> array with a <code class="literal">for</code> loop, and for each one, we then check the health. If their health is below an acceptable limit, which in this case is <code class="literal">100</code>, they are added to <code class="literal">botArray</code>, their distance is acquired using the <code class="literal">Vector3.Distance</code> function, and they are grabbed using the <code class="literal">if</code> statement by the <code class="literal">botsDistance</code> variable<a id="id1122" class="indexterm"></a><a id="id1123" class="indexterm"></a>. The distances are also added to <code class="literal">distanceArray</code>.</p><a id="id1124" class="indexterm"></a><p>If the length of <code class="literal">distanceArray</code> is greater than <code class="literal">0</code>, it means that we have enemies to heal and we will continue.</p><p>If there are bots that need help, we will loop through <code class="literal">distanceArray</code> and check it against the first distance in the array. If the next distance is larger, we will take its distance and make it the closest distance. Once we have looped through all the distances, we will check it against the range of the medic bot. If it lies within the awareness range, we will call the <code class="literal">BotToHeal</code> function from the path script and assign it the first function parameter of the bot from <code class="literal">botArray</code> that the distance coincides with and <code class="literal">true</code> as the second parameter.</p><p>In order to get the proper bot from <code class="literal">botArray</code>, we will use a counter to keep track of the spot in the array that the closest distance is at. So, as we loop through <code class="literal">distanceArray</code> for checking distances, we will have the <code class="literal">counter</code> variable incremented each time. When we find a new closer distance we save the counter number. This counter number is then used to pull the proper bot out of the array.</p><p>Lastly, if no bots need the medic's assistance, we will set the <code class="literal">BotToHeal</code> function's first parameter to <code class="literal">null</code> and the second parameter to <code class="literal">false</code>. The complete <code class="literal">PassiveBot</code>
+<a id="id1125" class="indexterm"></a> <a id="id1126" class="indexterm"></a>function should look like the following code snippet:</p><div class="informalexample"><pre class="programlisting">function PassiveBot(){
+    if(passive){
+        var getEnemies : Array = new  
+       Array(gameObject.FindGameObjectsWithTag("Enemy"));
+        var distanceArray : Array = new Array();
+        var botArray : Array = new Array();
+        for(var Bot : GameObject in getEnemies){
+            if(Bot.GetComponent("enemyStats").GetHealth() &lt; 100){
+                var botsDistance : float =  
+             Vector3.Distance(Bot.transform.position,  
+             transform.position);
+                distanceArray.Add(botsDistance);
+                botArray.Add(Bot);
+            }
+        }
+        if(distanceArray.length &gt; 0){
+            for(var dist : float in distanceArray)	{
+                var counter : int = 0;
+                var closDist : float = distanceArray[0];
+                if(dist &lt; closDist)    {
+                    var arrayCounter = counter;
+                    closDist = dist;
+                }
+                counter++;
+            }
+            if(closDist &lt; enemyRange)    {
+                pathingScr.BotToHeal(botArray[arrayCounter], true);
+            }
+        }
+        else {
+            pathingScr.BotToHeal(null, false);
+        }
+    }
+}</pre></div><p>The <code class="literal">FindAmmo</code> function<a id="id1127" class="indexterm"></a><a id="id1128" class="indexterm"></a> will search for ammo in a given range. If the <code class="literal">ammoNeeded</code> variable is <code class="literal">true</code>, we need to go through a similar process with the medic and the injured bots.</p><p>We will define the three arrays. Copy and paste the ones from the <code class="literal">PassiveBot</code> function; and change the name from <code class="literal">getEnemies</code> to <code class="literal">ammoArray</code> for the search array, <code class="literal">distanceArray</code> can stay the same, and change <code class="literal">botArray</code> to <code class="literal">ammoAvailable</code>.</p><p>For the rest of the functions up to the final statement, if there are no bots that need a medic, we will copy the <code class="literal">PassiveBot</code> function<a id="id1129" class="indexterm"></a> and paste it here. Make sure that you change the names of the arrays with the appropriate ones throughout the code.</p><p>After we have the ammo sent to the <code class="literal">AmmoToLocate</code> function<a id="id1130" class="indexterm"></a><a id="id1131" class="indexterm"></a> of the path script, we need to set the <code class="literal">FindAmmo</code> function to <code class="literal">false</code>. Then we have an <code class="literal">else</code> statement to check if any ammo is available and another one after the first <code class="literal">if</code> statement checking if there is any ammo in the level. In these <code class="literal">else</code> statements, we need to set the <code class="literal">FindAmmo</code> function to <code class="literal">false</code>, reset the <code class="literal">AmmoToLocate</code> function in the path script to <code class="literal">null</code> and <code class="literal">false</code>, and tell the <code class="literal">GetBehaviourInfo</code> to disengage from the player so that the enemy can resume his waypoint path.<a id="id1132" class="indexterm"></a></p><div class="informalexample"><pre class="programlisting">function FindAmmo(ammoNeeded : boolean){
+    lookForAmmo = ammoNeeded;
+    if(lookForAmmo){
+    var ammoArray : Array = new Array(gameObject.FindGameObjectsWithTag("Ammo"));
+    var distanceArray : Array = new Array();
+    var ammoAvailable : Array = new Array();
+    if(ammoArray.length &gt; 0){
+        for(var ammo : GameObject in ammoArray){
+            if(ammo.renderer.enabled){
+                var ammoDistance : float = Vector3.Distance(ammo.transform.position, transform.position);
+                    distanceArray.Add(ammoDistance);
+                    ammoAvailable.Add(ammo);
+                }
+            }
+            if(distanceArray.length &gt; 0){
+                for(var dist : float in distanceArray)    {
+                    var counter : int = 0;
+                    var closDist : float = distanceArray[0];
+                    if(dist &lt; closDist)    {
+                        var arrayCounter = counter;
+                        closDist = dist;
+                    }
+                    counter++;
+                }
+                if(closDist &lt; enemyRange)    {
+                  pathingScr.AmmoToLocate(ammoAvailable[arrayCounter], true);
+                  FindAmmo(false);
+                }
+            }
+            else  {
+                FindAmmo(false);
+                pathingScr.AmmoToLocate(null, false);
+                pathingScr.GetBehaviourInfo(disengagedPlayer);
+            }
+        }
+        else	{
+            FindAmmo(false);
+            pathingScr.AmmoToLocate(null, false);
+            pathingScr.GetBehaviourInfo(disengagedPlayer);
+        }
+    }
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec68"></a>Additional functions</h4></div></div></div><a id="id1133" class="indexterm"></a><p>These functions will help to trigger the behavior functions and support their work.</p><p>For the defensive enemy, the <code class="literal">OnCollisionEnter</code> function<a id="id1134" class="indexterm"></a> checks if a bullet has collided with it. If it has, we will set the <code class="literal">GetIfPlayerIsAttacking</code> function<a id="id1135" class="indexterm"></a> to <code class="literal">true</code> and start the pursue time for the defensive enemy as follows:</p><div class="informalexample"><pre class="programlisting">function OnCollisionEnter(objCollided : Collision){
+    if(defensive)    {
+        if(objCollided.gameObject.tag == "projectile"){
+            GetIfPlayerIsAttacking(true);
+            pursueTime = true;
+        }
+    }
+}</pre></div><p>The <code class="literal">IncrementTime</code> function<a id="id1136" class="indexterm"></a> sets the pursue time for the defensive enemy. If <code class="literal">pursueTime</code> is true, it checks if <code class="literal">currentTimer</code> is equal to the <code class="literal">pursueTimeAfterAttack</code> value. If it is not, <code class="literal">currentTimer</code> is increased by the value given by multiplying <code class="literal">Time.deltaTime</code> with <code class="literal">2</code>. This is done to get seconds. If <code class="literal">currentTimer</code> is greater than or equal to <code class="literal">pursueTimeAfterAttack</code>, we will set <code class="literal">currentTimer</code> back to <code class="literal">0</code>, tell the enemy that the player is not attacking him anymore using <code class="literal">GetIflayerIsAttacking</code>, set <code class="literal">pursueTime</code> to <code class="literal">false</code>, and disengage from pursuing the player as follows:</p><div class="informalexample"><pre class="programlisting">function IncrementTime(){
+    if(pursueTime){
+        if(currentTimer &lt; pursueTimeAfterAttack){
+            currentTimer += Time.deltaTime * 2;
+        }
+        else    {
+            currentTimer = 0;
+            GetIfPlayerIsAttacking(false);
+            pursueTime = false;
+            pathingScr.GetBehaviourInfo(disengagedPlayer);
+        }
+    }
+}</pre></div><a id="id1137" class="indexterm"></a><p>The <code class="literal">Update</code> function calls the <code class="literal">FindAmmo</code>, <code class="literal">PassiveBot</code>, <code class="literal">IncrementTime</code>, and <code class="literal">CheckPlayerDistanceToEnemy</code> function<a id="id1138" class="indexterm"></a>s. Make sure to assign the <code class="literal">FindAmmo</code> function the <code class="literal">lookForAmmo</code> variable<a id="id1139" class="indexterm"></a>.</p><div class="informalexample"><pre class="programlisting">function Update(){
+    FindAmmo(lookForAmmo);
+    PassiveBot();
+    IncrementTime();
+    CheckPlayerDistanceToEnemy();
+}</pre></div><p>Congratulations, the <code class="literal">aiSimpleBehaviour</code> script is written. Now we must hook it up on <span class="strong"><strong>Inspector</strong></span> and add some functionality to the path script again, and we will be able to run this script with no errors.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec69"></a>Hooking up the aiSimpleBehaviour script on Inspector</h4></div></div></div><a id="id1140" class="indexterm"></a><a id="id1141" class="indexterm"></a><p>After you drag the <span class="strong"><strong>aiSimpleBehaviour</strong></span> script onto each enemy, we need to set the enemy behavior, the enemy range, and the pursue time for each enemy. However, we will be able to play without having errors only if we add the extra functions to the pathfinding script. Let's add that functionality now.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304_07_07.jpg" /></div></div></div></div>

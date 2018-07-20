@@ -1,0 +1,37 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec26"></a>Using PhotonViews</h2></div></div><hr /></div><p>Photon Unity Networking <a id="id83" class="indexterm"></a>features PhotonViews. These essentially act exactly as their Unity Networking counterpart, allowing an object to serialize its state and send RPCs over the network. Nearly every part of PhotonView is equivalent to Network View, with a few script differences.</p><p>If you want to get the PhotonView for an object, you have two options: you can either call the static <code class="literal">PhotonView.Get</code> method, use <code class="literal">GetComponent&lt;PhotonView&gt;()</code>, or you can have your script inherit from <code class="literal">Photon.MonoBehaviour</code> and use <code class="literal">this.photonView</code> to get the view.</p><p>To serialize object state, add the <code class="literal">OnPhotonSerializeView</code> function to your script. This function takes a PhotonStream, and a PhotonMessageInfo. This works exactly like serialization in Unity Networking.</p><p>To call RPCs, you can call the RPC function on the PhotonView. As with Unity Networking, RPC methods are marked with the <code class="literal">[RPC]</code> attribute.</p><p>Here's an example that serializes position and calls an RPC when the spacebar is pressed:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Example_PhotonView : Photon.MonoBehaviour
+{
+  void Update()
+  {
+    if( photonView.isMine )
+    {
+      // if the space key is pressed, and this photon view belongs to the local player, call the RPC
+      if( Input.GetKeyDown( KeyCode.Space ) )
+      {
+        photonView.RPC( "TestRPC", PhotonTargets.All );
+      }
+    }
+  }
+
+  [RPC]
+  void TestRPC()
+  {
+    Debug.Log( "An RPC was called!" );
+  }
+
+  void OnPhotonSerializeView( PhotonStream stream, PhotonMessageInfo info )
+  {
+    if( stream.isWriting )
+    {
+      // writing to the stream, send position
+      stream.SendNext( transform.position );
+    }
+    else
+    {
+      // reading from the stream, get position
+      transform.position = (Vector3)stream.ReceiveNext();
+    }
+  }
+}</pre></div><p>Note the minor API changes<a id="id84" class="indexterm"></a> between Photon and Unity. The two are not always completely compatible, but there is almost always an equivalent function call from one to the other.</p></div>

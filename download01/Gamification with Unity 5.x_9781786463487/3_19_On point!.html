@@ -1,0 +1,20 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec22"></a>On point!</h2></div></div><hr /></div><p>Points can come in various ways. A player can obtain points by defeating an enemy, doing the right thing, or even working cooperatively with other players. Now we have worked on a lot of images, this section shows us how to use the text component to implement a <span class="strong"><strong>Point System</strong></span>.</p><p>Let's start by creating a text component. To do this, right-click on the <span class="strong"><strong>Hierarchy</strong></span> panel and then select <span class="strong"><strong>UI</strong></span> | <span class="strong"><strong>Text</strong></span>. We can rename it <code class="literal">Point System</code>. Feel free to customize it as you want by changing the font, size, and so on. It doesn't matter what text you put in it, because it will be replaced by our script, but we can use anything as a placeholder. In this case, we can write <code class="literal">Points: 100</code>. Once we have done all of this, we should have something that looks the following screenshot, in the <span class="strong"><strong>Scene</strong></span> view:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_03_012.jpg" /></div><p>
+</p><p>The points system in Unity</p><p>Now, let's add a script and name it <code class="literal">PointSystemScript</code>. Since we are going to use UI components, let's import the library by adding the following line at the beginning of our script:</p><pre class="programlisting">using UnityEngine.UI; &#13;
+</pre><p>We need two variables, one to store the reference to the text component, and the other one to store the actual number of points. Since there might be a lot of points can be a lot, it's better to use <code class="literal">long</code> instead of <code class="literal">int</code>:</p><pre class="programlisting">    private Text uiText; &#13;
+    private long points = 0; &#13;
+</pre><p>Since the points could be useful on different occasions, such as unlocking achievements, it's better to have a <code class="literal">get function</code> to retrieve their value:</p><pre class="programlisting">    public long getPoints() { &#13;
+        return points; &#13;
+    } &#13;
+</pre><p>In the <code class="literal">Start()</code> function, we can get the reference to the text component, and call our custom update that we are going to write in the next step:</p><pre class="programlisting">    void Start() { &#13;
+        uiText = this.GetComponent&lt;Text&gt;(); &#13;
+        updatePointsSystem(); &#13;
+    } &#13;
+</pre><p>In the custom update, we need only change the text variable of our text component with the number of points. Don't forget to add a header, such as <code class="literal">Points:</code> (with the space!). So, let's write the following:</p><pre class="programlisting">    private void updatePointsSystem() { &#13;
+        uiText.text = "Points: " + points; &#13;
+    } &#13;
+</pre><p>Finally, we need a simple function to add points to our counter:</p><pre class="programlisting">    public void addPoints(int ammount) { &#13;
+        points += ammount; &#13;
+        updatePointsSystem(); &#13;
+    } &#13;
+</pre><p>Save the script, and you have implemented the points system. You should have found this step easier to follow, after we have done all the progress and health bars. In the next section, we will see how to make achievements.</p></div>

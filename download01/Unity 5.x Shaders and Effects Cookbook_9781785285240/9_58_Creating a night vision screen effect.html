@@ -1,0 +1,154 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec57"></a>Creating a night vision screen effect</h2></div></div><hr /></div><p>Our next <a id="id460" class="indexterm"></a>screen effect is definitely a more popular one. The night vision screen effect is seen in <span class="emphasis"><em>Call of Duty Modern Warfare</em></span>, <span class="emphasis"><em>Halo</em></span>, and just about any first-person shooter out in the market today. It is the effect of brightening the whole image using that very distinct lime green color.</p><p>In order to achieve our night vision effect, we need to break down our effect using Photoshop. It is a simple process of finding some reference images online and composing a layered image to see what kind of blending modes you will need or in which order we will need to combine our layers. The following image shows the result of performing just this process in Photoshop:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_05.jpg" /></div><p>Let's begin to break <a id="id461" class="indexterm"></a>down our rough Photoshop composite image into its component parts so that we can better understand the assets we will have to gather. In the next recipe, we will cover the process of doing this.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec155"></a>Getting ready</h3></div></div></div><p>Let's begin this screen effect by again breaking down our effect into its component layers. Using Photoshop, we can construct a layered image to better illustrate how we can go about capturing the effect of night vision:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Tinted green</strong></span>: Our <a id="id462" class="indexterm"></a>first layer in our screen effect is the iconic green color, found in just about every night vision image. This will give our effect that signature night vision look, as shown in the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_06.jpg" /></div></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Scan lines</strong></span>: To increase the effect of this being a new type of display for the player, we include <a id="id463" class="indexterm"></a>scan lines over the top of our tinted layer. For this, we will use a texture created in Photoshop and let the user tile it so that the scan lines can be bigger or smaller.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Noise</strong></span>: Our <a id="id464" class="indexterm"></a>next layer is a simple noise texture that we tile over the tinted image and scan lines to break up the image and add even more detail to our effect. This layer simply emphasizes that digital read-out look:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_07.jpg" /></div></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Vignette</strong></span>: The <a id="id465" class="indexterm"></a>last layer in our night vision effect is the vignette. If you look at the night vision effect in <span class="emphasis"><em>Call of Duty Modern Warfare</em></span>, you will notice that it uses a vignette that fakes the effect of looking down a scope. We will do that for this screen effect:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_08.jpg" /></div></li></ul></div><p>Let's create a screen effect system by gathering our textures. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Gather up a vignette texture, noise texture, and scan line texture, like the ones we just saw.</p></li><li><p>Create a new script called <code class="literal">NightVisionEffect.cs</code> and a new shader called <code class="literal">NightVisionEffectShader.shader</code>.</p></li><li><p>With our new files created, fill in the code necessary to get the screen effect system up and running. For instructions on how to do this, refer to <a class="link" href="#" linkend="ch08">Chapter 8</a>, <span class="emphasis"><em>Screen Effects with Unity Render Textures</em></span>.</p></li></ol></div><p>Finally, with our screen effect system up and running and our textures gathered, we can begin the process of recreating this old film effect.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec156"></a>How to do it…</h3></div></div></div><p>With all of our assets gathered and screen effect system running smoothly, let's begin to add the code necessary to both the script and shader. We will begin our coding with the <code class="literal">NightVisionEffect.cs</code> script, so double-click on this file now to open it in MonoDevelop.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>We need to create a few variables that will allow the user of this effect to adjust it in the script's <a id="id466" class="indexterm"></a>
+<span class="strong"><strong>Inspector</strong></span>. Enter the following code in the <code class="literal">NightVisionEffect.cs</code> script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>#region</strong></span> Variables
+    public Shader nightVisionShader;
+    
+    public float contrast = 2.0f;
+    public float brightness = 1.0f;
+    public Color nightVisionColor = Color.white;
+    
+    public Texture2D vignetteTexture;
+    
+    public Texture2D scanLineTexture;
+    public float scanLineTileAmount = 4.0f;
+    
+    public Texture2D nightVisionNoise;
+    public float noiseXSpeed = 100.0f;
+    public float noiseYSpeed = 100.0f;
+    
+    public float distortion = 0.2f;
+    public float scale = 0.8f;
+    
+    private float randomValue = 0.0f;
+    private Material curMaterial;
+<span class="strong"><strong>    #endregion</strong></span>
+</pre></div></li><li><p>Next, we need to complete our <code class="literal">OnRenderImage()</code> function so that we are passing the right data to the shader in order for the shader to process the screen effect properly. Complete the <code class="literal">OnRenderImage()</code> function with the following code:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> OnRenderImage(RenderTexture sourceTexture, RenderTexture destTexture)
+    {
+        if(nightVisionShader != null)
+        {    
+            material.SetFloat("_Contrast", contrast);
+            material.SetFloat("_Brightness", brightness);
+            material.SetColor("_NightVisionColor", nightVisionColor);
+            material.SetFloat("_RandomValue", randomValue);
+            material.SetFloat("_distortion", distortion);
+            material.SetFloat("_scale",scale);
+            
+            if(vignetteTexture)
+            {
+                material.SetTexture("_VignetteTex", vignetteTexture);
+            }
+            
+            if(scanLineTexture)
+            {
+                material.SetTexture("_ScanLineTex", scanLineTexture);
+                material.SetFloat("_ScanLineTileAmount", scanLineTileAmount);
+            }
+            
+            if(nightVisionNoise)
+            {
+                material.SetTexture("_NoiseTex", nightVisionNoise);
+                material.SetFloat("_NoiseXSpeed", noiseXSpeed);
+                material.SetFloat("_NoiseYSpeed", noiseYSpeed);
+            }
+            
+            Graphics.Blit(sourceTexture, destTexture, material);
+        }
+        else
+        {
+            Graphics.Blit(sourceTexture, destTexture);
+        }
+    }</pre></div></li><li><p>To complete the <code class="literal">NightVisionEffect.cs</code> script, we simply need to make sure that we clamp <a id="id467" class="indexterm"></a>certain variables so that they stay within a range. These ranges are arbitrary and can be changed at a later time. These are just values that worked well:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>void</strong></span> Update()
+    {
+        contrast = Mathf.Clamp(contrast, 0f,4f);
+        brightness = Mathf.Clamp(brightness, 0f, 2f);
+        randomValue = Random.Range(-1f,1f);
+        distortion = Mathf.Clamp(distortion, -1f,1f);
+        scale = Mathf.Clamp(scale, 0f, 3f);
+    }</pre></div></li><li><p>We can now turn our attention over to the shader portion of this screen effect. Open the shader, if you haven't already, and begin by entering the following properties in the <code class="literal">Properties</code> block:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>Properties </strong></span>
+    {
+        _MainTex ("Base (RGB)", 2D) = "white" {}
+        _VignetteTex ("Vignette Texture", 2D) = "white"{}
+        _ScanLineTex ("Scan Line Texture", 2D) = "white"{}
+        _NoiseTex ("Noise Texture", 2D) = "white"{}
+        _NoiseXSpeed ("Noise X Speed", Float) = 100.0
+        _NoiseYSpeed ("Noise Y Speed", Float) = 100.0
+        _ScanLineTileAmount ("Scan Line Tile Amount", Float) = 4.0
+        _NightVisionColor ("Night Vision Color", Color) = (1,1,1,1)
+        _Contrast ("Contrast", Range(0,4)) = 2
+        _Brightness ("Brightness", Range(0,2)) = 1
+        _RandomValue ("Random Value", Float) = 0
+        _distortion ("Distortion", Float) = 0.2
+        _scale ("Scale (Zoom)", Float) = 0.8
+    }</pre></div></li><li><p>To make sure that we are passing the data from our <code class="literal">Properties</code> block to our <code class="literal">CGPROGRAM</code> <a id="id468" class="indexterm"></a>block, we need to make sure to declare them with the same name in the <code class="literal">CGPROGRAM</code> block:</p><div class="informalexample"><pre class="programlisting">CGPROGRAM
+<span class="strong"><strong>#pragma</strong></span> vertex vert_img
+<span class="strong"><strong>#pragma</strong></span> fragment frag
+<span class="strong"><strong>#pragma</strong></span> fragmentoption ARB_precision_hint_fastest
+#include "UnityCG.cginc"
+            
+uniform sampler2D _MainTex;
+uniform sampler2D _VignetteTex;
+uniform sampler2D _ScanLineTex;
+uniform sampler2D _NoiseTex;
+fixed4 _NightVisionColor;
+fixed _Contrast;
+fixed _ScanLineTileAmount;
+fixed _Brightness;
+fixed _RandomValue;
+fixed _NoiseXSpeed;
+fixed _NoiseYSpeed;
+fixed _distortion;
+fixed _scale;</pre></div></li><li><p>Our effect is also going to include a lens distortion to further convey the effect that we are looking through a lens and the edges of the image are being distorted by the angle of the lens. Enter the following function just after the variable declarations in the <code class="literal">CGPROGRAM</code> block:</p><div class="informalexample"><pre class="programlisting">float2 barrelDistortion(float2 coord) 
+    {
+        // lens distortion algorithm
+        // See http://www.ssontech.com/content/lensalg.htm
+
+        float2 h = coord.xy - float2(0.5, 0.5);
+        float r2 = h.x * h.x + h.y * h.y;
+        float f = 1.0 + r2 * (_distortion * sqrt(r2));
+
+        return f * _scale * h + 0.5;
+    }</pre></div></li><li><p>We can now <a id="id469" class="indexterm"></a>concentrate on the meat of our <code class="literal">NightVisionEffect</code> shader. Let's start this by entering the code that is necessary to get the render texture and vignette texture. Enter the following code in the <code class="literal">frag()</code> function of our shader:</p><div class="informalexample"><pre class="programlisting">fixed4 frag(v2f_img i) : COLOR
+    {
+        //Get the colors from the RenderTexture and the uv's
+        //from the v2f_img struct
+        half2 distortedUV = barrelDistortion(i.uv);
+        fixed4 renderTex = tex2D(_MainTex, distortedUV);
+        fixed4 vignetteTex = tex2D(_VignetteTex, i.uv);</pre></div></li><li><p>The next step in our <code class="literal">frag()</code> function is to process the scan lines and noise textures and apply the proper animated UVs to them:</p><div class="informalexample"><pre class="programlisting">//Process scan lines and noise
+        half2 scanLinesUV = half2(i.uv.x * _ScanLineTileAmount, i.uv.y * _ScanLineTileAmount);
+        fixed4 scanLineTex = tex2D(_ScanLineTex, scanLinesUV);
+                
+        half2 noiseUV = half2(i.uv.x + (_RandomValue * _SinTime.z * _NoiseXSpeed),
+                                         i.uv.y + (_Time.x * _NoiseYSpeed));
+        fixed4 noiseTex = tex2D(_NoiseTex, noiseUV);</pre></div></li><li><p>To complete all of our layers in the screen effect, we simply need to process the luminance value of our render texture, and then apply the night vision color to it to achieve that iconic night vision look:</p><div class="informalexample"><pre class="programlisting">// get the luminosity values from the render texture using the YIQ values.
+        fixed lum = dot (fixed3(0.299, 0.587, 0.114), renderTex.rgb);
+        lum += _Brightness;
+        fixed4 finalColor = (lum *2) + _NightVisionColor;</pre></div></li><li><p>Lastly, we <a id="id470" class="indexterm"></a>will combine all the layers together and return the final color of our night vision effect:</p><div class="informalexample"><pre class="programlisting">//Final output
+        finalColor = pow(finalColor, _Contrast);
+        finalColor *= vignetteTex;
+        finalColor *= scanLineTex * noiseTex;
+                
+        return finalColor;</pre></div></li></ol></div><p>When you have finished entering the code, return to the Unity editor to let the script and shader compile. If there are no errors, hit play in the editor to see the results. You should see something similar to the following image:</p><div class="mediaobject"><img src="/graphics/9781785285240/graphics/Image_4850_09_09.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec157"></a>How it works…</h3></div></div></div><p>The night vision effect is actually very similar to the old film screen effect, which shows us just how modular we can make these components. Just by simply swapping the textures that we are using for overlays and changing the speed at which our tiling rates are being calculated, we can achieve very different results using the same code.</p><p>The only difference with this effect is the fact that we are including a lens distortion to our screen effect. So let's break this down so that we can get a better understanding of how it works.</p><p>The following code <a id="id471" class="indexterm"></a>snippet illustrates the code used in processing our lens distortion. It is a snippet of code provided to us by the makers of SynthEyes, and the code is freely available to use in your own effects:</p><div class="informalexample"><pre class="programlisting">float2 barrelDistortion(float2 coord) 
+{
+    // lens distortion algorithm
+    // See http://www.ssontech.com/content/lensalg.htm
+    float2 h = coord.xy - float2(0.5, 0.5);
+    float r2 = h.x * h.x + h.y * h.y;
+    float f = 1.0 + r2 * (_distortion * sqrt(r2));
+
+    return f * _scale * h + 0.5;
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec158"></a>There's more...</h3></div></div></div><p>It is not uncommon in video games to have the need to highlight certain objects. For instance, a thermal visor should apply a post-processing effect only to people and other sources of heat. Doing this is already possible with the knowledge gathered so far in this book; you can, in fact, change the shader or material of an object by code. However, this is often laborious and has to be replicated on all the objects.</p><p>A more effective way is using replaced shaders. Each shader has a tag called <code class="literal">RenderType</code> that has never been used so far. This property can be used to force a camera to apply a shader only to certain objects. You can do this by attaching the following script to the camera:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+public class ReplacedShader : MonoBehaviour {
+
+    public Shader shader;
+    <span class="strong"><strong>void</strong></span> Start () {
+        GetComponent&lt;Camera&gt;().SetReplacementShader(shader, "Heat");
+    }
+}</pre></div><p>After entering the play mode, the camera will query all the objects that it has to render. If they don't have a <a id="id472" class="indexterm"></a>shader decorated with <code class="literal">RenderType = "Heat"</code>, they will not be rendered. Objects with such a tag will be rendered with the shader attached to the script.</p></div></div>

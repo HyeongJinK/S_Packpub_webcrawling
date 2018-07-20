@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec21"></a>The melee item class</h2></div></div><hr /></div><p>The melee<a id="id139" class="indexterm"></a> item class will have similar properties and functions as the self item class. What is different about the two is that the functions don't affect the player, but other GameObjects. Also, the way we activate the item is different.</p><p>To get started, create a new script and name it <code class="literal">itemMelee</code>. We'll start our script by adding some variables, similar to the ones we used in the <code class="literal">itemSelf</code> class.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec44"></a>Adding our variables</h3></div></div></div><p>First, we'll <a id="id140" class="indexterm"></a>add a couple of enum variables:</p><div class="informalexample"><pre class="programlisting">public enum MeleeAction {BuffDebuff, ChangeHP, ActivateEnv, None};
+public enum MeleeType {Weapon, Potion, None};</pre></div><p>The<a id="id141" class="indexterm"></a> <code class="literal">MeleeAction</code> enum will decide what the melee item does. Since melee items can interact with various GameObjects, its actions will vary <a id="id142" class="indexterm"></a>just as much as it can. The <code class="literal">MeleeType</code> enum will determine whether the player uses a weapon, potion, or no items. Now, let's add the rest of our variables in:</p><div class="informalexample"><pre class="programlisting">public int Amount, Value;
+public float Weight;
+public string Name, Stat;
+public MeleeAction meleeAction = MeleeAction.None;
+public MeleeType meleeType = MeleeType.None;</pre></div><p>As you can see, the variables are similar to the ones we used in our <code class="literal">itemSelf</code> class; our only major differences are the different names for our <code class="literal">Type</code> and <code class="literal">Action</code> enums.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec45"></a>Buff or debuff stats</h3></div></div></div><p>The first function that we'll add to our melee item will allow melee items to modify the stats <a id="id143" class="indexterm"></a>of other objects. Add this function<a id="id144" class="indexterm"></a> to the script:</p><div class="informalexample"><pre class="programlisting">void BuffDebuffStat(GameObject other)
+{
+  other.SendMessage("BuffDebuffStat", new KeyValuePair&lt;string, int&gt;(Stat, Amount));
+}</pre></div><p>This function, when called, receives a GameObject, which will be the GameObject that we are affecting with the melee item. We then send a message to that GameObject to call the function that modifies the stats, and then pass the <code class="literal">KeyValuePair</code> to it. The <code class="literal">KeyValuePair</code> contains the stat we want to modify as well as the amount that we want to modify it by.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec04"></a>The health changer</h4></div></div></div><p>The next <a id="id145" class="indexterm"></a>function we'll add to the script will <a id="id146" class="indexterm"></a>allow the melee item to change the health of other GameObjects. Add the following function after the <code class="literal">BuffDebuffStat</code> function in our script:</p><div class="informalexample"><pre class="programlisting">void ChangeHealth(GameObject other)
+{
+  other.SendMessage("ChangeHealth", Amount);
+}</pre></div><p>When this function is called, it will modify the health of the GameObject that the melee item collides with. This could mean healing or hurting the GameObject, but this function can be used either way.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec05"></a>Let's interact with the environment</h4></div></div></div><p>The<a id="id147" class="indexterm"></a> last and final function <a id="id148" class="indexterm"></a>will allow the player to interact with the environment. Add this function to your script:</p><div class="informalexample"><pre class="programlisting">void ActivateEnvironment(GameObject other)
+{
+  other.SendMessage("Activate");
+}</pre></div><p>This function is called when the melee item collides with an environmental object the player can interact with. We send the object we want to interact with the message to activate. From here, the other GameObject handles the rest of the interaction.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec06"></a>Detecting triggers</h4></div></div></div><p>In order <a id="id149" class="indexterm"></a>to call the functions that we just <a id="id150" class="indexterm"></a>created, we have to create the interaction between the melee item and the other GameObject. Add this final function to the script:</p><div class="informalexample"><pre class="programlisting">void OnTriggerEnter(Collider col)
+{
+  switch(col.gameObject.tag)
+  {
+  case "Enemy":
+    if(meleeType != MeleeType.Potion)
+    {
+      if(meleeAction == MeleeAction.ChangeHP)
+        ChangeHealth(col.gameObject);
+
+      if(meleeAction == MeleeAction.BuffDebuff)
+        BuffDebuffStat(col.gameObject);
+
+      if(meleeAction == MeleeAction.ActivateEnv)
+        ActivateEnvironment(col.gameObject);
+    }
+    break;
+  case "Environment":
+    if(meleeType == MeleeType.Potion)
+    {
+      if(meleeAction == MeleeAction.ChangeHP)
+        ChangeHealth(col.gameObject);
+
+      if(meleeAction == MeleeAction.BuffDebuff)
+        BuffDebuffStat(col.gameObject);
+    }
+    break;
+  }
+    
+  if(meleeType == MeleeType.Potion)
+    Destroy(gameObject);
+}</pre></div><p>To detect the contact between the melee item and GameObject that the player hits, we use <code class="literal">OnTriggerEnter</code> to activate our functions. When the melee item enters a triggered GameObject, the <code class="literal">OnTriggerEnter</code> function is called and it will receive the GameObject that it entered.</p><p>From here, we use a <code class="literal">switch</code> statement to check the tag of the trigger GameObject. Using a tag is a quick way to check what the player hit with their melee item. Once we find the correctly tagged GameObject, we check the <code class="literal">meleeType</code> variable and then the <code class="literal">meleeAction</code> variable.</p><p>Depending<a id="id151" class="indexterm"></a> on the type of melee item, we <a id="id152" class="indexterm"></a>decide what the item can and can't do. In both <code class="literal">case</code> statements, we check whether the melee type is a potion or not; this will decide whether to activate environmental objects or not. Also, at the end of the function, we destroy the melee item if it is a potion; this ensures that potions are a single-use item.</p></div></div></div>

@@ -1,0 +1,54 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec51"></a>Working with BigDB</h2></div></div><hr /></div><p>Player.IO provides <a id="id218" class="indexterm"></a>a database service known as BigDB. The <a id="id219" class="indexterm"></a>objects can be saved to BigDB and loaded from BigDB, and there is also a concept of "ownership" of a database entry (for instance, you can configure databases so that players are only allowed to modify their own DB entries).</p><p>Both the server and the client can access BigDB. Note that development servers have the same permissions as the player—be aware of this, as restricting player permissions will also restrict developer permissions.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note20"></a>Note</h3><p>Note that BigDB is stored on Player.IO servers, not the local development server. The data can be viewed from the admin panel on the website. This data is stored per-game (for instance, so you cannot access the data for other games). Also be aware that no data is encrypted in Player.IO, so for instance storing passwords in plain text is not advised, just as with most conventional database systems.</p></div><p>BigDB also has a built-in player object's table. This is used to save data belonging to a player, and you can retrieve your player object using the <a id="id220" class="indexterm"></a>
+<code class="literal">LoadMyPlayerObject</code> function:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>DatabaseObject playerObj;</strong></span>
+
+void Start()
+{
+  PlayerIO.UnityInit( this );
+
+  PlayerIO.Connect( "YourGameIDHere", "public", "YourUserIDHere", null, null,
+  delegate( Client c )
+  {
+    // connected successfully
+    client = c;
+    Debug.Log( "Connected" );
+
+    <span class="strong"><strong>// load the player object</strong></span>
+<span class="strong"><strong>    client.BigDB.LoadMyPlayerObject(</strong></span>
+<span class="strong"><strong>    delegate( DatabaseObject obj )</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      playerObj = obj;</strong></span>
+
+<span class="strong"><strong>      Debug.Log( "Player object loaded" );</strong></span>
+<span class="strong"><strong>    },</strong></span>
+<span class="strong"><strong>    delegate( PlayerIOError error )</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      Debug.Log( error.Message );</strong></span>
+<span class="strong"><strong>    } );</strong></span>
+
+    // if we're using the dev server, connect to the local IP
+    if( UseDevServer )
+    {
+      client.Multiplayer.DevelopmentServer = new ServerEndpoint( "127.0.0.1", 8184 );
+
+      GetRoomList();
+    }
+  },
+  delegate( PlayerIOError error )
+  {
+    // did not connect successfully
+    Debug.Log( error.Message );
+  } );
+}</pre></div><p>This <a id="id221" class="indexterm"></a>gives you a <code class="literal">DatabaseObject</code> instance. With a <code class="literal">DatabaseObject</code> instance <a id="id222" class="indexterm"></a>you can set properties using the <code class="literal">Set</code> method, supplying a key and a value. The value can be one of the following types:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Boolean</p></li><li style="list-style-type: disc"><p>Byte array</p></li><li style="list-style-type: disc"><p>Double</p></li><li style="list-style-type: disc"><p>Float</p></li><li style="list-style-type: disc"><p>Integer</p></li><li style="list-style-type: disc"><p>Long</p></li><li style="list-style-type: disc"><p>Unsigned Integer</p></li><li style="list-style-type: disc"><p>System.DateTime</p></li><li style="list-style-type: disc"><p>DatabaseObject</p></li><li style="list-style-type: disc"><p>DatabaseArray</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note21"></a>Note</h3><p>Keep in mind that database objects are limited to 500 kb in size.</p></div><p>The <code class="literal">DatabaseArrays</code> instances<a id="id223" class="indexterm"></a> are similar to <code class="literal">DatabaseObjects</code>, except that they hold data in sequential indices rather than string keys. It's also possible to nest <code class="literal">DatabaseObjects</code> and <code class="literal">DatabaseArrays</code>, so for instance on your player object you could have a database array, which holds an array of items your player owns as <code class="literal">DatabaseObjects</code>.</p><p>Saving a <code class="literal">DatabaseObject</code> instance looks like this:</p><div class="informalexample"><pre class="programlisting">if( GUILayout.Button( "Save Test Player Object", GUILayout.Width( 200f ) ) )
+{
+  playerObj.Set( "TestProperty", "someValue" );
+  playerObj.Save(
+  delegate()
+  {
+    Debug.Log( "Player object saved" );
+  },
+  delegate( PlayerIOError error )
+  {
+    Debug.Log( error.Message );
+  } );
+}</pre></div><p>Besides <code class="literal">LoadMyPlayerObject</code>, you can also use several other methods such as <code class="literal">Load</code>, <code class="literal">LoadOrCreate</code> (which creates the object if it doesn't exist), <code class="literal">LoadKeys</code> (to load several at once), <code class="literal">LoadKeysOrCreate</code>, and <code class="literal">LoadRange</code> (which allows you to use an "index" to get a list of database objects, for instance you could use this to implement leaderboards by creating an index for scores).</p><p>For more information, please read the documentation on BigDB: <a class="ulink" href="http://playerio.com/features/bigdb/" target="_blank">http://playerio.com/features/bigdb/</a>.</p></div>

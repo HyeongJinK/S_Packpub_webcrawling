@@ -1,0 +1,43 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec231"></a>Time for action – scripting the character</h2></div></div><hr /></div><p>Let's do exactly that! We'll create a new <span class="strong"><strong>Script</strong></span>, and use what we already know about following the mouse, to snap the player character to our mouse movement. Then we'll tell the character <a id="id733" class="indexterm"></a>which animation cycle to use when he's moving around.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create a new <span class="strong"><strong>JavaScript</strong></span>. Rename it <code class="literal">Character</code>. If you're keeping your project tidy, consider creating a new folder called <code class="literal">Scripts</code> and dropping your new script into it.</p></li><li><p>Open the script and type in this code beneath the <code class="literal">#pragma</code> strict line:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>var lastX:float; // this will store the last position of the character</strong></span>
+<span class="strong"><strong>var isMoving:boolean = false; //flags whether or not the player is in motion</strong></span>
+<span class="strong"><strong>function Start()</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>   animation.Stop();  // this stops Unity from playing the character's default animation.</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+<span class="strong"><strong>function Update()</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>   transform.position.x = (Input.mousePosition.x)/20;</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>So far, all this should look very familiar. We're using the same type of commands we used with the keep-up game to make the <span class="strong"><strong>GameObject</strong></span> follow the mouse around, but this time the player is locked to the x axis, so he'll only be able to move from side-to-side.</p><p>Now, we'll add a chunk of logic in the <code class="literal">Update</code> function to determine whether or not the player is moving.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note21"></a>Note</h3><p>Note that the value <code class="literal">20</code> we've used here is a "magic number", which is programming parlance for a bad practice where the utility of a number is not explained. Your mileage with this number will vary based on your screen width. Adjust this evil magic number to taste like paprika in your favorite stew recipe.</p></div></li><li><p>Add the<a id="id734" class="indexterm"></a> following code to your <a id="id735" class="indexterm"></a>
+<code class="literal">Update</code> function:</p><div class="informalexample"><pre class="programlisting">function Update()
+{
+<span class="strong"><strong>  var halfW:float = Screen.width / 2;</strong></span>
+<span class="strong"><strong>  transform.position.x = (Input.mousePosition.x)/20;</strong></span>
+  if(lastX != transform.position.x)
+  {
+    // x values between this Update cycle and the last one
+    // aren't the same! That means the player is moving the
+    // mouse.
+    if(!isMoving)
+    {
+      // the player was standing still.
+      // Let's flag him to "isMoving"
+      isMoving = true;
+      animation.CrossFade("step");
+     } else {
+    // The player's x position is the same this Update cycle
+    // as it was the last! The player has stopped moving the
+    // mouse.   
+    if(isMoving)
+    {
+      // The player has stopped moving, so let's update theflag
+      isMoving = false;
+      animation.CrossFade("idle");
+    }
+  }
+  lastX = transform.position.x;
+}</pre></div></li><li><p>Save the script. Now attach the script to your <span class="strong"><strong>Character</strong></span> Prefab in the <span class="strong"><strong>Project</strong></span> panel. I find it tricky to master the click-and-drag process when it comes to Prefabs. Unity always thinks I'm trying to drag my script above or below the <span class="strong"><strong>Prefab</strong></span>. For a<a id="id736" class="indexterm"></a> sure-fire way to stick that script to your character, click on the <span class="strong"><strong>Character</strong></span> Prefab in the <span class="strong"><strong>Project</strong></span> panel. Then, in the menu, navigate to <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Scripts</strong></span> | <span class="strong"><strong>Character</strong></span>. You should see the <span class="strong"><strong>Character</strong></span> script get added as a component in the <span class="strong"><strong>Inspector</strong></span> panel.</p></li><li><p>Play your game to try it out. When you move the mouse, the character loops through his "step" animation. When you stop moving the mouse, he transitions back to his "idle" animation, looking for more stuff to catch.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note22"></a>Note</h3><p>Note: If your character doesn't animate and you get an error reading, <span class="strong"><strong>The animation state idle could not be played because it couldn't be found!</strong></span>, you need to attach the animation clips to the Prefab's animation class.</p></div></li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Click on the <span class="strong"><strong>Character</strong></span> Prefab in the <span class="strong"><strong>Project</strong></span> window.</p></li><li><p>In the <span class="strong"><strong>Inspector</strong></span> window, change the <span class="strong"><strong>Animations Size</strong></span> to <code class="literal">3</code>.</p></li><li><p>Attach each of the three animation clips we added to the model earlier.</p></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec96"></a>
+<span class="emphasis"><em>What just happened – stepping through the "step" code</em></span>
+</h3></div></div></div><p>The <a id="id737" class="indexterm"></a>comments should help clarify this code. This crucial line:</p><div class="informalexample"><pre class="programlisting">if(lastX != transform.position.x)</pre></div><p>means "if the last <code class="literal">x</code> position of the character does not equal the character's current <code class="literal">x</code> position...", We base the rest of the logic on that check.</p><p>If he was moving and he just stopped, flag him as "not moving" and crossfade to the "idle" animation. If he was not moving and he just started moving since the last <code class="literal">Update</code> cycle, flag him as "moving" and crossfade to the "step" animation.</p></div></div>

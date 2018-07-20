@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec50"></a>Optimizing the game</h2></div></div><hr /></div><p>At present, we will notice that the breadcrumbs are generated all the time for the player, although he/she is not moving. This has the disadvantage of flooding the scene with a significant <a id="id652" class="indexterm"></a>number of breadcrumbs from the player. We can solve this in at least two ways: we could check that the player has walked at least 1 meter before the next breadcrumb is generated, or each breadcrumb could expire after a given number of seconds. The second option usually is the most believable. To implement the distance-based solution, modify the function <code class="literal">Update</code> in the script <code class="literal">playerBreadCrumb</code>, as <a id="id653" class="indexterm"></a>highlighted in the following code:</p><div class="informalexample"><pre class="programlisting">function Update ()
+{
+  if (Time.time &gt; timeForNextCrumb)
+  {
+    timeForNextCrumb = Time.time+.5;
+<span class="strong"><strong>    var lastBreadCrumb: Vector3;</strong></span>
+<span class="strong"><strong>    var distanceToLastBreadCrumb : float;</strong></span>
+<span class="strong"><strong>    if (index &gt; 0) lastBreadCrumb = breadCrumbs[index-1];</strong></span>
+<span class="strong"><strong>    breadCrumbs[index] = gameObject.transform.position;</strong></span>
+<span class="strong"><strong>    distanceToLastBreadCrumb = Vector3.Distance(transform.position, lastBreadCrumb); </strong></span>
+<span class="strong"><strong>    if (index == 0 || (distanceToLastBreadCrumb &gt; 1.0f &amp;&amp; index &gt;0))</strong></span>
+<span class="strong"><strong>    {</strong></span>
+<span class="strong"><strong>      var b:GameObject = GameObject.Instantiate(breadCrumb,transform.position, transform.rotation);</strong></span>
+<span class="strong"><strong>      b.name = "breadcrumb_player_"+index;</strong></span>
+<span class="strong"><strong>      index++;</strong></span>
+    }
+  }
+}</pre></div><p>In the previous code, we simply calculate the distance between the current position and the position of the previous breadcrumb. A new breadcrumb is created only if the player has moved 1 meter further.</p><p>Test this<a id="id654" class="indexterm"></a> game and check that new breadcrumbs are created only if the player moves forward.</p><p>To implement the second solution, use the following code:</p><div class="informalexample"><pre class="programlisting">function Update ()
+{
+  if (Time.time &gt; timeForNextCrumb)
+  {
+    timeForNextCrumb = Time.time+.5;
+    breadCrumbs[index] = gameObject.transform.position;
+    var b:GameObject  = GameObject.Instantiate(breadCrumb,transform.position, transform.rotation);
+    b.name = "breadcrumb_player_"+index;
+<span class="strong"><strong>    Destroy(b, 10);</strong></span>
+    index++;  
+  }
+}</pre></div><p>In the previous code, we added an instruction to destroy the breadcrumb after 10 seconds <a id="id655" class="indexterm"></a>using the built-in function <code class="literal">Destroy</code>. Test the game with<a id="id656" class="indexterm"></a> this solution.</p></div>

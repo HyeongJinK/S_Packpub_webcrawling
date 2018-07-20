@@ -1,0 +1,81 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec34"></a>Creating the weapons</h2></div></div><hr /></div><a id="id748" class="indexterm"></a><p>It's time to get us some weapon display functionality. A lot of what is going to be covered here is covered in much more detail in items. At the moment, we are going to copy many functions and scripts for the scripts required for the weapons to work. The following is what needs to be done:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the <code class="literal">Change_Weapon</code> script.</p></li><li><p>Create the <code class="literal">UseWeapon</code> script.</p></li><li><p>Revisit <code class="literal">PlayerStats</code>.</p></li><li><p>Revisit <code class="literal">textMesh</code>.</p></li><li><p>Revisit <code class="literal">TextManager</code>.</p></li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec61"></a>The Change_Weapon script</h3></div></div></div><a id="id749" class="indexterm"></a><a id="id750" class="indexterm"></a><p>This script, as said before, is very similar to the <code class="literal">Change_Item</code> script, however, it will be easier for us to copy over what we need and modify the existing code. Let's begin with variables.</p><p>Copy the variables over to the <code class="literal">Change_Weapon</code> script. The variables we will be using are the <code class="literal">itemLog</code> array<a id="id751" class="indexterm"></a>, <code class="literal">increment</code>, <code class="literal">GameManager</code>, <code class="literal">itemtoadd</code>, <code class="literal">painKiller</code>, and <code class="literal">healthPack</code>. These are what we need but let's rename them now. Change the <code class="literal">itemLog</code> array to <code class="literal">weaponLog</code>; <code class="literal">increment</code>, and <code class="literal">GameManager</code> can stay the same. Change <code class="literal">itemToAdd</code> to <code class="literal">weaponToAdd</code>, <code class="literal">painKiller</code> to <code class="literal">grenadeLauncher</code>, and <code class="literal">healthPack</code> to <code class="literal">m16</code>:</p><div class="informalexample"><pre class="programlisting">var weaponLog : Array = new Array();
+private var increment : int = 0;
+var GameManager : GameObject;
+private var weaponToAdd : Texture2D;
+var grenadeLauncher : Texture2D;
+var m16 : Texture2D;</pre></div><p>First off, from now on, change all <code class="literal">itemLog</code> variables to the <code class="literal">weaponLog</code> variable<a id="id752" class="indexterm"></a>.</p><p>Next, we will copy over the <code class="literal">Awake</code> function. Change the <code class="literal">Add</code> instances of <code class="literal">painKiller</code> and <code class="literal">healthPack</code> to <code class="literal">grenadeLauncher</code> and <code class="literal">m16</code> respectively. Change <code class="literal">GetComponent("UseItem")</code> to <code class="literal">GetComponent("UseWeapon")</code>, the function name to <code class="literal">GetWeaponName</code>:</p><div class="informalexample"><pre class="programlisting">function Awake(){
+    weaponLog.Add(grenadeLauncher, m16);
+    renderer.material.mainTexture = weaponLog[increment];
+    GameManager.GetComponent("UseWeapon").GetWeaponName(weaponLog[increment].name);
+}</pre></div><a id="id753" class="indexterm"></a><p>The next function to copy over is the <code class="literal">AddItemToList</code> function. Change the name of the function to <code class="literal">AddWeaponToList</code> and call its parameter variable <code class="literal">newWeapon</code>. Inside the function, have the <code class="literal">weaponToAdd</code> variable equal to the new weapon variable. Next, using the <code class="literal">Add</code> function for arrays, add <code class="literal">weaponToAdd</code> to <code class="literal">weaponLog</code>. Increment and then call the <code class="literal">WeaponName</code> function<a id="id754" class="indexterm"></a>. As with the <code class="literal">Change_Item</code> script, this needs to be called externally:<a id="id755" class="indexterm"></a></p><div class="informalexample"><pre class="programlisting">function AddWeaponToList(newWeapon : Texture2D){
+    weaponToAdd = newWeapon;
+    weaponLog.Add(weaponToAdd);
+    increment = weaponLog.length - 1;
+    WeaponName();
+}</pre></div><p>Now, copy over the <code class="literal">ChangeItem</code> function. Change <code class="literal">KeyCode</code> to <span class="emphasis"><em>C</em></span> and change <code class="literal">ItemName</code> to <code class="literal">WeaponName</code>:</p><div class="informalexample"><pre class="programlisting">function ChangeWeapon()
+{
+    if (Input.GetKeyDown(KeyCode.C))
+    {
+        IncrementControl();
+        renderer.material.mainTexture = weaponLog[increment];
+        WeaponName();
+    }
+}</pre></div><a id="id756" class="indexterm"></a><p>There is one more function to copy over. Copy over the <code class="literal">ItemName</code> function and change its name to <code class="literal">WeaponName</code>. Delete everything in the function except for the line referencing the <code class="literal">itemLog[increment].name</code>. With this line, we will change some of its names and we are good to go. In <code class="literal">GetComponent</code>, put <code class="literal">UseWeapon</code> and change the function name to <code class="literal">GetWeaponName</code>:</p><div class="informalexample"><pre class="programlisting">function WeaponName(){
+    GameManager.GetComponent("UseWeapon").GetWeaponName(weaponLog[increment].name);
+}
+function Update (){
+    ChangeWeapon();
+}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec62"></a>The UseWeapon script</h3></div></div></div><a id="id757" class="indexterm"></a><p>This script is going to handle the use of the equipped gun. So to get us firing, let's set up some variables. These variables are going to be the <a id="id758" class="indexterm"></a>weapon's name and a reference for the <code class="literal">PlayerStats</code> script<a id="id759" class="indexterm"></a>:</p><div class="informalexample"><pre class="programlisting">private var playerStatScr : PlayerStats;
+private var weaponName : String = null;</pre></div><p>To begin the functions, let's start with the <code class="literal">Awake</code> function. In here, we want to set the reference of <code class="literal">playerStatScr</code> to that of the <code class="literal">PlayerStats</code> script:</p><div class="informalexample"><pre class="programlisting">function Awake(){
+    playerStatScr = gameObject.GetComponent("PlayerStats");
+}</pre></div><p>The next function is the <code class="literal">GetWeaponName</code> function with its <code class="literal">weapon</code> parameter as <code class="literal">String</code> type. Inside of the function, we need to make <code class="literal">weaponName</code> equal to the parameter variable. Then, we want to send the color and the weapon name to the <code class="literal">itemText</code> in the second slot. This line is found in <code class="literal">UseItem</code>. Change <code class="literal">itemName</code> in <code class="literal">DisplayInformation</code> to <code class="literal">weaponName</code> and the index of <code class="literal">itemText</code> to <code class="literal">2</code>:</p><div class="informalexample"><pre class="programlisting">function GetWeaponName(weapon : String)
+{
+    weaponName = weapon;
+    gameObject.GetComponent("TextManager").itemText[2].GetComponent("textMesh").DisplayInformation(weaponName, Color.black);
+}</pre></div><p>A couple more functions to go. <code class="literal">UseWeapon</code> is the next function to write. This function will have two <code class="literal">if</code> statements that will check if the weapon name is equal to it, if the player has pressed the <span class="emphasis"><em>F</em></span> key, and if the ammo reference from <code class="literal">PlayerStats</code> is greater than zero:</p><div class="informalexample"><pre class="programlisting">function UseWeapon()
+{
+    if(weaponName == "m-32" &amp;&amp; Input.GetKeyDown(KeyCode.F) &amp;&amp; playerStatScr.ReturnM32AmmoCount() &gt; 0 )
+    {
+        playerStatScr.DecrementAmmoCount();
+    }
+    if(weaponName == "m16" &amp;&amp; Input.GetKeyDown(KeyCode.F) &amp;&amp; playerStatScr.ReturnM16AmmoCount() &gt; 0 )
+    {
+        playerStatScr.DecrementAmmoCount();
+    }
+}</pre></div><a id="id760" class="indexterm"></a><p>Two functions remain. Call the <code class="literal">UseWeapon</code> function<a id="id761" class="indexterm"></a> inside the <code class="literal">Update</code> function and return the weapon name with the <code class="literal">WeaponRemove</code> function:<a id="id762" class="indexterm"></a></p><div class="informalexample"><pre class="programlisting">function Update (){
+    UseWeapon();
+}
+function WeaponRemove(){ return weaponName; }</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec63"></a>Revisiting PlayerStats</h3></div></div></div><a id="id763" class="indexterm"></a><a id="id764" class="indexterm"></a><p>There are a couple of variables to add to this script involving weapons. These variables will be <code class="literal">public</code>. One will be <code class="literal">m16Ammo</code> and the other will be <code class="literal">m32Ammo</code>:</p><div class="informalexample"><pre class="programlisting">public var m16Ammo : int = 100;
+public var m32Ammo : int = 10;</pre></div><p>Now, we need to create and modify some functions. Copy the <code class="literal">decrementItemCount</code> function<a id="id765" class="indexterm"></a> and paste it below. Rename the function to <code class="literal">DecrementAmmoCount</code>. Create the <code class="literal">weapon</code> variable inside of the function and give it a <code class="literal">String</code> type. This variable is going to be equal to the returned weapon name from the <code class="literal">UseWeapon</code> script function<a id="id766" class="indexterm"></a>—<code class="literal">WeaponRemove</code>. Next, just rename things appropriately, <code class="literal">weapon</code> in place of <code class="literal">item</code>, <code class="literal">"m16"</code> for <code class="literal">painKiller</code>, <code class="literal">"m-32" </code>for <code class="literal">healthPack</code> and change in the health and pain counts for the respective ammos. For the last line in the function that references <code class="literal">textMesh</code>, all that needs to be done is changing the list index on <code class="literal">itemText</code> to <code class="literal">2</code> and changing <code class="literal">item</code> to <code class="literal">weapon</code>:</p><div class="informalexample"><pre class="programlisting">function DecrementAmmoCount()
+{
+    var weapon = gameObject.GetComponent("UseWeapon").WeaponRemove();
+    if(weapon == "m16")
+    {
+        m16Ammo -= 1;
+    }
+    else if(weapon == "m-32")
+    {
+        m32Ammo -= 1;
+    }
+    gameObject.GetComponent("TextManager").itemText[2].GetComponent("textMesh").DisplayInformation(weapon, Color.black);
+}</pre></div><a id="id767" class="indexterm"></a><p>Inside of the <code class="literal">ResetValues</code> function<a id="id768" class="indexterm"></a><a id="id769" class="indexterm"></a>, we need to add two <code class="literal">if</code> statements. Each checks a different gun's ammo and if it is at <code class="literal">0</code>, it then replaces the ammo clip:</p><div class="informalexample"><pre class="programlisting">    if(m32Ammo &lt;= 0)
+        m32Ammo = 10;
+    else if(m16Ammo &lt;= 0)
+        m16Ammo = 100;</pre></div><p>The last two functions to create are return functions. Each one returns a different gun's ammo count:</p><div class="informalexample"><pre class="programlisting">function ReturnM16AmmoCount(){    return m16Ammo;}
+function ReturnM32AmmoCount(){    return m32Ammo;}</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec64"></a>Revisiting the textMesh script</h3></div></div></div><a id="id770" class="indexterm"></a><a id="id771" class="indexterm"></a><p>We only have a couple of small additions to be made to the script. A new variable is needed that checks to see if the <code class="literal">gameObject</code> is the <code class="literal">weaponMultiplier</code>:</p><div class="informalexample"><pre class="programlisting">private var weaponDisplay : boolean = false;</pre></div><p>In the <code class="literal">Awake</code> function, this is used to switch the <code class="literal">weaponDisplay</code> flag to <code class="literal">true</code> if the <code class="literal">gameObject</code> name is correct:</p><div class="informalexample"><pre class="programlisting">if(gameObject.name == "weaponMultiplier")
+    {
+        weaponDisplay = true;
+    }</pre></div><p>There is still one more change to be made. In the <code class="literal">DisplayInformation</code> function<a id="id772" class="indexterm"></a>, you need to copy the <code class="literal">itemDisplay</code> <code class="literal">if</code> statement and paste it below it. Change the <code class="literal">textName</code> to <code class="literal">"m16"</code> and <code class="literal">"m-32"</code>, and change the <code class="literal">playerStatScr</code> return functions to those that are for <code class="literal">m16</code> and <code class="literal">m32</code>. Remove the <code class="literal">else</code> statement.</p><div class="informalexample"><pre class="programlisting">    else if(weaponDisplay)
+    {
+        if(textName == "m16")
+        {
+            renderer.material.color = newColor;
+            myText.text = ("X " + playerStatScr.ReturnM16AmmoCount());
+        }
+        
+        else if(textName == "m-32")
+        {
+            renderer.material.color = newColor;
+            myText.text = ("X " + playerStatScr.ReturnM32AmmoCount());
+        }
+    }</pre></div></div></div>

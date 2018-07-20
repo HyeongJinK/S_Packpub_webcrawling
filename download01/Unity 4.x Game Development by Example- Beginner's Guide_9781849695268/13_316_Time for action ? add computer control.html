@@ -1,0 +1,6 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec312"></a>Time for action – add computer control</h2></div></div><hr /></div><p>Let's build a function <a id="id955" class="indexterm"></a>so that the computer can take a turn. Add a <code class="literal">ComputerTakeATurn</code> function<a id="id956" class="indexterm"></a> to the <code class="literal">GameLogic</code> script:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>function ComputerTakeATurn()</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>}</strong></span>
+</pre></div><p>When do we want the computer to take a turn? After player 1, the human, has taken a turn, and the <code class="literal">currentPlayer</code> variable updates to <code class="literal">2</code>.</p><p>Therefore in the <code class="literal">ClickSquare</code> function,<a id="id957" class="indexterm"></a> after we <a id="id958" class="indexterm"></a>show the player prompt, let's let the computer take a turn:</p><div class="informalexample"><pre class="programlisting"> ShowPlayerPrompt();
+    ComputerTakeATurn();</pre></div></div>

@@ -1,0 +1,77 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec60"></a>The morality meter example</h2></div></div><hr /></div><p>The faction/morality meter example for this <span>chapter</span><a id="id288183624" class="indexterm"></a> covers a slightly different approach to implementing fuzzy logic via Unity. We build upon the implementation we covered in the basic fuzzy logic example.</p><p>In this example, we create a simple dialogue sequence, where the player is presented a series of scenarios, or questions, that they can then answer according to their morality. For simplicity's sake, we've included a "good," "neutral," and "evil" answer for each question. Let's take a look at the code to understand this a bit better.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec60"></a>The question and answer classes</h3></div></div></div><p>The <code class="literal">Question</code> and <code class="literal">Answer</code> classes are very simple, and are <span>used</span><a id="id288319973" class="indexterm"></a> as <span>data</span><a id="id288320165" class="indexterm"></a> containers.  Let's look at the <code class="literal">Question.cs</code> class first:</p><pre class="programlisting">[System.Serializable]
+public class Question { 
+    public string questionText; 
+    public Answer[] answers;
+}</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip18"></a>Note</h3><p>You may have noticed that the <code class="literal">Question</code> class does not derive from <code class="literal">MonoBehaviour</code>. It is a plain ol' vanilla C# class. As such, Unity will not serialize it by default, and it won't show up in the inspector. To let Unity know you want this class to be serialized, use the <code class="literal">System.Serializable</code> attribute at the top of the class definition.</p></div><p>As you can see, it's only a few lines of code. The first field, <code class="literal">questionText</code>, will be edited via the inspector in a later step. It is the display text for the question/scenario we are presenting the user. The <code class="literal">answers</code> field is an array of <code class="literal">Answer</code> types. The <code class="literal">Answer.cs</code> code looks like this:</p><pre class="programlisting">[System.Serializable]
+public class Answer {
+    public string answerText; 
+    public float moralityValue;
+}</pre><p>Again, you'll notice this class is very simple. <code class="literal">answerText</code> is the text to display in the response button for the player, and the <code class="literal">moralityValue</code> field is a hidden value we use to calculate the player's morality alignment later on. For this example, we assume that each question has three answers and that the morality values are 0, 50, and 100 for each one.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec61"></a>Managing the conversation</h3></div></div></div><p>Our <code class="literal">ConversationManager.cs</code> class is where all the <span>heavy</span><a id="id288559466" class="indexterm"></a> lifting happens for this sample. It manages the UI for our conversation, handles events, and calculates the results for us. For the first part, we initialize our question array and then handle the UI. We set up some variables at the top of the class, which looks like this:</p><pre class="programlisting">    [Header("UI")]
+    [SerializeField]
+    private GameObject questionPanel;
+    [SerializeField]
+    private GameObject resultPanel;
+    [SerializeField]
+    private Text resultText;
+    [SerializeField]
+    private Text questionText;
+    [SerializeField]
+    private Button firstAnswerButton;
+    [SerializeField]
+    private Button secondAnswerButton;
+    [SerializeField]
+    private Button thirdAnswerButton;</pre><p>We'll be able to see the UI elements these variables correspond to up ahead, but note that we explicitly expect a set number of answers, as we only provide three answer buttons for the UI. Of course, you can modify this to be more flexible or to fit your needs, but keep in mind that if you want to use more or fewer answers, you'll need to make those changes here as well:</p><pre class="programlisting">[Header("Morality Gradient")]
+[SerializeField]
+private AnimationCurve good;
+[SerializeField]
+private AnimationCurve neutral;
+[SerializeField]
+private AnimationCurve evil;</pre><p>Similar to our previous example, we use Unity's <code class="literal">AnimationCurve</code> to specify our fuzzy values. We assume a few things with this setup: </p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">At <span class="emphasis"><em>t=0</em></span>, our "good" value is at 1, and goes down to 0 from there</li><li style="list-style-type: disc">At <span class="emphasis"><em>t=50</em></span>, our "neutral" value is at 1</li><li style="list-style-type: disc">At <span class="emphasis"><em>t=100</em></span>, our "evil" rating is at 1</li></ul></div><p>These values can be tweaked to your liking, but the current setup works well for the example. The following screenshot shows the curves set in the inspector:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/7886c45d-de09-4a66-8a7f-d8688c63b16f.png" /></div><p>Fuzzy curves for our morality gradient</p><p>Notice that the values shown here correspond to our earlier assumption that our "good" answer gives a value of 0, our "neutral" answer has a value of 50, and our "evil" answer has a value of 100.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec15"></a>Loading up the questions</h4></div></div></div><p>We provide a simple method named <code class="literal">LoadQuestion</code> to pull the <span>values</span><a id="id288320252" class="indexterm"></a> from our data classes into the UI and display them to the player. The code looks like this:</p><pre class="programlisting">private void LoadQuestion(int index) 
+{
+    if (index &lt; questions.Length) 
+    {
+        questionText.text = questions[index].questionText;
+        firstAnswerButton.GetComponentInChildren&lt;Text&gt;().text = questions[index].answers[0].answerText;
+        secondAnswerButton.GetComponentInChildren&lt;Text&gt;().text = questions[index].answers[1].answerText;
+        thirdAnswerButton.GetComponentInChildren&lt;Text&gt;().text = questions[index].answers[2].answerText;
+    } 
+    else 
+    {
+        EndConversation();
+    }
+}</pre><p>The <code class="literal">LoadQuestion</code> method takes in a question index, which corresponds to the index of the question in the array <code class="literal">questions[]</code>. We first check that our index is in bounds, and end the conversation by calling <code class="literal">EndConversation()</code> if it isn't. If we are in bounds, we just populate the question text and the answer text for each answer button.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec16"></a>Handling user input</h4></div></div></div><p>The event that gets called when the user presses an <span>answer</span><a id="id288320285" class="indexterm"></a> button on the UI is <code class="literal">OnAnswerSubmitted</code>. The method is quite simple and is only a few lines of code:</p><pre class="programlisting">public void OnAnswerSubmitted(int answerIndex) 
+{
+    answerTotal += questions[questionIndex].answers[answerIndex].moralityValue;
+    questionIndex++;
+    LoadQuestion(questionIndex);
+}</pre><p>The method does a few things:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">It aggregates the answer value to the answer total. We'll look at how these values are assigned up ahead.</li><li style="list-style-type: disc">It increments the question index value.</li><li style="list-style-type: disc">Finally, it calls <code class="literal">LoadQuestion</code> with the incremented index value from the previous bullet.</li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec17"></a>Calculating the results</h4></div></div></div><p>Finally, we have the <code class="literal">EndConversation</code> method, which, as we saw, gets called <span>when</span><a id="id288320326" class="indexterm"></a> we have answered all the questions (and the question index is out of bounds, based on our <code class="literal">questions[]</code> array length).</p><p>The first line simply disables the panel game object containing the question UI:</p><pre class="programlisting">questionPanel.SetActive(false);</pre><p>The calculations are in the next block of code:</p><pre class="programlisting"> float average = answerTotal / questions.Length;
+ float goodRating = good.Evaluate(average);
+ float neutralRating = neutral.Evaluate(average);
+ float evilRating = evil.Evaluate(average);</pre><p>We calculate the average of all of our answers by taking the <code class="literal">answerTotal</code> value (the sum of all the answers) and dividing it by the number of questions. We then individually evaluate each curve for good, neutral, and evil ratings using the average value we just calculated. We use the average as our <span class="emphasis"><em>t</em></span> value in the evaluation method.</p><p>Next, we use some simple <code class="literal">if</code><span class="emphasis"><em> </em></span>logic to determine which rating is higher, as seen in the following snippet:</p><pre class="programlisting">if(goodRating &gt; neutralRating) 
+        {
+            if(goodRating &gt; evilRating) 
+            {
+                //good wins
+                alignmentText = "GOOD";
+            }
+            else 
+            {
+                //evil wins
+                alignmentText = "EVIL";
+            }
+        }
+        else 
+        {
+            if(neutralRating &gt; evilRating) 
+            {
+                //neutral wins
+                alignmentText = "NEUTRAL";
+            }
+            else 
+            {
+                //evil win
+                alignmentText = "EVIL";
+            }
+        }</pre><p>As you can see in the previous code, we have a little bit of a branching conditional structure to determine the highest value, from which we set the <code class="literal">alignmentText</code> value accordingly. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip19"></a>Note</h3><p><code class="literal">if</code> blocks can get a bit complex if you start to add too many conditions. In this case, you may want to consider placing the ratings into an array or dictionary, then sorting them, and/or using LINQ to get the highest value from it. For more on sorting dictionaries, check out Dot Net Perls:<a class="ulink" href="https://www.dotnetperls.com/sort-dictionary" target="_blank"> https://www.dotnetperls.com/sort-dictionary</a></p></div><p>Lastly, we display the results to the user:</p><pre class="programlisting">resultPanel.SetActive(true);
+resultText.text = "Your morality alignment is: " + alignmentText;</pre><p>We simply enable the results panel, and then append <code class="literal">alignmentText</code> to the <code class="literal">"Your morality alignment is:"</code> message, which would look like this in play mode (if you have a "good" rating):</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/c751c7cd-6d8c-48e5-9994-2a98ce5424d7.png" /></div><p>The game screen when you earn a "good" rating</p><p></p><p>Next up, we can take a look at our scene setup, and how all of our values get initialized for the sample project.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec62"></a>Scene setup</h3></div></div></div><p>When you first open the <code class="literal">FactionScene</code> example scene, you'll notice a UI <span>that</span><a id="id288566428" class="indexterm"></a> looks like this screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/6fbc68b8-7934-4018-95a9-854351b36563.png" /></div><p>The sample scene UI setup</p><p>As you can see in the preceding screenshot, the UI comprises <span>several</span><a id="id288566451" class="indexterm"></a> different panels, and the text components have been initialized with some sample text to help organize everything nicely. The hierarchy for the scene is shown in this screenshot:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/f0815e82-355e-4dff-be43-d0c8ac7cbc60.png" /></div><p>The FactionScene hierarchy</p><p>As you can see, our canvas has two main panels at the root level—the <strong class="userinput"><code>QuestionPanel</code></strong> and a <strong class="userinput"><code>ResultPanel</code></strong>, which is disabled by default. This is because, as you may remember, we set that panel to <code class="literal">enabled</code> via code in our <code class="literal">EndConversation</code> method. At the bottom of the list, we have our <strong class="userinput"><code>ConversationManager</code></strong> game object, which contains our <code class="literal">ConversationManager</code> script.</p><p>If you select it, you'll see that the <span>inspector</span><a id="id288566496" class="indexterm"></a> looks like this:</p><div class="mediaobject"><img src="/graphics/9781788477901/graphics/062686c2-4bd7-4958-8303-2d243040a50f.png" /></div><p>The inspector for our Conversation Manager with all the values assigned
+</p><p>At first glance, the amount of information here may seem daunting, but let's take a look at each step, and you'll realize we've covered all of this already.</p><p>We first have our serialized array of questions. In this case, we have three questions (feel free to add more!). Each question then contains an array of (exactly) three answers, and the question text we saw earlier. For each answer, we have the answer text and morality value we saw earlier as well. Note that the order of the questions or answers doesn't necessarily matter, so long as your morality value corresponds to good, neutral, or evil.</p><p>We then have the UI section, in which we assign all the <span>necessary</span><a id="id288566522" class="indexterm"></a> elements. Everything in the hierarchy is named appropriately to make it easy to ensure that each field is populated with the correct game object. </p><p>Lastly, we have the morality curves that we saw previously. Again, feel free to tweak these to your heart's content!</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec63"></a>Testing the example</h3></div></div></div><p>All that's left is to test the example! Hit play, and <span>select</span><a id="id288566540" class="indexterm"></a> some answers. The scenario provided puts you in the shoes of an adventurer heading into town. On his way, he encounters a goblin, a banker, and a knight. What would you do in each scenario? Feel free to play around with the wording, and add your own moral dilemmas!</p></div></div>

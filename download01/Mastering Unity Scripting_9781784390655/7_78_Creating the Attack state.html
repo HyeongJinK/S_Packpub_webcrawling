@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec80"></a>Creating the Attack state</h2></div></div><hr /></div><p>In the <code class="literal">Attack</code> state, the enemy continually attacks the player as long as they're visible. After an attack, the enemy must recover before launching a new attack. The only exit condition for this state is losing sight of the player. When this happens, the enemy returns to the <code class="literal">Chase</code> state <a id="id592" class="indexterm"></a>and, from there, they either go back to the attack state or into <code class="literal">Idle</code>, depending on whether the player has been found, as shown in the following code sample 7-10:</p><div class="informalexample"><pre class="programlisting">//This coroutine runs when object is in attack state
+ public IEnumerator State_Attack()
+ {
+    //Set current state
+    CurrentState = AI_ENEMY_STATE.ATTACK;
+ 
+    //Set Chase State
+    ThisAnimator.SetTrigger((int) AI_ENEMY_STATE.ATTACK);
+     //Stop nav mesh agent movement
+<span class="strong"><strong>    ThisAgent.Stop();</strong></span>
+ 
+    //Set up timer for attack interval
+    float ElapsedTime = 0f;
+ 
+    //Loop forever while in attack state
+    while(CurrentState == AI_ENEMY_STATE.ATTACK)
+    {
+         //Update timer
+         ElapsedTime += Time.deltaTime;
+ 
+        //Check if player has passed beyond the attack distance
+if(!CanSeePlayer || Vector3.Distance(ThisTransform.position, PlayerTransform.position) &gt; DistEps)
+          {
+               //Change to chase
+               StartCoroutine(State_Chase());
+               yield break;
+          }
+
+          //Check attack delay
+          if(ElapsedTime &gt;= AttackDelay)
+          {
+                //Reset counter
+                ElapsedTime = 0f;
+ 
+               //Launch attack
+               PlayerTransform.SendMessage("ChangeHealth", -AttackDamage, SendMessageOptions.DontRequireReceiver);
+          }
+ 
+          //Wait until next frame
+          yield return null;
+    }
+ }</pre></div></div>

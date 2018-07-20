@@ -1,0 +1,15 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec290"></a>Time for action – solve for X</h2></div></div><hr /></div><p>The problem remains that if you click too many times, you still get too many X's. Let's fix that.</p><p>In the <code class="literal">Square</code> script, add the<a id="id915" class="indexterm"></a> following code:</p><div class="informalexample"><pre class="programlisting">var x:int;
+var y:int;
+<span class="strong"><strong>var isUsed:boolean;</strong></span>
+
+function OnMouseDown()
+{
+  <span class="strong"><strong>if(!isUsed)</strong></span>
+  <span class="strong"><strong>{</strong></span>
+    gameLogic.GetComponent(GameLogic).ClickSquare(gameObject);
+    <span class="strong"><strong>isUsed = true;</strong></span>
+  <span class="strong"><strong>}</strong></span>
+
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec112"></a>
+<span class="emphasis"><em>What just happened – lockdown</em></span>
+</h3></div></div></div><p>Now you can't place an X in a square more than once, because the <code class="literal">isUsed</code> boolean locks it. <code class="literal">isUsed</code> is false by default, and it gets set to true as soon as you click on a square. When you click the square<a id="id916" class="indexterm"></a> again, the code checks the <code class="literal">isUsed</code> boolean, finds that it's true, and skips over the line inside the conditional statement.</p></div></div>

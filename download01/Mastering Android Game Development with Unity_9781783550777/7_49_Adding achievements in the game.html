@@ -1,0 +1,68 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec48"></a>Adding achievements in the game</h2></div></div><hr /></div><p>In the Developer Console, click on the <strong class="userinput"><code>GAME SERVICES</code></strong> tab:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_024.png" /></div><p>Here click on <strong class="userinput"><code>+ Add new game</code></strong> on the top right. Type in the game name and the genre and click on the <strong class="userinput"><code>Continue</code></strong> button at the bottom of the screen:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_025.png" /></div><p>Click on the <strong class="userinput"><code>ACHIEVEMENTS</code></strong> tab, and then click <strong class="userinput"><code>Add achievement</code></strong> tab. You need to add at least five achievements for it to work.</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_026.png" /></div><p>Type in a name and add a small description. For our example, I am going to add achievements for the number of times the user has played the game. So for playing the game the 1st time, 5th time, 50th, 100th, and 1000th time, I want an achievement to pop up each time:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_027.png" /></div><p>Next, add a new achievement and all the achievements in:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_028.png" /></div><p>Click on the <strong class="userinput"><code>Get Resources</code></strong> button on the bottom and select the <strong class="userinput"><code>Android</code></strong> tab in the window. Now, copy all the data:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_029.png" /></div><p>Next go to the <strong class="userinput"><code>Testing</code></strong> tab and click on the <strong class="userinput"><code>Add testers</code></strong> button. Here add in the e-mail address that you will be using to log in to your device:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_030.png" /></div><p>Now you are ready to test the achievements on the device. Go to Unity and go to <strong class="userinput"><code>Window</code></strong> | <strong class="userinput"><code>Google Play Services</code></strong> | <strong class="userinput"><code>Setup</code></strong> | <strong class="userinput"><code>Android Setup...</code></strong>:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_031.png" /></div><p>In the window, let the <strong class="userinput"><code>Directory to save constants</code></strong> field be set to <code class="literal">Assets</code> folder.</p><p>Type in the details in <strong class="userinput"><code>Constants class name</code></strong> component and finally paste the code you copied from <strong class="userinput"><code>Get Resources</code></strong> tab here, and click on the <strong class="userinput"><code>Setup</code></strong> button at the bottom of the screen:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_032.png" /></div><p>Now when the MainMenu loads, we have to activate Google Play Services and whenever an achievement is hit, we have to send a notification telling Google Play Services that the achievement has been met.</p><p>So in the <strong class="userinput"><code>Project</code></strong> menu open the MainMenu scene. In the <code class="literal">Project</code>/<code class="literal">Scripts</code> folder create a new script called <code class="literal">MainMenuScript</code>. In the script, add the following code:</p><pre class="programlisting">    using System.Collections; 
+    using System.Collections.Generic; 
+    using UnityEngine; 
+
+    using GooglePlayGames; 
+    using UnityEngine.SocialPlatforms; 
+    using GooglePlayGames.BasicApi; 
+
+    using UnityEngine.UI; 
+
+    public class mainMenuScript : MonoBehaviour 
+    { 
+        bool isUserAuthenticated = false; 
+
+        // Use this for initialization 
+        void Start(){ 
+            PlayGamesPlatform.Activate(); 
+            PlayGamesPlatform.DebugLogEnabled = true; 
+        } 
+
+        // Update is called once per frame 
+        void Update() 
+        { 
+            if (!isUserAuthenticated){ 
+                Social.localUser.Authenticate((bool success) =&gt; { 
+                    if (success){ 
+                        Debug.Log("You've successfully logged in"); 
+                        isUserAuthenticated = true; 
+                    } else { 
+                        Debug.Log("Login failed for some reason"); 
+                    } 
+                }); 
+            } 
+        } 
+    }  </pre><p>At the top of the class, add the <code class="literal">GooglePlayGames</code>, <code class="literal">UnityEngine.SocialPlatform</code>, and <code class="literal">System.Collections.Generic</code> namespaces. In the class, create a <code class="literal">isUserAthenticated</code> Boolean and initialize it to <code class="literal">false</code>. In the <code class="literal">Update</code> function, we will check if the user is logged into Google Play Services; otherwise, we will wait until the user is logged in.</p><p>We activate the Google Play Services and then enable <strong class="userinput"><code>Debug</code></strong> mode. In the <code class="literal">Update</code> function, we check if the user is logged in. If the user is logged in, we change our Boolean variable to <code class="literal">true</code>, or else we log out saying that the user didn't log in. Attach this script as a component to the <code class="literal">MainCamera</code> component in the scene.</p><p>Now plug in your device to the computer and go to <strong class="userinput"><code>Build Settings</code></strong> and press <strong class="userinput"><code>Build and Run</code></strong>. It will connect to the Google Play Services, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_033.png" /></div><p>It will ask you to log in with your e-mail address:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_034.png" /></div><p>Once you are logged in, it will give you a welcome message:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_035.png" /></div><p>Now to store information in the achievement that is actually achieved at the gameover condition, add the following:</p><pre class="programlisting">if (playerHealth &lt;= 0 || enemyHealth &lt;= 0) { 
+    bGameover = true; 
+
+    gameOverText.enabled = true; 
+    resetButton.gameObject.SetActive(true); 
+    mainMenuButton.gameObject.SetActive(true); 
+
+    Instantiate(particlePrefab); 
+    gameplayCount++; 
+
+    if (gameplayCount == 1){ 
+        Social.ReportProgress (PunchyPunchAchievements. achievement_played_first_time, 100, (bool sucsess) =&gt; { }); 
+    } else if (gameplayCount == 5) { 
+        Social.ReportProgress (PunchyPunchAchievements. achievement_played_5_times, 100, (bool sucsess) =&gt; { }); 
+    } else if (gameplayCount == 50) { 
+        Social.ReportProgress (PunchyPunchAchievements. achievement_played_50_times, 100, (bool sucsess) =&gt; { }); 
+    } else if (gameplayCount == 100) { 
+        Social.ReportProgress (PunchyPunchAchievements. achievement_played_100_times, 100, (bool sucsess) =&gt; { }); 
+    } else if (gameplayCount == 1000) {
+        Social.ReportProgress (PunchyPunchAchievements. achievement_played_1000_times, 100,(bool sucsess) =&gt; { }); 
+    } else {
+        ...   
+    } 
+    Debug.Log(" +++++ GAMEOVER +++++"); 
+} </pre><p>In the class add a global integer called <code class="literal">gameplayCount</code>. When the game is over this variable is incremented.</p><p>Depending on the value of the <code class="literal">gameplayCount</code> variable, the <code class="literal">if</code> statements are made and the <code class="literal">Social.ProgressReport</code> function is called. It takes three parameters. The first being is name of the achievement that is stored in the class that was created, the second is the progress level, in this case we will call this when 100% progress is made on the achievement, and the third is a call back function.</p><p>Now build and run the game again. Now when you finish the game, you will get the notification that you played for the first time.</p><p>Next, we will open the achievements window to see all the achievements. In the MainMenu scene, we have a button that we created to show the achievement.</p><p>In the <code class="literal">buttonClick</code> class, create a new function called <code class="literal">openAchievements</code>. It is created as follows:</p><pre class="programlisting">    public void openAchievements() { 
+        Social.localUser.Authenticate((bool success) =&gt; { 
+            if (success){ 
+                Debug.Log("You've successfully logged in"); 
+                Social.ShowAchievementsUI(); 
+            } else { 
+                Debug.Log("Login failed for some reason"); 
+            } 
+        });    
+    } </pre><p>The <code class="literal">Social.showAchievementsUI()</code> function opens the<strong class="userinput"><code> Achievements</code></strong> window. Now on the <strong class="userinput"><code>Achievement</code></strong> button call this function when the button is clicked:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_036.png" /></div><p>Build and run your project again and click the <strong class="userinput"><code>Achievement</code></strong> button on the main menu and the <strong class="userinput"><code>Achievements</code></strong> window will pop up, as shown in the following:</p><div class="mediaobject"><img src="/graphics/9781783550777/graphics/image_07_037.png" /></div><p>But there is a bit of a problem here. The game only remembers all the information when you play the game; once you close the game, it forgets the information. Let's now see how to store game information on the device.</p></div>

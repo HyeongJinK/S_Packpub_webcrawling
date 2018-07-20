@@ -1,0 +1,12 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec24"></a>Applying projectile fixes</h2></div></div><hr /></div><a id="id407" class="indexterm"></a><p>Soft bodies are expensive to use, therefore, we should limit their use to a minimum, by having only two of them on the screen at a time. Perform the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Open a <span class="strong"><strong>CH_Controller</strong></span> script and declare a couple of new variables:</p><div class="informalexample"><pre class="programlisting">private var ProjectilesArray : Cloth[];
+private var aLength :int = 0;</pre></div><p>The first variable is an array of the <span class="strong"><strong>InteractiveCloth</strong></span> objects and the second is a variable that controls the length of the array.</p></li><li><p>In the <code class="literal">Start</code> function, set <code class="literal">ProjectilesArray</code> size to <code class="literal">5</code>:</p><div class="informalexample"><pre class="programlisting">ProjectilesArray = new Cloth[5];</pre></div></li><li><p>Next, we will go to a <code class="literal">Shooting</code> function, add each created bullet to that array, and increase its length.</p></li><li><p>If our array grows to a limit of two, we need to delete the first member and shift the entire array to the left by one:</p><div class="informalexample"><pre class="programlisting">ProjectilesArray[aLength] = bullet;
+aLength ++;
+if (aLength&gt; 2)
+    {
+    Destroy((ProjectilesArray[0]).gameObject);
+        for (var i : int = 0; i&lt;aLength; i++){
+        ProjectilesArray[i] = ProjectilesArray[i+1];
+        }
+        ProjectilesArray[aLength] = null;
+        aLength--;
+    }</pre></div></li></ol></div><p>That's it! Now, the number of our projectiles will never go over two at a time.</p></div>

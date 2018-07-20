@@ -1,0 +1,748 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec28"></a>Unity C# and Unity JS optimization tips and tricks</h2></div></div><hr /></div><p>To begin, we will consider <a id="id307" class="indexterm"></a>some aspects of optimization concerning the<a id="id308" class="indexterm"></a> JavaScript programming language. Try to avoid the use of dynamic typing in JavaScript. The best solution for your performance is undoubtedly static typing. The use of dynamic typing of variables will be consumed while executing a code to find the appropriate data type for a particular variable, which in principle could and should be avoided by specifying the data types for all your variables. Bad and good examples are shown here:</p><div class="informalexample"><pre class="programlisting">// Dynamic Typing, BAD FOR YOUR PERFORMANCE
+var yourVariableName = 23;
+
+// Static Typing, GOOD FOR YOUR PERFORMANCE
+var myGo : GameObject = null;</pre></div><p>The following example shows what you should not do if you want to improve your performance. This example uses dynamic typing for our variable, <code class="literal">yourVariableName</code>, which in turn affects the performance of the whole system in the negative sense. Before calling any function of this object, there will be time spent searching for the right object type and checking if the called function is accessible. The bad example is shown here:</p><div class="informalexample"><pre class="programlisting">function Start() {
+  var yourVariableName = GetComponent(YourScriptName);
+  yourVariableName.YourFunctionName();
+}</pre></div><p>Instead of wasting CPU time on unnecessary expenses, you should always use static typing for all your variables in order to improve performance:</p><div class="informalexample"><pre class="programlisting">function Start() {
+  var yourVariableName : YourScriptName = GetComponent(YourScriptName);
+  yourVariableName.YourFunctionName();
+}</pre></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip05"></a>Tip</h3><p>
+<span class="strong"><strong>Use Static Typing instead of Dynamic Typing wherever possible</strong></span>
+</p><p>You can use <code class="literal">#pragma</code> strict preprocessor directive in order to help you not to forget about using static typing instead of dynamic typing everywhere in your JavaScript script. You should write this directive at the top of your script before any code. In the event of utilizing <code class="literal">#pragma</code> strict and dynamic typing in your script, the compiler will throw errors. Therefore, this preprocessor directive forces you to use static typing only.</p></div><p>We also want to mention the other techniques to optimize your code. One of them is the technique of caching components or variables. During optimization, you first need to turn your attention to the functions that are very often performed in your code, especially callbacks such as <code class="literal">Update</code> and <code class="literal">FixedUpdate</code> and similar functions that are called in every frame, or almost each frame, or in other words, many times per second. Therefore, reference to any component or variable in such risky functions depends on the situation. Of course, there are situations for the overall system performance, where such things are not so bad for your performance in general, and there are situations where performance drops almost to zero because of the many unnecessary expenses. In such functions, it is best not to call the Unity method <code class="literal">GetComponent</code> each time, which will very often look for a component or other similar functions of the Unity library to find objects and so on. Instead, you can call the function<a id="id309" class="indexterm"></a> you want, when it is necessary to obtain a <a id="id310" class="indexterm"></a>desired component or desired object(s) and store them in local variables or arrays, as you like. The following examples <a id="id311" class="indexterm"></a>demonstrate this:</p><div class="informalexample"><pre class="programlisting">// BAD for your performance
+void Update() {
+  transform.position = new Vector3(0.0f, 1.0f, -1.0f);
+}
+
+// Second example:
+// GOOD for your performance
+private Transform _t;
+void Start() {
+  _t = transform;
+}
+
+void Update() {
+  _t.position = new Vector3(0.0f, 1.0f, -1.0f);
+}</pre></div><p>The code shown in the second example is much faster then the respective code in the first example, because Unity will not look up the transform component each <code class="literal">Update</code> cycle or in other words each frame.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip06"></a>Tip</h3><p>You should call a function only if necessary, not more and not less, just exactly when needed.</p></div><p>The best optimization for your code and generally for the whole system is when the code is as small as possible, or rather when nothing unnecessary is executed at all. Unnecessary calculations lead to unnecessary overhead; for mobile devices, in general, this question is one of the most acute. A good example of a small optimization is shown in the following example, but this example is not the best solution for your performance. After each frame, checking the distance between the two points will take away your precious time:</p><div class="informalexample"><pre class="programlisting">private Transform yourTransform:
+void Update() {
+  if (Vector3.Distance(yourTransform.position, transform.position) &gt; 200) {
+    return;
+  }
+  // your next code may be here ...
+}</pre></div><p>To not waste time on <a id="id312" class="indexterm"></a>unnecessary mistakes, you should use <a id="id313" class="indexterm"></a>the <code class="literal">OnBecameInvisible</code> and <code class="literal">OnBecameVisible</code> callbacks. With these callbacks, Unity calls in an event in which none of the cameras can see (for <code class="literal">OnBecameInvisible</code>) or at least one camera sees (for <code class="literal">OnBecameVisible</code>) your renderer. Certainly, these callbacks are only good in certain situations and not in others. For example, if your object does not contain a renderer component, then you will need to invent a way to enable or disable the execution of your code accordingly. A simple example of these two callbacks is shown here:</p><div class="informalexample"><pre class="programlisting">void OnBecameVisible() {
+  enabled = true;
+}
+
+void OnBecameInvisible() {
+  enabled = false;
+}</pre></div><p>To achieve the performance that you need, you will need to take care of many details in your code and many other details that are discussed in this book. Code optimization in most cases impedes readability and therefore impedes understanding of the code. Keep this in mind, or at least do not forget about it. Like everything else in life, we need to find a middle ground or, in other words, the golden balance between quality and performance.</p><p>Let's see how static functions behave and how much time we need for them, since the use of these functions significantly reduces the time of the function call as compared to call a non-static function. If we examine the question of what happens with static functions when you compile your code, it is, however, no secret that all the code is translated into machine code or assembler as it is called, which is the lowest programming level. If we consider the very assembly instructions to call static functions, we see that it requires fewer machine instructions and consequently less CPU time than calling a nonstatic function.</p><p>In the call, each function with parameters passed by value requires memory duplication. As discussed earlier in text, this may impair your performance. Therefore, it is better to call a function with parameters passed by reference rather than by value. It is easy to bypass this problem. The best thing for enhancing your performance is to use local variables of a class or object that is used in the function. You can create a set of variables within a function, which in turn will significantly increase the consumption of memory and CPU time of the function call with a lot of variables. The function must be remembered in the stack for further opportunities to work with these variables. Even if these variables are not used in the function, they are still in the stack and they will occupy memory space.</p><p>The following discussion focuses on the constants. Constants do not require RAM allocation, since their values are directly sewed in the instruction stream. Using constants instead of creating a large number of local or global variables can significantly accelerate the performance of your software, avoiding the overhead of memory and CPU time.</p><p>Static <a id="id314" class="indexterm"></a>variables (variables of a class) as well as static <a id="id315" class="indexterm"></a>functions (methods of a class) require less CPU time, since static variables belong to the whole class, rather than to an object of this class. The time spent on searching for supplies is declining, which has obvious advantages in optimization. For variables or functions of any object machine, instructions will be executed to locate the appropriate object to which they belong, which obviously require the overhead of CPU time and memory.</p><p>The <code class="literal">if</code> and <code class="literal">switch</code> statements can be easily changed for each other; for example, to increase the understanding and readability of the code or to optimize all the same code. If you look at the postcompilation machine instructions and directions through any disassembler, you can see the difference between these two expressions. The <code class="literal">switch</code> statement<span class="strong"><strong>,</strong></span> for example, after compiling becomes a<span class="strong"><strong> </strong></span>go-to mechanism, which in turn makes jumping through machine instructions in its transition table. It needs to find the desired transition in the first place, and then those going to the command assembly. If construction behaves low bit differently, it turns normal branching as in high-level programming language; for example, in our case, the C# language. In some cases, some <code class="literal">switch</code> design may be executed faster than the same <code class="literal">if</code>/<code class="literal">else if</code>/<code class="literal">else</code> design. Performance of these two structures solely depends on their correct application or in other words the correct use. For example, let's consider two simple cases, where in the first case will be quicker and faster <code class="literal">switch</code>, and in the second situation the <code class="literal">if</code> design is better for performance than a <code class="literal">switch</code> solution, as shown in the following code example:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Diagnostics;
+
+public class IfSwitchTestFirstCase : MonoBehaviour {
+  public const int CYCLES_COUNTER = 100000000;
+
+  bool IfTest(int yourIntegerExample)
+  {
+    if (yourIntegerExample == 0 || yourIntegerExample == 1) {
+      return true;
+    }
+
+    if (yourIntegerExample == 2 || yourIntegerExample == 3) {
+      return false;
+    }
+
+    if (yourIntegerExample == 4 || yourIntegerExample == 5) {
+      return true;
+    }
+
+    return false;
+  }
+  
+  bool SwitchTest(int yourIntegerExample)
+  {
+    switch (yourIntegerExample)
+    {
+      case 0:
+      case 1:
+        return true;
+
+      case 2:
+      case 3:
+        return false;
+
+      case 4:
+      case 5:
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  void Start() {
+    Stopwatch ifTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES_COUNTER; i++)
+    {
+      IfTest(i);
+    }
+    ifTimer.Stop();
+
+    Stopwatch switchTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES_COUNTER; i++)
+    {
+      SwitchTest(i);
+    }
+    switchTimer.Stop();
+
+    UnityEngine.Debug.Log(
+      "IF time = " +
+      (
+(double)(ifTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES_COUNTER
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+
+    UnityEngine.Debug.Log(
+      "Switch time = " +
+      (
+(double)(switchTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES_COUNTER
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel Core i5 2.7 GHz, after testing the first example in the Unity editor the results were:</p><div class="informalexample"><pre class="programlisting">IF time = 11.54 nanoseconds average per cycle
+Switch time = 8.76 nanoseconds average per cycle</pre></div><p>Based on the preceding<a id="id316" class="indexterm"></a> results, we can say that the design of <code class="literal">switch</code> affects<a id="id317" class="indexterm"></a> your performance better, but it is not always true. Let's now consider the second case, where the <code class="literal">if</code> construction turns out to be the best design solution for your optimization, as shown in code example here:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Diagnostics;
+
+public class IfSwitchTestSecondCase : MonoBehaviour {
+  public const int CYCLES_COUNTER = 100000000;
+
+  int SwitchTest(int yourIntegerExample)
+  {
+    switch (yourIntegerExample)
+    {
+      case 0:
+      {
+        return 11;
+      }
+
+      case 1:
+      {
+        return 22;
+      }
+
+      default:
+      {
+        return -11;
+      }
+    }
+  }
+  
+  int IfTest(int yourIntegerExample)
+  {
+    if (0 == yourIntegerExample)
+    {
+      return 11;
+    }
+
+    if (1 == yourIntegerExample)
+    {
+      return 22;
+    }
+
+    return -11;
+  }
+  
+  void Start() {
+    Stopwatch switchTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES_COUNTER; i++)
+    {
+      SwitchTest(0);
+      SwitchTest(0);
+      SwitchTest(0);
+      SwitchTest(0);
+      SwitchTest(0);
+      SwitchTest(0);
+      SwitchTest(1);
+      SwitchTest(1);
+      SwitchTest(1);
+      SwitchTest(1);
+    }
+    switchTimer.Stop();
+
+    Stopwatch ifTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES_COUNTER; i++)
+    {
+      IfTest(0);
+      IfTest(0);
+      IfTest(0);
+      IfTest(0);
+      IfTest(0);
+      IfTest(0);
+      IfTest(1);
+      IfTest(1);
+      IfTest(1);
+      IfTest(1);
+    }
+    ifTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "IF time = " +
+      (
+(double)(ifTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES_COUNTER
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Switch time = " +
+      (
+(double)(switchTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES_COUNTER
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On a Mac OS X, Intel Core i5 2.7 GHz, after testing the second example in the Unity editor, the results were:</p><div class="informalexample"><pre class="programlisting">IF time = 54.46 nanoseconds average per cycle
+Switch time = 64.24 nanoseconds average per cycle</pre></div><p>Since different<a id="id318" class="indexterm"></a> situations require different designs, the most important <a id="id319" class="indexterm"></a>thing is for you to understand the true meaning of what is happening in the construction machine after compiling your code. Then, it will be much easier to make the right choices to improve and enhance your performance. In both examples, discussed earlier, we saw that in different situations the <code class="literal">if</code> and <code class="literal">switch</code> designs, which at first sight are absolutely equivalent, may differ in speed and efficiency with respect to performance. We also saw that different situations give a performance advantage with different designs, although they have the same semantics, or in other words, the same algorithm designed in different forms. However, the meaning does not change when dealing with any problems, except for the time of execution, as we have already considered earlier.</p><p>The following<a id="id320" class="indexterm"></a> two-dimensional arrays can be used in the form of <a id="id321" class="indexterm"></a>one-dimensional arrays, and this will increase your performance. For example, we have a two-dimensional array with <span class="strong"><strong>N</strong></span> rows and <span class="strong"><strong>M</strong></span> of columns: the table size is N × M:</p><div class="informalexample"><pre class="programlisting">// [i, j] from float 2D array (table)
+// 0 ≤ i ≤ N - 1
+// 0 ≤ j ≤ M - 1
+float2Darray[i, j] = 123.321f;</pre></div><p>In the case of optimization of the two-dimensional array by switching it to the one-dimensional array, we can refer to an element (i, j) of our table with the size N × M as follows:</p><div class="informalexample"><pre class="programlisting">// [i, j] from float 1D array
+// 0 ≤ i ≤ N - 1
+// 0 ≤ j ≤ M - 1
+float1Darray[(i * M) + j] = 123.321f;</pre></div><p>Here is a complete sample code in Unity C# as shown in the following code example:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Diagnostics;
+
+public class Array2Dvs1D : MonoBehaviour {
+  public const int N = 1000, M = 1500;
+
+  float[,] float2Darray;
+  float[] float1Darray;
+  
+  void Start() {
+    float2Darray = new float[N, M];
+    float1Darray = new float[N * M];
+
+    Stopwatch array2DTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; N; i++)
+    {
+      for (int j = 0; j &lt; M; j++)
+      {
+        // [i, j] from float 2D array
+        // 0 ≤ i ≤ N - 1
+        // 0 ≤ j ≤ M - 1
+        float2Darray[i, j] = 123.321f;
+      }
+    }
+    array2DTimer.Stop();
+    
+    Stopwatch array1DTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; N; i++)
+    {
+      for (int j = 0; j &lt; M; j++)
+      {
+        // [i, j] from float 1D array
+        // 0 ≤ i ≤ N - 1
+        // 0 ≤ j ≤ M - 1
+        float1Darray[(i * M) + j] = 123.321f;
+      }
+    }
+    array1DTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "Array 1D time = " +
+      (
+(double)(array1DTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / (N * M)
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Array 2D time = " +
+      (
+(double)(array2DTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / (N * M)
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac<a id="id322" class="indexterm"></a> OS X, Intel Core i5 2.7 GHz, after testing this example <a id="id323" class="indexterm"></a>in the Unity editor the following results were obtained:</p><div class="informalexample"><pre class="programlisting">Array 1D time = 3.24 nanoseconds average per cycle
+Array 2D time = 7.87 nanoseconds average per cycle</pre></div><p>As we can see a difference in the implementation of the same ideas, but in different forms as two-dimensional and one-dimensional arrays. Also consider the next simple example code as shown here, which shows a two-level array in comparison with one-dimensional arrays for speed of execution:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Diagnostics;
+
+public class LeveledArray2Dvs1D : MonoBehaviour {
+  public const int N = 1000, M = 1500;
+  
+  float[][] float2Darray;
+  float[] float1Darray;
+  
+  void Start() {
+    float2Darray = new float[N][];
+    float1Darray = new float[N * M];
+
+    for (int i = 0; i &lt; N; i++)
+    {
+      float2Darray[i] = new float[M];
+    }
+    
+    Stopwatch array2DTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; N; i++)
+    {
+      for (int j = 0; j &lt; M; j++)
+      {
+        // [i][j] from float 2D array
+        // 0 ≤ i ≤ N - 1
+        // 0 ≤ j ≤ M - 1
+        float2Darray[i][j] = 123.321f;
+      }
+    }
+    array2DTimer.Stop();
+    
+    Stopwatch array1DTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; N; i++)
+    {
+      for (int j = 0; j &lt; M; j++)
+      {
+        // [i, j] from float 1D array
+        // 0 ≤ i ≤ N - 1
+        // 0 ≤ j ≤ M - 1
+        float1Darray[(i * M) + j] = 123.321f;
+      }
+    }
+    array1DTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "Leveled Array 1D time = " +
+      (
+(double)(array1DTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / (N * M)
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Leveled Array 2D time = " +
+      (
+(double)(array2DTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / (N * M)
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel Core i5 2.7 GHz, after testing this example in the Unity editor the following results were obtained:</p><div class="informalexample"><pre class="programlisting">Leveled Array 1D time = 3.23 nanoseconds average per cycle
+Leveled Array 2D time = 3.36 nanoseconds average per cycle</pre></div><p>For convenience, you<a id="id324" class="indexterm"></a> can use the two-level array if you are satisfied <a id="id325" class="indexterm"></a>with its performance. You will need to make the right decision starting from your tasks, not forgetting about the middle ground between the readability of the code and its performance.</p><p>As for strings and character arrays, let's see which among them is faster and more efficient. In the following code example, we represent our test performance between the two variables:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Diagnostics;
+
+public class StringCharArray : MonoBehaviour {
+  public const int LENGTH = 1000;
+
+  string str;
+  char[] charArray;
+  
+  void Start() {
+    charArray = new char[LENGTH];
+    
+    Stopwatch charArrayTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      charArray[i] = (i % 10).ToString()[0];
+    }
+    charArrayTimer.Stop();
+
+    str = string.Empty;
+    Stopwatch stringTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      str += (i % 10).ToString();
+    }
+    stringTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "String time = " +
+      (
+(double)(stringTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Char Array time = " +
+      (
+(double)(charArrayTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel<a id="id326" class="indexterm"></a> Core i5 2.7 GHz, after testing this example in<a id="id327" class="indexterm"></a> the Unity editor the following results were obtained:</p><div class="informalexample"><pre class="programlisting">String time = 1274.00 nanoseconds average per cycle
+Char Array time = 369.00 nanoseconds average per cycle</pre></div><p>The difference is obvious, but readability of this optimization falls down rapidly. As always everything in life needs a strong balance sheet or, in other words, the golden mean. Here is another example, in which we compare the performance of <code class="literal">StringBuilder</code> and character array as shown in the following code example:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Text;
+using System.Diagnostics;
+
+public class StringBuilderCharArray : MonoBehaviour {
+  public const int LENGTH = 1000;
+  
+  StringBuilder str;
+  char[] charArray;
+  
+  void Start() {
+    charArray = new char[LENGTH];
+    
+    Stopwatch charArrayTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      charArray[i] = (i % 10).ToString()[0];
+    }
+    charArrayTimer.Stop();
+    
+    str = new StringBuilder();
+    Stopwatch stringBuilderTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      str.Append((i % 10).ToString());
+    }
+    stringBuilderTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "String Builder time = " +
+      (
+(double)(stringBuilderTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Char Array time = " +
+      (
+(double)(charArrayTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel <a id="id328" class="indexterm"></a>Core i5 2.7 GHz, after testing this example in<a id="id329" class="indexterm"></a> the Unity editor the following results were obtained:</p><div class="informalexample"><pre class="programlisting">String Builder time = 463.00 nanoseconds average per cycle
+Char Array time = 370.00 nanoseconds average per cycle</pre></div><p>
+<code class="literal">StringBuilder</code> is slightly inferior to the performance of a character array. However, do not forget that for the garbage collector, <code class="literal">StringBuilder</code> is very well optimized and does not create a memory leak with large volumes of data. You have to solve various problems in the course of software development. If every decision will confidently and firmly take any criticism, then success is not far away. You should definitely prioritize your tasks for all to see where you need to go with compromises.</p><p>In the next step, we <a id="id330" class="indexterm"></a>will examine and study the performance of<a id="id331" class="indexterm"></a> collections in C#. Collection is very useful in certain situations, but you always have to remember that it is a wrapper for ordinary arrays. When using large data, collections can utilize significant costs of processing time, which in turn negatively affects the whole performance of your code. In the following code example, a list collection execution speed is compared with the conventional one-dimensional array:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+using System.Diagnostics;
+
+public class ListVsArray : MonoBehaviour {
+  public const int LENGTH = 1000000;
+  
+  List&lt;int&gt; intList;
+  int[] intArray;
+
+  int tmpInt;
+  
+  void Start() {
+    intList = new List&lt;int&gt;();
+    intArray = new int[LENGTH];
+    
+    Stopwatch intArrayTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      intArray[i] = i;
+      tmpInt = intArray[i]++;
+    }
+    intArrayTimer.Stop();
+
+    Stopwatch listTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      intList.Add(i);
+      tmpInt = intList[intList.Count - 1]++;
+    }
+    listTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "Integer List time = " +
+      (
+(double)(listTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Integer Array time = " +
+      (
+(double)(intArrayTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel <a id="id332" class="indexterm"></a>Core i5 2.7 GHz, after testing this example<a id="id333" class="indexterm"></a> in the Unity editor the following results were obtained:</p><div class="informalexample"><pre class="programlisting">Integer List time = 36.68 nanoseconds average per cycle
+Integer Array time = 5.54 nanoseconds average per cycle</pre></div><p>As can be seen from the results discussed earlier in the text, the list collection is significantly inferior in performance compared to simple one-dimensional arrays. Next, as shown in the following code example, the performance of the <code class="literal">ArrayList</code> class is compared with the same simple one-dimensional array:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Diagnostics;
+
+public class ArrayListVsArray : MonoBehaviour {
+  public const int LENGTH = 1000000;
+  
+  ArrayList intArrayList;
+  int[] intArray;
+  
+  int tmpInt;
+  
+  void Start() {
+    intArrayList = new ArrayList();
+    intArray = new int[LENGTH];
+    
+    Stopwatch intArrayTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      intArray[i] = i;
+      tmpInt = intArray[i] + 23;
+    }
+    intArrayTimer.Stop();
+    
+    Stopwatch arrayListTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; LENGTH; i++)
+    {
+      intArrayList.Add(i);
+      tmpInt = (int)intArrayList[intArrayList.Count - 1] + 23;
+    }
+    arrayListTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "Integer Array List time = " +
+      (
+(double)(arrayListTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Integer Array time = " +
+      (
+(double)(intArrayTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / LENGTH
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel <a id="id334" class="indexterm"></a>Core i5 2.7 GHz, after testing this example in<a id="id335" class="indexterm"></a> the Unity editor the following results were obtained:</p><div class="informalexample"><pre class="programlisting">Integer Array List time = 183.36 nanoseconds average per cycle
+Integer Array time = 4.78 nanoseconds average per cycle</pre></div><p>The difference is awesome and more than in the previous example, while using the class <code class="literal">List</code>. Thus, we demonstrated the obvious advantages of a simple one-dimensional array, compared with collections when large amounts of data can greatly ruin your performance. What <a id="id336" class="indexterm"></a>cannot be said about the simple one-dimensional <a id="id337" class="indexterm"></a>arrays is which of them are the building blocks for a variety of collections. As always, the choice is yours. The most important thing is not to forget the basic axioms in optimization decisions. Let's look at another example with the class <code class="literal">Dictionary</code> as shown in code example here:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections.Generic;
+using System.Diagnostics;
+
+public class DictionaryVsArray : MonoBehaviour {
+  public const int CYCLES = 1000000;
+  
+  Dictionary&lt;int, int&gt; dictionary;
+  int[] intArray;
+  
+  int tmpInt;
+  
+  void Start() {
+    dictionary = new Dictionary&lt;int, int&gt;();
+    intArray = new int[CYCLES];
+    
+    Stopwatch intArrayTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES; i++)
+    {
+      intArray[i] = i + 117;
+      tmpInt = intArray[i] + 23;
+    }
+    intArrayTimer.Stop();
+    
+    Stopwatch dictionaryTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES; i++)
+    {
+      dictionary.Add(i, i + 117);
+      tmpInt = (int)dictionary[dictionary.Count - 1] + 23;
+    }
+    dictionaryTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "Integer Dictionary time = " +
+      (
+(double)(dictionaryTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Integer Array time = " +
+      (
+(double)(intArrayTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel <a id="id338" class="indexterm"></a>Core i5 2.7 GHz, after testing this example<a id="id339" class="indexterm"></a> in the Unity editor the following results were obtained:</p><div class="informalexample"><pre class="programlisting">Integer Dictionary time = 132.75 nanoseconds average per cycle
+Integer Array time = 4.63 nanoseconds average per cycle</pre></div><p>Also, I want to show you the following code example using the <code class="literal">Hashtable</code> collection for our performance testing, as shown in code example here:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Diagnostics;
+
+public class HashtableVsArray : MonoBehaviour {
+  public const int CYCLES = 1000000;
+  
+  Hashtable hashtable;
+  int[] intArray;
+  
+  int tmpInt;
+  
+  void Start() {
+    hashtable = new Hashtable();
+    intArray = new int[CYCLES];
+    
+    Stopwatch intArrayTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES; i++)
+    {
+      intArray[i] = i + 117;
+      tmpInt = intArray[i] + 23;
+    }
+    intArrayTimer.Stop();
+    
+    Stopwatch hashtableTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES; i++)
+    {
+      hashtable.Add(i, i + 117);
+      tmpInt = (int)hashtable[hashtable.Count - 1] + 23;
+    }
+    hashtableTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "Integer Hashtable time = " +
+      (
+(double)(hashtableTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "Integer Array time = " +
+      (
+(double)(intArrayTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel<a id="id340" class="indexterm"></a> Core i5 2.7 GHz, after testing this example<a id="id341" class="indexterm"></a> in the Unity editor, the following results were obtained:</p><div class="informalexample"><pre class="programlisting">Integer Hashtable time = 539.59 nanoseconds average per cycle
+Integer Array time = 4.52 nanoseconds average per cycle</pre></div><p>As you can see, all the collections are significantly inferior to the simple one-dimensional array in performance, but the benefit in many situations is more convenient because of the use of a more readable code. However, you lose a lot of CPU time and memory, and have to sacrifice clarity of code. The rest of the collection and all other constructions you are interested in, you can easily perform your own tests for your system's performance, on the basis of the examples discussed earlier.</p><p>We will not leave without attention on loops that are used very often in code-like branching structure. Loops <code class="literal">for</code>, <code class="literal">while</code>, and <code class="literal">do</code>-<code class="literal">while</code> are the fastest compared to other cycles such as <code class="literal">foreach</code>. Another trick when using loops is that we can deploy loops for fewer passes as shown in code example here:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Diagnostics;
+
+public class LoopsTest : MonoBehaviour {
+  public const int CYCLES = 1000000;
+
+  int [] tmpInt;
+  int i, _optimizedCycles;
+  
+  void Start() {
+    tmpInt = new int[CYCLES];
+
+    Stopwatch doWhileLoopTimer = Stopwatch.StartNew();
+    i = 0;
+    do
+    {
+      // do while loop test
+      tmpInt[i] = i + 123;
+      i++;
+    } while (i &lt; CYCLES);
+    doWhileLoopTimer.Stop();
+
+    Stopwatch whileLoopTimer = Stopwatch.StartNew();
+    i = 0;
+    while (i &lt; CYCLES)
+    {
+      // while loop test
+      tmpInt[i] = i + 123;
+      i++;
+    }
+    whileLoopTimer.Stop();
+
+    Stopwatch forLoopTimer = Stopwatch.StartNew();
+    for (i = 0; i &lt; CYCLES; i++)
+    {
+      // for loop test
+      tmpInt[i] = i + 123;
+    }
+    forLoopTimer.Stop();
+
+    _optimizedCycles = Mathf.CeilToInt(CYCLES / 5);
+    Stopwatch optimizedTimer = Stopwatch.StartNew();
+    for (i = 0; i &lt; _optimizedCycles; i++)
+    {
+      // optimized for loop test
+      tmpInt[i*5] = i*5 + 123;
+      if (CYCLES &gt; i*5+1) tmpInt[i*5+1] = i*5 + 124;
+      if (CYCLES &gt; i*5+2) tmpInt[i*5+2] = i*5 + 125;
+      if (CYCLES &gt; i*5+3) tmpInt[i*5+3] = i*5 + 126;
+      if (CYCLES &gt; i*5+4) tmpInt[i*5+4] = i*5 + 127;
+    }
+    optimizedTimer.Stop();
+
+    Stopwatch foreachTimer = Stopwatch.StartNew();
+    i = tmpInt.Length - 1;
+    foreach (int intElement in tmpInt)
+    {
+      // foreach test
+      tmpInt[i] = intElement;
+      i--;
+    }
+    foreachTimer.Stop();
+
+    UnityEngine.Debug.Log(
+      "Optimized For loop time = " +
+      (
+(double)(optimizedTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+    
+    UnityEngine.Debug.Log(
+      "For loop time = " +
+      (
+(double)(forLoopTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+
+    UnityEngine.Debug.Log(
+      "While loop time = " +
+      (
+(double)(whileLoopTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+
+    UnityEngine.Debug.Log(
+      "Do While loop time = " +
+      (
+(double)(doWhileLoopTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+
+    UnityEngine.Debug.Log(
+      "Foreach time = " +
+      (
+(double)(foreachTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel Core i5 2.7 GHz, after testing this example in the Unity editor the following results are obtained:</p><div class="informalexample"><pre class="programlisting">Optimized For loop time = 2.89 nanoseconds average per cycle
+For loop time = 3.63 nanoseconds average per cycle
+While loop time = 3.72 nanoseconds average per cycle
+Do While loop time = 3.72 nanoseconds average per cycle
+Foreach time = 5.62 nanoseconds average per cycle</pre></div><p>The results speak for <a id="id342" class="indexterm"></a>themselves. So, do not forget about optimizing <a id="id343" class="indexterm"></a>your loops. The first step is to draw attention to the cycles with a huge number of passes, since they can lower your performance by several orders of magnitude. Before optimizing anything, you need to find the bottlenecks in your code and only then decide which optimization techniques you prefer or require.</p><p>As for the loop <code class="literal">foreach</code>, we recommend that you use this cycle only in exceptional situations. Let's look at a small sample code for each loop, and the next step as it is transformed into a completely different code loop. The next example shows a simple <code class="literal">foreach</code> loop:</p><div class="informalexample"><pre class="programlisting">foreach (YourType yt in yourCollection) 
+{
+  yt.YourAction();
+}</pre></div><p>Next, let's look at what happens to a piece of code <span class="strong"><strong>foreach</strong></span> loop. As we can see in the code example here, our cycle turns into a loop while using the enumerator object. The code is given here:</p><div class="informalexample"><pre class="programlisting">using (YourType.Enumerator e = this.yourCollection.GetEnumerator()) 
+{
+  while (e.MoveNext())
+  {
+    YourType yt = (YourType)e.Current;
+    yt.YourAction();
+  }
+}</pre></div><p>As for the characters, it is better to use a single character than a string consisting of a single character. A symbol is passed by value, and it is necessary and requires only two bytes of memory, while the string with one character requires more than 20 bytes of memory, since the string is passed by reference.</p><p>I would also like to<a id="id344" class="indexterm"></a> mention the <code class="literal">ToString</code> function that is best used <a id="id345" class="indexterm"></a>only when necessary, otherwise you risk degrading your performance. For example, using this function for characters is not always exact: there is rarely a decision justified. Generally, you should remember one simple and most important axiom of code optimization—with less code executed, less CPU time and memory is used that significantly improves your productivity. Let's look at a simple code example shown here, which covers one of the simplest options for optimizing the transfer of an integer to a string:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Diagnostics;
+
+public class IntegerToStringTest : MonoBehaviour {
+  public const int CYCLES = 1000;
+
+  string str;
+
+  void Start() {
+    str = "";
+    Stopwatch toStringTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES; i++)
+    {
+      str += i.ToString();
+    }
+    toStringTimer.Stop();
+
+    str = "";
+    Stopwatch optimizedToStringTimer = Stopwatch.StartNew();
+    for (int i = 0; i &lt; CYCLES; i++)
+    {
+      str += string.Empty + i;
+    }
+    optimizedToStringTimer.Stop();
+    
+    UnityEngine.Debug.Log(
+      "ToString time = " +
+      (
+(double)(toStringTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+
+    UnityEngine.Debug.Log(
+      "Optimized ToString time = " +
+      (
+(double)(optimizedToStringTimer.Elapsed.TotalMilliseconds * 1000 * 1000) / CYCLES
+      ).ToString("0.00 nanoseconds average per cycle")
+    );
+  }
+}</pre></div><p>On Mac OS X, Intel Core i5 2.7 GHz after testing this example in the Unity editor I got the following results:</p><div class="informalexample"><pre class="programlisting">ToString time = 18229.00 nanoseconds average per cycle
+Optimized ToString time = 13576.00 nanoseconds average per cycle</pre></div><p>Try to build your <a id="id346" class="indexterm"></a>own tests for your functions on the basis of<a id="id347" class="indexterm"></a> the preceding examples. In optimization, you should often trust your own instincts to find the cause of all ills, but to make the right decisions you need to rely on the results of the tests, that is, just pure mathematics and well-defined numbers.</p></div>

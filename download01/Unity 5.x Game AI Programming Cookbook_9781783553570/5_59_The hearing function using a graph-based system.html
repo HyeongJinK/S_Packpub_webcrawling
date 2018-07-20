@@ -1,0 +1,34 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec62"></a>The hearing function using a graph-based system</h2></div></div><hr /></div><p>Hearing <a id="id266" class="indexterm"></a>works similarly to vision but doesn't take into account the nodes direct visibility because of the properties of the sound. However, we <a id="id267" class="indexterm"></a>still need a sound receiver in order to make it work. Instead of making an agent a direct sound receiver, in this recipe, the sound travels along the sound graph and is perceived by the graph nodes.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec211"></a>Getting ready</h3></div></div></div><p>It is important to have grasped the chapter regarding path finding in order to understand the inner workings of the graph-based recipes.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec212"></a>How to do it…</h3></div></div></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Create the emitter class:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class EmitterGraph : MonoBehaviour
+{
+    // next steps
+}</pre></div></li><li><p>Declare the member variables:</p><div class="informalexample"><pre class="programlisting">public int soundIntensity;
+public Graph soundGraph;
+public GameObject emitterObj;</pre></div></li><li><p>Implement the validation of the emitter object's reference:</p><div class="informalexample"><pre class="programlisting">public void Start()
+{
+    if (emitterObj == null)
+        emitterObj = gameObject;
+}</pre></div></li><li><p>Declare <a id="id268" class="indexterm"></a>the function for emitting <a id="id269" class="indexterm"></a>sounds:</p><div class="informalexample"><pre class="programlisting">public int[] Emit()
+{
+    // next steps
+}</pre></div></li><li><p>Declare and assign the variables needed:</p><div class="informalexample"><pre class="programlisting">List&lt;int&gt; nodeIds = new List&lt;int&gt;();
+Queue&lt;int&gt; queue = new Queue&lt;int&gt;();
+List&lt;int&gt; neighbours;
+int intensity = soundIntensity;
+int src = soundGraph.GetNearestVertex(emitterObj);</pre></div></li><li><p>Add the source node to the list of reached nodes and the queue:</p><div class="informalexample"><pre class="programlisting">nodeIds.Add(src);
+queue.Enqueue(src);</pre></div></li><li><p>Code the Breadth-First Search loop for reaching out to nodes:</p><div class="informalexample"><pre class="programlisting">while (queue.Count != 0)
+{
+    // next steps
+}
+return nodeIds.ToArray();</pre></div></li><li><p>Finish the loop if the sound runs out of intensity:</p><div class="informalexample"><pre class="programlisting">if (intensity == 0)
+    break;</pre></div></li><li><p>Take a node from the queue and get its neighbors:</p><div class="informalexample"><pre class="programlisting">int v = queue.Dequeue();
+neighbours = soundGraph.GetNeighbors(v);</pre></div></li><li><p>Check the neighbors and add them to the queue if necessary:</p><div class="informalexample"><pre class="programlisting">foreach (int n in neighbours)
+{
+    if (nodeIds.Contains(n))
+        continue;
+    queue.Enqueue(n);
+    nodeIds.Add(n);
+}</pre></div></li><li><p>Reduce <a id="id270" class="indexterm"></a>the sound intensity:</p><div class="informalexample"><pre class="programlisting">intensity--;</pre></div></li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec213"></a>How it works…</h3></div></div></div><p>The recipe returns the list of affected nodes by the sound intensity using the Breadth-First Search algorithm. The <a id="id271" class="indexterm"></a>algorithm stops when there are no more nodes to visit, or when the intensity of the sound is dimmed by the graph traversal.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec214"></a>There is more…</h3></div></div></div><p>After learning how to implement hearing using both colliders and graph logic, you could develop a new hybrid algorithm that relies on a heuristic that takes distance as inputs. If a node goes beyond the sound's maximum distance, there's no need to add its neighbors to the queue.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec215"></a>See also</h3></div></div></div><p>The following <a id="id272" class="indexterm"></a>recipes of <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Navigation</em></span>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p><span class="emphasis"><em>Breadth-First Search algorithm</em></span></p></li><li style="list-style-type: disc"><p><span class="emphasis"><em>A* algorithm (for taking a heuristic function as argument)</em></span></p></li></ul></div></div></div>

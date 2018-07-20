@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec23"></a>Creating a treasure chest</h2></div></div><hr /></div><a id="id392" class="indexterm"></a><p>Treasure chests are the most interesting part of any game; everybody likes them. In this section, we will create a treasure chest that will be storing a specified reward for every instance.</p><p>Our treasure chest consists of three pieces—a stepping trigger, chest, and a top that will slide whenever the chest is to be opened by a player.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_03_11.jpg" /></div><p>Go to the <span class="strong"><strong>custom</strong></span> <span class="strong"><strong>objects</strong></span> folder and drag the <span class="strong"><strong>treasure</strong></span> <span class="strong"><strong>chest</strong></span> prefab to the scene. To <a id="id393" class="indexterm"></a>make our treasure chest work and generate rewards, we will have to define many variables:</p><div class="informalexample"><pre class="programlisting">private var bInRange : boolean = false;
+private var bCanBeOpened : boolean = true;
+private var bActivated : boolean = true;
+private var OriginalPos : Vector3 = Vector3.zero;
+private var DestinationPos :Vector3 = Vector3.zero;
+public var LidSpeed : float = 3;
+public var Top : GameObject;
+private var Stats : CH_PlayerStats;
+public enum TreasureType{
+    Money,
+    ammoPrime,
+    ammoAlt,
+    Health
+};
+public var treasure : TreasureType;
+public var Constant : boolean = true;
+public var Reward : int = 0;
+public var MinRange : int = 0;
+public var MaxRange : int = 0;
+private var Bounty : int = 0;
+public var Player : GameObject;</pre></div><a id="id394" class="indexterm"></a><p>The top three variables in the preceding code snippet look similar, however, serve different purposes. The following list explains about variables declared in the preceding code:</p><p><code class="literal">bInRange</code>
+<a id="id395" class="indexterm"></a> checks if a player is standing in a using zone specified by our trigger. <code class="literal">bCanBeOpened</code> checks if this chest has already been used or not and <code class="literal">bActivated</code> will tell us if the chest is in the middle of sliding the top.</p><p><code class="literal">OriginalPos</code>
+<a id="id396" class="indexterm"></a> and <code class="literal">DestinationPos</code>
+<a id="id397" class="indexterm"></a> are vectors that store information about the current position of a top, and destination to which it will be moved when the chest is opened. <code class="literal">LidSpeed</code> is a speed at which <code class="literal">Top</code> will be sliding and <code class="literal">Top</code> is a reference to the chest lid. <code class="literal">Stats</code>, as usual, represents a <code class="literal">CH_PlayerStats</code> script attached to the player. <code class="literal">treasure</code>, of a <code class="literal">TreasureType</code> type, will determine what type of treasure we will put inside each instance of a treasure chest.</p><p><code class="literal">Constant</code>
+<a id="id398" class="indexterm"></a> checks if reward should be a constant number specified in the <code class="literal">Reward</code> variable. <code class="literal">MinRange</code> and <code class="literal">MaxRange</code> will be used to get a random amount of gold from a chest if we set <code class="literal">Constant</code> to <code class="literal">false</code>.</p><p><code class="literal">Bounty</code>
+<a id="id399" class="indexterm"></a> is a final reward that the character will receive after opening a chest.</p><p><code class="literal">Player</code>
+<a id="id400" class="indexterm"></a> is a reference to the controlled character.</p><p>Now that we are done with variables, let's get down to functions. They are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>In the <code class="literal">Start</code> function<a id="id401" class="indexterm"></a>, we need to process all values that were given to our chest and set references.</p></li><li style="list-style-type: disc"><p>Then, we need the <code class="literal">OnTriggerEnter</code>
+<a id="id402" class="indexterm"></a> and <code class="literal">OnTriggerExit</code> function<a id="id403" class="indexterm"></a>s that will tell our chest if a player is standing in a zone where he can interact with it (this trigger is bigger than treasure chest itself and covers the area around it, far enough for the player to interact with it).</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_03_12.jpg" /></div></li><li style="list-style-type: disc"><p>Last is the <code class="literal">Update</code> function<a id="id404" class="indexterm"></a>. The first thing that we will be checking is if a chest is active and can be used:</p></li><li style="list-style-type: disc"><p>Now is the best part; we will check if the player is within a chest reach and pressing an <span class="emphasis"><em>E</em></span> button that will signify that they are opening the chest, then we will reward the player with a treasure specified in the <code class="literal">treasure</code> variable.</p></li></ul></div><a id="id405" class="indexterm"></a><p>The completed <code class="literal">treasure</code> script is as follows:</p><div class="informalexample"><pre class="programlisting">function Start(){
+    OriginalPos = Top.transform.position;
+    DestinationPos = OriginalPos + Vector3(0,0,1);
+    Stats = Player.gameObject.GetComponent(CH_PlayerStats);
+    if (!Constant)
+    Bounty = Random.Range (MinRange, MaxRange);
+    else
+    Bounty = Reward;
+}
+function OnTriggerEnter(other: Collider){
+    if(other.gameObject.tag == "Player" &amp;&amp; bCanBeOpened)
+    bInRange = true;
+}
+function OnTriggerExit(other : Collider){
+    if(other.gameObject.tag == "Player" &amp;&amp; bCanBeOpened)
+        bInRange = false;
+}
+function Update (){
+if (!bActivated)
+return;
+if (Top.transform.position == DestinationPos)
+        bActivated = false;
+if(bInRange &amp;&amp; Input.GetKeyDown(KeyCode.E) &amp;&amp; bCanBeOpened){
+        bCanBeOpened = false;
+switch(treasure){
+            case TreasureType.Money:
+                Stats.AddMoney(Bounty);
+                break;
+            case TreasureType.ammoPrime:
+                Stats.AddAmmo(0,Bounty,1);
+                break;
+            case TreasureType.ammoAlt:
+                Stats.AddAmmo(1,Bounty,1);
+                break;
+            case TreasureType.Health:
+                Stats.AddHealth(Bounty,1);
+                break;
+            default:
+                Debug.Log("Unknown treasure is set");
+        }
+    }
+if(!bCanBeOpened &amp;&amp; bActivated)
+Top.transform.position = Vector3.Lerp(Top.transform.position, DestinationPos, Time.deltaTime * LidSpeed);
+}</pre></div><a id="id406" class="indexterm"></a><p>The final part is to make a top slide and stop when it reaches a destination. Now, we have a beautiful chest that gives us rewards for opening it.</p><div class="mediaobject"><img src="/graphics/9781849692304/graphics/2304EXP_03_13.jpg" /></div></div>
