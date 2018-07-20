@@ -1,4 +1,4 @@
-﻿﻿//packpub.com 웹크롤링
+﻿﻿﻿//packpub.com 웹크롤링
 //동기적으로 데이터 가져오기 비동기로 하면 너무 빨라 Ddos공격으로 의심하는 거 같음...
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 let replace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "");
@@ -12,9 +12,9 @@ var request = require("sync-request");
 var fs =require('fs');
 
 let downloadDataPath = "./download/"
-const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMDBjODk3NC05OTNjLTQ2MzItODQzMS04NjY3ZmU4ZTJhOWMiLCJ1c2VybmFtZSI6InhwdG14bWRrZWwxMkBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUyOTk5NjQ3NiwiZXhwIjoxNTMwMDAwMDc2fQ.xoGgqysefEa4ezF1BL6o_Kz18wEwfzDb0_71xOzUD4_NZ4kKTmF_RsPCjl4e2Qa2ZnZa6jEFZ1X-Q_E8TeIOE6tQTLyrCstsAX5MpIAF8YPZc3TOOudgrOYWU6PlqQS5FSKElvc6UMg78VxSG9RsEStB2fAyAxfMQcmzDUehv1TwzZuNMbLctRjX8GVN7WfzqBvQNFm6fGmzvhz7zfY2xMwRacPAnxcLlzA0nGNz_sd4u3Ja03op8vn2YdlAPzJLLvt8SIJG_hrXpzgI3zq3mpipC60dhAB1I1lBYcArX5jUgIs966HTmdlfql8ntUgzizJbUHEt-KKw77q6DJgQrQ";
+const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxM2IzN2RmYi0xNjhiLTRhZGYtYTdhNy03YzAyZjA1ZWY1MGEiLCJ1c2VybmFtZSI6Iml0ZW1wYW5nMUBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUzMjA3MzUyNiwiZXhwIjoxNTMyMDc3MTI2fQ.SpsXmSkAlSO8pMlzeMDiA52_jWscVt8q8gTxQOOap4zp_AI7liu0tX2sbuOaC6e_Y8fKbqLh5WhBC-VQmO0ZYqlWagCdieyBOnGQCZU4OZwy1U-o22HoHQxyYIh_Nyf0dIjigpxo6WK3hiUTDLPIl6uzHrgmg4l6AGr2DkPeBflHHJCRXOnEENJNiWpkMd6uJ5yDZuWczMEJa1Y2rzYuAalIhIACUiLoudjgR0wv5vHPwnufs6XHNWDYPTWpPpegpbbIAK-FJIucKG96c4UeQUY_rNaXIyZzSJfInzgVq_E6EfiucSi-8lrHv-CH_osIMkQtt1F2fnIqu23IWlfXDg";
 
-let data = fs.readFileSync("./downlist/isbn2.txt", 'utf8')
+let data = fs.readFileSync("./downlist/isbn_unity.txt", 'utf8')
     
 let isbns = data.split("\t")
 
