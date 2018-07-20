@@ -6,7 +6,7 @@ var request = require("sync-request");
 var cheerio = require("cheerio");
 var fs =require('fs');
 var downBook = 0;
-const allBookCount = 4763;
+const allBookCount = 96;
 const pageBookLength = 48;
 
 var url = "https://www.packtpub.com/all-books?search=&availability_list%5BAvailable%5D=Available&offset=&rows=48&sort=&theme_raw=true";
@@ -36,7 +36,7 @@ while(checked) {
 }
 
 // 비동기 방식으로 파일을 생성. 함수의 인자는 앞에서 부터 순서대로 파일명, 입력데이터, 인코딩, 콜백함수
-fs.writeFileSync("isbn.txt", isbnlist, 'utf-8', function(e){
+fs.writeFileSync("isbn2.txt", isbnlist, 'utf-8', function(e){
   if(e){
       // 파일생성 중 오류가 발생하면 오류출력
       console.log(e);
