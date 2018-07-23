@@ -11,7 +11,7 @@ var fs = require('fs');
 
 var file = fs.createWriteStream("./download/file.mp4");
 
-var request = https.get("https://serviceapi.nmv.naver.com/flash/convertIframeTag.nhn?vid=F3BB2875769B5686D441F3B98C7BC24A4FB2&outKey=V126a890806ca3e2b7fee95e66df743b5a0d66148f8f6a246d8ac95e66df743b5a0d6"
+var request = https.get("https://d1ft11egbn8l.cloudfront.net/From%200%20to%201%20JavaFX%20and%20Swing%20for%20Awesome%20Java%20UIs/Package/videos/video2_3.mp4?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6XC9cL2QxZnQxMWVnYm44bC5jbG91ZGZyb250Lm5ldFwvRnJvbSUyMDAlMjB0byUyMDElMjBKYXZhRlglMjBhbmQlMjBTd2luZyUyMGZvciUyMEF3ZXNvbWUlMjBKYXZhJTIwVUlzXC9QYWNrYWdlXC92aWRlb3NcL3ZpZGVvMl8zLm1wNCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTUyNzYwMzg2MH19fV19&Signature=REhGKptEpGr8tr8uSlAqDjuQjAWW7FlDdyDQc26TOEQIRDvr9zzYO-Vpaf9Rck1CxB6WS51ZeptBTr76XlC40D-mVwG~BvorS9X6j-Z-9afwN8aKKiCvki93P-k62-GwFvGHvbo0xp3lYE2GD9Nvdq6UuFkYicX7pvt84ashBcc_&Key-Pair-Id=APKAJTJLPJQL5PVZ47FA"
 , (res) => {
     res.pipe(file);
     // res.on('data', (d) => {

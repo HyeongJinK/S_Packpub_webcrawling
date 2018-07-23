@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec91"></a>Optimizing scripts</h2></div></div><hr /></div><p>Unity games run several frames per second <span>and</span><a id="id288345145" class="indexterm"></a> many of our scripts are executed each frame. Even uncomplicated games, such as the Cucumber Man, can have several scripts running every frame, causing the computer's CPU to stay very busy. The goal is to ensure our scripts are not causing any unnecessary CPU load.</p><p>Our game has 145 scripts, but most of them are part of the standard asset package and are not assigned to any game objects. The scripts we want to review are the ones we put in the <code class="literal">Assets</code> | <code class="literal">Custom Scripts</code> folder. Reviewing that folder reveals that there are only 14 scripts:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">BeetleManager</li><li style="list-style-type: disc">BeetleNPC</li><li style="list-style-type: disc">BeetlePatrol</li><li style="list-style-type: disc">CameraFollower</li><li style="list-style-type: disc">CherryControl</li><li style="list-style-type: disc">CherryManager</li><li style="list-style-type: disc">CucumberManager</li><li style="list-style-type: disc">CucumberManManager</li><li style="list-style-type: disc">HealthManager</li><li style="list-style-type: disc">PlayerController</li><li style="list-style-type: disc">PlayerMotor</li><li style="list-style-type: disc">PointsManager
+</li><li style="list-style-type: disc">ThrowCherry</li><li style="list-style-type: disc">VictoryManager</li></ul></div><p>Our goal is to reduce the number of instructions the CPU has to execute, especially when we are dealing with several executions per frame and multiple frames per second. Here are some things to check when reviewing your Unity scripts:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Ensure all function calls are necessary.</li><li style="list-style-type: disc">As appropriate, move function calls out of the <code class="literal">Update()</code> method. </li><li style="list-style-type: disc">As appropriate, move statements out of loops to limit the number of times they are executed.</li><li style="list-style-type: disc">Use NPCs only as needed. Our game is relatively simple and we do not have hoards of cucumber beetles. You might try an experiment where there are 10,000 cucumber beetles in your game. Since each one of them has AI-associated code, the CPU will be very busy.</li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec113"></a>Optimized code example</h3></div></div></div><p>The following script is not optimized. Review the <span>script</span><a id="id288603873" class="indexterm"></a> to see what can be done to optimize it. Then, review the information provided after the script:</p><pre class="programlisting">public class CucumberManager : MonoBehavior {
+     public static int currentCucumberCount;
+     Text Cucumber_Count;
+     public GameObject[] cucumbers;
+
+     void Update() {
+          Cucumber_Count = GetComponent&lt;Text&gt;();
+          currentCucumberCount = 1;
+          cucumbers = GameObject.FindGameObjectsWithTag("Cucumber");
+          Cucumber_Count.text = cucumbers.Length.ToString();
+          currentCucumberCount = cucumbers.Length;
+     }
+}</pre><p>Hopefully you were able to spot the inefficient, unoptimized component of the script. In the preceding example, all the statements other than the variable declarations occur in the <code class="literal">Update()</code> method. Consider the optimized version of the following script:</p><pre class="programlisting">public class CucumberManager : MonoBehavior {
+     public static int currentCucumberCount;
+     Text Cucumber_Count;
+     public GameObject[] cucumbers;
+
+     void Awake() {
+          Cucumber_Count = GetComponent&lt;Text&gt;();
+          currentCucumberCount = 1;
+     }
+
+      void Update() {
+           cucumbers = GameObject.FindGameObjectsWithTag("Cucumber");
+           Cucumber_Count.text = cucumbers.Length.ToString();
+           currentCucumberCount = cucumbers.Length;
+      }
+}</pre><p>In the optimized version of this script, the <code class="literal">GetComponent()</code> method call and the <code class="literal">currentCucumberCount</code> variable initialization are moved over to the <code class="literal">Awake()</code> method. Those statements only need to run once. Putting them inside the <code class="literal">Update()</code> method would have caused undue strain on the CPU.</p><p>It is important for a game's overall performance to have optimized scripts. Checking for script optimization at the end of a project is a good idea. Ideally, you will ensure your scripts are optimized as your write, as opposed to reviewing them later. </p></div></div>

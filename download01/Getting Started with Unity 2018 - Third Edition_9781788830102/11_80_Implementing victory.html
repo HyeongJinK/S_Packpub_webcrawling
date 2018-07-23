@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec78"></a>Implementing victory</h2></div></div><hr /></div><p>In this section, we will implement the <span>victory</span><a id="id288601230" class="indexterm"></a> condition for the Cucumber Man. The only victory condition for the Cucumber Man is when the number of Cucumber Beetles is zero. Our <code class="literal">BeetleManager</code> script already provides functionality for counting Cucumber Beetles. As you will recall, that is how we update our Cucumber Beetle count on our HUD. We will make some modifications to that script and create a new script in this section.</p><p>Let's start by creating an onscreen text component to display <strong class="userinput"><code>You Won!</code></strong> when the number of Cucumber Beetles reaches zero. Here are the steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Right-click an empty area of the <strong class="userinput"><code>Hierarchy</code></strong> panel.</li><li>Select <strong class="userinput"><code>Create Empty</code></strong>.</li><li>In the <strong class="userinput"><code>Inspector</code></strong> panel, rename the new GameObject to <code class="literal">EndofGame</code>. We will use this as a container for our victory and defeat text labels. </li><li>In the <strong class="userinput"><code>Hierarchy</code></strong> panel, drag the <code class="literal">EndofGame</code> GameObject to subordinate it to our <code class="literal">HUD_Canvas</code>.</li><li>With the <code class="literal">EndofGame</code> GameObject selected, in the <strong class="userinput"><code>Inspector</code></strong> panel, select the <strong class="userinput"><code>Transform</code></strong> dropdown and click <strong class="userinput"><code>Reset</code></strong>. This resets the transform of the object.</li><li>In the <strong class="userinput"><code>Hierarchy</code></strong> panel, right-click and select <strong class="userinput"><code>UI</code></strong> | <strong class="userinput"><code>Text</code></strong>. </li><li>Subordinate the new text object to the <code class="literal">EndofGame</code> GameObject.</li><li>Rename the new text object <code class="literal">Victory</code>.</li></ol></div><p>The next four steps are used to configure the <strong class="userinput"><code>Victory</code></strong> text object in the <strong class="userinput"><code>Inspector</code></strong> panel:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Change the text property to <code class="literal">You Won!</code></li><li>Set the <strong class="userinput"><code>Font Style</code></strong> to <strong class="userinput"><code>Bold</code></strong></li><li>Increase the <strong class="userinput"><code>Font Size</code></strong> to <strong class="userinput"><code>24</code></strong></li><li>Select a bright <strong class="userinput"><code>Color</code></strong> for the text</li></ol></div><p>By clicking on the <strong class="userinput"><code>Game</code></strong> tab or putting the game into game mode, you can see the new victory text is displayed in the center of the screen. We only want that text displayed when the player has won the game. Let's tackle that task:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Ensure the <strong class="userinput"><code>Victory</code></strong> text component is selected</li><li>In the <strong class="userinput"><code>Inspector</code></strong> panel, click the <strong class="userinput"><code>Add Component</code></strong> button
+</li></ol></div><p> </p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Select <strong class="userinput"><code>New Script</code></strong> and name the script <code class="literal">VictoryManager</code></li><li>In the <strong class="userinput"><code>Project</code></strong> panel, click <strong class="userinput"><code>Favorites</code></strong> | <strong class="userinput"><code>All Scripts</code></strong></li><li>Drag the <code class="literal">VictoryManager</code> script to the <code class="literal">Assets</code> | <code class="literal">Custom Scripts</code> folder</li><li>Double-click the <strong class="userinput"><code>VictoryManager</code></strong> script to open it in an editor</li><li>Edit the script so that it matches the following code, the first section of the code contains the namespace <code class="literal">import</code> statements and the <code class="literal">VictoryManager</code>class declaration:</li></ol></div><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+publicclassVictoryManager:MonoBehaviour{</pre><p>The next section of our script contains two class variable declarations and the <code class="literal">Awake()</code> method. In the <code class="literal">Awake()</code> method, we get the reference to the text component of our <code class="literal">Victory</code> UI object. We also set the initial text to null, so nothing will be displayed:</p><pre class="programlisting">TextVictory;
+     int beetleCount;
+
+voidAwake(){
+
+Victory=GetComponent&amp;lt;Text&gt;();
+Victory.text="";
+}</pre><p>The last section of our script is the <code class="literal">Update()</code> method. Here we set the value of count to the current count of Cucumber Beetles, then test whether the count equals zero. If the <code class="literal">(count == 0)</code> condition is true, we display the victory text on the screen:</p><pre class="programlisting">voidUpdate(){
+
+        beetleCount = BeetleManager.currentBeetleCount;
+
+         if (beetleCount == 0) {
+             Victory.text = ("You won!");
+}
+}
+}
+</pre><p>Our next task is to update the<code class="literal">BeetleManager</code>script. We will make three changes to the script:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Add the <code class="literal">static</code> modifier to the <code class="literal">currentBeetleCount</code> class variable. The new line of code should be: </li></ol></div><pre class="programlisting">      public static int currentBeetleCount;</pre><p> </p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li><p>In the <code class="literal">Awake()</code> method, change <code class="literal">currentBeetleCount = 0;</code> to <code class="literal">currentBeetleCount =1;</code>.  This will help ensure the game does not think there are no Cucumber Beetles when the game starts.</p></li><li><p>Add the following statement as the final statement in the <code class="literal">Update()</code> method: currentBeetleCount = beetles.Length;. This will update the <code class="literal">currentBeetleCount</code> variable for each frame.</p></li></ol></div><p>You are now ready to test the game. Kill all your Cucumber Beetles to test the code changes you made. If something does not work correctly or you receive errors, please refer to the following updated <code class="literal">BeetleManager</code> script:</p><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+publicclassBeetleManager:MonoBehaviour{
+
+publicstaticintcurrentBeetleCount;
+TextBeetle_Count;
+publicGameObject[]beetles;
+
+voidAwake(){
+
+Beetle_Count=GetComponent&amp;lt;Text&gt;();
+currentBeetleCount=1;
+}
+
+voidUpdate(){
+
+beetles=GameObject.FindGameObjectsWithTag("Beetle");
+Beetle_Count.text=beetles.Length.ToString();
+currentBeetleCount=beetles.Length;
+}
+}</pre><p>Now that the victory condition has been implemented, we are ready to implement our defeat conditions. We will do that in the next section.</p></div>

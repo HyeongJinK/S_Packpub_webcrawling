@@ -1,0 +1,125 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl2sec18"></a>Implementing the gizmo grid</h2></div></div><hr /></div><p>When<a id="id68" class="indexterm"></a> you open the script <code class="literal">Level.cs</code>. You will see the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+
+namespace RunAndJump {
+  public partial class Level : MonoBehaviour {
+
+    [SerializeField]
+    public int _totalTime = 60;
+    [SerializeField]
+    private float gravity = -30;
+    [SerializeField]
+    private AudioClip bgm;
+    [SerializeField]
+    private Sprite background;
+
+    public int TotalTime {
+      get { return _totalTime; }
+      set { _totalTime = value; }
+    }
+
+    public float Gravity {
+      get { return gravity; }
+      set { gravity = value; }
+    }
+
+    public AudioClip Bgm {
+      get { return bgm; }
+      set { bgm = value; }
+    }
+
+    public Sprite Background {
+      get { return background; }
+      set { background = value; }
+    }
+   }
+}</pre></div><p>This script holds <a id="id69" class="indexterm"></a>the variables that you saw in the inspector and the properties to access and change these values.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note07"></a>Note</h3><p>As you may have noticed, making your variables public is not the only way to expose them in the inspector; an alternative is using the <code class="literal">SerializeField</code> attribute. We will talk more about this in <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Creating Custom Inspectors</em></span>.</p></div><p>Let's make the first change by updating the script to look like this:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+namespace RunAndJump {
+  public partial class Level : MonoBehaviour {
+
+    [SerializeField]
+    public int _totalTime = 60;
+    [SerializeField]
+    private float _gravity = -30;
+    [SerializeField]
+    private AudioClip _bgm;
+    [SerializeField]
+    private Sprite _background;
+<span class="strong"><strong>    [SerializeField]</strong></span>
+<span class="strong"><strong>    private int _totalColumns = 25;</strong></span>
+<span class="strong"><strong>    [SerializeField]</strong></span>
+<span class="strong"><strong>    private int _totalRows = 10;</strong></span>
+
+<span class="strong"><strong>    public const float GridSize = 1.28f;</strong></span>
+<span class="strong"><strong>    </strong></span>
+<span class="strong"><strong>    private readonly Color _normalColor = Color.grey;  </strong></span>
+<span class="strong"><strong>    private readonly Color _selectedColor = Color.yellow;</strong></span>
+    
+    public int TotalTime {
+      get { return _totalTime; }
+      set { _totalTime = value; }
+    }
+
+    public float Gravity {
+      get { return _gravity; }
+      set { _gravity = value; }
+    }
+
+    public AudioClip Bgm {
+      get { return _bgm; }
+      set { _bgm = value; }
+    }
+
+    public Sprite Background {
+      get { return _background; }
+      set { _background = value; }
+    }
+
+<span class="strong"><strong>    public int TotalColumns {</strong></span>
+<span class="strong"><strong>      get { return _totalColumns; }</strong></span>
+<span class="strong"><strong>      set { _totalColumns = value; }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+
+<span class="strong"><strong>    public int TotalRows {</strong></span>
+<span class="strong"><strong>      get { return _totalRows; }</strong></span>
+<span class="strong"><strong>      set { _totalRows = value; }</strong></span>
+<span class="strong"><strong>    }</strong></span>
+  }
+}</pre></div><p>The variables <code class="literal">_totalColumns</code> and <code class="literal">_totalRows</code> are going to indicate the total number of level piece<a id="id70" class="indexterm"></a> prefabs supported in the x and y axis.</p><p>The constant  <code class="literal">GridSize</code> specifies the size of each cell in the grid. The value <code class="literal">1.28f</code> is based on the current size of the level piece prefabs of the video game.</p><p>We also added two read-only variables, <code class="literal">_normalColor</code> and <code class="literal">_selectedColor</code>, to define the color of the grid depending on its state.</p><p>Continuing <a id="id71" class="indexterm"></a>on <code class="literal">Level.cs</code>, we will add the following auxiliary methods, <code class="literal">GridFrameGizmo</code> and <code class="literal">GridGizmo</code>, to help us in the creation of the gizmo grid:</p><div class="informalexample"><pre class="programlisting">    private void GridFrameGizmo(int cols, int rows) {
+      Gizmos.DrawLine(new Vector3(0, 0, 0), new Vector3(0, rows * GridSize, 0));
+      Gizmos.DrawLine(new Vector3(0, 0, 0), new Vector3(cols * GridSize, 0, 0));
+      Gizmos.DrawLine(new Vector3(cols * GridSize, 0, 0), new Vector3(cols * GridSize, rows * GridSize, 0));
+      Gizmos.DrawLine(new Vector3(0, rows * GridSize, 0), new Vector3(cols * GridSize, rows * GridSize, 0));
+    } private void GridGizmo(int cols, int rows) {
+      for (int i = 1 ; i &lt; cols ; i++) {
+        Gizmos.DrawLine(new Vector3(i * GridSize, 0, 0), new Vector3(i * GridSize, rows * GridSize, 0));
+      }
+      for (int j = 1 ; j &lt; rows ; j++) {
+        Gizmos.DrawLine(new Vector3(0, j * GridSize, 0), new Vector3(cols * GridSize, j * GridSize, 0));
+      }
+    }</pre></div><p>The method <code class="literal">GridFrameGizmo</code> creates a rectangle with a width equals to <code class="literal">cols</code> times <code class="literal">GridSize</code> and a height equals to rows times <code class="literal">GridSize</code>.</p><p>The <code class="literal">GridGizmo</code>, using two for loops, creates the vertical and horizontal lines for the grid. To do this, we used the <code class="literal">Gizmos.DrawLine</code> method.</p><p>To see the gizmos working, let's add an <code class="literal">OnDrawGizmos</code> method and call the methods we created inside it:</p><div class="informalexample"><pre class="programlisting">private void OnDrawGizmos() {
+  Color oldColor = Gizmos.color;
+      
+  Gizmos.color = _normalColor;
+  GridGizmo(_totalColumns, _totalRows);
+  GridFrameGizmo(_totalColumns, _totalRows);
+      
+  Gizmos.color = oldColor;
+}</pre></div><p>Here, we will use the <code class="literal">Gizmos.color</code> variable to define the color used to render the gizmos in the <span class="strong"><strong>Scene</strong></span> <span class="strong"><strong>View</strong></span>. This is a static variable part of the Gizmos class so, as good practice, always save the original color and restore it when you're done using it.</p><p>Save the <a id="id72" class="indexterm"></a>script and wait for Unity to compile it. Then, in the Unity editor menu, navigate to <span class="strong"><strong>Tools</strong></span> | <span class="strong"><strong>Level Creator</strong></span> | <span class="strong"><strong>New Level Scene</strong></span> to create a new level, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_02_18.jpg" /></div><p>Now, you will see the following in the <span class="strong"><strong>Scene</strong></span> <span class="strong"><strong>View</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_02_19.jpg" /></div><p>You can adjust the column/row size of the grid by changing the values of <span class="strong"><strong>Total Columns</strong></span> and <span class="strong"><strong>Total Rows</strong></span> in the inspector. The size of the grid is automatically updated.</p><p>To add a visual feedback when the <code class="literal">Level</code> game object is selected, we will use the <code class="literal">OnDrawGizmosSelected</code> method, changing the color of the grid frame when that happens. Let's add the following:</p><div class="informalexample"><pre class="programlisting">private void OnDrawGizmosSelected() {
+  Color oldColor = Gizmos.color;
+
+  Gizmos.color = _selectedColor;
+  GridFrameGizmo(_totalColumns, _totalRows);
+            
+  Gizmos.color = oldColor;
+}</pre></div><p>As <a id="id73" class="indexterm"></a>always, wait for the compiler to finish and then select the <code class="literal">Level</code> game object. You will see the frame on the grid highlighted:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_02_20.jpg" /></div><p>If you select the <code class="literal">Level</code> game object and change its position, you will notice that the grid remains in the same place. This is because the points passed to the Gizmo's class methods are actually transformed using the Gizmo's matrix before the grid is painted on the <span class="strong"><strong>Scene View</strong></span>, but now the identity matrix is used by default.</p><p>For our purposes, this current behavior is okay, but if you want to make the gizmo transform with the game object, the only thing you need to do is change the value of the <code class="literal">Gizmos.matrix</code> variable. This is a static variable part of the Gizmos class, so as good practice, always save the original matrix and restore it when you're done using it.</p><p>For example, the update required by the <code class="literal">OnDrawGizmos</code> method is as follows:</p><div class="informalexample"><pre class="programlisting">private void OnDrawGizmos() {
+  Color oldColor = Gizmos.color;
+<span class="strong"><strong>  Matrix4x4 oldMatrix = Gizmos.matrix;</strong></span>
+<span class="strong"><strong>  Gizmos.matrix = transform.localToWorldMatrix;</strong></span>
+      
+  Gizmos.color = _normalColor;
+  GridGizmo(_totalColumns, _totalRows);
+  GridFrameGizmo(_totalColumns, _totalRows);
+      
+  Gizmos.color = oldColor;
+<span class="strong"><strong>  Gizmos.matrix = oldMatrix;</strong></span>
+}</pre></div></div>

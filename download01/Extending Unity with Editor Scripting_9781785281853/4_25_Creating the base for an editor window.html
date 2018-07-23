@@ -1,0 +1,98 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec27"></a>Creating the base for an editor window</h2></div></div><hr /></div><p>In this section, we <a id="id147" class="indexterm"></a>will create the base code to get an editor window up and running in Unity.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec33"></a>Using the EditorWindow class</h3></div></div></div><p>The <code class="literal">EditorWindow</code> class is part of the <code class="literal">UnityEditor</code> namespace and must be extended to any class <a id="id148" class="indexterm"></a>used to create editor windows.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note19"></a>Note</h3><p>To use the <code class="literal">EditorWindow</code> class, you must place your script inside an <code class="literal">Editor</code> folder, or in a folder nested inside an <code class="literal">Editor</code> folder.</p></div><p>Create a script called <code class="literal">PaletteWindow.cs</code> inside the folder <code class="literal">Tools/LevelCreator/Editor</code>, and then add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+
+namespace RunAndJump.LevelCreator {
+  public class PaletteWindow : EditorWindow {
+
+    public static PaletteWindow instance;
+        
+    public static void ShowPalette () {
+      instance = (PaletteWindow) EditorWindow.GetWindow (typeof(PaletteWindow));
+      instance.titleContent = new GUIContent("Palette");
+    }
+}</pre></div><p>The <code class="literal">GetWindow</code> method, which is part of the <code class="literal">EditorWindow</code> class, is responsible for getting an instance of the specified type of window, in this case, the <code class="literal">PaletteWindow</code> type. So, each<a id="id149" class="indexterm"></a> time you call this method, the current live window instance will be returned.</p><p>Here, we created a static method called <code class="literal">ShowPalette</code>, which encapsulates the <code class="literal">GetWindow</code> call, and a static variable called <code class="literal">instance</code> to save the reference to the <code class="literal">PalleteWindow</code> instance. This follows a singleton pattern.</p><p>Finally, we need to call the <code class="literal">ShowPalette</code> method to display the Palette in the editor. We will use a menu item attribute for this. Go to the <code class="literal">MenuItems.cs</code> script we created in a preceding chapter and add the following lines of code inside the <code class="literal">MenuItems</code> class:</p><div class="informalexample"><pre class="programlisting">[MenuItem ("Tools/Level Creator/Show Palette")]
+private static void ShowPalette () {
+  PaletteWindow.ShowPalette ();
+}</pre></div><p>Save and wait for Unity to compile the scripts. Then, in the Unity editor menu, navigate to <span class="strong"><strong>Tools</strong></span> | <span class="strong"><strong>Level Creator</strong></span>. Here, you will see a new item called <span class="strong"><strong>Show Palette</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_04_03.jpg" /></div><p>After you click on it, the Palette window instance will appear over the Unity editor:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_04_04.jpg" /></div><p>You will <a id="id150" class="indexterm"></a>notice that the behavior of this is the same as that of the build-in editor windows of Unity, and you can move it around, dock, minimize, maximize, and close it without problems.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec34"></a>Playing with the EditorWindow message methods</h3></div></div></div><p>In the <code class="literal">EditorWindow</code> class, you will find the same message methods that we saw when we implemented the <a id="id151" class="indexterm"></a>custom inspectors in the previous chapter.</p><p>Let's update the <code class="literal">PaletteWindow.cs</code> script:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+
+namespace RunAndJump.LevelCreator {
+  public class PaletteWindow : EditorWindow {
+
+    public static PaletteWindow instance;
+        
+    public static void ShowPalette () {
+      instance = (PaletteWindow) EditorWindow.GetWindow (typeof(PaletteWindow));
+      instance.titleContent = new GUIContent("Palette");
+    }
+
+    private void OnEnable() {
+      Debug.Log("OnEnable called...");
+    }
+    
+    private void OnDisable() {
+      Debug.Log("OnDisable called...");
+    }
+    
+    private void OnDestroy() {
+      Debug.Log("OnDestroy called...");
+    }
+    
+    private void OnGUI() {
+      EditorGUILayout.LabelField("The GUI of this window was modified.");
+    }
+private void Update () {
+      // Debug.Log("OnGUI called...");
+    }   
+}</pre></div><p>The <code class="literal">OnEnable</code>, <code class="literal">OnDisable</code>, and <code class="literal">OnDestroy</code> methods have the same behavior as explained in <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Creating Custom Inspectors</em></span>.</p><p>Inside the <code class="literal">OnGUI</code> method, you can add your methods to render the GUI. To see how it works, we <a id="id152" class="indexterm"></a>added a label field. This works similar to the <code class="literal">OnInspectorGUI</code> method used for custom inspectors.</p><p>There is also a method called <code class="literal">Update</code>. This is called 100 times per second in all the visible windows. We will use this later for a method that requires working in an asynchronous way.</p><p>After saving and waiting for Unity to compile, go to the Level Creator menu and click on <span class="strong"><strong>Show Palette</strong></span>. The Palette window now will show the GUI element that we added in the <code class="literal">OnGUI</code> method:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_04_05.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note20"></a>Note</h3><p>We<a id="id153" class="indexterm"></a> limited the methods shown here to the ones we need in the <code class="literal">PaletteWindow</code> method, but there are a lot of other functionalities to explore. You can check out more about the <code class="literal">EditorWindow</code> class<a id="id154" class="indexterm"></a> at <a class="ulink" href="http://docs.unity3d.com/ScriptReference/EditorWindow.html" target="_blank">http://docs.unity3d.com/ScriptReference/EditorWindow.html</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec35"></a>Using Hotkeys to trigger menu items</h3></div></div></div><p>When you need to add an entry point to allow people to use your tools, it is a good alternative to create a new menu item in the Unity editor menu so that you can trigger the necessary<a id="id155" class="indexterm"></a> method to initialize and show your tools with just a click.</p><p>The <code class="literal">MenuItem</code> attribute allows you to do this. All you need to do is to ensure that you are using the <code class="literal">UnityEditor</code> namespace and ensure that the target method is static.</p><p>In order to<a id="id156" class="indexterm"></a> save the users' time, you can assign Hotkeys to menu items. The following table shows the strings that you need to add to the path parameter; use the following specific keys (these can also be combined together):</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>String</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Key</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">%</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="emphasis"><em>Ctrl</em></span> on Windows / <span class="emphasis"><em>Command</em></span> on OSX</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">#</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="emphasis"><em>Shift</em></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">&amp;</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="emphasis"><em>Alt</em></span>
+</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">LEFT/RIGHT/UP/DOWN</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>Arrow keys</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">F1…F2</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>F keys</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<code class="literal">HOME, END, PGUP, PGDN</code>
+</p>
+</td><td style="" align="left" valign="top">
+<p>
+<span class="emphasis"><em>Home</em></span>, <span class="emphasis"><em>End</em></span>, <span class="emphasis"><em>Page Up</em></span>, <span class="emphasis"><em>Page Down</em></span>
+</p>
+</td></tr></tbody></table></div><p>Character keys, which are not part of a key sequence, are added by prefixing them with an underscore (for example, <code class="literal">_g</code> for the shortcut key <span class="emphasis"><em>G</em></span>). The Hotkey character combinations are added to the end of the menu item path, preceded by a space.</p><p>We will update the <span class="strong"><strong>Show Palette</strong></span> menu item to make it work with the Hotkey <span class="emphasis"><em>P</em></span> as well. Go to the script <code class="literal">MenuItems.cs</code> and update the method <code class="literal">ShowPalette</code>, as follows:</p><div class="informalexample"><pre class="programlisting">
+<span class="strong"><strong>[MenuItem ("Tools/Level Creator/Show Palette _p")]</strong></span>
+private static void ShowPalette () {
+    PaletteWindow.ShowPalette ();
+}</pre></div><p>Now, if you check the <span class="strong"><strong>Show Palette</strong></span> menu item, you will see the letter <span class="strong"><strong>P</strong></span> at the end. This means that<a id="id157" class="indexterm"></a> you can press <span class="emphasis"><em>P</em></span> on the keyboard and<a id="id158" class="indexterm"></a> open the Palette window:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_04_07.jpg" /></div></div></div>

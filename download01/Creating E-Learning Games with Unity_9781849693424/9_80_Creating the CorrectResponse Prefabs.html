@@ -1,0 +1,14 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec78"></a>Creating the CorrectResponse Prefabs</h2></div></div><hr /></div><p>The <code class="literal">CorrectResponse</code> Prefabs<a id="id477" class="indexterm"></a> are the pop ups that will be instantiated from the <code class="literal">npcDialog</code> (quiz cards) for <code class="literal">LEVEL3</code>. Create these according to the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Copy and paste the <code class="literal">popup_QuizSuccessQuestion</code> Prefab into a new folder in the folder named <code class="literal">Chapter 9</code>.</p></li><li><p>Create 50 unique <code class="literal">CorrectResponse</code> cards—one for each state/NPC dialog interaction.</p></li><li><p>We do not need to pass <code class="literal">missionToken</code> into <code class="literal">missionMgr</code> when this pop up destructs itself, so ensure that there is no <code class="literal">missionToken</code> attached (it will do no harm, but it is redundant).</p></li><li><p>Modify <code class="literal">PopupButtonScript.cs</code> and add an <code class="literal">AwardPoints</code> action. Make sure that when the button is clicked on each of these Prefabs, 500 points are awarded to the user. When the button is clicked, we simply find the <code class="literal">player</code> class and the <code class="literal">playerData</code> component, and then add these values to the score member variable as shown in the following code. Don't forget to add the action to the enumeration at the top of the file:</p><div class="informalexample"><pre class="programlisting">// inside Dispatch()
+case(popupAction.AwardPoints):
+{
+  GameObject p = GameObject.Find ("Player1");
+  if (p)
+  {
+    PlayerData pd = p.GetComponent&lt;PlayerData&gt;();
+    if (pd)
+    {
+      pd.AddScore (r.data.id);
+    }
+  }
+  break;
+}</pre></div></li></ol></div></div>

@@ -1,0 +1,76 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec46"></a>Adding in-game items and power-ups</h2></div></div><hr /></div><p>Next, you <a id="id891" class="indexterm"></a>will learn how to alter the player's attributes by creating in-game<a id="id892" class="indexterm"></a> items that can be picked up by the player. Let's create the prefab in the Unity Editor before proceeding to the script. I did a simple cross-shape prefab using boxes, removed the colliders from the boxes, and attached a sphere collider component to it, which are marked as a trigger. I also set its tag as <code class="literal">Item</code> so that we can use it later. The tag is a very useful functionality in Unity, which allows you to group game objects into the same category for your scripts to identify them during gameplay. For example, you might define <code class="literal">Player</code> and <code class="literal">Enemy</code> tags for player-controlled characters and non-player characters respectively.</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_07_01.jpg" /></div><p>Instead of creating an individual script for every item of different purpose, we can create one universal power-up script that alters different player attributes depending on how we set the variables.</p><p>Therefore, the first thing we need to add to the power-up script is to define all the variables of the item:</p><div class="informalexample"><pre class="programlisting">public float addHealthPoint = 0;
+public float addManaPoint = 0;
+public float addAttackDamage = 0;
+public float addSpecialAttackDamage = 0;
+public float addDefense = 0;</pre></div><p>By <a id="id893" class="indexterm"></a>default, all these variables are set to zero. Developers can then <a id="id894" class="indexterm"></a>apply this script to an item prefab and set the values they want for a particular variable, which means if the player obtains this item, the variable(s) that is not zero will be added to the player's attributes of similar name; for instance, <code class="literal">addHealthPoint</code> will be added to player's <code class="literal">healthPoint</code> variable.</p><p>Next, we will detect whether the item is colliding with the player. If it does, the script will try to access to its <code class="literal">PlayerAttribute</code> script and alter the player's attributes. Last but not least, we need to destroy the item once it has done its job. Make sure that you have set the tag of your player as <code class="literal">Player</code> so that the following code will work properly:</p><div class="informalexample"><pre class="programlisting">void OnTriggerEnter (Collider col)
+{
+  if (col.tag == "Player")
+  {
+    PlayerAttribute playeAttr = col.gameObject.GetComponent&lt;PlayerAttribute&gt;();
+    playeAttr.manaPoint += addManaPoint;
+    playeAttr.healthPoint += addHealthPoint;
+    playeAttr.attackDamage += addAttackDamage;
+    playeAttr.specialAttackDamage += addSpecialAttackDamage;
+    playeAttr.defense += addDefense;
+
+    Destroy(gameObject);
+  }
+}</pre></div><p>The full script looks like this:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class Powerup : MonoBehaviour
+{
+  public float addHealthPoint = 0;
+  public float addManaPoint = 0;
+  public float addAttackDamage = 0;
+  public float addSpecialAttackDamage = 0;
+  public float addDefense = 0;
+
+  void OnTriggerEnter (Collider col)
+  {
+    if (col.tag == "Player")
+    {
+      PlayerAttribute playeAttr = col.gameObject.GetComponent&lt;PlayerAttribute&gt;();
+      playeAttr.manaPoint += addManaPoint;
+      playeAttr.healthPoint += addHealthPoint;
+      playeAttr.attackDamage += addAttackDamage;
+      playeAttr.specialAttackDamage += addSpecialAttackDamage;
+      playeAttr.defense += addDefense;
+
+      Destroy(gameObject);
+    }
+  }
+}</pre></div><p>Once<a id="id895" class="indexterm"></a> we're done with the healing item, we will move on to create another <a id="id896" class="indexterm"></a>type of item which restores the mana point. Since we have already written the item script that can be used to add different attributes, we can reuse the script and skip the coding part! What we need to do next is create the item prefab. Look at the following simple item prefab using several cylinders:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_07_02.jpg" /></div><p>In order to test the effect of the item, we will create the special attack for the player! The special attack will be huge magic bullets shooting out from the player toward eight different directions. The special attack, however, requires the mana point to be full in order to trigger the attack.</p><p>First, we will create the prefab for the bullets. For this demo, I will just use a simple sphere<a id="id897" class="indexterm"></a> created<a id="id898" class="indexterm"></a> in Unity as follows:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_07_03.jpg" /></div><p>Then, we will create a C# script named <code class="literal">BulletMovement.cs</code> and attach it to the prefab we have just created. Within the script, we will ask Unity to move the object toward its front direction and destroy the bullet after 5 seconds. The code looks like this:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class BulletMovement : MonoBehaviour
+{
+  void Start ()
+  {
+    StartCoroutine (DestroyBullet());
+  }
+
+  void Update ()
+  {
+    transform.position += transform.forward * Time.deltaTime * 5;
+  }
+
+  IEnumerator DestroyBullet ()
+  {
+    yield return new WaitForSeconds(5);
+    Destroy (gameObject);
+  }
+}</pre></div><p>Note that in the <code class="literal">Update()</code> function, <code class="literal">Time.deltaTime * 5</code> is added behind the movement equation. <code class="literal">Time.deltaTime</code> is basically the time passed in each tick/frame. By multiplying<a id="id899" class="indexterm"></a> the direction vector with the delta time, the movement <a id="id900" class="indexterm"></a>becomes frame rate independent and the movement speed is guaranteed to be consistent across different computers. The number <code class="literal">5</code> behind the delta time is the speed of the movement. You can increase the number to make the movement faster or decrease it to make it slower.</p><p>After this, open up <code class="literal">PlayerAttack</code> script that we created in the previous chapter. Declare a variable named <code class="literal">bulletPrefab</code> at the beginning of the <code class="literal">PlayerAttack</code> class:</p><div class="informalexample"><pre class="programlisting">public GameObject bulletPrefab;</pre></div><p>Then, add the following code to the bottom of the <code class="literal">Update()</code> function:</p><div class="informalexample"><pre class="programlisting">if (Input.GetMouseButtonDown(1))
+{
+  if (playerAttr.manaPoint &gt;= 100)
+  {
+
+
+    for (int i = 0; i &lt; 8; ++i)
+{
+  Instantiate(bulletPrefab, transform.position + new Vector3(0, 1, 0), transform.rotation * Quaternion.Euler(new Vector3(0, 45 * i, 0)));
+}
+
+    playerAttr.manaPoint -= 100;
+  }
+}</pre></div><p>The preceding code will check whether the player's mana point is 100 (full mana). If it does, then it will spawn eight bullets at the player's position, each having a 45 degree increment in its rotation value. After spawning the bullet prefabs, we will decrease the mana point and make it empty.</p><p>This is how it looks in action:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_07_04.jpg" /></div><p>After <a id="id901" class="indexterm"></a>you have triggered the special attack for the first time, try to trigger it again, and this time nothing happens. This is because the mana point is not 100, and thus you need to go and get the power-up to restore the mana point before you can use the special attack again.</p></div>
