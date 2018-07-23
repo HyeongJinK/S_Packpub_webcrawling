@@ -35,6 +35,7 @@ function playlist(url) {
 //PLFoH8spXdgNFPgSiQR4JuZPz9mxecgBo0
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //PLFoH8spXdgNHUPpEhqktU9IPawKXFpn4B 
 playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNFPgSiQR4JuZPz9mxecgBo0');
 =======
@@ -46,6 +47,9 @@ playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNFPgSiQR4JuZPz9mxecgB
 //PLFoH8spXdgNGU-UFwASZvjN3frQ1d97nr
 playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNGU-UFwASZvjN3frQ1d97nr');
 >>>>>>> 92ff99921525a7daaf87459f61dffc51d8f770c0
+=======
+playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNFPgSiQR4JuZPz9mxecgBo0');
+>>>>>>> parent of 0b33292... 그 동안 변경된 거 걍 커밋
 =======
 playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNFPgSiQR4JuZPz9mxecgBo0');
 >>>>>>> parent of 0b33292... 그 동안 변경된 거 걍 커밋

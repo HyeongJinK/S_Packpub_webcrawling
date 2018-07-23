@@ -1,6 +1,7 @@
 var fs = require('fs');
 var youtubedl = require('youtube-dl');
 <<<<<<< HEAD
+<<<<<<< HEAD
 //https://www.youtube.com/watch?v=6e56m9FgItI
 //https://www.youtube.com/watch?v=G4Dn6c5iX9A
 //https://www.youtube.com/watch?v=pRPooPdWrdc
@@ -28,6 +29,26 @@ var video = youtubedl('https://www.youtube.com/watch?v=W6jwzyAUhsc',
 //https://www.youtube.com/watch?v=mlIjEtKhiB0
 //https://www.youtube.com/watch?v=nTBHnkSM2Tg
 
+=======
+//https://www.youtube.com/watch?v=r5IzCA3aNTo
+//https://www.youtube.com/watch?v=RGm1HhwGjrc
+//https://www.youtube.com/watch?v=quA_3XdRA0E
+//https://www.youtube.com/watch?v=c7mwYpbupx4
+//https://www.youtube.com/watch?v=8ouRa2wHtHQ
+//https://www.youtube.com/watch?v=dXArQsMvM-Y
+//https://www.youtube.com/watch?v=Oy_HKmigg7g
+//https://www.youtube.com/watch?v=WE3-YSTCydU
+//https://www.youtube.com/watch?v=VZTeadiiX70
+//https://www.youtube.com/watch?v=JGIXp5uxp-M
+//https://www.youtube.com/watch?v=o32w-kcDekY
+//https://www.youtube.com/watch?v=zWrDmwdkbT4
+//https://www.youtube.com/watch?v=KGw8NgsI5pI
+//https://www.youtube.com/watch?v=cY6Vcyp-LlM
+//https://www.youtube.com/watch?v=LIsjIOxS0uU
+//https://www.youtube.com/watch?v=mlIjEtKhiB0
+//https://www.youtube.com/watch?v=nTBHnkSM2Tg
+
+>>>>>>> parent of 0b33292... 그 동안 변경된 거 걍 커밋
 
 //https://www.youtube.com/watch?v=VlTC7VdRgFM
 //https://www.youtube.com/watch?v=pDz7J0aH38o
@@ -87,6 +108,9 @@ https://www.youtube.com/watch?v=OamWYK50ahU
 https://www.youtube.com/watch?v=xfIrPCe6ask
 */
 var video = youtubedl('https://www.youtube.com/watch?v=xfIrPCe6ask',
+<<<<<<< HEAD
+>>>>>>> parent of 0b33292... 그 동안 변경된 거 걍 커밋
+=======
 >>>>>>> parent of 0b33292... 그 동안 변경된 거 걍 커밋
   ['--format=18'],
   { cwd: __dirname });

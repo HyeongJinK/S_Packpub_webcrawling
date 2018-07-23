@@ -1,9 +1,0 @@
-<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec34"></a>Changes to UI Controller</h2></div></div><hr /></div><p>The UI Controller will also need to be updated now to make the necessary changes to the <code class="literal">GameMaster</code> object. We would need to update the <code class="literal">LoadLevel()</code> function to the following:</p><pre class="programlisting">public void LoadLevel()&#13;
-{&#13;
-if(GameObject.FindGameObjectWithTag("BASE"))&#13;
-{&#13;
-GameMaster.instance.PC_CC = GameObject.FindGameObjectWithTag("BASE").GetComponent&lt;CharacterCustomization&gt;().PC_CC;&#13;
-}&#13;
-GameMaster.instance.LEVEL_CONTROLLER.LEVEL = 1;&#13;
-GameMaster.instance.LoadLevel();&#13;
-}</pre><p>This will make sure that GameMaster is updated with the proper player character data. Let's go ahead and test the code.</p></div>
