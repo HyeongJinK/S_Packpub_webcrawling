@@ -1,0 +1,96 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec31"></a>Implementing a brainstorming tool in Unity to shuffle ideas</h2></div></div><hr /></div><p>This section will teach us how to use Unity as a faithful companion during the developing stage. The code presented here is not intended for a real purpose, but rather to show Unity within another perspective and learn how to use editor scripts. As a result, the only limit will be your imagination.</p><p>In this chapter, we discussed the importance of brainstorming in order to develop a concept for our application. In particular, we have seen that sometimes one of the key points in brainstorming is to mix ideas in a random order, since a new perspective could arise.</p><p>Now, our goal is to use Unity to create a small brainstorming tool by implementing an editor script. In particular, there will be a text area where it will be possible to insert different ideas (one for each line). Also, there will be a button that extracts one of these ideas at random and displays it in a box below. This is a rough overview of how our project will work:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_005.jpg" /></div><p>
+</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec42"></a>Making a new friend with editor scripts</h3></div></div></div><p>Unity supports scripts that can extend its functionality. In order to use this kind of script, they need to be inside a folder named <code class="literal">Editor</code>. So, if we don't have it in our project, let's start by creating one. Right-click on the <span class="strong"><strong>Project</strong></span> panel, and then <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Folder</strong></span>. Of course, don't forget to rename it <code class="literal">Editor</code>! It's not just a matter of order, but Unity requires this.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec43"></a>Creating an editor script</h3></div></div></div><p>There are many kinds of editor script. However, in this book we will see only the main one: <span class="emphasis"><em>creating a new window</em></span>.</p><p>Inside our <code class="literal">Editor</code> folder, let's create a script, as usual, by right-clicking and then <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>C# Script</strong></span>. We can rename it <code class="literal">BrainstormingTool</code>.</p><p>Double-click to open it.</p><p>This is the general class that Unity creates:</p><pre class="programlisting">using UnityEngine; 
+using System.Collections; 
+ 
+public class BrainstormingTool : MonoBehaviour { 
+ 
+  // Use this for initialization 
+  void Start () { 
+   
+  } 
+   
+  // Update is called once per frame 
+  void Update () { 
+   
+  } 
+} 
+</pre><p>As we can see, it derives from <span class="strong"><strong>MonoBehaviour</strong></span>. The editor script should not be derived from this class, but from special ones dedicated to extend the editor. In this instance, we will use the <span class="strong"><strong>EditorWindow</strong></span> one. Furthermore, we don't need the <code class="literal">Start()</code> and the <code class="literal">Update()</code> functions anymore, so we can remove them. However, to use the <span class="strong"><strong>EditorWindow</strong></span> class we also need to import the Unity Editor library by adding to the beginning of our script the following <code class="literal">using</code> statement:</p><pre class="programlisting">using UnityEditor; 
+</pre><p>Now, our class should look like the following:</p><pre class="programlisting">using UnityEditor; 
+using UnityEngine; 
+using System.Collections; 
+ 
+public class BrainstormingTool : EditorWindow { 
+ 
+} 
+</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec44"></a>Opening a new editor window</h3></div></div></div><p>In the next step, we need to create a function that can create our window containing our brainstorming tool. We can name it <code class="literal">showWindow()</code>. Inside, we need to use the <code class="literal">GetWindow()</code> function to get the window created by this script. So, as a parameter, we pass <code class="literal">typeof BrainstormingTool</code>. We can write the following:</p><pre class="programlisting">    public static void ShowWindow() { 
+        //Show existing window instance. If one doesn't exist, make one. 
+        EditorWindow.GetWindow(typeof(BrainstormingTool)); 
+    } 
+</pre><p>However, there is no way to call this function from Unity so far, even if it is <code class="literal">public</code>. Therefore, we need to add a context menu above the function, which will create a new entry in the toolbar of Unity, as follows:</p><pre class="programlisting">
+<span class="strong"><strong>    // Add menu item named "Brainstorming Tool" to the Window menu</strong></span>
+<span class="strong"><strong>    [MenuItem("Window/Brainstorming Tool")]</strong></span> 
+    public static void ShowWindow() { 
+        //Show existing window instance. If one doesn't exist, make one. 
+        EditorWindow.GetWindow(typeof(BrainstormingTool)); 
+    } 
+</pre><p>As a result, if we save the script, we will be able to have access to our tool, as shown here:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_006.jpg" /></div><p>
+</p><p>Once we click on it, our window will be empty:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_007.jpg" /></div><p>
+</p><p>In fact, we haven't implement anything yet, but just showed how to open the window.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec45"></a>Drawing something inside our editor window</h3></div></div></div><p>Just to get used to editor scripts, let's create an input field as a test.</p><p>We first need a variable to store the string of the input field. So, we can write the following:</p><pre class="programlisting">string testString; 
+</pre><p>Then, in order to draw something within the window, we have to use the <code class="literal">OnGUI ()</code> function. In particular, we use the <code class="literal">EditorGUILayout</code> class and the <code class="literal">TextField()</code> method. So, let's write the following:</p><pre class="programlisting">    void OnGUI() { 
+        testString = EditorGUILayout.TextField(testString, "TextField"); 
+    } 
+</pre><p>If you save the script, and then open your window in Unity, it should look like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_008.jpg" /></div><p>
+</p><p>Great, not bad so far! But let's go further with the next section.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec46"></a>Adding a scrollable text area</h3></div></div></div><p>Now it's time we get started with our brainstorming tool. To begin, we want to create the area where you will be able to insert your ideas, one for each line. In particular, we need a private variable for the scrolling, to keep track of where the scroll bar is in each frame, and a string to store the text area. So, erase the variable from the previous section, and instead add the following two:</p><pre class="programlisting">    Vector2 scroll; 
+    string ideas = "My first Idea"; 
+</pre><p>Then, let's completely rewrite the <code class="literal">OnGUI()</code> function. To improve the aesthetics, we first add a label with the text <code class="literal">Ideas</code>. Then we start our scrollable view in the window, and we add the text area. Finally, we close the scrollable view:</p><pre class="programlisting">    void OnGUI() { 
+        GUILayout.Label("Ideas", EditorStyles.boldLabel); 
+ 
+        scroll = EditorGUILayout.BeginScrollView(scroll); 
+        ideas = EditorGUILayout.TextArea(ideas, GUILayout.Height(position.height - 30)); 
+        EditorGUILayout.EndScrollView(); 
+    } 
+</pre><p>As a result, the following screenshot shows how our brainstorming tool should appear so far:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_009.jpg" /></div><p>
+</p><p>Now, we are close to achieving what we want!</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec47"></a>Inserting a button and implementing the shuffle function</h3></div></div></div><p>At the bottom of our text area, we want a button to extract one of the ideas. So, at the bottom of our <code class="literal">OnGUI()</code> function, we need to insert a button. However, as with all the GUI functions in Unity, the buttons should be inserted in an <code class="literal">if</code> statement, to trigger what should be done once the button is pressed. So we can add the following:</p><pre class="programlisting">        if (GUILayout.Button("Extract")) { 
+            //Button Trigger 
+        } 
+</pre><p>As a result, we will have the button, but nothing would happen if it was pressed. Therefore, let's implement the shuffle functionality.</p><p>To begin, we need to have another variable, an array of strings to store all our single ideas. Then, we need a string variable in which to store the extracted idea. At the end, our variables should be as follows:</p><pre class="programlisting">    Vector2 scroll; 
+    string ideas = "My first Idea"; 
+    string[] ideasArray; 
+    string extractedIdea; 
+</pre><p>Inside the <code class="literal">if</code> statement of the button, we need to split the ideas string into single ideas to store in <code class="literal">ideasArray</code>, and then to get one of those at random to store in the <code class="literal">extractedIdea</code> variable, by using the <code class="literal">Random.Range()</code> function. In fact, the range should be from zero to the length of the array (since the maximum is exclusive). As a result, this will be our code:</p><pre class="programlisting">        if (GUILayout.Button("Extract")) { 
+            ideasArray = ideas.Split('\n'); 
+            extractedIdea = ideasArray[Random.Range(0, ideasArray.Length)]; 
+        } 
+</pre><p>Again, save the script, and see what we have accomplished so far:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_010.jpg" /></div><p>
+</p><p>It is important to note that since we have other elements, the scroll bar is now visible. In this case, we only have the button, after the scroll view. However, when we press the button, nothing happens, just like in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_011.jpg" /></div><p>
+</p><p>This is because we do extract ideas, but there are no components to show the extracted idea. But that's okay, because we're about to learn how to do that in the next section.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec48"></a>Showing the extracted idea</h3></div></div></div><p>After the <code class="literal">if</code> statement with the button, we need to show the extracted idea. For aesthetic purposes, we can separate our window with another label, as follows:</p><pre class="programlisting">GUILayout.Label("Extracted Idea", EditorStyles.boldLabel); 
+</pre><p>Then, we add a <code class="literal">HelpBox</code> area that will show the extracted idea, by using the <code class="literal">extractedIdea</code> variable:</p><pre class="programlisting">EditorGUILayout.HelpBox(extractedIdea, MessageType.None); 
+</pre><p>As a result, this is our final <code class="literal">OnGUI()</code> function:</p><pre class="programlisting">    void OnGUI() { 
+        GUILayout.Label("Ideas", EditorStyles.boldLabel); 
+ 
+        scroll = EditorGUILayout.BeginScrollView(scroll); 
+        ideas = EditorGUILayout.TextArea(ideas, GUILayout.Height(position.height - 30)); 
+        EditorGUILayout.EndScrollView(); 
+ 
+        if (GUILayout.Button("Extract")) { 
+            ideasArray = ideas.Split('\n'); 
+            extractedIdea = ideasArray[Random.Range(0, ideasArray.Length)]; 
+        } 
+ 
+        GUILayout.Label("Extracted Idea", EditorStyles.boldLabel); 
+        EditorGUILayout.HelpBox(extractedIdea, MessageType.None); 
+    } 
+</pre><p>Save the script, and come back to Unity. Now, open our <span class="strong"><strong>Brainstorming Tool</strong></span>. It should look like the following:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_012.jpg" /></div><p>
+</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec49"></a>Testing our brainstorming tool</h3></div></div></div><p>Now, we are ready for the final step-testing. Don't forget to do it, especially before using it. In fact, we need to be sure that there aren't bugs. So, let's insert some random ideas in the text area, one for each line, as shown in the following screenshot:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_013.jpg" /></div><p>
+</p><p>Now, press the button and see which idea has been extracted:</p><p>
+</p><div class="mediaobject"><img src="/graphics/9781786463487/graphics/image_04_014.jpg" /></div><p>
+</p><p>It looks like everything works as it should. You can keep pressing the button to see a different idea extracted. The more ideas you insert, the more effective the tool will be.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note19"></a>Note</h3><p>If you need to remove one of the ideas, don't worry. You can just erase the line of the idea you don't want to have anymore. Remember, removing ideas is part of the brainstorming process, so don't be afraid to do it!</p></div></div></div>

@@ -1,0 +1,161 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec54"></a>Automating the BuildPipeline class</h2></div></div><hr /></div><p>The Build Pipeline <a id="id342" class="indexterm"></a>varies depending on the project, but the core remains the same. You execute a few tasks before you create a build (or several ones), and then you do something with them.</p><p>We will start with the basics, generating a build using editor scripting and then creating several ones for different platforms with just one click.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec72"></a>Adjusting the player settings</h3></div></div></div><p>Usually, before<a id="id343" class="indexterm"></a> creating a build in Unity, you navigate to <span class="strong"><strong>File</strong></span> | <span class="strong"><strong>Build Settings…</strong></span> and click on <span class="strong"><strong>Player Settings</strong></span> in the window that appears:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_FD09_002.jpg" /></div><p>This will display all the properties that you can set for your build in the <span class="strong"><strong>Inspector</strong></span> window, such as <span class="strong"><strong>Company name</strong></span>, <span class="strong"><strong>Application name</strong></span>, version, and so on:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_FD09_003.jpg" /></div><p>We can access <a id="id344" class="indexterm"></a>and set all these parameters using the <code class="literal">PlayerSettings</code> class, which is part of the <code class="literal">UnityEditor</code> namespace.</p><p>Create a new script called <code class="literal">BuildSettings.cs</code> inside <code class="literal">Tools/AppBuilder/Editor</code> and copy the following code into the script:</p><div class="informalexample"><pre class="programlisting">using UnityEditor;
+
+namespace AppBuilder {
+  public class BuildSettings {
+
+    public static void UpdateSettings () {
+      // General
+      PlayerSettings.companyName = "Packtpub";
+      PlayerSettings.productName = "Run And Jump";
+      PlayerSettings.bundleVersion = "1.0";
+
+      // Android
+      PlayerSettings.bundleIdentifier = "com. packtpub.runandjump";
+    }
+  }
+}</pre></div><p>Here, we just modified <a id="id345" class="indexterm"></a>a few properties, but you get the idea.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec73"></a>Using the BuildPipeline class</h3></div></div></div><p>The <code class="literal">BuildPipeline</code> class <a id="id346" class="indexterm"></a>is part of the <code class="literal">UnityEditor</code> namespace and lets you programmatically make video games builds or Asset Bundles.</p><p>For the goal we want to achieve, we will use the method called <code class="literal">BuildPlayer</code>. Using this method is equivalent to pressing the button <span class="strong"><strong>Build</strong></span> in the <span class="strong"><strong>Build Settings</strong></span> window:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_FD09_004.jpg" /></div><p>This method receives the following <a id="id347" class="indexterm"></a>parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<code class="literal">levels</code>: This is <a id="id348" class="indexterm"></a>an array of scenes to be included in the build</p></li><li style="list-style-type: disc"><p>
+<code class="literal">locationPathName</code>: This<a id="id349" class="indexterm"></a> is the path where the application will be built</p></li><li style="list-style-type: disc"><p>
+<code class="literal">target</code>: This is <a id="id350" class="indexterm"></a>the platform for the build we want to create</p></li><li style="list-style-type: disc"><p>
+<code class="literal">options</code>: These<a id="id351" class="indexterm"></a> are additional build options, such as whether to run the built player</p></li></ul></div><p>Regarding the <code class="literal">target</code> parameter, there are so many platforms you can deploy with Unity and their number grows every time with each new version available.</p><p>The following table shows the platforms supported in Unity 5.x:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Mobile</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Desktop</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Console</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Web</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>iOS</p>
+<p>Android</p>
+<p>Windows Phone 8</p>
+<p>BlackBerry 10</p>
+<p>Tizen</p>
+</td><td style="" align="left" valign="top">
+<p>Windows</p>
+<p>Windows Store Apps</p>
+<p>Mac</p>
+<p>Linux/Steam OS</p>
+</td><td style="" align="left" valign="top">
+<p>PS3</p>
+<p>PS4</p>
+<p>PSVita</p>
+<p>Xbox 360</p>
+<p>Xbox One</p>
+<p>Wii U</p>
+</td><td style="" align="left" valign="top">
+<p>Web Player</p>
+<p>Web GL</p>
+</td></tr></tbody></table></div><p>With all<a id="id352" class="indexterm"></a> these alternatives, it is tempting to launch our game across multiple platforms to increase our number of users. Having access to the <code class="literal">BuildPlayer</code> method allows us to automate the creation of all these builds. Let's start coding!</p><p>Create a script called <code class="literal">Builder.cs</code> inside the folder <code class="literal">Tools/AppBuilder/Editor</code> and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+
+namespace AppBuilder {
+  public class Builder {
+
+    private static string[] GetEnabledScenes () {
+      List&lt;string&gt; scenes = new List&lt;string&gt;();
+      foreach (EditorBuildSettingsScene s in EditorBuildSettings.scenes) {
+        if (s.enabled) {
+          scenes.Add(s.path);
+        }
+      }
+      return scenes.ToArray();
+    }
+  }
+}</pre></div><p>The first thing to solve is what Unity scenes are going to be in the build. For this, we write the method <code class="literal">GetEnabledScenes</code>, which looks for all the enabled scenes that appear in the <span class="strong"><strong>Build Settings</strong></span> window using the <code class="literal">UnityEditor</code> class <code class="literal">EditorBuildSettings</code>. This returns an array with strings, where each string is the path of a scene.</p><p>Then, in order to keep everything organized, we will create a folder to save all the builds we make.</p><p>Add the following code inside the <code class="literal">Builder</code> class:</p><div class="informalexample"><pre class="programlisting">private static string buildFolderPath =  Application.dataPath + "/../Build";
+
+public static void CreateBuildFolder () {
+  if (System.IO.Directory.Exists (buildFolderPath)) {
+    System.IO.Directory.Delete (buildFolderPath, true);
+  }
+  System.IO.Directory.CreateDirectory (buildFolderPath);
+}</pre></div><p>Here, we defined <a id="id353" class="indexterm"></a>a variable and a new method. The class <code class="literal">Application</code>, which is part of the <code class="literal">UnityEngine</code> namespace, contains static methods for looking up information about our application, that is, our video game project. The method <code class="literal">dataPath</code> contains the absolute path of the <code class="literal">Assets</code> folder of the Unity project. So, in this case, a folder with the name <code class="literal">Build</code> that is located at the same level as the <code class="literal">Assets</code> folder will be the container of the builds.</p><p>The method <code class="literal">CreateBuildFolder</code> does exactly this, creates a new folder based in the variable <code class="literal">buildFolderPath</code>. Every time we make a build, this folder will be deleted and created again.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note36"></a>Note</h3><p>If you want to use this code as a base for your own projects, you can make improvements such as deleting only the builds you want to rebuild instead of deleting all of them. However, for now, let's keep that behavior.</p></div><p>Time to use the <code class="literal">BuildPipeline</code> class. Add the following block of code inside the <code class="literal">Builder</code> class:</p><div class="informalexample"><pre class="programlisting">public static void Build(BuildTarget target, string buildName) {
+  BuildSettings.UpdateSettings();
+  string[] scenes = GetEnabledScenes();
+  string buildFullPath;
+
+  buildFullPath = buildFolderPath + "/" + target + "/" + buildName;
+  BuildPipeline.BuildPlayer (scenes, buildFullPath, target, BuildOptions.None);
+}</pre></div><p>Here we have a method called <code class="literal">Build</code> that receives an array of the <code class="literal">BuildTarget</code>, an enum that defines which platform we need, and the name of the build. Inside this method, we make use of the <code class="literal">BuildPlayer</code> parameter.</p><p>The core is ready. So, we will now call this method from an editor window.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec74"></a>Creating an editor window and learning about EditorPrefs to persist data</h3></div></div></div><p>Basically, here <a id="id354" class="indexterm"></a>we are creating a tool that helps control the <code class="literal">BuildPipeline</code> class. For interacting with this tool, we will use an editor window. We will render a list of checkboxes, each representing a target platform.</p><p>Inside <code class="literal">Tools/AppBuilder/Editor</code>, create a new script called <code class="literal">SettingsWindow.cs</code>, and copy the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+
+namespace AppBuilder {
+  public class SettingsWindow : EditorWindow {
+
+    private Dictionary&lt;BuildTarget, string&gt; _targets;
+    private const string Prefix = "AppBuilder_";
+
+    public static SettingsWindow instance;
+
+    public static void ShowSettings () {
+      instance = (SettingsWindow)EditorWindow.GetWindow (typeof(SettingsWindow));
+      instance.titleContent = new GUIContent ("AppBuilder");
+    }
+
+    private void OnEnable() {
+      InitTargets();
+    }
+
+    private void InitTargets() {
+      _targets = new Dictionary&lt;BuildTarget, string&gt;();
+      _targets.Add(BuildTarget.StandaloneWindows, "Windows");
+      _targets.Add(BuildTarget.StandaloneLinux, "Linux");
+      _targets.Add(BuildTarget.StandaloneOSXIntel, "MacOS");
+      _targets.Add(BuildTarget.Android, "Android");
+    }
+  }
+}</pre></div><p>We added a <a id="id355" class="indexterm"></a>method called <code class="literal">ShowSettings</code> to display the editor window and also an <code class="literal">OnEnable</code> event. This last one calls a method that creates a dictionary with all the <code class="literal">BuildTarget</code> enums we want to use for the <code class="literal">AppBuilder</code> paired with a string with a "friendly" name for the platform.</p><p>To deal with the checkboxes, that is toggle, we will use the following two methods:</p><div class="informalexample"><pre class="programlisting">private void DrawPlatformToggle(BuildTarget target, string label) {
+// We try to make a unique key for this EditorPref variable
+  string key = Prefix + target.ToString();
+// We define false the default value of the EditorPref if this is not defined
+  bool currentValue = EditorPrefs.GetBool(key, false);
+  EditorPrefs.SetBool(key, GUILayout.Toggle(currentValue, label));
+}
+
+private bool GetPlatformToggleValue(BuildTarget target) {
+  string key = Prefix + target.ToString();
+  return EditorPrefs.GetBool(key, false);
+}</pre></div><p>The <code class="literal">DrawPlatformToggle()</code> method <a id="id356" class="indexterm"></a>wraps the method <code class="literal">Toggle</code> from the <code class="literal">GUILayout</code> class to render checkboxes, but there are a few more interesting things there.</p><p>When you create an editor window, you can make changes to the exposed variables using GUI components, such as a <code class="literal">FoatField</code> variable or, in this case, a <code class="literal">Toggle</code>. These changes will remain until you close the editor window. So, in order to make them persist, you have two options:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Scriptable Object</strong></span>: This is<a id="id357" class="indexterm"></a> created in case you want to make changes to a part of the project</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>EditorPrefs</strong></span>: This is <a id="id358" class="indexterm"></a>used in case you want to make changes to the environment of each developer</p></li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note37"></a>Note</h3><p>On MacOS, the EditorPrefs values are stored in <code class="literal">~/Library/Preferences/com.unity3d.UnityEditor.plist</code>. On Windows, the EditorPrefs values are stored in the registry under the <code class="literal">HKCU\Software\Unity Technologies\UnityEditor</code> key.</p></div><p>An <code class="literal">EditorPref</code> value requires the creation of a key (just a unique string name to identify the variable we want to set or get) and then you can use that key to set or save the following types:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Int</p></li><li style="list-style-type: disc"><p>Float</p></li><li style="list-style-type: disc"><p>Bool</p></li><li style="list-style-type: disc"><p>Strings</p></li></ul></div><p>In our case, we use this with a Bool to represent the state of the toggle, using the methods <code class="literal">GetBool()</code> and <code class="literal">SetBool()</code> (you can expect the same kind of naming convention for the rest of the types).</p><p>Finally, the method <code class="literal">GetPlatformToggleValue()</code> will help us to get that value back and use it in the final part <a id="id359" class="indexterm"></a>of this editor window — the button that generates all the builds we checked.</p><p>Let's add the rest of the code to the class <code class="literal">SettingsWindow</code>:</p><div class="informalexample"><pre class="programlisting">private void OnGUI () {
+  DrawPlatformsGUI();
+  DrawButtonsGUI();
+}
+
+private void DrawPlatformsGUI() {
+  EditorGUILayout.LabelField("Platforms", EditorStyles.boldLabel);
+  EditorGUILayout.BeginVertical("box");
+  foreach(KeyValuePair&lt;BuildTarget, string&gt; entry in _targets) {
+    DrawPlatformToggle(entry.Key, entry.Value);
+  }
+  EditorGUILayout.EndVertical();
+}
+
+private void DrawButtonsGUI() {
+  if(GUILayout.Button("Build",GUILayout.Height(40))) {
+    StartBuildProcess();
+  }
+}
+
+private void StartBuildProcess() {
+  Builder.CreateBuildFolder();
+// We iterate over the toggle values to check what to build
+  foreach(KeyValuePair&lt;BuildTarget, string&gt; entry in _targets) {
+    if(GetPlatformToggleValue(entry.Key)) {
+      Builder.Build(entry.Key, "build");
+    }
+  }
+  EditorUtility.DisplayDialog ("AppBuilder", "Build process has finished!", "Ok");
+}</pre></div><p>This part must be familiar to you based on what we did in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>Creating Editor Windows</em></span>. Here, we added the GUI to the editor window and called the methods from the <code class="literal">Builder</code> class to make the builds.</p><p>The last thing to do is to make a menu item display in this window. Create a script called <code class="literal">MenuItems.cs</code> inside the folder <code class="literal">Tools/AppBuilder/Editor</code> and add the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEditor;
+
+namespace AppBuilder {
+  public class MenuItems {
+
+    [MenuItem ("Tools/AppBuilder/Show Settings")]
+    private static void ShowSettings () {
+      SettingsWindow.ShowSettings();
+    }
+  }
+}</pre></div><p>Save and wait for Unity to <a id="id360" class="indexterm"></a>compile. Then, in the Unity menu, navigate to <span class="strong"><strong>Tools</strong></span> | <span class="strong"><strong>AppBuilder</strong></span> | <span class="strong"><strong>Show Settings</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_FD09_005.jpg" /></div><p>This will display the editor window we created:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_FD09_006.jpg" /></div><p>For now, select the platforms <span class="strong"><strong>Windows</strong></span>, <span class="strong"><strong>Linux</strong></span>, and <span class="strong"><strong>MacOS</strong></span>. Then, click on the <span class="strong"><strong>Build</strong></span> button. Unity will start the process of creating the builds for all the platform in sequence. When the process is done, you will see a dialog window like this:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_FD09_007.jpg" /></div><p>If you go to <a id="id361" class="indexterm"></a>the <code class="literal">Build</code> folder located in the root of your project folder, you will see the following three builds there:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_FD09_008.jpg" /></div><p>You have to admit, this is much faster than creating the builds using the <span class="strong"><strong>Build Settings </strong></span>window and building it through code allows you to hook more actions in the process.</p></div></div>

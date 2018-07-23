@@ -1,0 +1,81 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec36"></a>Implementing the Level Creator modes</h2></div></div><hr /></div><p>Until this point, we have specified the four modes the Level Creator tool would support and a way to <a id="id214" class="indexterm"></a>switch between modes, thanks to the custom GUI we added in the top-left corner of the Scene View.</p><p>In this section, we discuss how to implement each of them.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec48"></a>The View mode</h3></div></div></div><p>When you <a id="id215" class="indexterm"></a>select <span class="strong"><strong>View</strong></span> on Level Creator, you can move or zoom<a id="id216" class="indexterm"></a> around the level grid.</p><p>In the method <code class="literal">ModeHandler</code> we defined, this mode will behave like the Unity View Transform tool. Let's take a look at following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_13.jpg" /></div><p>By default, you will see the hand icon on this mode; by clicking and dragging, you can move all the content in the Scene View.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec49"></a>The Paint mode</h3></div></div></div><p>We started implementing part of the workflow related to this mode in the previous chapters. When <a id="id217" class="indexterm"></a>this mode is selected, the user must select a piece <a id="id218" class="indexterm"></a>from the Palette window, and a reference to this selection will be saved in the variable <code class="literal">_pieceSelected</code> in the <code class="literal">LevelInspector</code> class.</p><p>When the user starts clicking and dragging the mouse over the grid, a copy of the level piece prefab will be added to the level. This will be the responsibility of the <code class="literal">Paint</code> method.</p><p>Let's update that:</p><div class="informalexample"><pre class="programlisting">private void Paint(int col, int row) {
+  // Check out of bounds and if we have a piece selected
+  if(!_myTarget.IsInsideGridBounds(col,row) ||  _pieceSelected == null) {
+    return;
+  }
+  // Check if I need to destroy a previous piece
+  if(_myTarget.Pieces[col + row * _myTarget.TotalColumns] != null) {
+    DestroyImmediate(_myTarget.Pieces[col + row * _myTarget.TotalColumns].gameObject);
+  }
+  // Do paint !
+  GameObject obj = PrefabUtility.InstantiatePrefab( _pieceSelected.gameObject) as GameObject;
+  obj.transform.parent = _myTarget.transform;
+  obj.name = string.Format("[{0},{1}][{2}]", col, row, obj.name);
+  obj.transform.position = _myTarget.GridToWorldCoordinates(col, row);
+  _myTarget.Pieces[col + row * _myTarget.TotalColumns] = obj.GetComponent&lt;LevelPiece&gt;();
+}</pre></div><p>In this method, we <a id="id219" class="indexterm"></a>first check whether the coordinates for<a id="id220" class="indexterm"></a> the column and row are inside the grid and whether we have a level piece prefab selected from the Palette window. Then, if the current cell on the grid has something, we destroy that piece using the method <code class="literal">DestroyImmediate</code>.</p><p>Finally, we proceed to create a copy of the piece in the column and row grid coordinates. To achieve this, we use the <code class="literal">PrefabUtility</code> class, part of the <code class="literal">UnityEditor</code> namespace, and the method <code class="literal">InstantiatePrefab</code>. We are using this class because we want to keep the prefab reference, so if in the future you update the level piece prefabs, with an art change for example, this will be replicated in all the levels.</p><p>It's time to test. Save the changes and wait for unity to compile. Create a new level, and also in the Level Creator menu item, select <span class="strong"><strong>Show Palette</strong></span> as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_14.jpg" /></div><p>In the Palette window, select the category <span class="strong"><strong>Blocks</strong></span> and then select <span class="strong"><strong>Grass</strong></span>. You will have something like this:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_15.jpg" /></div><p>Now, select<a id="id221" class="indexterm"></a> the <span class="strong"><strong>Paint</strong></span> mode and start clicking and dragging the <a id="id222" class="indexterm"></a>mouse over the grid. You are finally creating content with Level Creator!</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_16.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec50"></a>The Erase mode</h3></div></div></div><p>We are<a id="id223" class="indexterm"></a> human beings, so we need to accept that we are not <a id="id224" class="indexterm"></a>perfect and it's because of this that the Erase mode is necessary in the Level Creator tool. This will be the responsibility of the <code class="literal">Erase</code> method inside the <code class="literal">LevelInspector</code> class.</p><div class="informalexample"><pre class="programlisting"> private void Erase(int col, int row) {
+      // Check out of bounds 
+      if(!_myTarget.IsInsideGridBounds(col,row)) {
+        return;
+      }
+      // Do Erase
+      if(_myTarget.Pieces[col + row * _myTarget.TotalColumns] != null) {
+        DestroyImmediate(_myTarget.Pieces[col + row * _myTarget.TotalColumns].gameObject);
+      }
+    }</pre></div><p>This method is<a id="id225" class="indexterm"></a> very simple. We check whether the coordinates<a id="id226" class="indexterm"></a> for the column and row are inside the grid, and if the cell contains a piece, we remove that using the <code class="literal">DestroyImmediate</code> method.</p><p>To test this, save the changes and wait for Unity to compile; then repeat the process for testing the <code class="literal">Paint</code> method (but this time fill the whole grid with different pieces).</p><p>Now, select the <span class="strong"><strong>Erase</strong></span> mode and start clicking and dragging the mouse over the grid. You will start erasing pieces from the grid.</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_17.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec51"></a>The Edit mode</h3></div></div></div><p>In Run &amp; Jump, there are a few pieces that receive parameters using the inspector. A good <a id="id227" class="indexterm"></a>example of this is the <span class="strong"><strong>InteractiveSign</strong></span> piece shown<a id="id228" class="indexterm"></a> here:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_18.jpg" /></div><p>The <code class="literal">InteractiveSignController</code> script, responsible for the logic for the Sign level piece prefab, has a field called <code class="literal">Message</code>, a string that is displayed in the video game as follows:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05-01.jpg" /></div><p>Right now, the way to customize these prefabs is by expanding the level game object in the hierarchy <a id="id229" class="indexterm"></a>window and finding the specific sign piece game <a id="id230" class="indexterm"></a>object.</p><p>To make this process simpler, we will use the Edit mode. In this mode, when you select one of the pieces of the level, the inspector of that level piece prefab is going to be rendered inside the Level Inspector. This is another example of the flexibility Unity offers to customize the editor to our needs.</p><p>Let's update the <code class="literal">Edit</code> method inside the <code class="literal">LevelInspector</code> class:</p><div class="informalexample"><pre class="programlisting">private PaletteItem _itemInspected;
+    
+  private void Edit(int col, int row) {
+    // Check out of bounds 
+    if(!_myTarget.IsInsideGridBounds(col,row) || _myTarget.Pieces[col + row * _myTarget.TotalColumns] == null) {
+      _itemInspected = null;
+    } else {
+      _itemInspected = _myTarget.Pieces[col + row * _myTarget.TotalColumns].GetComponent&lt;PaletteItem&gt;() as PaletteItem;
+    }
+    Repaint();
+  }</pre></div><p>We created a variable called <code class="literal">_itemInspected</code> to save a reference to the piece selected in Edit mode. Then the <code class="literal">Edit</code> method took care of checking whether the column and row are inside the grid and if the cell contains a piece. If this is true, the piece is assigned to <code class="literal">_itemInspected</code>.</p><p>At the end, we added the method <code class="literal">Repaint</code> in order to force the Level Inspector to repaint every time <a id="id231" class="indexterm"></a>we use this method. So if we select a level piece prefab, the<a id="id232" class="indexterm"></a> inspector will be rendered automatically. We need to create a method responsible for rendering this, so we create a new method called <code class="literal">DrawInspectedItemGUI</code>:</p><div class="informalexample"><pre class="programlisting">private void DrawInspectedItemGUI() {
+  // Only show this GUI if we are in edit mode.
+  if(_currentMode != Mode.Edit) {
+    return;
+  }
+
+  //EditorGUILayout.LabelField ("Piece Edited", _titleStyle);
+  EditorGUILayout.LabelField ("Piece Edited",  EditorStyles.boldLabel);
+  
+  if(_itemInspected != null) {
+    EditorGUILayout.BeginVertical("box");
+    EditorGUILayout.LabelField("Name: " + _itemInspected.name);
+    Editor.CreateEditor( _itemInspected.inspectedScript).OnInspectorGUI();
+    EditorGUILayout.EndVertical();
+  } else {
+    EditorGUILayout.HelpBox("No piece to edit!", MessageType.Info);
+  }
+}</pre></div><p>In the previous chapter, we associated a <code class="literal">PaletteItem.cs</code> script with each level piece on the project. One of the fields of this script is called <code class="literal">inspectedScript</code>; it is basically the reference to the main script of each level piece prefab. For example, in the case of InteractiveSign, this is the <code class="literal">InteractiveSignController</code> script.</p><p>The most important thing here is the usage of the method <code class="literal">CreateEditor</code> from the class <code class="literal">Editor</code>. This creates a custom editor for the target object you pass as a parameter. Then we access to the method <code class="literal">OnInspectorGUI</code> of that target object. This opens the possibility of rendering an inspector in any part of Unity.</p><p>Now we need to call the <code class="literal">DrawInspectedItemGUI</code> function from the method <code class="literal">OnInspectorGUI</code> of the <code class="literal">LevelInspector</code> class:</p><div class="informalexample"><pre class="programlisting">public override void OnInspectorGUI () {
+  // DrawDefaultInspector();
+  DrawLevelDataGUI ();
+  DrawLevelSizeGUI ();
+  DrawPieceSelectedGUI ();
+<span class="strong"><strong>  DrawInspectedItemGUI ();</strong></span>
+  if (GUI.changed) {
+    EditorUtility.SetDirty (_myTarget);
+  }
+}</pre></div><p>Finally, update<a id="id233" class="indexterm"></a> the <code class="literal">ModeHandler</code> method in order to repaint the<a id="id234" class="indexterm"></a> inspector every time we change the mode in the Level Creator tool:</p><div class="informalexample"><pre class="programlisting">private void ModeHandler () {
+  switch (_selectedMode) {
+  case Mode.Paint:
+  case Mode.Edit:
+  case Mode.Erase:
+    Tools.current = Tool.None;
+    break;
+  case Mode.View:
+  default:
+    Tools.current = Tool.View;
+    break;
+  }
+
+  if(_selectedMode != _currentMode) {
+    _currentMode = _selectedMode;
+<span class="strong"><strong>    _itemInspected = null;</strong></span>
+<span class="strong"><strong>    Repaint();</strong></span>
+  }
+  // Force 2D Mode!
+  SceneView.currentDrawingSceneView.in2DMode = true;
+}</pre></div><p>To test this, save the changes and wait for Unity to compile, then repeat the process you did for testing the <code class="literal">Paint</code> method but now add at least one Sign.</p><p>Now, select the <span class="strong"><strong>Edit</strong></span> mode and click on the Sign level piece prefab. You will see this on the bottom of the Level Inspector:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_05_20.jpg" /></div><p>The sign <a id="id235" class="indexterm"></a>piece inspector is being rendered inside the<a id="id236" class="indexterm"></a> Level Inspector; now, with one click you have access to the custom options for the piece.</p></div></div>

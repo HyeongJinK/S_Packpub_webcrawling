@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec41"></a>Water layers</h2></div></div><hr /></div><p>A water layer contains information about a water surface <a id="id297" class="indexterm"></a>such as height level, texture, tiling, reflection, speed of waves, and so on.</p><p>Water is a simple plane object that fits the assigned zone, positioned at a height specified in the "level" parameter. By changing the "level" we can move the water plane up and down, intersecting the terrain.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note03"></a>Note</h3><p>A plane is a 2D surface. <a id="id298" class="indexterm"></a>The simplest is a quad made up of two triangles.</p></div><p>Sometimes in 3D engines that use water planes, ugly z-fighting artifacts are visible in areas where the ground geometry intersects the water plane, usually in the middle. This effect is more visible the higher the viewer is relative to the plane.</p><p>Terrain geometry <a id="id299" class="indexterm"></a>close to the water plane is near coplanar <a id="id300" class="indexterm"></a>(lying in the same plane), as a result of mathematical inaccuracies this can cause parts of the <a id="id301" class="indexterm"></a>z-buffer to "fight" for dominance.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note04"></a>Note</h3><p>The <a id="id302" class="indexterm"></a>
+<span class="strong"><strong>z-buffer</strong></span> is an offscreen area which stores the depth of each generated onscreen pixel. Almost every 3D system uses one.</p></div><p>Z-fighting is <a id="id303" class="indexterm"></a>greatly reduced by using coverage masks, these work in the same way as any other texture mask. A water mask hides the water plane where it is hidden by terrain and thus avoids most of the z-fighting issues. This mask can be generated automatically using one of the procedural water tools which we'll look at shortly. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec37"></a>Creating a new water layer</h3></div></div></div><p>Let's come back to the layer stack. As before we hit the <a id="id304" class="indexterm"></a>drop-down control and set the layer stack mode to <span class="strong"><strong>Water</strong></span> as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849699396/graphics/9182_06_01.jpg" /></div><p>In this window:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+Click on the <span class="inlinemediaobject"><img src="/graphics/9781849699396/graphics/9182OS_06_20.jpg" /></span> (page) button to add a new layer.
+</p></li><li style="list-style-type: disc"><p>Ensure we have at least one terrain zone selected. Right-click on the layer and select <span class="strong"><strong>Assign to selection</strong></span>.</p></li></ul></div><p>This will launch the <a id="id305" class="indexterm"></a>
+<span class="strong"><strong>New Water Layer</strong></span> dialog as <a id="id306" class="indexterm"></a>shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849699396/graphics/9182_06_02.jpg" /></div><p>Options in this window break down into several categories: <span class="strong"><strong>Masks</strong></span>, <span class="strong"><strong>Global Settings</strong></span>, <span class="strong"><strong>Waves</strong></span>, <span class="strong"><strong>Coloring</strong></span>, and <span class="strong"><strong>Lighting</strong></span>. All of these can be edited later <a id="id307" class="indexterm"></a>but let's step through the settings here.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec32"></a>Masks</h4></div></div></div><p>We use a mask if we don't want a solid water plane under our <a id="id308" class="indexterm"></a>
+<a id="id309" class="indexterm"></a>zones. If we click on the <span class="strong"><strong>New...</strong></span> button for the mask we get the standard <span class="strong"><strong>New image</strong></span> dialog (we've seen it before in other mask functions and it works in the same way). Remember, the color of the mask determines visibility, black is hidden, white is visible. </p><p>The resolution will determine how jagged the mask is. The default <a id="id310" class="indexterm"></a>
+<a id="id311" class="indexterm"></a>size of 512 is enough for most zones.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec33"></a>Global settings</h4></div></div></div><p>The <span class="strong"><strong>Level</strong></span> setting is the height of the water (or Y-value in the GROME coordinate system).You can change this at any time to adjust the height of the <a id="id312" class="indexterm"></a>
+<a id="id313" class="indexterm"></a>water plane. If you do, you may need to rebuild masks so they fit the terrain zone at the new height value. The <span class="strong"><strong>Tiles no.</strong></span> value sets the tessellation of the water plane. We can keep this at a minimum.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec34"></a>Waves</h4></div></div></div><p>The effect of water surface motion is created by scrolling two normalmaps (numbered 1 and 2) at different scales and speeds. By adjusting the <span class="strong"><strong>Waves perturb</strong></span> and tiling values for both normalmaps we can get good variations of surface <a id="id314" class="indexterm"></a>
+<a id="id315" class="indexterm"></a>composition. The direction speed is a 2D vector (one value for each axis of motion).</p><p>The water in the following screenshot was created to offer a sensation of moderate wind over a large body of water. The settings are shown in the following table:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom"> </th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Normalmap 1</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Normalmap 2</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Tiling</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>64</p>
+</td><td style="" align="left" valign="top">
+<p>62</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Speed</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>0.2</p>
+</td><td style="" align="left" valign="top">
+<p>0.3</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Direction</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>1,0</p>
+</td><td style="" align="left" valign="top">
+<p>1,0</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Rot</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>90</p>
+</td><td style="" align="left" valign="top">
+<p>90</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Perturb</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>0.5</p>
+</td><td style="" align="left" valign="top">
+<p>0.5</p>
+</td></tr></tbody></table></div><p>These settings will produce an output as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781849699396/graphics/9182_06_03.jpg" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec35"></a>Coloring</h4></div></div></div><p>These settings adjust the color tint of the water. <a id="id316" class="indexterm"></a>
+<a id="id317" class="indexterm"></a>Reflectivity is an interpolation value between the water color and the environment map (reflective surface). When the reflection amount is set to 100 percent no color tint is visible. As we reduce the reflectivity, we begin to see through the water and the depths below.</p><p>One point to note, it's possible to have multiple water layers in a zone, we might want water features at different heights. If we do this, GROME has to rerender the reflection buffer for each one, so it's wise not to do that too often.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch06lvl3sec36"></a>Lighting</h4></div></div></div><p>Lighting options fine tune how the water shader renders <a id="id318" class="indexterm"></a>
+<a id="id319" class="indexterm"></a>global lighting with the wave normal maps. They permit the adjustment of bright specular coloring and ambient light intensity on water planes. <a id="id320" class="indexterm"></a>
+<a id="id321" class="indexterm"></a>Fine tune these for your scene, usually the default values can be left as is.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec38"></a>Shadows on water layers</h3></div></div></div><p>If we have a material layer used as a shadowmap, we can apply the shadowmap to our water layers from the bottom of the layer stack. Expand the <a id="id322" class="indexterm"></a>water layer and click on any of the children and you should see in the <span class="strong"><strong>Parameters</strong></span> tab at the bottom, all the values we can change for the layer, including the <span class="strong"><strong>Shadowmap</strong></span>. We can also use a material layer to add a diffuse color to the water plane.</p><div class="mediaobject"><img src="/graphics/9781849699396/graphics/9182_06_04.jpg" /></div><p>That covers the water layer, time to move on and run through the water toolset.</p></div></div>

@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec22"></a>Working with layouts</h2></div></div><hr /></div><p>We have explained the <a id="id113" class="indexterm"></a>
+<code class="literal">EditorGUILayout</code> and <code class="literal">GUILayout</code> class, which have several GUI elements that adapt automatically to the inspector following the layout restrictions. By default, all these elements stack in a vertical way, so the first element you call in your code is on the top of the inspector and the last one at the bottom.</p><p>You can manipulate how these elements are displayed using a few methods from the <code class="literal">EditorGUILayout</code> class. We will explore the ones that place elements in horizontal and vertical ways.</p><p>To place your GUI elements in a horizontal way, you need to use a couple of methods from the <code class="literal">EditorGUILayout</code> class, as follows:</p><div class="informalexample"><pre class="programlisting">EditorGUILayout.BeginHorizontal();
+// GUI element 1
+// GUI element 2
+// GUI element 3
+EditorGUILayout.EndHorizontal();</pre></div><p>You will get something like this:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_03_11.jpg" /></div><p>To place your GUI elements in a vertical way, you need to use a couple of methods from the <code class="literal">EditorGUILayout</code> class, as follows:</p><div class="informalexample"><pre class="programlisting">EditorGUILayout.BeginVertical();
+// GUI element 1
+// GUI element 2
+// GUI element 3
+EditorGUILayout.EndVertical();</pre></div><p>You will get something like this:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_03_12.jpg" /></div><p>You can always <a id="id114" class="indexterm"></a>nest different layout arrangements to create more complex layouts. To demonstrate this, we will improve how the GUI from <code class="literal">DrawLevelSizeGUI</code> is displayed.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec26"></a>Creating complex layouts</h3></div></div></div><p>Using the current <a id="id115" class="indexterm"></a>code from the <code class="literal">DrawLevelSizeGUI</code> method, we will change how the different GUI elements are placed using layouts. To have a better idea about how to mix the horizontal and vertical layouts, let's look at the following diagram:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_03_13.jpg" /></div><p>Based on this <a id="id116" class="indexterm"></a>diagram, we will place the layout methods as follows:</p><div class="informalexample"><pre class="programlisting">private void DrawLevelSizeGUI () {
+  EditorGUILayout.LabelField ("Size", EditorStyles.boldLabel);
+<span class="strong"><strong>  EditorGUILayout.BeginHorizontal ("box");</strong></span>
+<span class="strong"><strong>  EditorGUILayout.BeginVertical ();</strong></span>
+  _newTotalColumns = EditorGUILayout.IntField ("Columns", Mathf.Max (1, _newTotalColumns));
+  _newTotalRows = EditorGUILayout.IntField ("Rows", Mathf.Max (1, _newTotalRows));
+  
+<span class="strong"><strong>  EditorGUILayout.EndVertical ();</strong></span>
+<span class="strong"><strong>  EditorGUILayout.BeginVertical ();</strong></span>
+
+  // with this variable we can enable or disable GUI
+  bool oldEnabled = GUI.enabled;
+  GUI.enabled = (_newTotalColumns != _myTarget.TotalColumns || _newTotalRows != _myTarget.TotalRows);
+  bool buttonResize = GUILayout.Button ("Resize", GUILayout.Height (2 * EditorGUIUtility.singleLineHeight));
+  if (buttonResize) {
+    if (EditorUtility.DisplayDialog (
+      "Level Creator",
+      "Are you sure you want to resize the level?\nThis action cannot be undone.",
+      "Yes", 
+      "No")) {
+      ResizeLevel ();
+    }
+  }
+    bool buttonReset = GUILayout.Button ("Reset");
+    if (buttonReset) {
+        ResetResizeValues ();
+    }
+    GUI.enabled = oldEnabled;
+    
+<span class="strong"><strong>    EditorGUILayout.EndVertical ();</strong></span>
+<span class="strong"><strong>    EditorGUILayout.EndHorizontal ();</strong></span>
+}</pre></div><p>If you check the <a id="id117" class="indexterm"></a>level custom inspector, you will see something like this:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_03_14.jpg" /></div><p>To the first <code class="literal">EditorGUILayout.BeginHorizontal</code> method, we passed a parameter, which is a string with the value <code class="literal">box</code>; this is a way to use GUIStyles in our components. Again, this will be covered soon in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Changing the Look and Feel of the Editor with GUI Styles and GUI Skins</em></span>, but for now, gives a nice touch to our inspector.</p><p>Let's do the same to the top part of the inspector by updating the method <code class="literal">DrawLevelDataGUI</code>:</p><div class="informalexample"><pre class="programlisting">private void DrawLevelDataGUI () {
+      EditorGUILayout.LabelField ("Data", EditorStyles.boldLabel);
+<span class="strong"><strong>      EditorGUILayout.BeginVertical ("box");</strong></span>
+      _myTarget.TotalTime = EditorGUILayout.IntField ("Total Time", Mathf.Max (0, _myTarget.TotalTime));
+      _myTarget.Gravity = EditorGUILayout.FloatField ("Gravity", _myTarget.Gravity);
+      _myTarget.Bgm = (AudioClip)EditorGUILayout.ObjectField ("Bgm", _myTarget.Bgm, typeof(AudioClip), false);
+      _myTarget.Background = (Sprite)EditorGUILayout.ObjectField ("Background", _myTarget.Background, typeof(Sprite), false);
+<span class="strong"><strong>      EditorGUILayout.EndVertical ();</strong></span>
+    }</pre></div><p>At this point, your <a id="id118" class="indexterm"></a>inspector should look like this:</p><div class="mediaobject"><img src="/graphics/9781785281853/graphics/B04640_03_15.jpg" /></div><p>We are getting closer to the final result, but before we continue, let's look at another way to add custom GUIs to our inspectors.</p></div></div>

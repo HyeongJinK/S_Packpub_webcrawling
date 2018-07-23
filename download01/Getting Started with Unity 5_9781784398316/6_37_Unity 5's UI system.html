@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec38"></a>Unity 5's UI system</h2></div></div><hr /></div><p>Unity's UI system<a id="id260" class="indexterm"></a> has recently been re-engineered and is now more powerful than ever. Perhaps the most important concept to grasp is the Canvas object. All UI elements are contained in a canvas. Projects and scenes can have more than one canvas. You can think of a canvas as a container for UI elements.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec45"></a>Canvas</h3></div></div></div><p>To create a<a id="id261" class="indexterm"></a> canvas, you simply navigate and select <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>UI</strong></span> | <span class="strong"><strong>Canvas</strong></span> from the drop-down menu. You can see from the <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>UI</strong></span> menu pop-up that there are 11 different UI elements, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781784398316/graphics/3852_06_04.jpg" /></div><p>Alternatively, you can create your first UI element, such as a button, and Unity will automatically create a canvas for you and add it to your <span class="strong"><strong>Hierarchy</strong></span> view. When you create subsequent UI elements, simply highlight the canvas in the <span class="strong"><strong>Hierarchy</strong></span> view and then navigate to <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>UI</strong></span> menu to select a new UI element.</p><p>The following table is a brief description of each of the UI elements:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>UI element</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Description</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>Panel</p>
+</td><td style="" align="left" valign="top">
+<p>A frame object.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Button</p>
+</td><td style="" align="left" valign="top">
+<p>A standard button that can be clicked.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Text</p>
+</td><td style="" align="left" valign="top">
+<p>Text with standard text formatting.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Image</p>
+</td><td style="" align="left" valign="top">
+<p>Images can be simple, sliced, tiled, and filled.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Raw image</p>
+</td><td style="" align="left" valign="top">
+<p>Texture file.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Slider</p>
+</td><td style="" align="left" valign="top">
+<p>Slider with min and max values.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Scrollbar</p>
+</td><td style="" align="left" valign="top">
+<p>Scrollbar with values between 0 and 1.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Toggle</p>
+</td><td style="" align="left" valign="top">
+<p>Standard checkbox; can also be grouped.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Input field</p>
+</td><td style="" align="left" valign="top">
+<p>Text input field.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Canvas</p>
+</td><td style="" align="left" valign="top">
+<p>The game object container for UI elements.</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Event system</p>
+</td><td style="" align="left" valign="top">
+<p>Allows us to trigger scripts from UI elements. An event system is automatically created when you create a canvas.</p>
+</td></tr></tbody></table></div><p>You can have multiple <a id="id262" class="indexterm"></a>canvases in your game. As you start building larger games, you'll likely find a use for more than one canvas.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec46"></a>Render mode</h3></div></div></div><p>There are a few <a id="id263" class="indexterm"></a>settings in the <span class="strong"><strong>Inspector</strong></span> view that you should be aware of regarding your canvas game object. The first setting is the <span class="strong"><strong>Render Mode</strong></span>. There are three settings: <span class="strong"><strong>Screen Space – Overlay</strong></span>, <span class="strong"><strong>Screen Space – Camera</strong></span>, and <span class="strong"><strong>World Space</strong></span>, as shown in the following image:</p><div class="mediaobject"><img src="/graphics/9781784398316/graphics/3852_06_05.jpg" /></div><p>This render mode is the one we'll use in our game. I'll show you how to do that later in the chapter. In this render mode, the canvas is automatically resized when the user changes the size or resolution of the game screen. The second render mode, <span class="strong"><strong>Screen Space – Camera</strong></span>, has a plane distance property that determines how far the canvas is rendered from the camera. The third render mode is <span class="strong"><strong>World Space</strong></span>. This mode gives you the most control and can be manipulated much like any other game object.</p><p>I recommend experimenting with different render modes so that you know which one you like best and when to use each one.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec47"></a>Creating a GUI</h3></div></div></div><p>Creating a GUI <a id="id264" class="indexterm"></a>in Unity is a relatively easy task. We first create a canvas, or have Unity create it for us, when we create our first UI element. Next, we simply add the desired UI elements to our canvas. Once all the necessary elements are in your canvas, you can arrange and format them.</p><p>It is often best to switch to 2D mode in the <span class="strong"><strong>Scene</strong></span> view when placing the UI elements on the canvas. This simply makes the task a bit easier:</p><div class="mediaobject"><img src="/graphics/9781784398316/graphics/3852_06_06.jpg" /></div><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip07"></a>Tip</h3><p>If you have<a id="id265" class="indexterm"></a> used earlier versions of Unity, you'll notice that several things have changed regarding creating and referencing GUI elements. For example, you'll need to include the using <code class="literal">UnityEngine.UI;</code> statement before referencing UI components. Also, instead of referencing GUI text as <code class="literal">public GUIText waterHeld;</code>, you now use <code class="literal">public Text waterHeld;</code>.</p></div></div></div>

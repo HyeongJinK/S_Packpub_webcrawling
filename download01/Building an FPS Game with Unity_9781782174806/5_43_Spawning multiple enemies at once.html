@@ -1,0 +1,74 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec45"></a>Spawning multiple enemies at once</h2></div></div><hr /></div><p>Taking <a id="id379" class="indexterm"></a>this a little further, we can <a id="id380" class="indexterm"></a>create another script that can be used to spawn multiple enemies at once.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Go to the <code class="literal">MyGame/Scripts</code> folder, navigate to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>New C# Script</strong></span>, and call it  <code class="literal">SpawnEnemiesOnTrigger</code>. Once you've finished, double-click on the created file to open MonoDevelop.</p></li><li><p>Once the file is opened, put in the following code if you're using RAIN:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic; // List
+
+public class SpawnEnemiesOnTrigger : MonoBehaviour 
+{
+  // Enemy to spawn
+  public GameObject enemy;
+  
+  // Where to be spawned at
+  public List&lt;Transform&gt; spawnPoints;
+  
+  // Has this happened already?
+  private bool hasTriggered = false;
+  
+  void OnTriggerEnter(Collider other) 
+  {
+    //If the player touches the trigger, and if it hasn't 
+      // been triggered before
+    if(other.tag == "Player" &amp;&amp; hasTriggered == false)
+    {
+      foreach(var spawnPoint in spawnPoints)
+      {
+        // Spawn a new enemy using the properties from the 
+          // spawnPoint object
+        GameObject newEnemy = Instantiate(enemy, 
+                         spawnPoint.position, 
+                         spawnPoint.rotation) 
+                         as GameObject;
+      }
+
+      // We only want this to happen once.
+      hasTriggered = true;
+    }
+  }
+}</pre></div><p>If you're <a id="id381" class="indexterm"></a>using <a id="id382" class="indexterm"></a>Shooter AI, add in the following code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+using System.Collections.Generic; // List
+
+public class SpawnEnemiesOnTrigger : MonoBehaviour 
+{
+  // Enemy to spawn
+  public GameObject enemy;
+  
+  // Where to be spawned at
+  public List&lt;Transform&gt; spawnPoints;
+  
+  // Has this happened already?
+  private bool hasTriggered = false;
+  
+  void OnTriggerEnter(Collider other) 
+  {
+    //If the player touches the trigger, and if it hasn't 
+      // been triggered before
+    if(other.tag == "Player" &amp;&amp; hasTriggered == false)
+    {
+      foreach(var spawnPoint in spawnPoints)
+      {
+        // Spawn a new enemy using the properties from the 
+        // spawnPoint object
+        GameObject newEnemy = Instantiate(enemy, 
+                             spawnPoint.position, 
+                             spawnPoint.rotation) 
+                             as GameObject;
+        //Tell enemy to go to the player
+        newEnemy.GetComponent&lt;NavMeshAgent&gt;().SetDestination(other.transform.position);
+      }
+      
+      // We only want this to happen once.
+      hasTriggered = true;
+    }
+  }
+}</pre></div><p>This code <a id="id383" class="indexterm"></a>is different from our previously created one in a few ways. For instance, now, <code class="literal">spawnPoint</code> is <code class="literal">spawnPoints</code> and its type is <code class="literal">List&lt;Transform&gt; </code>or a list of transforms. This is basically a group of multiple objects with the <code class="literal">Transform</code> component attached, which we can then walk through (known in programmer lingo as <a id="id384" class="indexterm"></a>
+<span class="strong"><strong>iteration</strong></span>, which is what <code class="literal">foreach</code> is for) and do something about for each point, in this case, spawning an enemy.</p></li><li><p>Save the <a id="id385" class="indexterm"></a>file and go back into the editor. Now, remove our previously created component by right-clicking on the component in the <span class="strong"><strong>Inspector</strong></span> tab and selecting <span class="strong"><strong>Remove Component</strong></span>. After this, drag the <code class="literal">SpawnEnemiesOnTrigger </code>script that we've just written onto the object to add it.</p><p>At this point, you may notice that we can do everything that we did with <code class="literal">SpawnEnemyOnTrigger</code> inside the <code class="literal">SpawnEnemiesOnTrigger</code> class, so you can delete it if you'd like.</p></li><li><p>Next, in the <span class="strong"><strong>Inspector</strong></span> tab, go down to the newly created component and drag and drop our Enemy prefab into the <span class="strong"><strong>Enemy</strong></span> slot just like we did before. Then, expand the <span class="strong"><strong>Spawn Points</strong></span> property. Next, change <span class="strong"><strong>Size </strong></span>to <code class="literal">2</code> and you'll see two slots open up.</p></li><li><p>We need <a id="id386" class="indexterm"></a>to create two objects to <a id="id387" class="indexterm"></a>be our spawn points. A little trick to this is that when we select an object in the <span class="strong"><strong>Hierarchy </strong></span>tab and create a new Game Object, it will be created in the center of this object. So, select the Simple Room that our enemies are in, and then navigate to <span class="strong"><strong>Game Object</strong></span> | <span class="strong"><strong>Create Empty Child</strong></span>. With the new object created, change its name to <code class="literal">Spawn Point</code>.</p><p>By default, the object is invisible unless we have it selected, in which case, we can see the transform gizmo, so we may want to add some visuals to it to make it easier to see and position it where we want it to be placed.</p></li><li><p>Click on the icon to the left-hand side of the name and you'll see the <span class="strong"><strong>Select Icon</strong></span> window pop up. Select one of the top icons and you'll see that the object will have the object's name appear where it is currently located.</p><div class="mediaobject"><img src="/graphics/9781782174806/graphics/B04317_05_55.jpg" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note62"></a>Note</h3><p>For information on<a id="id388" class="indexterm"></a> the Icon Display controls, check out <a class="ulink" href="http://docs.unity3d.com/420/Documentation/Manual/GizmoandIconVisibility.html" target="_blank">http://docs.unity3d.com/420/Documentation/Manual/GizmoandIconVisibility.html</a>.</p></div></li><li><p>Now, we <a id="id389" class="indexterm"></a>can <a id="id390" class="indexterm"></a>move this object where we want it, duplicate it, and move it to another position so that we now have two spawn points to spawn something from.</p></li><li><p>Lastly, select our trigger object once more, go back to the<span class="strong"><strong> Inspector</strong></span> tab, and assign the spawn points into each element of the spawn points.</p><div class="mediaobject"><img src="/graphics/9781782174806/graphics/B04317_05_56.jpg" /></div></li><li><p>Save <a id="id391" class="indexterm"></a>your <a id="id392" class="indexterm"></a>scene and play the game!</p><div class="mediaobject"><img src="/graphics/9781782174806/graphics/B04317_05_57.jpg" /></div></li></ol></div><p>We can now <a id="id393" class="indexterm"></a>spawn as many enemies as we <a id="id394" class="indexterm"></a>want and have them come in from multiple directions! We're now in a position to create many different kinds of combat scenarios!</p></div>

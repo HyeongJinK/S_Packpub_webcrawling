@@ -1,0 +1,20 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec49"></a>Keeping track of the number of lives</h2></div></div><hr /></div><p>To track the number of lives, we will need to create an object that includes information on the game (for example, number of lives) and that is kept across scenes (by default, objects are not kept across scenes).</p><p>Within <a id="id645" class="indexterm"></a>the scene <code class="literal">splashScreen</code>, create a new empty object, and label it <code class="literal">playerData</code>. This object will be used to keep information on the player, including the number of lives. Create a new script in the folder <span class="strong"><strong>Assets</strong></span> | <span class="strong"><strong>chapter6</strong></span> | <span class="strong"><strong>Scripts</strong></span>, rename it <code class="literal">playerData</code>, and attach it to the object <code class="literal">playerData</code>. Open the script <code class="literal">playerData</code> and add the following code:</p><div class="informalexample"><pre class="programlisting">public var nbLives:int = 3;
+function Start () {}
+function getNbLives()
+{
+  return nbLives;
+}
+function Update () {}
+function Awake ()
+{
+    DontDestroyOnLoad (transform.gameObject);
+   if (Application.loadedLevelName == "splashScreen") nbLives = 3;
+}</pre></div><p>In the previous code, we create a new variable, <code class="literal">nbLives</code>, that will be used to store the number of <a id="id646" class="indexterm"></a>lives for the player. We also create a function, <code class="literal">getNbLives</code>, that <a id="id647" class="indexterm"></a>will return the number of lives. This will be useful in deciding whether the player can restart the current level after losing a life or if the game is over. Finally, we create a function <code class="literal">Awake</code>, and specify, within this function, that this <a id="id648" class="indexterm"></a>object will not be destroyed when loading another scene. In other words, the information contained in this script will be kept across scenes or when the scene is reloaded. We also set the number of lives to <code class="literal">3</code> when the player starts a new game.</p><p>Open the<a id="id649" class="indexterm"></a> script <code class="literal">healthBar</code> and <a id="id650" class="indexterm"></a>add the following script to the function <code class="literal">Update</code>:</p><div class="informalexample"><pre class="programlisting">if (currHealth &lt;=0)
+{
+  if (GameObject.Find("playerData").GetComponent(playerData).getNbLives()&gt;0)
+  {
+  GameObject.Find("playerData").GetComponent(playerData).nbLives -= 1;
+    Application.LoadLevel(Application.loadedLevelName);
+  }
+  else  Application.LoadLevel("gameOver");
+}</pre></div><p>In the<a id="id651" class="indexterm"></a> previous code, the game is over if the player's health is <code class="literal">0</code> or less and he/she has no more lives. To be able to display the number of lives, we can create a new <code class="literal">GUIText</code> object, rename it <code class="literal">GUIText_nbLives</code>, set its position to (x=0.16, y=0.98, z=0), and add the following code inside the script <code class="literal">healthBar</code>, within the function <code class="literal">Start</code>:</p><div class="informalexample"><pre class="programlisting">GameObject.Find("GUIText_nbLives").guiText.text="NB Lives: "+ GameObject.Find("playerData").GetComponent(playerData).getNbLives();</pre></div><p>Play the scene <code class="literal">splashScreen</code> and check that the game behaves as planned.</p></div>

@@ -1,0 +1,363 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec42"></a>Player inputs and character movements</h2></div></div><hr /></div><p>We are now done constructing the basic user interface. Now, let's move on to player inputs and <a id="id856" class="indexterm"></a>character movements! A game character, especially <a id="id857" class="indexterm"></a>the one who gets controlled by the player, usually contains tons of different states, such as idling, running, attack, and so on, which changes frequently based on the mix of player inputs and other conditions, such as health point, timer, and so on.</p><p>The following is an example of a basic character structure displayed in a flow chart:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_06_15.jpg" /></div><p>In Unity, there are many ways to move an object or a character, such as adjusting the variables of the transform directly, or applying force to a rigid body, or using a navigation mesh agent to automatically calculate the shortest path, and so on. In this case, we would need to use the character controller instead, which can be found at <span class="strong"><strong>Component</strong></span> | <span class="strong"><strong>Physics</strong></span> | <span class="strong"><strong>Character Controller</strong></span>. After adding the character controller component to your game character, we can start writing the code. We will create a new C# script called <code class="literal">PlayerMovement.cs</code>.</p><p>First of all, there are several variables that we need to declare, such as the walking speed, jumping <a id="id858" class="indexterm"></a>strength, value for acceleration, and so on, which will be<a id="id859" class="indexterm"></a> used to simulate the movements later on. Besides that, we also need to declare the <code class="literal">CharacterController</code> variable in order for us to use it to apply motion to the character.</p><div class="informalexample"><pre class="programlisting">public float walkSpeed = 5;
+public float walkSideSpeed = 3;
+public float walkReverseSpeed = 2;
+public float rotateSpeed = 100;
+public float jumpStrength = 0.4f;
+
+Vector3 walkAcceleration = new Vector3(0, 0, 0);
+float jumpAcceleration = 0;
+int jumpCount = 0;
+
+public CharacterController playerController;
+public Animator playerAnimator;</pre></div><p>Next, we create two custom functions: <code class="literal">KeyboardInputs()</code> and <code class="literal">Movements()</code>—to separate the code to avoid messy code. This way, we can manage and debug the code easily without having to scroll through the script and wonder which part of the code does what.</p><div class="informalexample"><pre class="programlisting">void Update () 
+{
+  KeyboardInputs();
+  Movements();
+
+// Pass the movement speed to animator for switching between animation states
+playerAnimator.SetFloat("runningSpeed", walkAcceleration.magnitude);
+playerAnimator.SetFloat("jumpingSpeed", jumpAcceleration);
+
+}</pre></div><p>We will start writing the <code class="literal">Movements()</code> function first. The logic is actually quite simple: we use the <code class="literal">Move()</code> function in the character controller to move it on every single tick. However, we control the value of the <code class="literal">walkAcceleration</code> variable to move or stop the character. It's like a car engine that is always turned on and running, but only when you lock in the gear will the car start moving. For example, if <code class="literal">walkAcceleration</code> is set to <code class="literal">Vector3(0, 0, 0)</code>, the character will not move, even if the <code class="literal">Move()</code> function is being executed on every tick.</p><div class="informalexample"><pre class="programlisting">// Horizontol movements
+playerController.Move(walkAcceleration * Time.deltaTime);
+
+// Vertical movements
+playerController.Move(new Vector3(0, jumpAcceleration, 0));</pre></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note23"></a>Note</h3><p>
+<code class="literal">Time.deltaTime</code> refers to <span class="strong"><strong>delta time</strong></span> or <span class="strong"><strong>delta timing</strong></span>; it's a variable that tells you how many<a id="id860" class="indexterm"></a> milliseconds have passed between the last frame and the current frame. Delta time is used to add up the speed of moving objects so that it all move at a consistent speed across different computers despite running at different frame rates. We also call this framerate-independent motion or time-based motion. In Unity, the value of delta time is provided by the game engine at every frame, which you can use in the form of a variable by typing <code class="literal">Time.deltaTime</code>.</p></div><p>In this script, we have <a id="id861" class="indexterm"></a>executed the <code class="literal">Move()</code> function twice in <a id="id862" class="indexterm"></a>every tick: one for walking (horizontal movements) and another one for jumping (vertical movements). At the same time, the character's rotation is also being adjusted based on the mouse's movement along the <span class="emphasis"><em>X</em></span> axis. The mouse movement can be obtained by calling <code class="literal">Input.GetAxis("Mouse X")</code> and specifying the axis you want.</p><div class="informalexample"><pre class="programlisting">// Rotation
+playerController.transform.Rotate(new Vector3(0, Input.GetAxis("Mouse X"), 0) * Time.deltaTime * rotateSpeed);</pre></div><p>Besides acceleration during movements, we also have to write the code for deceleration. In real life, nothing stops instantly, especially when no external force is applied to the moving object. Many newbie programmers always make the same mistake—stopping the character instantly when the keyboard button is not pressed. This looks OK when the character is walking on the ground, but it will look very unnatural if the character is jumping or falling in the air.</p><p>To solve this issue, we need to check if the character is standing on the ground by checking the variable in the character controller called <code class="literal">isGrounded</code>. If the character is in the air, slowly decrease the <code class="literal">walkAcceleration</code> vector over time using a function from the <code class="literal">Vector3</code> class called <code class="literal">MoveTowards()</code>, which interpolates a given vector to a target value over a period of time. This makes the falling movement look more realistic and fluid.</p><p>As for vertical deceleration, always adjust the <code class="literal">jumpAcceleration</code> variable back to <code class="literal">-0.98</code>, because that is the actual value of gravity. The <code class="literal">jumpAcceleration</code> variable, in this case, is not a vector but rather a floating point number. So, instead of using <code class="literal">Vector3.MoveTowards()</code>, we use <code class="literal">Mathf.MoveTowards()</code> instead.</p><div class="informalexample"><pre class="programlisting">// Horizontal deceleration
+if (playerController.isGrounded)
+{
+  walkAcceleration = Vector3.zero;
+  jumpCount = 0;
+}
+else
+{
+  walkAcceleration = Vector3.MoveTowards(walkAcceleration, Vector3.zero, Time.deltaTime);
+}
+
+// Vertical deceleration
+if (jumpAcceleration &gt; -0.98f)
+{
+  jumpAcceleration = Mathf.MoveTowards(jumpAcceleration, -0.98f, Time.deltaTime * 2);
+}</pre></div><p>After that, we <a id="id863" class="indexterm"></a>will learn how to write the code for<a id="id864" class="indexterm"></a> player inputs. Like I mentioned previously, all the code for player inputs is written in the <code class="literal">KeyboardInputs()</code> function so that it's easier for us to look for the code.</p><p>Let's start from the WASD keys, which is considered standard in the games industry for first-person and third-person character movements. I will show you an example of the <span class="emphasis"><em>W</em></span> key movement, which is moving the character forward. The rest are mostly similar to this code, the only differences being the key that is being pressed as well as the direction of the movements.</p><p>First off, we need to check if the character is on the ground or in the air. This is very important because when the character is walking on the ground, you need to keep on adding force to it because the friction of the ground will reduce the force over time. However, if the character is jumping or falling in the air, there is no friction that can cause it to slow down. In this case, if we keep on adding force to the character while in the air, he will fly away like a rocket, which is not what we want. Instead, we just need to apply a constant vector to it, and it will all look right.</p><div class="informalexample"><pre class="programlisting">if (Input.GetKey(KeyCode.W))
+{
+  // Prevent player to fly away like bullet when not on ground
+  if (playerController.isGrounded)
+  {
+    walkAcceleration += playerController.transform.forward * walkSpeed;
+  }
+  else
+  {
+    walkAcceleration = playerController.transform.forward * walkSpeed;
+  }
+}</pre></div><p>For other keys, such as <span class="emphasis"><em>A</em></span>, <span class="emphasis"><em>S</em></span>, and <span class="emphasis"><em>D</em></span>, the only major difference is the movement direction, for which you just need to change <code class="literal">playerController.transform.forward</code> to <code class="literal">playerController.transform.right</code>, as well as making the plus-equal sign to minus-equal, depending on which direction you want it to move.</p><p>You can<a id="id865" class="indexterm"></a> check out the following full code for further<a id="id866" class="indexterm"></a> details:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerMovement : MonoBehaviour 
+{
+  public float walkSpeed = 5;
+  public float walkSideSpeed = 3;
+  public float walkReverseSpeed = 2;
+  public float rotateSpeed = 100;
+  public float jumpStrength = 0.4f;
+
+  Vector3 walkAcceleration = new Vector3(0, 0, 0);
+  float jumpAcceleration = 0;
+  int jumpCount = 0;
+
+  public CharacterController playerController;
+  public Animator playerAnimator;
+
+  void Update () 
+  {
+    KeyboardInputs();
+    Movements();
+
+// Pass the movement speed to animator for switching between animation states
+  playerAnimator.SetFloat("runningSpeed", walkAcceleration.magnitude);
+  playerAnimator.SetFloat("jumpingSpeed", jumpAcceleration);
+  }
+
+  void KeyboardInputs()
+  {
+    if (Input.GetKey(KeyCode.W))
+    {
+      // Prevent player to fly away like bullet when not on ground
+      if (playerController.isGrounded)
+      {
+        walkAcceleration += playerController.transform.forward * walkSpeed;
+      }
+      else
+      {
+        walkAcceleration = playerController.transform.forward * walkSpeed;
+      }
+    }
+
+    if (Input.GetKey(KeyCode.A))
+    {
+      // Prevent player to fly away like bullet when not on ground
+      if (playerController.isGrounded)
+      {
+        walkAcceleration += playerController.transform.right * -walkSideSpeed;
+      }
+      else
+      {
+        walkAcceleration = playerController.transform.right * -walkSideSpeed;
+      }
+    }
+
+    if (Input.GetKey(KeyCode.S))
+    {
+      // Prevent player to fly away like bullet when not on ground
+      if (playerController.isGrounded)
+      {
+        walkAcceleration += playerController.transform.forward * -walkReverseSpeed;
+      }
+      else
+      {
+        walkAcceleration = playerController.transform.forward * -walkReverseSpeed;
+      }
+    }
+
+    if (Input.GetKey(KeyCode.D))
+    {
+      // Prevent player to fly away like bullet when not on ground
+      if (playerController.isGrounded)
+      {
+        walkAcceleration += playerController.transform.right * walkSideSpeed;
+      }
+      else
+      {
+        walkAcceleration = playerController.transform.right * walkSideSpeed;
+      }
+    }
+
+    if (Input.GetKeyDown(KeyCode.Space))
+    {
+      // Double jump
+      if (jumpCount &lt; 2)
+      {
+        jumpAcceleration = jumpStrength;
+        jumpCount += 1;
+      }
+    }
+  }
+
+  void Movements()
+  {
+    // Horizontol movements
+    playerController.Move(walkAcceleration * Time.deltaTime);
+
+    // Vertical movements
+    playerController.Move(new Vector3(0, jumpAcceleration, 0));
+
+    // Rotation
+    playerController.transform.Rotate(new Vector3(0, Input.GetAxis("Mouse X"), 0) * Time.deltaTime * rotateSpeed);
+
+    // Horizontal deceleration
+    if (playerController.isGrounded)
+    {
+      walkAcceleration = Vector3.zero;
+      jumpCount = 0;
+    }
+    else
+    {
+      walkAcceleration = Vector3.MoveTowards(walkAcceleration, Vector3.zero, Time.deltaTime);
+    }
+
+    // Vertical deceleration
+    if (jumpAcceleration &gt; -0.98f)
+    {
+      jumpAcceleration = Mathf.MoveTowards(jumpAcceleration, -0.98f, Time.deltaTime * 2);
+    }
+  }
+}</pre></div><p>Now that our <a id="id867" class="indexterm"></a>character can finally move, there is one more <a id="id868" class="indexterm"></a>thing that we need to settle—camera movement. We need a camera that follows the character around so that we can see where our character is going. However, before we start writing the code, we must set up our camera properly so that it is compatible with the method we used in the code.</p><p>You need to create three empty game objects and place them exactly where the character is standing. Then, rename the objects as <code class="literal">Position</code>, <code class="literal">Yaw</code>, and <code class="literal">Pitch</code>. After that, make <code class="literal">Yaw</code> the child of <code class="literal">Position</code>, <code class="literal">Pitch</code> the child of <code class="literal">Yaw</code>, and finally make the game camera the child of <code class="literal">Pitch</code>. Keep all three empty objects where they are, but move the game camera to where you want it to be, in this case, behind the character. It may seem confusing at the moment, but you will understand later on when I start explaining in detail.</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_06_16.jpg" /></div><p>Basically, the <code class="literal">Position</code> object will follow the character's position wherever he goes. It is simply interpolating its position to the character's pivot point, which is located between the feet. Next, the <code class="literal">Yaw</code> object will handle the yaw rotation, and the <code class="literal">Pitch</code> object will handle the pitch rotation. By separating the rotation handling to different objects, we can avoid mathematical problems caused by Euler angles. Lastly, because the camera is the <a id="id869" class="indexterm"></a>child of all three objects, the position and <a id="id870" class="indexterm"></a>rotation are all inherited to the camera, resulting in a smooth and fluid camera movement.</p><p>Therefore, when we start writing the camera code, we need to declare the pointers to the player's transform, the <code class="literal">Yaw</code> object as well as the <code class="literal">Pitch</code> object, so that we can include them into the movement calculations. Other than that, we also need to declare some variables such as movement speed and rotation speed. Let's create a C# script called <code class="literal">PlayerCamera.cs</code> and then declare all the public variables:</p><div class="informalexample"><pre class="programlisting">public bool lockCursor = true;
+public float followSpeed = 10;
+public float yawSpeed = 10;
+public float pitchSpeed = 50;
+
+public Transform playerTransform;
+public Transform yawPivot;
+public Transform pitchPivot;</pre></div><p>After that, in the <code class="literal">Start()</code> function, we ask Unity to hide and lock the game cursor so that we can move the camera around using the mouse without getting stopped when the mouse reaches the edge of the screen.</p><div class="informalexample"><pre class="programlisting">void Start () 
+{
+  if (lockCursor)
+  {
+    Cursor.lockState = CursorLockMode.Locked;
+    Cursor.visible = false;
+  }
+}</pre></div><p>Then, inside the <code class="literal">Update()</code> function, there are three things that we need to do: move the <code class="literal">Position</code> object to where the player is located, rotate the <code class="literal">Yaw</code> object based on where the character is facing, and rotate the <code class="literal">Pitch</code> object based on the mouse movement along the <span class="emphasis"><em>y</em></span> axis.</p><div class="informalexample"><pre class="programlisting">transform.position = Vector3.Lerp(transform.position, playerTransform.position, Time.deltaTime * followSpeed);
+
+Vector3 yawRotation = yawPivot.localRotation.eulerAngles;
+yawRotation.y = Mathf.LerpAngle (yawRotation.y, playerTransform.localRotation.eulerAngles.y, Time.deltaTime * yawSpeed);
+yawPivot.localRotation = Quaternion.Euler (yawRotation);
+
+Vector3 pitchRotation = pitchPivot.localRotation.eulerAngles;
+pitchRotation.x -= Input.GetAxis ("Mouse Y") * Time.deltaTime * pitchSpeed;
+pitchPivot.localRotation = Quaternion.Euler (pitchRotation);</pre></div><p>Lastly, we <a id="id871" class="indexterm"></a>need to limit the <code class="literal">Pitch</code> object's rotation so that we <a id="id872" class="indexterm"></a>will not get an inverted camera view if we move the mouse too much along the <span class="emphasis"><em>y</em></span> axis.</p><div class="informalexample"><pre class="programlisting">// Limit the angle
+if (pitchPivot.localRotation.eulerAngles.x &gt; 55 &amp;&amp; pitchPivot.localRotation.eulerAngles.x &lt; 90)
+{
+  pitchRotation = pitchPivot.localRotation.eulerAngles;
+  pitchRotation.x = 55;
+  pitchPivot.localRotation = Quaternion.Euler (pitchRotation);
+}
+else if (pitchPivot.localRotation.eulerAngles.x &lt; 335 &amp;&amp; pitchPivot.localRotation.eulerAngles.x &gt; 90)
+{
+  pitchRotation = pitchPivot.localRotation.eulerAngles;
+  pitchRotation.x = 335;
+  pitchPivot.localRotation = Quaternion.Euler (pitchRotation);
+}</pre></div><p>This is the full code:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerCamera : MonoBehaviour 
+{
+  public bool lockCursor = true;
+  public float followSpeed = 10;
+  public float yawSpeed = 10;
+  public float pitchSpeed = 50;
+
+  public Transform playerTransform;
+  public Transform yawPivot;
+  public Transform pitchPivot;
+
+  void Start () 
+  {
+    if (lockCursor)
+    {
+      Cursor.lockState = CursorLockMode.Locked;
+      Cursor.visible = false;
+    }
+  }
+
+  void Update () 
+  {
+    transform.position = Vector3.Lerp(transform.position, playerTransform.position, Time.deltaTime * followSpeed);
+
+    Vector3 yawRotation = yawPivot.localRotation.eulerAngles;
+    yawRotation.y = Mathf.LerpAngle (yawRotation.y, playerTransform.localRotation.eulerAngles.y, Time.deltaTime * yawSpeed);
+    yawPivot.localRotation = Quaternion.Euler (yawRotation);
+
+    Vector3 pitchRotation = pitchPivot.localRotation.eulerAngles;
+    pitchRotation.x -= Input.GetAxis ("Mouse Y") * Time.deltaTime * pitchSpeed;
+    pitchPivot.localRotation = Quaternion.Euler (pitchRotation);
+
+    // Limit the angle
+    if (pitchPivot.localRotation.eulerAngles.x &gt; 55 &amp;&amp; pitchPivot.localRotation.eulerAngles.x &lt; 90)
+    {
+      pitchRotation = pitchPivot.localRotation.eulerAngles;
+      pitchRotation.x = 55;
+      pitchPivot.localRotation = Quaternion.Euler (pitchRotation);
+    }
+    else if (pitchPivot.localRotation.eulerAngles.x &lt; 335 &amp;&amp; pitchPivot.localRotation.eulerAngles.x &gt; 90)
+    {
+      pitchRotation = pitchPivot.localRotation.eulerAngles;
+      pitchRotation.x = 335;
+      pitchPivot.localRotation = Quaternion.Euler (pitchRotation);
+    }
+  }
+}</pre></div><p>Finally, we can<a id="id873" class="indexterm"></a> move our character around in the level! How<a id="id874" class="indexterm"></a> cool is that!</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_06_17.jpg" /></div><p>Now that we can move our character around, what should we do next? Attack, of course!</p><p>The reason why I chose to teach how to do a melee attack instead of shooting projectiles is because there are simply too many tutorials out there that focus on shooting projectiles, but hardly any teach you how to do short-range combat.</p><p>There are, of course, many different ways to do a melee attack, depending on how sophisticated you want it to be. However, in our case, we just want a normal melee attack, which basically detects who is near to the player and who is not. Then, when the player is doing the attack, apply the damages to those who are standing nearby. This is actually not as difficult as you might think.</p><p>But before that, let's create the flow chart for the melee attack so that we are really clear about how the <a id="id875" class="indexterm"></a>attack should be done.</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_06_18.jpg" /></div><p>From the <a id="id876" class="indexterm"></a>preceding flow chart, you will notice there is a cool down after every attack. This is to avoid the player from doing multiple attacks by clicking the left mouse button multiple times in a row. It makes sure that the player can only make a single attack between every interval. Do notice that I will not be showing how to implement the special attack because it will be shown in the next chapter. Stay tuned.</p><p>Then, you also notice that there is something called <span class="strong"><strong>nearby enemy array</strong></span> in the flow chart. This array is basically a list used to record which monster is nearby, ignoring those that are far away. When the player is doing the melee attack, only the monsters that are registered in the array will be damaged.</p><p>So, the first thing when we write the code is to declare all the variables needed for later use, such as the hit point, cool down interval, and the <code class="literal">nearbyEnemy</code> array:</p><div class="informalexample"><pre class="programlisting">public float attackDamage = 10;
+public float attackCooldownInterval = 1;
+float attackCooldownTime = 0;
+
+ArrayList nearbyEnemy;</pre></div><p>Next, we must create the array in the <code class="literal">Start()</code> function; otherwise, you will not be able to use it later.</p><div class="informalexample"><pre class="programlisting">void Start () 
+{
+  nearbyEnemy = new ArrayList ();
+}</pre></div><p>After that, we detect whether any monster is standing in front of the character by using the built-in function called <code class="literal">OnTriggerEnter()</code>. This function will only work if you have a trigger attached to the character. Add the trigger box to your character if you have not done it. When <a id="id877" class="indexterm"></a>the function is triggered, it will tell <a id="id878" class="indexterm"></a>you which object is colliding with it, so you can then check if it's a monster by comparing its tag. If the object is indeed a monster, add it to the <code class="literal">nearbyEnemy</code> array:</p><div class="informalexample"><pre class="programlisting">void OnTriggerEnter (Collider col)
+{
+  // Add nearby enemy to array if within attack distance
+  if (col.tag == "Monster")
+  {
+    nearbyEnemy.Add(col.gameObject);
+  }
+}</pre></div><p>However, if a monster is too far away and is now outside the trigger box, do a <code class="literal">for</code> loop to check each of the objects registered with the <code class="literal">nearbyEnemy</code> array. Then, remove it from the array if it matches the monster that left the trigger box:</p><div class="informalexample"><pre class="programlisting">void OnTriggerExit (Collider col)
+{
+  // Remove enemy from array if not within attack distance
+  if (col.tag == "Monster")
+  {
+    for (int i = 0; i &lt; nearbyEnemy.Count; i++)
+    {
+      if (nearbyEnemy[i] == col.gameObject)
+      {
+        nearbyEnemy.RemoveAt(i);
+      }
+    }
+  }
+}</pre></div><p>Finally, in the <code class="literal">Update()</code> function, we detect if the left mouse button is clicked by calling <code class="literal">Input.GetMouseButtonDown(0)</code>. Then, we check if it's still cooling down or ready for the next attack by comparing the game's total elapsed second—<code class="literal">Time.time</code> with the <code class="literal">attackCooldownTime</code> variable. Whenever we successfully made a single attack, we must set the <code class="literal">attackCooldownTime</code> variable to the future time, by adding the current game time with <code class="literal">attackCooldownInterval</code>.</p><p>For example, if the current game time (total elapsed seconds) is at 1000th second, and <code class="literal">attackCooldownInterval</code> is <code class="literal">1</code>, that means <code class="literal">attackCooldownTime</code> will be at the 1001st second, and the player will not be able to make the next attack until 1 second later.</p><p>To apply<a id="id879" class="indexterm"></a> damages to nearby enemies, simply loop<a id="id880" class="indexterm"></a> through the <code class="literal">nearbyEnemy</code> array and call the <code class="literal">GetDamage()</code> function, which we will create later in this chapter.</p><div class="informalexample"><pre class="programlisting">void Update () 
+{
+  if (Input.GetMouseButtonDown(0))
+  {
+    if (Time.time &gt; attackCooldownTime)
+    {
+      if (nearbyEnemy.Count &gt; 0)
+      {
+        // Apply damage to all nearby enemies
+        for (int i = 0; i &lt; nearbyEnemy.Count; i++)
+        {
+          (nearbyEnemy[i] as GameObject).GetComponent&lt;EnemyAI&gt;().GetDamage(attackDamage);
+        }
+      }
+
+      // Set cool down time
+      attackCooldownTime = Time.time + attackCooldownInterval;
+    }
+  }
+}</pre></div><p>The full code for the melee attack is shown next:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PlayerAttack : MonoBehaviour 
+{
+  public float attackDamage = 10;
+  public float attackCooldownInterval = 1;
+  float attackCooldownTime = 0;
+
+  ArrayList nearbyEnemy;
+
+  void Start () 
+  {
+    nearbyEnemy = new ArrayList ();
+  }
+
+  void Update () 
+  {
+    if (Input.GetMouseButtonDown(0))
+    {
+      if (Time.time &gt; attackCooldownTime)
+      {
+        if (nearbyEnemy.Count &gt; 0)
+        {
+          // Apply damage to all nearby enemies
+          for (int i = 0; i &lt; nearbyEnemy.Count; i++)
+          {
+            (nearbyEnemy[i] as GameObject).GetComponent&lt;EnemyAI&gt;().GetDamage(attackDamage);
+            }
+          }
+
+        // Set cool down time
+        attackCooldownTime = Time.time + attackCooldownInterval;
+      }
+    }
+  }
+
+  void OnTriggerEnter (Collider col)
+  {
+    // Add nearby enemy to array if within attack distance
+    if (col.tag == "Monster")
+    {
+      nearbyEnemy.Add(col.gameObject);
+    }
+  }
+
+  void OnTriggerExit (Collider col)
+  {
+    // Remove enemy from array if not within attack distance
+    if (col.tag == "Monster")
+    {
+      for (int i = 0; i &lt; nearbyEnemy.Count; i++)
+      {
+        if (nearbyEnemy[i] == col.gameObject)
+        {
+          nearbyEnemy.RemoveAt(i);
+        }
+      }
+    }
+  }
+}</pre></div></div>

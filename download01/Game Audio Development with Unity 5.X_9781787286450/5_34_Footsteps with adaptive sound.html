@@ -1,0 +1,92 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="05lvl1sec36"></a>Footsteps with adaptive sound</h2></div></div><hr /></div><p>While adaptive audio is often synonymous with <span>adaptive</span> music, it doesn't have to be as we will see in this section. In order to demonstrate adaptive sound, we will implement footsteps audio that is controlled by the current adaptive level. Until now, we have avoided working with footstep sounds so as not to clutter up the other audio we were mixing. Follow the instructions here to add footsteps to our scene:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open up the <strong class="userinput"><code>Audio Mixer</code></strong> window in the editor, select the <strong class="userinput"><code>Master</code></strong> mixer from the <strong class="userinput"><code>Mixers</code></strong> list. Then, right-click [<span class="emphasis"><em>Ctrl</em></span> + click on Mac] on the <strong class="userinput"><code>Direct</code></strong> group and from the context menu select <strong class="userinput"><code>Add child group</code></strong>. This will add a new child group to <code class="literal">Direct</code>. Rename this new group <code class="literal">Footsteps</code> as shown in the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787286450/graphics/e0562bb4-403d-4662-a159-f087f7e1cef6.png" /></div><p>Adding new Footsteps group to the Master mixer
+</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Type the text <code class="literal">fps</code> in the search field of the <strong class="userinput"><code>Hierarchy</code></strong> search window. Then, <span>type</span> the text <code class="literal">footstepsaudio</code> in the search field of the <strong class="userinput"><code>Project</code></strong> window. Drag the <code class="literal">FootstepsAudio</code> script from the <strong class="userinput"><code>Project</code></strong> window and drop it onto the <code class="literal">FlyingRigidBodyFPSController_HighQuality</code> object to add the component to it as shown in the screenshot here:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787286450/graphics/da31b85b-99f0-459d-87da-c2d5c5defad1.png" /></div><p>Drag and dropping the FootstepsAudio script onto the controller</p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Select the <code class="literal">FlyingRigidBodyFPSController_HighQuality</code> object in the <strong class="userinput"><code>Hierarchy</code></strong> window. Then, in the <strong class="userinput"><code>Inspector</code></strong> window, set the component properties: <strong class="userinput"><code>Audio Source</code></strong> | <strong class="userinput"><code>Output</code></strong> to <strong class="userinput"><code>Footsteps (Master)</code></strong><span>and</span> the <strong class="userinput"><code>Footsteps Audio</code></strong> | <strong class="userinput"><code>Footstep Sounds</code></strong> to the array as shown in the screenshot here:
+</li></ol></div><p><span class="strong"><strong><div class="mediaobject"><img src="/graphics/9781787286450/graphics/d589e0e1-d4ee-44cc-a6f0-13d8c2bb50d4.png" /></div></strong></span></p><p>Setting the Audio Source and Footsteps Audio sources and parameters</p><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Back to the <strong class="userinput"><code>Audio Mixer</code></strong> window, select the <code class="literal">Direct</code> group and then in the <strong class="userinput"><code>Inspector</code></strong> window reduce the <strong class="userinput"><code>Send level</code></strong> to <code class="literal">-80 dB</code> for the <strong class="userinput"><code>Music\Duck Volume</code></strong> as shown in the screenshot here:</li></ol></div><div class="mediaobject"><img src="/graphics/9781787286450/graphics/feafe3c5-2e62-407b-a919-8068218ad06f.png" /></div><p>Turning down the send to the Duck Volume effect</p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Press <span class="strong"><strong>Play</strong></span> to run the scene. Notice how the character now has footstep sounds that change as you move around the scene. The footsteps, pace <span>and</span> occurrence depend on the trigger level you are moving through.
+</li><li>Since we have added a new mixer group, you may also want to adjust the environmental area settings for the <code class="literal">Footsteps</code> or <code class="literal">Direct</code> group as well. Move around the scene and as you move through one of the zones: exposes, crossroads, sheltered, and fringe, pay attention to how the footsteps, audio sounds. If you want to edit the group settings for any of the snapshot sounds, be sure to stop moving, start editing by clicking on <strong class="userinput"><code>Edit in Play Mode</code></strong>, make your adjustments, and then stop editing.</li></ol></div><p>With the script in place, our character now generates adaptive footstep sounds. This is great, but has come at the expense of a lot of scripting. Let's open up the <code class="literal">FootstepsAudio</code> script here to take a look at what is going on inside:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Search for <code class="literal">footstepsaudio</code> from the <strong class="userinput"><code>Project</code></strong> window. When the contents of the window are filtered, double-click on the script to open it in your editor of choice. Here is the entire horrendous script for review:</li></ol></div><pre class="programlisting">using UnityEngine;
+using UnityStandardAssets.Characters.FirstPerson;
+
+[RequireComponent(typeof(AudioSource))]
+[RequireComponent(typeof(RigidbodyFirstPersonController))]
+public class FootstepsAudio : MonoBehaviour
+{
+    public AudioClip[] footstepSounds;
+    public float runstepLenghten;
+    public float speed;
+    public float stepInterval;
+    
+    private RigidbodyFirstPersonController characterController;
+    private AudioSource audioSource; 
+    private float stepCycle;
+    private float nextStep; 
+
+    void Start()
+    {
+       characterController = GetComponent&lt;RigidbodyFirstPersonController&gt;();
+       audioSource = GetComponent&lt;AudioSource&gt;();
+    }
+
+    <span class="strong"><strong>void FixedUpdate()</strong></span>
+    {
+       <span class="strong"><strong>switch (AdaptiveAudioManager.Instance.currentAdaptiveLevel)</strong></span>
+       {
+          case 0:
+          case 2:
+             speed = 1; stepInterval = 3;
+             Time.timeScale = 1f;
+             break;
+          case 1:
+             speed = .5f; stepInterval = 2.5f;
+             Time.timeScale = .5f;
+             break;
+          case 3:
+             speed = 1.5f; stepInterval = 2.5f;
+             <span class="strong"><strong>Time.timeScale = 1.5f;</strong></span>
+             break;
+          case 4:
+             speed = 2.5f; stepInterval = 3.5f;
+             Time.timeScale = 2f;
+             break;
+          case 5:
+             speed = 3.5f; stepInterval = 5f;
+             Time.timeScale = 2.5f;
+             break;
+       }
+       ProgressStepCycle(speed);
+    }
+    
+    <span class="strong"><strong>private void ProgressStepCycle(float speed)</strong></span>
+    { 
+       if (characterController.Velocity.sqrMagnitude &gt; 0 )
+       {
+          stepCycle += (characterController.Velocity.magnitude + (speed 
+                    * (characterController.Running ? runstepLenghten : 1f))) 
+                    * Time.fixedDeltaTime;
+       }
+
+       if (!(stepCycle &gt; nextStep))
+       {
+           return;
+       }
+
+       nextStep = stepCycle + stepInterval;
+
+       PlayFootStepAudio();
+    }
+ 
+    <span class="strong"><strong>private void PlayFootStepAudio()</strong></span>
+    {
+       <span class="strong"><strong>if (characterController.Grounded == false)</strong></span>
+       {
+          return;
+       }
+       // pick &amp; play a random footstep sound from the array,
+       // excluding sound at index 0
+       int n = Random.Range(1, footstepSounds.Length);
+       audioSource.clip = footstepSounds[n];
+       audioSource.PlayOneShot(audioSource.clip);
+       // move picked sound to index 0 so it's not picked next time
+       footstepSounds[n] = footstepSounds[0];
+       footstepSounds[0] = audioSource.clip;
+    }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>This script is similar in some ways to our other scripts that have interacted with physics objects. This is exactly what we are doing in this script. For the most part, aside from the maths perhaps, you should be able to understand most of what is going on in this script. The highlighted lines either represent important methods or actual code. Here is a detailed description for each of the highlighted lines:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">FixedUpdate()</code>: Since we are interacting with the physics system, the character controller, we process our code in the <code class="literal">FixedUpdate</code> rather than the <code class="literal">Update</code>.</li><li style="list-style-type: disc"><code class="literal">switch (AdaptiveAudioManager.Instance.currentAdaptiveLevel)</code>: This <strong class="userinput"><code>switch</code></strong> statement is called at every fixed update and it switches base on the <code class="literal">AdaptiveAudioManager</code> singleton objects <code class="literal">currentAdaptiveLevel</code> property. Remember that since our <code class="literal">AdaptiveAudioManager</code> is a singleton, it can be called from any script running in the scene. This means that when a trigger <span>updates</span> the <code class="literal">currentAdaptiveLevel</code> on the <code class="literal">AdaptiveAudioManager</code> by calling <code class="literal">AdjustLevel</code>, this will in turn indirectly send an update to this script. Inside the switch statement, each of the levels is split into case statements that set the particular parameters for how the character will move and how frequently the footstep sounds will occur.</li><li style="list-style-type: disc"><code class="literal">Time.timeScale = 1.5f;</code> : This line sets the scale of time for the scene. So in this instance, we are not only controlling audio characteristics with our adaptive triggers but also the time scale characteristics as well. In essence, we are putting our character in various time warps for a more dramatic effect on gameplay. These types of time warping effects are used all the time in modern gaming for everything from slow motion shots of dying to warp movement effects not unlike what we are doing here.</li></ul></div></li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip90"></a>Note</h3><p>You could also accomplish the same sense of speed increase by just speeding up the character controller. However, it is generally not recommended to alter the physical characteristics of an object because this could dramatically effect other physical systems in the game. For instance, a character moving at a greater speed will generate a higher force to impacts, which could allow previously immovable objects to move, just by having a character run into them. Whereas, this would not be an issue with time warping, since the character is still moving at the same speed but just perceives time faster or slower.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">private void ProgressStepCycle(float speed)</code>: The code in this method was extracted from the Unity first person character controller and it is what controls the step length based on speed. We won't get into the details of this method too much but just realize there are two important variables that determine the number and frequency of footsteps. They are the stride length or <code class="literal">stepInterval</code> and <code class="literal">speed</code>. In the <code class="literal">FixedUpdate</code> method, these variables are set based on what trigger area the player is in. If you can understand the math in this method, then also feel free to adjust those parameters a little for each of the trigger areas.</li></ul></div></li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note91"></a>Note</h3><p>It is important to notice that we are hardcoding a number of values in this script, which is bad programming practice. We will look to rectify this issue in later chapters when we look at more advanced tools that can provide alternatives to hardcoding.</p></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">private void PlayFootStepAudio()</code> : Finally, we get into the last method where the footstep sounds are actually played. Notice how the various footstep sounds are used randomly. This is the same practice we followed with our audio randomization we did for various sources in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Scripting Audio</em></span>. The sounds we are using for the footsteps are actually part of the original Unity project. In further chapters, we will look to add dynamic footsteps that change as the player moves across different surface materials.
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">if (characterController.Grounded == false)</code> : This line of code checks if the character is grounded. Obviously if the character is not grounded, we don't want to play footsteps.</li></ul></div></li></ul></div><p>Well, that was quite a lengthy script to do what we needed compared to the other scripts in this chapter. Unfortunately, most of it was necessary to get just the basic footsteps working. This is because the controller we are currently using for the scene is not set up to use footstep sounds. The standard FPS Controller script is equipped to use footstep audio and actually was the source for a couple of the methods in this script. While this script works for our demonstration, it is less than perfect for our development needs since all of the settings need to be defined in code. The <code class="literal">FootstepsAudio</code> script is a good starting point for demonstrating the basic concepts. Ideally, we want to be able to dynamically make changes to the adaptive audio changes the same way we did for the music. In <a class="link" href="#" linkend="ch07">Chapter 7</a>, <span class="emphasis"><em>FMOD for Dyanmic and Adaptive Audio</em></span>, we will look to improve on this script in a few interesting ways.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip92"></a>Note</h3><p><strong class="userinput"><code>QUIZ TIME ANSWERS</code></strong></p><p>Here are the answers to the previous chapters quiz:</p><p>1) Your team is fairly new to game development, so it is decided to outsource the music for your game. This means the music will come in completely composed and each piece will change dramatically. Option a (horizontal re-sequencing) works best here. Since the team is new and the music is outsourced, it is best managed using more traditional horizontal re-sequencing techniques.</p><p>2) Your team has experience working with the Audio Mixer and have found a number of instrumental sounds they like. Option c (vertical remixing) is the best choice. The team alone, given their knowledge of the Audio Mixer, could use vertical remixing to create the needed adaptive music.</p><p>3) The game you are developing needs event-driven full changes to music (tempo, harmony, and instrumentation). Option b (horizontal re-sequencing with stingers) works best for this case. Event-driven music that needs full changes is best done with horizontal re-sequencing with stingers.</p></div></div>
