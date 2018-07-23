@@ -1,6 +1,0 @@
-<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec317"></a>Sore loser</h2></div></div><hr /></div><p>You may notice, however, that the computer cheats. If the human gets three Xs in a row, the computer will place an O even after the game is won. That's because our code is telling the computer to do this. We always call <code class="literal">ComputerTakeATurn</code> after the human's move, with no conditions.</p><p>Let's wrap our <code class="literal">ComputerTakeATurn</code> call in a conditional statement to check whether the game is won:</p><div class="informalexample"><pre class="programlisting">
-<span class="strong"><strong> if(!gameIsOver)</strong></span>
-  {
-    yield WaitForSeconds(2);
-    ComputerTakeATurn();
-  }</pre></div><p>That should prevent the computer from getting in a cheater-pants cheap shot after the game has ended.</p></div>

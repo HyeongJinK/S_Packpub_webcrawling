@@ -1,9 +1,0 @@
-<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec44"></a>Namespaces</h2></div></div><hr /></div><p>As a game project <a id="id333" class="indexterm"></a>becomes much larger, it is more likely that you will use the same name for script classes that have similar functions. This results in clashes between the script class names, and therefore, errors when compiling.</p><p>This is especially the case when a team of people are working together on a game project as more than one person could think of a certain class name as appropriate. For example, one scripter could be working on the player health, while another scripter is working on the enemy health, and both then decide to call their class <code class="literal">Health</code>.</p><p>To avoid this occurrence, C# offers a feature called namespace that makes use of the namespace as in the following script:</p><div class="informalexample"><pre class="programlisting">namespace Enemy {
-  public class Health1 : MonoBehaviour {
-    ...
-  }
-
-  public class Health2 : MonoBehaviour {
-    ...
-  }
-}</pre></div><p>Now, when we call our classes, we will use <code class="literal">Enemy.Health1</code> and <code class="literal">Enemy.Health2</code>. However, we can avoid having to type <code class="literal">namespace</code> before each class by adding the <code class="literal">using</code> directive at the very top line of our script as in the following:</p><div class="informalexample"><pre class="programlisting">using Enemy;</pre></div><p>Now, we can simply call the classes <code class="literal">Health1</code> and <code class="literal">Health2</code> throughout our script.</p></div>

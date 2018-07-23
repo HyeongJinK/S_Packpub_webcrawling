@@ -1,9 +1,0 @@
-<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec91"></a>Character literals not supported</h2></div></div><hr /></div><p>Unity's <a id="id1343" class="indexterm"></a>JavaScript seems to be missing the syntax to declare character literals. This means you need to get them implicitly by referencing a character index from a string as follows:</p><div class="informalexample"><pre class="programlisting">
-<span class="strong"><strong>// JavaScript user:</strong></span>
-
-var myChar = "a"[0];  //implicitly retrieves the first  character of the string "a"
-
-
-<span class="strong"><strong>// C# user:</strong></span>
-
-char myChar = 'a';          //character 'a'</pre></div></div>

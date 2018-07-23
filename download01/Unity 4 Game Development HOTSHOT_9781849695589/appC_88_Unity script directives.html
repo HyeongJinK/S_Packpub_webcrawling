@@ -1,9 +1,0 @@
-<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec86"></a>Unity script directives</h2></div></div><hr /></div><p>Unity has <a id="id1336" class="indexterm"></a>a number of script directives, such as <code class="literal">RequireComponent</code>; we can find them at <a class="ulink" href="http://docs.unity3d.com/412/Documentation/ScriptReference/20_class_hierarchy.Attributes.html" target="_blank">http://docs.unity3d.com/412/Documentation/ScriptReference/20_class_hierarchy.Attributes.html</a> and <a class="ulink" href="http://docs.unity3d.com/Manual/Attributes.html" target="_blank">http://docs.unity3d.com/Manual/Attributes.html</a>. The following code illustrates the use of <code class="literal">RequireComponent</code>:</p><div class="informalexample"><pre class="programlisting">
-<span class="strong"><strong>// JavaScript user:</strong></span>
-
-@script RequireComponent(RigidBody)
-
-
-<span class="strong"><strong>// C# user:</strong></span>
-
-[RequireComponent(typeof(Rigidbody))]</pre></div></div>
