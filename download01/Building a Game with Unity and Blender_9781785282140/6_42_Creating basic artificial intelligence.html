@@ -1,0 +1,86 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec43"></a>Creating basic artificial intelligence</h2></div></div><hr /></div><p>Phew, we have come a long way, haven't we? But the most exciting part is just about to start—we will <a id="id881" class="indexterm"></a>learn how to create basic game AI in Unity!</p><p>In a nutshell, artificial intelligence is all about making decisions autonomously based on a set of conditions and requirements. If a given condition has been met, then the AI will try to move from<a id="id882" class="indexterm"></a> its current state to the other state that fits the criteria. This is what we call the <span class="strong"><strong>finite state machine</strong></span>.</p><p>In order to know what conditions we need to set in our AI and what decisions it can make, we will design yet another flow chart for the AI:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_06_19.jpg" /></div><p>In this chapter, we <a id="id883" class="indexterm"></a>will only focus on the part where the AI will start chasing the player whenever the player is nearby. We will learn how to make the AI patrol around a given area in the next chapter, so stay tuned.</p><p>Before we start writing the code, we <a id="id884" class="indexterm"></a>need to add a component called <span class="strong"><strong>Nav Mesh Agent</strong></span> to our monster prefab. Without this component, our monster will lose the ability to find the shortest path and move toward the player.</p><p>After that, we will create a C# script called <code class="literal">EnemyAI</code> and attach it to our monster prefab. We will start writing the code by declaring the variables needed by the script:</p><div class="informalexample"><pre class="programlisting">public NavMeshAgent agent;
+public float healthPoint = 50;
+public Animator animator;
+GameObject player;</pre></div><p>Then, in the <code class="literal">Start()</code> function, we will find the player by calling <code class="literal">GameObject.FindWithTag()</code> and save it to the <code class="literal">player</code> variable. Since there is only one player in the entire scene, it's OK to search through the entire scene to find the player when the game started. Do not, however, use this function in the <code class="literal">Update()</code> function because that will greatly slow down the performance of the game.</p><p>After that, in the <code class="literal">Update()</code> function, we will calculate the distance between the monster and the player character. If the player is nearby, then the monster will start chasing him by calling the <code class="literal">SetDestination()</code> function from the Nav Mesh Agent.</p><div class="informalexample"><pre class="programlisting">void Update ()
+{
+  if (player != null)
+  {
+    // Check if player is nearby
+    if (Vector3.Distance(transform.position, player.transform.position) &lt;= 6)
+    {
+      // Move toward player
+      agent.SetDestination(player.transform.position);
+      // Pass the movement velocity to animator
+      animator.SetFloat("runningSpeed", agent.velocity.magnitude);
+    }
+  }
+}</pre></div><p>Finally, we also<a id="id885" class="indexterm"></a> create the <code class="literal">GetDamage()</code> function that was used previously in the melee attack script so that the Unity compiler will no longer display an error that says <code class="literal">GetDamage()</code> function not found. In this function, we will deduct the health points of the monster and check if the health point has reached zero. If it does, it will be removed from the scene by calling the <code class="literal">Destroy()</code> function:</p><div class="informalexample"><pre class="programlisting">public void GetDamage (float damage)
+{
+  healthPoint -= damage;
+
+  if (healthPoint &lt;= 0)
+  {
+    Die ();
+  }
+}
+
+
+void Die ()
+{
+  Destroy (gameObject);
+}</pre></div><p>The following is the full code for the artificial intelligence:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class EnemyAI : MonoBehaviour
+{
+  public NavMeshAgent agent;
+  public float healthPoint = 50;
+  public Animator animator;
+  GameObject player;
+
+  void Start ()
+  {
+    // Find player
+    player = GameObject.FindWithTag ("Player");
+  }
+
+  void Update ()
+  {
+    if (player != null)
+    {
+      // Check if player is nearby
+      if (Vector3.Distance(transform.position, player.transform.position) &lt;= 6)
+      {
+        // Move toward player
+        agent.SetDestination(player.transform.position);
+        // Pass the movement velocity to animator
+      animator.SetFloat("runningSpeed", agent.velocity.magnitude);
+      }
+    }
+  }
+
+  public void GetDamage (float damage)
+  {
+    healthPoint -= damage;
+
+    if (healthPoint &lt;= 0)
+    {
+      Die ();
+    }
+  }
+
+  void Die ()
+  {
+    Destroy (gameObject);
+  }
+}</pre></div><p>Before the monsters are able to chase the player, you need to open up the navigation panel by going to <span class="strong"><strong>Window</strong></span> | <span class="strong"><strong>Navigation</strong></span> and click on the <span class="strong"><strong>Bake</strong></span> button on top, and then click again on the <span class="strong"><strong>Bake</strong></span> button in the lower-right corner. After several seconds, you will see blue <a id="id886" class="indexterm"></a>polygons being generated all over the level. These blue polygons are what we call navigation meshes and are used by the Nav Mesh Agent to calculate path finding.</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_06_20.jpg" /></div><p>These are the options for navigation mesh baking:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Agent Radius</strong></span>: This option defines how close the bake agent can get to a wall or a ledge.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Agent Height</strong></span>: <span class="strong"><strong>Agent Height</strong></span> determines the height that can be reached by the bake agent.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Max Slope</strong></span>: This defines how steep the ramps are that the bake agent walk up.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Step Height</strong></span>: This determines how high the obstructions are that the bake agent can step on.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Drop Height</strong></span>: This parameter controls what is the highest distance for the bake agent to link two off-link meshes for dropping.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Jump Distance</strong></span>: This determines the further distance for the bake agent to link two off-link meshes for jumping.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Manual Voxel Size</strong></span>: By enabling this option, you can manually set the accuracy of the baking process by changing the voxel size.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Voxel Size</strong></span>: The default setting resulting in 3 voxels per agent radius, which means the whole agent width is 6 voxel. Changing this value will affect both the accuracy as well as the baking speed.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Min Region Area</strong></span>: Using this, regions that have a surface area smaller than the specified value will be removed.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Height Mesh</strong></span>: By enabling this option, you can get a more accurate placement of your character on the navmesh surface, However, this will take up more memory and processing at runtime, and it will also take a little longer to bake the mesh.</p></li></ul></div><p>Once you have<a id="id887" class="indexterm"></a> generated the navigation meshes, try duplicating the monster prefabs across the level, and have fun getting chased by them!</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_06_21.jpg" /></div></div>

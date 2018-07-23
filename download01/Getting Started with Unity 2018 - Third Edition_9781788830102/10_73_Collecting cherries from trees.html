@@ -1,0 +1,74 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec72"></a>Collecting cherries from trees</h2></div></div><hr /></div><p>In this section, we will <span>make</span><a id="id288601230" class="indexterm"></a> the necessary adjustments to our game objects and script functionality that enable the collection of cherries from cherry trees. More specifically, we will create the following gameplay:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Detect collisions of Cucumber Man and cherry trees</li><li style="list-style-type: disc">Simulate collection of cherries</li><li style="list-style-type: disc">Update inventory and HUD with cherry count</li></ul></div><p>Before we get started, you should open your Unity game project. Alternatively, you can download the<strong class="userinput"><code>Starting-Chapter-10</code></strong> Unity project available from the publisher's companion site.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec89"></a>Detecting collisions of Cucumber Man and cherry trees</h3></div></div></div><p>In this section, we will enable and <span>test</span><a id="id288614284" class="indexterm"></a> collisions between the Cucumber Man and cherry trees. Our first step is to ensure the cherry trees in our sandbox <span>area</span><a id="id288614294" class="indexterm"></a> all have the <code class="literal">CherryTree</code> tag. We previously created the tag name, so we only need to apply it to the trees in our sandbox. Here are the steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>In the <strong class="userinput"><code>Hierarchy</code></strong> panel, select a <strong class="userinput"><code>Cherry Tree</code></strong> that is inside your sandbox area</li><li>In the <strong class="userinput"><code>Inspector</code></strong> panel, click the drop-down box to the left of the <strong class="userinput"><code>Tag</code></strong> label</li><li>Select the <strong class="userinput"><code>CherryTree</code></strong> tag</li><li>Repeat steps 1 through 3 for each <strong class="userinput"><code>Cherry Tree</code></strong> GameObject in your sandbox area</li><li>Optionally, repeat steps 1 through 3 for all the <strong class="userinput"><code>Cherry Tree</code></strong> GameObjects in the <strong class="userinput"><code>Hierarchy</code></strong> view, not just the ones in your sandbox area</li></ol></div><p>Next, we will create a <code class="literal">CucumberManManager</code> script to handle the collisions with the cherry trees. Here are the steps to create that script:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>In the <strong class="userinput"><code>Hierarchy</code></strong> panel, select the <strong class="userinput"><code>CumcuberMan</code></strong> player character</li><li>In the <strong class="userinput"><code>Inspector</code></strong> panel, scroll to the bottom and click the <strong class="userinput"><code>Add Component</code></strong> button</li><li>Select <strong class="userinput"><code>New Script</code></strong></li><li>Name the script <code class="literal">CucumberManManager</code></li><li>Click the <strong class="userinput"><code>Create and Add</code></strong> button</li><li>In the <strong class="userinput"><code>Project</code></strong> panel, click <strong class="userinput"><code>Favorites</code></strong> | <strong class="userinput"><code>All Scripts</code></strong></li><li>Drag the <code class="literal">CucumberManManager</code> script to the <code class="literal">Assets</code> | <code class="literal">Custom Scripts</code> folder</li><li>Double-click the <code class="literal">CucumberManManager</code> script to open it in an editor</li><li>Edit the script so that it matches the code provided here:</li></ol></div><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+publicclassCucumberManManager:MonoBehaviour{
+
+voidOnTriggerEnter(CollidertheObject){
+if(theObject.gameObject.CompareTag("CherryTree")){
+
+//Do something
+
+}
+}
+}</pre><p>The preceding script is a C# script with an <code class="literal">OnTriggerEnter()</code> method. As you can see, we check the tag of what the Cucumber Man collided with to see if that game object has a tag of <code class="literal">CherryTree</code>.</p><p>Next, we need to do something when that collision is detected. We will handle that in the next section.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec90"></a>Simulating the collection of cherries</h3></div></div></div><p>In this section, we will <span>continue</span><a id="id288614444" class="indexterm"></a> working on the <code class="literal">CucumberManManager</code> script to simulate the collection of cherries.</p><p>If you do not already have the script open, open it now in an editor. We will review the updated code in five sequential sections.</p><p>Our first section, shown here, imports the three necessary namespaces.</p><pre class="programlisting">using System.Collections;
+    using System.Collections.Generic;
+    using UnityEngine;
+
+    public class CucumberManManager : MonoBehaviour {
+
+       public static int currentCherryCount;
+       public int tempCurrentCherryCount;
+       public bool collectingCherries;</pre><p>The fourth line of code is the class declaration statement. The last three lines of code in this section are the class variables. Here is a brief description of each:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">currentCherryCount</code>: Keep the current number of cherries in the Cucumber Man's inventory</li><li style="list-style-type: disc"><code class="literal">tempCurrentCherryCount</code>: Used to limit cherry collection to one per second</li><li style="list-style-type: disc"><code class="literal">collectingCherries</code>: Used to determine whether the inventory counter should be <span>active</span></li></ul></div><p>Our second section, shown as follows, features the <code class="literal">Awake()</code> method. This method is used to initialize our variables at the start of the game:</p><pre class="programlisting">voidAwake(){
+
+currentCherryCount=0;
+tempCurrentCherryCount=0;
+collectingCherries=false;
+
+}</pre><p>Our third section, shown here, features the <code class="literal">Update()</code> method. This method is executed once per frame. We have an if/else statement nested in an outer if statement. This outer statement checks to see whether the <code class="literal">collectingCherries</code> Boolean value is true. If it is, the inner if/else statement block is evaluated.</p><p>The inner if/else block checks to see whether the <code class="literal">tempCurrentCherryCount</code> variable's value is greater than or equal to <code class="literal">60</code>. If it is, then the <code class="literal">currentCherryCount</code> value is incremented by one; otherwise, the <code class="literal">tempCurrentCherryCount</code> value is incremented by one. The <code class="literal">Update()</code> method is called once per frame and frame rates can vary. So, we are essentially adding one cherry to the Cucumber Man's inventory every 60 frames:</p><pre class="programlisting">voidUpdate(){
+
+if(collectingCherries){
+if(tempCurrentCherryCount&gt;=60){
+currentCherryCount=currentCherryCount+1;
+tempCurrentCherryCount=0;
+
+}else{
+tempCurrentCherryCount=tempCurrentCherryCount+1;
+}
+}
+
+}</pre><p>Our fourth section, shown in the following code block, contains the <code class="literal">OnTriggerEnter()</code> method we started in the last section. We edited this method to include an if statement that checks to see whether the Cucumber Man has entered a collision with a cherry tree. If so, the <code class="literal">collectingCherries</code> Boolean variable is set to <code class="literal">true</code> and one cherry is added to the inventory:</p><pre class="programlisting">voidOnTriggerEnter(CollidertheObject){
+if(theObject.gameObject.CompareTag("CherryTree")){
+
+collectingCherries=true;
+currentCherryCount=currentCherryCount+1;
+}
+}</pre><p>Our fifth section, shown as follows, has the <code class="literal">OnTriggerExit()</code> method. This event is fired when the Cucumber Man stops colliding with the cherry trees. When this occurs, we set the <code class="literal">collectingCherries</code> Boolean value to <code class="literal">false</code>:</p><pre class="programlisting">
+voidOnTriggerExit(CollidertheObject){
+if(theObject.gameObject.CompareTag("CherryTree")){
+collectingCherries=false;
+}
+}
+
+} // end of CucumberManManager.cs</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec91"></a>Updating the inventory and HUD with cherry count</h3></div></div></div><p>We now have a system in place for <span>adding</span><a id="id288614603" class="indexterm"></a> cherries to the Cucumber Man's inventory based on his collision with cherry trees. Next, we need to update the appropriate UI text component with the current inventory amount. We will take care of <span>this</span><a id="id288614612" class="indexterm"></a> important task in this section.</p><p>Here are the steps to create that script:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>In the <strong class="userinput"><code>Hierarchy</code></strong> panel, select the <code class="literal">HUD_Canvas</code> | <code class="literal">Cherries_Count</code> UI text component</li><li>In the <strong class="userinput"><code>Inspector</code></strong> panel, scroll to the bottom and click the <strong class="userinput"><code>Add Component</code></strong> button</li><li>Select <strong class="userinput"><code>New Script</code></strong></li><li>Name the script <code class="literal">CherryManager</code></li><li>Click the <strong class="userinput"><code>Create and Add</code></strong> button</li><li>In the <strong class="userinput"><code>Project</code></strong> panel, click <strong class="userinput"><code>Favorites</code></strong> | <strong class="userinput"><code>All Scripts</code></strong></li><li>Drag the <code class="literal">CherryManager</code> script to the <code class="literal">Assets</code> | <code class="literal">Custom Scripts</code> folder</li><li>Double-click the <code class="literal">CherryManager</code> script to open it in an editor</li><li>Edit the script so that it matches the code provided here</li></ol></div><p>An explanation of this code is provided immediately following the code block:</p><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+publicclassCherryManager:MonoBehaviour{
+
+TextCherries_Count;
+
+voidAwake(){
+
+Cherries_Count=GetComponent&lt;Text&gt;();
+
+}
+
+
+voidUpdate(){
+
+Cherries_Count.text=CucumberManManager.currentCherryCount.ToString();
+
+}
+}</pre><p>The first four lines of code import the appropriate namespaces.</p><p>The next line of code is the class declaration: <code class="literal">public class CherryManager : MonoBehaviour {</code>.</p><p>Next is the single class variable, a <code class="literal">text</code> object named <code class="literal">Cherries_Count</code>.</p><p>The first method in the class is the <code class="literal">Awake()</code> method. We use this method to create a reference to the <code class="literal">Cherries_Count</code> UI text component.</p><p>The last section of our <code class="literal">CherryManager</code> class is the <code class="literal">Update()</code> method. That method has a single statement used to convert the <code class="literal">currentCherryCount</code> from an <code class="literal">int</code> to a string and update the HUD.</p><p>You can play-test the game to validate the functionality. Simply navigate the Cucumber Man to a cherry tree and watch the inventory of cherries increase. It is important for us to have a method of collecting cherries because the player can press the <span class="emphasis"><em>E</em></span> key on the keyboard to throw a cherry. We will program that functionality in the next section.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip42"></a>Note</h3><p>Now is a great time to save your scene and project. </p></div></div></div>

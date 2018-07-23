@@ -1,0 +1,53 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec47"></a>Improving enemy AI</h2></div></div><hr /></div><p>In the <a id="id902" class="indexterm"></a>previous chapter, we learned how to create enemies that will chase the player if too close with it. However, the enemies look very stiff because they don't move at all when the player is not within its sight. Therefore, we will adjust the AI script a little bit to make the enemies able to patrol around the level randomly if the player is not detected.</p><p>First of all, open up the <code class="literal">EnemyAI</code> script and add these variables on top:</p><div class="informalexample"><pre class="programlisting">Vector3 randomPos;
+float pauseInterval = 0;
+float pauseTime = 0;</pre></div><p>The <code class="literal">randomPos</code> variable is where the enemy will be moving to during patrolling. The <code class="literal">randomPos</code> variable will be recalculated if the enemy has reached that position. The enemy will stand still for a while before moving to the next random position.</p><p>Next, add <code class="literal">CalculateRandomPosition()</code> to the <code class="literal">Start()</code> function:</p><div class="informalexample"><pre class="programlisting">void Start ()
+{
+  // Find player
+  player = GameObject.FindWithTag ("Player");
+  CalculateRandomPosition ();
+}</pre></div><p>This is <a id="id903" class="indexterm"></a>how the <code class="literal">CalculateRandomPosition()</code> function looks:</p><div class="informalexample"><pre class="programlisting">void CalculateRandomPosition ()
+{
+  NavMeshHit hit;
+  NavMesh.SamplePosition (transform.position + Random.insideUnitSphere * Random.Range(3, 10), out hit, 10, NavMesh.AllAreas);
+
+  randomPos = hit.position;
+}</pre></div><p>Basically, what <code class="literal">CalculateRandomPosition()</code> does is randomly pick a position around a given range from the enemy's current position.</p><p>After this, replace the entire <code class="literal">Update()</code> function with the following code:</p><div class="informalexample"><pre class="programlisting">void Update ()
+{
+  if (player != null)
+  {
+    // Check if player is nearby
+    if (Vector3.Distance(transform.position, player.transform.position) &lt; 6)
+    {
+      // Move toward player
+      agent.SetDestination(player.transform.position);
+    }
+    else
+    {
+      // If reached the nearby random position
+      if (Vector3.Distance(transform.position, randomPos) &lt; 3)
+      {
+        // Recalculate nearby random position
+        CalculateRandomPosition();
+
+        // Calculate the time to start moving again
+        pauseInterval = Random.Range(2, 10);
+        pauseTime = Time.time + pauseInterval;
+      }
+      else
+      {
+        // Already passed the pausing interval
+        if (pauseTime &lt; Time.time)
+        {
+          // Move to random nearby location
+          agent.SetDestination(randomPos);
+
+          // Just in-case if the AI stuck, recalculate random point
+          if (agent.velocity == Vector3.zero)
+          {
+            CalculateRandomPosition();
+          }
+        }
+      }
+    }
+  }
+}</pre></div></div>

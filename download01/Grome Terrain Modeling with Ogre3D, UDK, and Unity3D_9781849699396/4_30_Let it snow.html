@@ -1,0 +1,30 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec33"></a>Let it snow</h2></div></div><hr /></div><p>For a change of scenery let's add some snow to <a id="id241" class="indexterm"></a>highland regions. Create a new material layer (we'll call it <code class="literal">SnowField</code>). Assign the terrain zones to the layer and we'll pick the texture <code class="literal">terrain/cold/snow02.dds</code>, setting the tiling UVs to <code class="literal">100</code>. For the mask we'll create a new one with a size of 1,024.</p><p>Go to the <span class="strong"><strong>MaskGen</strong></span> tool, pick the preset named <span class="strong"><strong>MountainsSnow</strong></span>. We'll only use one Distribution Mask from this, the one named <span class="strong"><strong>Snow</strong></span> but we'll edit the <span class="strong"><strong>Height</strong></span> settings as thus:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /><col align="left" /></colgroup><tbody><tr style="border-bottom: 0.5pt solid ; "><td style="border-bottom: 0.5pt solid ; " align="left" valign="bottom"> </td><td style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Height</p>
+</td><td style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Slope</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Min</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>1000</p>
+</td><td style="" align="left" valign="top">
+<p>0</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Max</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>10000</p>
+</td><td style="" align="left" valign="top">
+<p>30</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>
+<span class="strong"><strong>Att</strong></span>
+</p>
+</td><td style="" align="left" valign="top">
+<p>150</p>
+</td><td style="" align="left" valign="top">
+<p>5</p>
+</td></tr></tbody></table></div><p>Assign the Snow Distribution Mask to the <span class="strong"><strong>Layers in use</strong></span> (the material layer called <span class="strong"><strong>SnowField</strong></span> should be armed to appear in the list). Click on the <a id="id242" class="indexterm"></a>
+<span class="strong"><strong>Apply</strong></span> button.</p><div class="mediaobject"><img src="/graphics/9781849699396/graphics/9182_04_13.jpg" /></div></div>

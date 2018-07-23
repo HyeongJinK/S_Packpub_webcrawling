@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec70"></a>Scripting for dynamic content</h2></div></div><hr /></div><p>Now that your HUD has been completed, it is <span>time</span><a id="id288601230" class="indexterm"></a> to consider how the information on the HUD is updated. The following elements of our HUD require scripting so that they are dynamically updated during the game:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Cucumber Man's health</li><li style="list-style-type: disc">Number of Cucumber Man lives remaining</li><li style="list-style-type: disc">Points
+</li><li style="list-style-type: disc">Number of cherries in Cucumber Man's inventory</li><li style="list-style-type: disc">Number of cucumbers </li><li style="list-style-type: disc">Number of Cucumber Beetles</li></ul></div><p>In this section, we will lay the groundwork for updating the HUD information. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec87"></a>Scripting the cucumber count</h3></div></div></div><p>Let's start <span>with</span><a id="id288601270" class="indexterm"></a> our cucumber count:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>In the <strong class="userinput"><code>Hierarchy</code></strong> panel, select <strong class="userinput"><code>HUD_Canvas</code></strong> | <strong class="userinput"><code>Cucumber_Count</code></strong></li><li>In the <strong class="userinput"><code>Inspector</code></strong> panel, click the <strong class="userinput"><code>Add Component</code></strong> button</li><li>Select <strong class="userinput"><code>New Script</code></strong> and name the script <code class="literal">CucumberManager</code></li><li>Edit the script</li></ol></div><p>With the script open, make the necessary modifications to match the script provided, as follows:</p><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+publicclassCucumberManager:MonoBehaviour{
+
+publicintcurrentCucumberCount;
+TextCucumber_Count;
+publicGameObject[]cucumbers;
+
+
+voidAwake(){
+
+Cucumber_Count=GetComponent&amp;lt;Text&gt;();
+currentCucumberCount=0;
+}
+
+
+voidUpdate(){
+
+cucumbers=GameObject.FindGameObjectsWithTag("Cucumber");
+Cucumber_Count.text=cucumbers.Length.ToString();
+}
+}</pre><p>As you can see, we are using the <code class="literal">UnityEngine.UI</code> namespace. Inside the <code class="literal">CucumberManager</code> class, we declare three variables, establish an initial count of zero in the <code class="literal">Awake()</code> method, and then count the amount of cucumbers every frame in <code class="literal">Update()</code>, providing an on-screen update of the number of cucumbers left in the game. The ease with which we were able to program this was partially due to our assigning of the <code class="literal">Cucumber</code> tag to all of our cucumbers.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec88"></a>Scripting the beetle count</h3></div></div></div><p>As you might imagine, the <span>script</span><a id="id288605070" class="indexterm"></a> for counting beetles will be very similar to the method we used for counting cucumbers. This time, we will add a <code class="literal">BeetleManager</code> script to our <code class="literal">Beetle_Count</code> UI component. Here is the required script:</p><pre class="programlisting">using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+publicclassBeetleManager:MonoBehaviour{
+
+publicintcurrentBeetleCount;
+TextBeetle_Count;
+publicGameObject[]beetles;
+
+
+voidAwake(){
+
+Beetle_Count=GetComponent&amp;lt;Text&gt;();
+currentBeetleCount=0;
+}
+
+
+voidUpdate(){
+
+beetles=GameObject.FindGameObjectsWithTag("Beetle");
+Beetle_Count.text=beetles.Length.ToString();
+}
+}</pre><p>This code is very similar to our <code class="literal">CucumberManager</code> script. The only difference is the GameObject tag and our variable names.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip40"></a>Note</h3><p>If this script does not work for you, ensure that your beetles are assigned the <code class="literal">Beetle</code> tag.</p></div><p>The remaining scripting of our HUD will be accomplished in subsequent chapters. In <a class="link" href="#" linkend="ch10">Chapter 10</a>, <span class="emphasis"><em>Scripting Our Points System,</em></span> we will write scripts for the points and number of cherries in Cucumber Man's inventory. In <a class="link" href="#" linkend="ch11">Chapter 11</a>,  <span class="emphasis"><em>Scripting Victory and Defeat</em></span>, we will write the necessary scripts to update the health slider and the number of Cucumber Man lives that remain.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip41"></a>Note</h3><p>Be sure to save your Unity scene and project!</p></div></div></div>

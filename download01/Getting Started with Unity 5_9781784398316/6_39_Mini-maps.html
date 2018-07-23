@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec40"></a>Mini-maps</h2></div></div><hr /></div><p>Miniature-maps or mini-maps<a id="id272" class="indexterm"></a> provide game players with a small visual aid that helps them maintain perspective and direction in a game. These mini-maps can be used for many different purposes, depending on the game. Some examples include the ability to view a mini-map that overlooks an enemy encampment, a zoomed out view of the game map with friendly and enemy force indicators, and a mini-map that has the overall tunnel map while the main game screen views the current section of tunnel.</p><p>While we do not necessarily need a mini-map for our <span class="emphasis"><em>Little Farmer Colt</em></span> game, we'll create one so that you can replicate the task in your own games.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec49"></a>Creating a mini-map</h3></div></div></div><p>The following are the<a id="id273" class="indexterm"></a> steps we'll use to create a mini-map for our game:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><p>Navigate and select <span class="strong"><strong>GameObject</strong></span> | <span class="strong"><strong>Camera</strong></span> from the top menu.</p></li><li><p>In the <span class="strong"><strong>Hierarchy</strong></span> view, change the name from <code class="literal">Camera</code> to <code class="literal">Mini-Map</code>.</p></li><li><p>With the mini-map camera selected, go to the <span class="strong"><strong>Inspector</strong></span> view and click on the <span class="strong"><strong>Layer</strong></span> button, then <span class="strong"><strong>Add Layer</strong></span> in the pop-up menu.</p></li><li><p>In the next available <span class="strong"><strong>User Layer</strong></span>, add the name <code class="literal">Mini-Map</code>:</p><div class="mediaobject"><img src="/graphics/9781784398316/graphics/3852_06_14.jpg" /></div></li><li><p>Select the<a id="id274" class="indexterm"></a> <span class="strong"><strong>Mini-Map</strong></span> option in the <span class="strong"><strong>Hierarchy</strong></span> view, and then select <span class="strong"><strong>Layer</strong></span> | <span class="strong"><strong>Mini-Map</strong></span>. Now the new mini-map camera is assigned to the <span class="strong"><strong>Mini-Map</strong></span> layer.</p><div class="mediaobject"><img src="/graphics/9781784398316/graphics/3852_06_15.jpg" /></div></li><li><p>Next, we'll ensure the main camera is not rendering the <span class="strong"><strong>Mini-Map</strong></span> camera. Select the <span class="strong"><strong>Main Camera</strong></span> option in the <span class="strong"><strong>Hierarchy</strong></span> view.</p></li><li><p>In the <span class="strong"><strong>Inspector</strong></span> view, select <span class="strong"><strong>Culling Mask</strong></span>, and then deselect <span class="strong"><strong>Mini-Map</strong></span> from the following pop-up menu:</p><div class="mediaobject"><img src="/graphics/9781784398316/graphics/3852_06_16.jpg" /></div></li><li><p>Now we are ready to finish the configuration of our mini-map camera. Select <span class="strong"><strong>Mini-Map</strong></span> in the <span class="strong"><strong>Hierarchy</strong></span> view.</p></li><li><p>Using the transform tools in the <span class="strong"><strong>Scene</strong></span> view, adjust the camera object so that it is above Colt's farm. Zoom in and out of the <span class="strong"><strong>Scene</strong></span> view as necessary to ensure the camera can only see Colt's farm.</p></li><li><p>In <span class="strong"><strong>Inspector</strong></span> view, under <span class="strong"><strong>Camera</strong></span>, make the settings match the following values:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col align="left" /><col align="left" /></colgroup><thead><tr><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Setting</p>
+</th><th style="border-bottom: 0.5pt solid ; " align="left" valign="bottom">
+<p>Value</p>
+</th></tr></thead><tbody><tr><td style="" align="left" valign="top">
+<p>Clear flags</p>
+</td><td style="" align="left" valign="top">
+<p>Depth only</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Culling mask</p>
+</td><td style="" align="left" valign="top">
+<p>Everything</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Projection</p>
+</td><td style="" align="left" valign="top">
+<p>Orthographic</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Size</p>
+</td><td style="" align="left" valign="top">
+<p>25</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Clipping planes</p>
+</td><td style="" align="left" valign="top">
+<p>Near 0.3; Far 1000</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Viewpoint rect</p>
+</td><td style="" align="left" valign="top">
+<p>X 0.75; Y 0.75; W 1; H 1</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Depth</p>
+</td><td style="" align="left" valign="top">
+<p>1</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Rendering path</p>
+</td><td style="" align="left" valign="top">
+<p>User player settings</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Target texture</p>
+</td><td style="" align="left" valign="top">
+<p>None</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>Occlusion culling</p>
+</td><td style="" align="left" valign="top">
+<p>Selected</p>
+</td></tr><tr><td style="" align="left" valign="top">
+<p>HDR</p>
+</td><td style="" align="left" valign="top">
+<p>Not selected</p>
+</td></tr></tbody></table></div></li><li><p>With the <span class="strong"><strong>Mini-Map</strong></span> camera still selected, right-click on each of the <span class="strong"><strong>Flare Layer</strong></span>, <span class="strong"><strong>GUI Layer</strong></span>, and <span class="strong"><strong>Audio Listener</strong></span> components in the <span class="strong"><strong>Inspector</strong></span> view and select <span class="strong"><strong>Remove Component</strong></span>.</p></li><li><p>Save your<a id="id275" class="indexterm"></a> scene and your project.</p></li><li><p>You are ready to test your mini-map. Put the game in play mode and you'll see that even as Colt travels to Pa Poo's barn, Colt's farm is visible in the mini-map:</p><div class="mediaobject"><img src="/graphics/9781784398316/graphics/3852_06_17.jpg" /></div></li></ol></div><p>Mini-maps can be <a id="id276" class="indexterm"></a>very powerful game components. There are a couple of things to keep in mind if you are going to use mini-maps in your games:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>Make sure the mini-map size does not obstruct too much of the game environment. There is nothing worse than getting shot by an enemy that you could not see because a mini-map was in the way.</p></li><li style="list-style-type: disc"><p>The mini-map should have a purpose—we do not include them in games because they are cool. They take up screen real estate and should only be used if needed, such as helping the player make informed decisions. In our game, the player is able to keep an eye on Colt's farm animals while he is out gathering water and corn.</p></li><li style="list-style-type: disc"><p>Items should be clearly visible on the mini-map. Many games use red dots for enemies, yellow for neutral forces, and blue for friendlies. This type of color-coding provides users with a lot of information at a very quick glance.</p></li><li style="list-style-type: disc"><p>Ideally, the user should have the flexibility to move the mini-map to a corner of their choosing and toggle it on and off. In our game, we placed the mini-map in the top-right corner of the game screen so that the HUD objects would not be in the way.</p></li></ul></div></div></div>

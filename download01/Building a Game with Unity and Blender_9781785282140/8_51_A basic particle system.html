@@ -1,0 +1,72 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec50"></a>A basic particle system</h2></div></div><hr /></div><p>Particle systems are often overlooked by rookie game developers because they are not something that will <a id="id912" class="indexterm"></a>affect game mechanics, or make the AI smarter. However, a particle system is very important in games because not only does it make a static and boring scene look a lot livelier, but it can also create different moods and affect the player's emotion. Particles can be applied to game environments, props, power-ups, weapons, magic skills, and so on. </p><p>To create<a id="id913" class="indexterm"></a> a particle system, go to <span class="strong"><strong>Create</strong></span> | <span class="strong"><strong>Particle System</strong></span>, and it will create an empty object with the particle system attached to it. The particle system in Unity is in the form of a component and it has to be attached onto a game object in order for it to be functional, which means you can add the particle system to any game object, not necessarily an empty object only. Then, you will see something like this:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_08_01.jpg" /></div><p>When a particle <a id="id914" class="indexterm"></a>system is selected, a small window will appear at the bottom-right corner of your 3D scene. You can use this window to play, pause, or stop the particle system for testing purposes. You can also adjust the playback speed and playback time when testing the particles.</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_08_02.jpg" /></div><p>Next, you will also see a bunch of settings appearing on the <span class="strong"><strong>Inspector</strong></span> window. Don't worry, as we will go through the settings one by one.</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_08_03.jpg" /></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>The Main module</strong></span>: This<a id="id915" class="indexterm"></a> contains the global properties of the <a id="id916" class="indexterm"></a>particle, such as duration, looped, start size, start color, gravity multiplier, and so on. Unlike all the other modules, this module cannot be disabled.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Emission</strong></span>: The <span class="strong"><strong>Emission</strong></span> module controls the rate and timing of particle emissions.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Shape</strong></span>: This module is used to select the shape of the emission volume where particles are spawned from within it. The types of shapes include sphere, hemisphere, cone, box, mesh, circle, and edge.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Velocity over Lifetime</strong></span>: You can set this to increase or decrease the velocity of the particles over their lifetime, relative to either the local space or the world space.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Limit Velocity over Lifetime</strong></span>: This module controls how the speed of particles is reduced over their lifetime.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Force over Lifetime</strong></span>: You can add additional forces to the particles to simulate wind, attraction, and so on. You can also select whether the force has been applied in the local space or world space.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Color over Lifetime</strong></span>: This module controls the color of particles over time.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Color by Speed</strong></span>: This module changes the color of the particles according to its speed in distance units per second.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Size over Lifetime</strong></span>: You can make the particles expand or shrink over time using this module.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Size by Speed</strong></span>: The size of a particle can be set here to change according to its speed in distance units per second.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Rotation over Lifetime</strong></span>: You can make your particles look more realistic by assigning an angular velocity to them as they move.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Rotation by Speed</strong></span>: The rotation of a particle can be set here to change according to its speed in distance units per second.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>External Forces</strong></span>: By enabling this module, your particles will be affected by the wind zones in <a id="id917" class="indexterm"></a>your game scene. The higher the value you set for the multiplier property, the stronger it will be affected by the wind zones.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Collision</strong></span>: This controls the way particles collide with solid objects in the scene.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Sub Emitters</strong></span>: If you want to spawn additional particle systems at certain stages of its lifetime, you can enable this module. Phases of the particle's life include birth, collision, and death.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Texture Sheet Animation</strong></span>: You can animate your particles' texture by using this module. All you need to do is provide a texture with image sequence fits in grids, and then set the properties of this module to let it know how many rows there are in total and how many frames of animation there are to play as time progresses.</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Renderer</strong></span>: This module's settings determine how a particle's image or mesh is transformed, shaded, and overdrawn by other particles. You can also change the material of the particle here.</p></li></ul></div><p>After we have learned all the modules within a particle system, it's time for us to make use of them. Let's try to create a simple particle effect that gets spawned when the player has obtained an item or power-up.</p><p>First, change the settings in the Main module, as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Duration</strong></span>: <code class="literal">0.5</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Start Lifetime</strong></span>: <code class="literal">0.4</code>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Start Speed</strong></span>: <span class="strong"><strong>8</strong></span>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Start Size</strong></span>: <span class="strong"><strong>0.5</strong></span>
+</p></li><li style="list-style-type: disc"><p>
+<span class="strong"><strong>Max Particle</strong></span>: <code class="literal">1000</code>
+</p></li></ul></div><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_08_03B.jpg" /></div><p>Then, change the <a id="id918" class="indexterm"></a>emission rate to <code class="literal">50</code>. After that, change the emitter shape from cone to sphere, and keep the radius as <code class="literal">1</code>. Then, enable <span class="strong"><strong>Size over Lifetime</strong></span> and click on the little box besides the <span class="strong"><strong>Size</strong></span> setting. Make sure that the line in the box turns red after you've clicked on it. After that, scroll up a little bit until you see the <span class="strong"><strong>Open Editor</strong></span> button in the <span class="strong"><strong>Inspector</strong></span> window. Click on it to open up the particle graph editor, which looks something like this:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_08_04.jpg" /></div><p>Change the graph under <span class="strong"><strong>Size over Lifetime</strong></span> into a slanted line, as you can see in the preceding screenshot. This means the particle's size will decrease from the start size (<code class="literal">0</code> in this case) to zero overtime.</p><p>Once you're done <a id="id919" class="indexterm"></a>with all the settings, let's create a new C# script called <code class="literal">ItemParticles.cs</code>. The script is very simple; what it does is destroy the particle after two seconds:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class ItemParticles : MonoBehaviour
+{
+  void Start()
+  {
+    StartCoroutine (DestroyParticles());
+  }
+
+  IEnumerator DestroyParticles()
+  {
+    yield return new WaitForSeconds(2);
+    Destroy (gameObject);
+  }
+}</pre></div><p>Apply the script to your particle game object and save it as a prefab. Then, we will change the <code class="literal">PowerUp.cs</code> script so that it will spawn the particle when the player is colliding with it. We only have to add two new lines of code to the <code class="literal">PowerUp</code> script, as shown in the following highlight:</p><div class="informalexample"><pre class="programlisting">using UnityEngine;
+using System.Collections;
+
+public class PowerUp : MonoBehaviour
+{
+  public float addHealthPoint = 0;
+  public float addManaPoint = 0;
+  public float addAttackDamage = 0;
+  public float addSpecialAttackDamage = 0;
+  public float addDefense = 0;
+
+  public GameObject particlePrefab;
+
+  void OnTriggerEnter (Collider col)
+  {
+    if (col.gameObject.CompareTag("Player"))
+    {
+      PlayerAttribute playeAttr = col.gameObject.GetComponent&lt;PlayerAttribute&gt;();
+      playeAttr.manaPoint += addManaPoint;
+      playeAttr.healthPoint += addHealthPoint;
+      playeAttr.attackDamage += addAttackDamage;
+      playeAttr.specialAttackDamage += addSpecialAttackDamage;
+      playeAttr.defense += addDefense;
+
+      Instantiate(particlePrefab, transform.position, transform.rotation);
+
+      Destroy(gameObject);
+    }
+  }
+}</pre></div><p>Lastly, link the <a id="id920" class="indexterm"></a>particle prefab to all the powerup prefabs so that it will work properly. Here's the final result:</p><div class="mediaobject"><img src="/graphics/9781785282140/graphics/B04610_08_05.jpg" /></div></div>

@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec83"></a>Placing the towers</h2></div></div><hr /></div><p>Once the player has bought a cupcake tower, he or she should be able to decide where to place it. This section will explore how to implement this mechanism, which may be simple, but requires you pay attention to many things.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec94"></a>Sketching the idea of how it works</h3></div></div></div><p>There are many ways in which we can implement this system, but we will use colliders and a second script on the cupcake tower. As a result, you will also be able to learn new ways to handle situations in which information should be exchanged among the different game elements.</p><p>In particular, we will define some areas where it is allowed to place a tower, and we will do this through the use of colliders. Then, the game manager registers if the pointer of the player is within allowed areas. A second script, attached to the cupcake towers, uses this information from the game manager to actually allow the player to place cupcake towers. Moreover, once the tower is placed, the script attaches a collider to the cupcake tower. This will prevent a tower from being placed on top of others, and it will also be useful for implementing the selection system.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note101"></a>Note</h3><p>In the <span class="emphasis"><em>Homework</em></span> section, you will find some exercises to improve what we are going to implement in this section.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec95"></a>Allowed areas</h3></div></div></div><p>To begin, we should notice that the player is not free to place his towers wherever he wants to on the map. In fact, he cannot place them along the path where the Pandas are moving or in areas where there is water or other obstacles. Therefore, we need to specify this constraint within our game. Thus, we need to look at our map and find all the spots where the player can place the tower. In our case, the spots that we are looking for are the following:</p><div class="mediaobject"><img src="/graphics/9781784397173/graphics/B03794_07_06.jpg" /></div><p>As we can see, they have a custom shape. Even if it is possible to implement custom shapes (which is left as an exercise to readers who want to challenge themselves), it can be much more convenient to think in terms of rectangles and thus to split our shapes into rectangles. Of course, this can be done in more than one way; however, the less rectangles that cover the entire area, the better from a computational point of view. On the other hand, by using more rectangles, you are able to better approximate your areas. So find your tradeoff.</p><p>A possible choice could be the following:</p><div class="mediaobject"><img src="/graphics/9781784397173/graphics/B03794_07_07.jpg" /></div><p>In the end, we have found 11 areas.</p><p>The idea here is that all these areas are <span class="strong"><strong>Box Colliders 2D</strong></span> attached to the <code class="literal">Game Manager</code> object, which will check if the mouse is within one of these areas or not by toggling a flag. This flag will be read by the script we are going to implement in the next section.</p><p>Let's start by adding a <span class="strong"><strong>Box Collider 2D</strong></span> on the <span class="strong"><strong>Game Manager</strong></span> by clicking on<span class="strong"><strong> Component | Physics 2D | Box Collider 2D</strong></span>. Then, we need to resize it to the same dimensions as one of the rectangles we have found, and by using the offset parameter, place it onto the map. At this stage in the book, you should be able to repeat this operation for all the areas of the map, without having their exact values written down here in the book.</p><p>Now, the next stage is to modify the <code class="literal">GameManagerScript</code> to toggle the flag. Once we have opened the script, we can already add the flag as a Boolean variable:</p><pre class="programlisting">
+<span class="emphasis"><em>//Private variable to check if the mouse is hovering an area where&#13;
+</em></span>
+<span class="emphasis"><em>//Cupcake tower can be placed</em></span> &#13;
+private bool _isPointerOnAllowedArea = true; &#13;
+</pre><p>Since we don't want other scripts to change this variable, it is private, and therefore we need to expose a function to retrieve its value:</p><pre class="programlisting">
+<span class="emphasis"><em>//Function that returns true if the mouse is hovering an area where a &#13;
+//Cupcake tower can be placed</em></span> &#13;
+public bool isPointerOnAllowedArea() { &#13;
+  return _isPointerOnAllowedArea; &#13;
+} &#13;
+</pre><p>Unity offers us a couple of very handy functions to detect when the pointer of the player enters within an area. Their names are self-explanatory: <code class="literal">OnMouseEnter()</code> and <code class="literal">OnMouseExit()</code>. In the first function, we will set the flag to <code class="literal">true</code>, whereas in the second we will set the flag to <code class="literal">false</code>:</p><pre class="programlisting">
+<span class="emphasis"><em>//Function which is called when the mouse enters in one of the &#13;
+//colliders of the Game Manager</em></span> &#13;
+void OnMouseEnter() { &#13;
+  <span class="emphasis"><em>//Set that the mouse is now hovering an area where placing Cupcake &#13;
+  //towers is allowed</em></span> &#13;
+  _isPointerOnAllowedArea = true; &#13;
+} &#13;
+ &#13;
+<span class="emphasis"><em>//Function which is called when the mouse exits from one of the &#13;
+//colliders of the Game Manager</em></span> &#13;
+void OnMouseExit() { &#13;
+ <span class="emphasis"><em> //Set that the mouse is not hovering anymore an area where placing &#13;
+  //Cupcake towers is allowed</em></span> &#13;
+  _isPointerOnAllowedArea = false; &#13;
+} &#13;
+</pre><p>Save the script, and the setup for the allowed areas is ready.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec96"></a>Scripting the placement script</h3></div></div></div><p>For placing the cupcake towers after having been bought, we need to create another script for our cupcake towers. You can rename it <code class="literal">PlacingCupcakeTowerScript</code>, and add it to the <span class="strong"><strong>Cupcake Tower Prefabs</strong></span>.</p><p>Before modifying it, we need to uncheck the <code class="literal">CupcakeTowerScript</code> from the prefabs of our cupcake towers. In fact, a tower enters in the scene for the first time because the player has bought it. While in placing mode, the cupcake tower should not shoot. Once placed, the <code class="literal">CupcakeTowerScript</code> is enabled, and the tower is operative again.</p><p>Now, we can open the newly-created script. We need to retrieve the <code class="literal">Game Manager</code>, since we will need it to check when the mouse is on an area where cupcake towers can be placed. As such, we can write the following code, which is the same we used in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Through a Sea of Sprinkles – Navigation in Artificial Intelligence</em></span>, to retrieve the <code class="literal">Game Manager</code> for the first time:</p><pre class="programlisting">
+<span class="emphasis"><em>// Private variable to store the reference to the Game Manager</em></span> &#13;
+private GameManagerScript gameManager; &#13;
+ &#13;
+void Start () { &#13;
+ <span class="emphasis"><em> //Get the reference to the Game Manager</em></span> &#13;
+  gameManager = FindObjectOfType&lt;GameManagerScript&gt;(); &#13;
+} &#13;
+</pre><p>In the <code class="literal">Update()</code> function we are moving the tower to the mouse location (so at each frame, the tower will move with the mouse of the player), and if the player presses a key, we check if the pointer is actually over an allowed area. If so, the tower is placed, which means that the script that moves the tower is destroyed. Moreover, the <code class="literal">CupcakeTowerScript</code> is enabled again, and a collider is placed on the cupcake tower. In fact, this additional collider prevents the placing of other towers on top of this (and to select the tower in the next section):</p><pre class="programlisting">void Update () { &#13;
+  <span class="emphasis"><em>//Get the mouse position</em></span> &#13;
+  float x = Input.mousePosition.x; &#13;
+  float y = Input.mousePosition.y; &#13;
+ &#13;
+  <span class="emphasis"><em>/* Place the cupcake Tower where the mouse is, transformed in game&#13;
+    coordinates &#13;
+   * from the Main Camera. Since the Camera is placed at -10 and we&#13;
+     want the &#13;
+   * tower to be at -3, we need to use 7 as z-axis coordinate */</em></span> &#13;
+  transform.position = Camera.main.ScreenToWorldPoint(new Vector3(x,&#13;
+     y, 7)); &#13;
+ &#13;
+  <span class="emphasis"><em>//If the player clicks, the second condition checks if the current&#13;
+    position is &#13;
+  //within an area where cupcake towers can be placed</em></span> &#13;
+  if (Input.GetMouseButtonDown(0) &amp;&amp;&#13;
+    gameManager.isPointerOnAllowedArea()) { &#13;
+ <span class="emphasis"><em> //Enabling again the main cupcake tower script, so to make it&#13;
+    operative</em></span> &#13;
+  GetComponent&lt;CupcakeTowerScript&gt;().enabled = true; &#13;
+ <span class="emphasis"><em> //Place a collider on the Cupcake tower</em></span> &#13;
+  gameObject.AddComponent&lt;BoxCollider2D&gt;(); &#13;
+  <span class="emphasis"><em>//Remove this script, so to not keeping the Cupcake Tower on the&#13;
+    mouse</em></span> &#13;
+  Destroy(this); &#13;
+} &#13;
+</pre><p>Save the script, and as a result the player is able to place cupcake towers once they are bought.</p></div></div>
