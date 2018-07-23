@@ -7,7 +7,7 @@ public class isbn {
 
         ArrayList<String> baseList = new ArrayList<String>();
         ArrayList<String> compareList = new ArrayList<String>();
-
+        
         for (String a : base) {
             baseList.add(a);
         }
@@ -15,12 +15,14 @@ public class isbn {
         for (String b : compare) {
             compareList.add(b);
         }
-
+        System.out.println(baseList.size());
+        System.out.println(compareList.size());
 
         baseList.removeAll(compareList);
 
-        for (String c : baseList) {
-            System.out.println(c);
-        }
+        // for (String c : baseList) {
+        //     System.out.println(c);
+        // }
+        System.out.println(baseList.size());
     }
 }
