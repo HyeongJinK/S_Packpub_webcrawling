@@ -60,8 +60,6 @@ function getFiles (dir, files_){
             )   
     }
 }
-<<<<<<< HEAD
-getFiles('./download10')
-=======
-getFiles('./download01')
->>>>>>> e0be6b731bc30904f4feb781f856a078d17b05cb
+
+getFiles('./download02')
+

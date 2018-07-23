@@ -3,7 +3,7 @@
  */
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('./DB/books.db');
-const len = 1000;
+const len = 2000;
 
 //img src="/graphics/
 //https://www.packtpub.com/
