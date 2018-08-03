@@ -3,7 +3,7 @@ var request = require("sync-request");
 var db = new sqlite3.Database('./DB/books.db');
 let p = 0;
 
-db.all("SELECT isbn FROM book WHERE imgUrl = ''", function(err, rows) {
+db.all("SELECT isbn FROM book WHERE imgUrl = '' or imgUrl ISNULL", function(err, rows) {
     rows.forEach(function (row) {
         let isbn = row.isbn;
         //console.log(isbn);
