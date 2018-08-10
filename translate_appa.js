@@ -1,6 +1,7 @@
-var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('./DB/books.db');
-var cheerio = require("cheerio"); 
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('./DB/books.db');
+const cheerio = require("cheerio"); 
+const request = require("sync-request");
 
 const isbn = "9781786461407"
 let htmlReplace = (s) => s.replace(/(<([^>]+)>)/ig,"");
@@ -29,23 +30,37 @@ db.get('SELECT * FROM content WHERE isbn = ? and contentIndex = 4'
             //temp(this).prepend("&lt;span style='color:red'&gt;").append("&lt;/span&gt;");
             temp(this).prepend("[[").append("]]");
         });
-        //temp("p").prepend("\n").append("\n");
+        
         temp("p").each(function(i, elem) {
-            temp(this).text("sdf");
-            console.log(temp(this).text())
-            //console.log(temp(this).html())
+            let formData = "key=AIzaSyBkoF9oYJIpYB_Msi2ZENcNOkld3jNo4_o&target=ko&q="+temp(this).text()
+            
+            var res = request("post", 'https://www.googleapis.com/language/translate/v2', {
+                headers: {       
+                        'content-type': 'application/x-www-form-urlencoded'
+                    },
+                body: formData
+                }
+            );
+            var trStr = JSON.parse(res.getBody());
+            console.log(trStr.data.translations[0].translatedText);
+            temp(this).text(trStr.data.translations[0].translatedText);
         });
-           
+        temp("p").prepend("\n").append("\n");
         
         temp("ul").prepend("\n");
         temp("ol").prepend("\n");
         temp("ul").find("li").prepend("\n* ");
         temp("ol").find("li").each(function(i, elem) {
-            temp(this).prepend("\n"+temp(this).parent().attr("start")+". ");
+            if (temp(this).parent().attr("start") == undefined) {
+                temp(this).prepend("\n1. ");
+            } else {
+                temp(this).prepend("\n"+temp(this).parent().attr("start")+ ". ");
+            }
+            
         });        
 
         //console.log(temp.html());
-        //console.log(replace(htmlReplace(temp.html())));
+        console.log(replace(htmlReplace(temp.html())));
     }
 );
 

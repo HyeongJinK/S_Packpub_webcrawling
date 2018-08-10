@@ -52,7 +52,11 @@ function parser(h) {
     
 
     temp("ul").prepend("\n");
-    temp("li").prepend("\n* ");
+    temp("ol").prepend("\n");
+    temp("ul").find("li").prepend("\n* ");
+    temp("ol").find("li").each(function(i, elem) {
+        temp(this).prepend("\n"+temp(this).parent().attr("start")+". ");
+    }); 
 
     //console.log(temp.html());
 
