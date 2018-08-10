@@ -6,7 +6,7 @@ const isbn = "9781786461407"
 let htmlReplace = (s) => s.replace(/(<([^>]+)>)/ig,"");
 let replace = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#x2013;/g, '-').replace(/&apos;/g, '\'').replace(/&#xA0;/g, ' ').replace(/&amp;/g, '&');
 
-db.get('SELECT * FROM content WHERE isbn = ? and contentIndex = 36'
+db.get('SELECT * FROM content WHERE isbn = ? and contentIndex = 6'
     , [isbn]
     ,(err, rows) =>
     {
@@ -18,6 +18,7 @@ db.get('SELECT * FROM content WHERE isbn = ? and contentIndex = 36'
 
         temp("h2.title").prepend("# ").append("\n");
         temp("h3.title").prepend("\n## ").append("\n");
+        temp("h4.title").prepend("\n### ").append("\n");
         
         temp("p").prepend("\n").append("\n");
         temp("img").each(function(i, elem) {
@@ -31,13 +32,12 @@ db.get('SELECT * FROM content WHERE isbn = ? and contentIndex = 36'
         temp("pre.programlisting").prepend("\n\n```java\n").append("\n```\n");
         
 
-        temp("ul").prepend("\n").append("\n");;
+        temp("ul").prepend("\n");
         temp("li").prepend("\n* ");
 
-        //console.log(temp.html());
+        console.log(temp.html());
 
-        
-        console.log(replace(htmlReplace(temp.html())));
+        //console.log(replace(htmlReplace(temp.html())));
         
         //console.log(rows.content);
 
