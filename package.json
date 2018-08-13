@@ -1,0 +1,11 @@
+{
+    "name": "packpub_webcrawling",
+    "version": "0.0.1",
+    "scripts": {},
+    "dependencies": {
+        "cheerio": "^1.0.0-rc.2",
+        "sqlite3": "^4.0.2",
+        "sync-request": "^6.0.0",
+        "youtube-dl": "^1.12.2"
+    }
+}

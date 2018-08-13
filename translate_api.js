@@ -30,6 +30,6 @@ var res = request("post", 'https://www.googleapis.com/language/translate/v2', {
     body: formData
     }
 );
-var trStr = JSON.parse(res.getBody());
+var trStr = JSON.parse(res.getBody('utf8'));
 console.log(trStr);
 console.log(trStr.data.translations[0].translatedText);
