@@ -32,6 +32,6 @@ function playlist(url) {
   video.on('next', playlist);
  
 }
-//PLFoH8spXdgNGxj4AnFIbLciGVLXpUsmrN
-playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNEN2VTcjd9jX7J-SnPRl-xv');
+//
+playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNGxj4AnFIbLciGVLXpUsmrN');
 
