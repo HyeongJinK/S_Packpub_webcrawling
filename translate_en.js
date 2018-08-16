@@ -2,14 +2,8 @@ var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('./DB/books.db');
 var fs =require('fs');
 var cheerio = require("cheerio"); 
-//junit5 9781787285736
-//java 9 Cook 9781786461407
-//mastring java 9 9781786468734
-//modular java 9 9781787126909
-//java begin 9781788296298
-//high per 9781787120785
-//mi
-const isbn = "9781788293037"
+
+const isbn = "9781785887949"
 let gitbookPath = "./gitbook"
 
 let FolderReplace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
@@ -29,7 +23,7 @@ function createDir(path) {
 }
 
 function createMD(path, fileName, content) {
-    fs.writeFileSync(path+'/'+fileName, content, function(err) {
+    fs.writeFile(path+'/'+fileName, content, function(err) {
         if(err) throw err;
 
         console.log(fileName+' File write completed');
