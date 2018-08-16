@@ -5,7 +5,7 @@ var rp = require('request-promise');
 var fs =require('fs');
 var cheerio = require("cheerio"); 
 
-const isbn = "9781786468734"
+const isbn = "9781788293037"
 let gitbookPath = "./gitbook"
 
 let FolderReplace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
@@ -74,6 +74,9 @@ function parser(h, draftPath, step, contentIndex) {
                 temp(point).prepend("# ");
                 pointent += 1;
             })
+            .catch(function() {
+                console.log("err = " + step+"_"+contentIndex+".md");
+            })
             .then(function() {
                 if (count == pointent) {
                     createMD(draftPath+"/ch"+step, step+"_"+contentIndex+".md", unescape(replace(htmlReplace(temp.html()))));
@@ -93,6 +96,9 @@ function parser(h, draftPath, step, contentIndex) {
                 temp(point).text(temp(point).text() + " - " + trText);  
                 temp(point).prepend("\n\n## ");
                 pointent += 1;
+            })
+            .catch(function() {
+                console.log("err = " + step+"_"+contentIndex+".md");
             })
             .then(function() {
                 if (count == pointent) {
@@ -114,6 +120,9 @@ function parser(h, draftPath, step, contentIndex) {
                 temp(point).text(temp(point).text() + " - " + trText);  
                 temp(point).prepend("\n\n### ");
                 pointent += 1;
+            })
+            .catch(function() {
+                console.log("err = " + step+"_"+contentIndex+".md");
             })
             .then(function() {
                 if (count == pointent) {
@@ -146,6 +155,9 @@ function parser(h, draftPath, step, contentIndex) {
                 temp(point).prepend("\n\n");
                 pointent += 1;
             })
+            .catch(function() {
+                console.log("err = " + step+"_"+contentIndex+".md");
+            })
             .then(function() {
                 if (count == pointent) {
                     createMD(draftPath+"/ch"+step, step+"_"+contentIndex+".md", unescape(replace(htmlReplace(temp.html()))));
@@ -169,6 +181,9 @@ function parser(h, draftPath, step, contentIndex) {
                 temp(point).text(trText);  
                 temp(point).prepend("\n* ");
                 pointent += 1;
+            })
+            .catch(function() {
+                console.log("err = " + step+"_"+contentIndex+".md");
             })
             .then(function() {
                 if (count == pointent) {
@@ -195,6 +210,9 @@ function parser(h, draftPath, step, contentIndex) {
                 } 
                 pointent += 1;
             })
+            .catch(function() {
+                console.log("err = " + step+"_"+contentIndex+".md");
+            })
             .then(function() {
                 if (count == pointent) {
                     createMD(draftPath+"/ch"+step, step+"_"+contentIndex+".md", unescape(replace(htmlReplace(temp.html()))));
@@ -215,8 +233,8 @@ db.get("SELECT * FROM book WHERE isbn = ?", param, function(err, rows) {
     createMD(defaultPath, "README.md", "");
     
     
-    let step = -999;
-    db.all("SELECT * FROM content WHERE isbn = ? and menuNum in (14, 15, 16) order by contentIndex", param, function(err, rows) {
+    let step = -999; //AND contentIndex in (85)
+    db.all("SELECT * FROM content WHERE isbn = ? order by contentIndex", param, function(err, rows) {
         rows.forEach(function(value, index, array) {
             if (step != value.menuNum) {
                 step = value.menuNum;

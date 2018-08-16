@@ -7,9 +7,9 @@ var cheerio = require("cheerio");
 //mastring java 9 9781786468734
 //modular java 9 9781787126909
 //java begin 9781788296298
-//high per
+//high per 9781787120785
 //mi
-const isbn = "9781787281448"
+const isbn = "9781788293037"
 let gitbookPath = "./gitbook"
 
 let FolderReplace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
