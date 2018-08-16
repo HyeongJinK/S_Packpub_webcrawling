@@ -5,7 +5,11 @@ var cheerio = require("cheerio");
 //junit5 9781787285736
 //java 9 Cook 9781786461407
 //mastring java 9 9781786468734
-const isbn = "9781786468734"
+//modular java 9 9781787126909
+//java begin 9781788296298
+//high per
+//mi
+const isbn = "9781787281448"
 let gitbookPath = "./gitbook"
 
 let FolderReplace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
@@ -27,6 +31,7 @@ function createDir(path) {
 function createMD(path, fileName, content) {
     fs.writeFileSync(path+'/'+fileName, content, function(err) {
         if(err) throw err;
+
         console.log(fileName+' File write completed');
     });
 }

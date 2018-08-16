@@ -4,7 +4,7 @@ const request = require("sync-request");
 var fs =require('fs');
 var cheerio = require("cheerio"); 
 
-const isbn = "9781787285736"
+const isbn = "9781786468734"
 let gitbookPath = "./gitbook"
 
 let FolderReplace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
@@ -108,7 +108,7 @@ db.get("SELECT * FROM book WHERE isbn = ?", param, function(err, rows) {
     
     
     let step = -999;
-    db.all("SELECT * FROM content WHERE isbn = ? and menuNum in (1,2) order by contentIndex", param, function(err, rows) {
+    db.all("SELECT * FROM content WHERE isbn = ? and menuNum in (12) order by contentIndex", param, function(err, rows) {
         rows.forEach(function(value, index, array) {
             if (step != value.menuNum) {
                 step = value.menuNum;
