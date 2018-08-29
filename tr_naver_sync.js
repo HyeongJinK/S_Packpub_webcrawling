@@ -5,8 +5,8 @@ var fs =require('fs');
 var cheerio = require("cheerio"); 
 
 const isbn = "9781786461407"
-let contentIndexStr= "16,17,18,19,20";
-let currentNaver = 0;
+let contentIndexStr= "26";
+let currentNaver = 9;
 
 let gitbookPath = "./gitbook"
 
@@ -52,9 +52,10 @@ function translateApiCall(oriStr = "") {
 
         return trText;
     } catch (e) {
-        ++currentNaver;
+        ++currentNaver;        
         if (currentNaver >= naverId.length) {
             console.log(e);
+            process.exit(1);
         } else {
             return translateApiCall(oriStr);
         }
