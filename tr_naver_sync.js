@@ -6,7 +6,7 @@ var cheerio = require("cheerio");
 
 const isbn = "9781786461407"
 let contentIndexStr= "26";
-let currentNaver = 9;
+let currentNaver = 0;
 
 let gitbookPath = "./gitbook"
 
@@ -31,9 +31,12 @@ function createMD(path, fileName, content) {
     console.log(fileName+' File write completed');
 }
 
-let naverId = ['PIzcrH8b_OVhgqHKguPr','c39XRmuZCJ3A1fANGlcf','3eJTPsF5z0Pd0M_nq5P8', 'pxbwvspJZrne2m7B4sdM','OXxix1TtpCJiToTABQT9','VcwBQ20yokWNxNXr28_P','XpfDMtSUjHpFaov4WPZm','V7rQE4ImkaHPCWwJL_G_','U9QnRU7H0Yc7JOvdHmHo','PQK6yFEsXt5xENhZN3Sv'];
-let naverSecret = ['IC57QXbTkQ', 'KkBf_8n9nP', 'pePl0dDFLK', 'LlEHqsIH8P','_oA5h0Wsg4', '7pxQoakogu', '7063e9k4FZ', 'inliX0U89t', '8ZYQZxPyMY', 'lUIJJN9WS5'];
-function translateApiCall(oriStr = "") {
+let naverId = ['PIzcrH8b_OVhgqHKguPr','c39XRmuZCJ3A1fANGlcf','3eJTPsF5z0Pd0M_nq5P8', 'pxbwvspJZrne2m7B4sdM','OXxix1TtpCJiToTABQT9','VcwBQ20yokWNxNXr28_P','XpfDMtSUjHpFaov4WPZm','V7rQE4ImkaHPCWwJL_G_','U9QnRU7H0Yc7JOvdHmHo','AqcSjeObhRngK9fLdXPe'];
+let naverSecret = ['IC57QXbTkQ', 'KkBf_8n9nP', 'pePl0dDFLK', 'LlEHqsIH8P','_oA5h0Wsg4', '7pxQoakogu', '7063e9k4FZ', 'inliX0U89t', '8ZYQZxPyMY', 'BAPgAbfZwR'];
+function translateApiCall(oriStr) {
+    oriStr = oriStr.replace(/^\n/g, "");
+    if (oriStr.replace(/\s/g, "") == "")
+        return "";
     try {
         let formData = "source=en&target=ko&text="+oriStr
             
@@ -52,9 +55,10 @@ function translateApiCall(oriStr = "") {
 
         return trText;
     } catch (e) {
-        ++currentNaver;        
+        ++currentNaver;
+        console.log(e);        
+        console.log(oriStr);
         if (currentNaver >= naverId.length) {
-            console.log(e);
             process.exit(1);
         } else {
             return translateApiCall(oriStr);

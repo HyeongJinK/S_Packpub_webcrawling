@@ -1,13 +1,13 @@
 const request = require("sync-request");
 
-let formData = "source=en&target=ko&text=cat"
+let formData = `source=en&target=ko&text=cat`
 
 try {
     var res = request("post", 'https://openapi.naver.com/v1/papago/n2mt', {
         headers: {       
                 'content-type': 'application/x-www-form-urlencoded'
-                , 'X-Naver-Client-Id': 'PIzcrH8b_OVhgqHKguPr'
-                , 'X-Naver-Client-Secret': 'IC57QXbTkQ'
+                , 'X-Naver-Client-Id': 'U9QnRU7H0Yc7JOvdHmHo'
+                , 'X-Naver-Client-Secret': '8ZYQZxPyMY'
             },
         body: formData
         }
@@ -17,5 +17,5 @@ try {
     console.log(trStr);
     console.log(trText);
 } catch(e) {
-    //console.log(e.body);
+    console.log(e);
 }
