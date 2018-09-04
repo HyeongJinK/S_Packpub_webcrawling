@@ -5,8 +5,8 @@ var fs =require('fs');
 var cheerio = require("cheerio"); 
 
 const isbn = "9781786461407"
-let contentIndexStr= "26";
-let currentNaver = 0;
+let contentIndexStr= "61,62,63,64,65";
+let currentNaver = 6;
 
 let gitbookPath = "./gitbook"
 
@@ -56,8 +56,8 @@ function translateApiCall(oriStr) {
         return trText;
     } catch (e) {
         ++currentNaver;
-        console.log(e);        
-        console.log(oriStr);
+        //console.log(e);        
+        console.log("currentNaver = " + currentNaver);
         if (currentNaver >= naverId.length) {
             process.exit(1);
         } else {
@@ -88,7 +88,7 @@ function parser(h) {
         temp(this).parent().prepend("\n\n![](" + temp(this).attr("src") + ")").append("\n");
     });
     temp("code.literal").each(function(i, elem) {
-        temp(this).prepend("\'").append("\'");
+        temp(this).prepend("\`").append("\`");
         //temp(this).prepend("[[").append("]]");
     });
     

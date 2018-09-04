@@ -137,7 +137,8 @@ function parser(h, draftPath, step, contentIndex) {
         temp(this).parent().prepend("\n\n![](" + temp(this).attr("src") + ")").append("\n");
     });
     temp("code.literal").each(function(i, elem) {
-        temp(this).prepend("&lt;span style='color:red'&gt;").append("&lt;/span&gt;");
+        temp(this).prepend("\`").append("\`");
+        //temp(this).prepend("&lt;span style='color:red'&gt;").append("&lt;/span&gt;");
         //temp(this).prepend("[[").append("]]");
     });
     
