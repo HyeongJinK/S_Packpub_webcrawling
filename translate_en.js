@@ -3,12 +3,12 @@ var db = new sqlite3.Database('./DB/books.db');
 var fs =require('fs');
 var cheerio = require("cheerio"); 
 
-const isbn = "9781785887949"
+const isbn = "9781786468734"
 let gitbookPath = "./gitbook"
 
 let FolderReplace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
 let htmlReplace = (s) => s.replace(/(<([^>]+)>)/ig,"");
-let replace = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#x2013;/g, '-').replace(/&apos;/g, '\'').replace(/&#xA0;/g, ' ').replace(/&amp;/g, '&');
+let replace = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#x2013;/g, '-').replace(/&apos;/g, '\'').replace(/&#xA0;/g, ' ').replace(/&amp;/g, '&').replace(/&#x/g, '%u').replace(/;/g, '');
 
 let param = [
     isbn
@@ -36,16 +36,18 @@ function parser(h) {
     temp("h2.title").prepend("# ");
     temp("h3.title").prepend("\n\n## ");
     temp("h4.title").prepend("\n\n### ");
+    temp("h5.title").prepend("\n\n#### ");
     
     temp("pre.programlisting").prepend("\n\n```java\n").append("\n```");
     temp("strong").prepend("**").append("**");
     temp("img").each(function(i, elem) {
-        temp(this).parent().prepend("\n\n![](" + temp(this).attr("src") + ")").append("\n");
+        temp(this).parent().prepend("\n\n![](" + temp(this).attr("src") + ")");
     });
     temp("code.literal").each(function(i, elem) {
-        temp(this).prepend("&lt;span style='color:red'&gt;").append("&lt;/span&gt;");
-        //temp(this).prepend("[[").append("]]");
+        //temp(this).prepend("&lt;span style='color:red'&gt;").append("&lt;/span&gt;");
+        temp(this).prepend("\`").append("\`");
     });
+    temp("div.note p").prepend("> ");
     
     temp("p").prepend("\n\n")
     
@@ -61,7 +63,27 @@ function parser(h) {
         }
     }); 
 
-    return replace(htmlReplace(temp.html()));
+    temp("td").each(function(i, elem) {
+        temp(this).text(temp(this).text().replace(/^\n/g, "").replace(/^\n/g, ""));
+    });
+
+    temp("table").each(function(i, elem) {
+        temp(this).prepend("\n");
+        temp(this).find("tr").each(function(j, elem) {
+            let tdCount = temp(this).find("td").length;
+            temp(this).prepend("\n|");
+
+            if (j == 0) {
+                temp(this).append("\n|")
+                for (var z = 0; tdCount > z; z++) {
+                    temp(this).append("-|")
+                }
+            }
+        });
+        temp(this).find("td").append("|")
+    });
+
+    return temp.text(); //replace(htmlReplace(temp.html()));
 }
 
 db.get("SELECT * FROM book WHERE isbn = ?", param, function(err, rows) {  

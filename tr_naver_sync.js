@@ -4,9 +4,9 @@ const request = require("sync-request");
 var fs =require('fs');
 var cheerio = require("cheerio"); 
 
-const isbn = "9781786461407"
-let contentIndexStr= "61,62,63,64,65";
-let currentNaver = 6;
+const isbn = "9781786468734"
+let contentIndexStr= "63";
+let currentNaver = 0;
 
 let gitbookPath = "./gitbook"
 
@@ -31,8 +31,10 @@ function createMD(path, fileName, content) {
     console.log(fileName+' File write completed');
 }
 
-let naverId = ['PIzcrH8b_OVhgqHKguPr','c39XRmuZCJ3A1fANGlcf','3eJTPsF5z0Pd0M_nq5P8', 'pxbwvspJZrne2m7B4sdM','OXxix1TtpCJiToTABQT9','VcwBQ20yokWNxNXr28_P','XpfDMtSUjHpFaov4WPZm','V7rQE4ImkaHPCWwJL_G_','U9QnRU7H0Yc7JOvdHmHo','AqcSjeObhRngK9fLdXPe'];
-let naverSecret = ['IC57QXbTkQ', 'KkBf_8n9nP', 'pePl0dDFLK', 'LlEHqsIH8P','_oA5h0Wsg4', '7pxQoakogu', '7063e9k4FZ', 'inliX0U89t', '8ZYQZxPyMY', 'BAPgAbfZwR'];
+let naverId = ['PIzcrH8b_OVhgqHKguPr','c39XRmuZCJ3A1fANGlcf','3eJTPsF5z0Pd0M_nq5P8', 'pxbwvspJZrne2m7B4sdM','OXxix1TtpCJiToTABQT9','VcwBQ20yokWNxNXr28_P','XpfDMtSUjHpFaov4WPZm','V7rQE4ImkaHPCWwJL_G_','U9QnRU7H0Yc7JOvdHmHo','AqcSjeObhRngK9fLdXPe'
+,'TS5gt1Hp5fQnYwaMc4nU','p1z0mZotzmhC21NQXrnX','IoDbeaQW6IheuqU8_0Pc','sY5yuCgciE4C_o49U75w','3paoxaYXx5idPL_oMQq9','V6vwzLk9TRuzlc4_EV1y','h1KwBaBrNGRXS2oOdItm','Dm9ko64LmAvtnbV1NwGP','6GVGU9_7lT7EWhjM_M8i','1sOur5xeWdrC3ZJgymgE'];
+let naverSecret = ['IC57QXbTkQ', 'KkBf_8n9nP', 'pePl0dDFLK', 'LlEHqsIH8P','_oA5h0Wsg4', '7pxQoakogu', '7063e9k4FZ', 'inliX0U89t', '8ZYQZxPyMY', 'BAPgAbfZwR'
+, 'oMzTFOvzn7', 'eQP2hUp7PI', 'KUWg0lEeR1', 'EonGckqKSk', 'bFwuSy6WfI', 'GqMSH9D7al', 'fT0KTkTgUj', 'ALUKeRQ8dj', 'Toulsx9UHX', 't6BdmjhiCd'];
 function translateApiCall(oriStr) {
     oriStr = oriStr.replace(/^\n/g, "");
     if (oriStr.replace(/\s/g, "") == "")
@@ -128,9 +130,9 @@ db.get("SELECT * FROM book WHERE isbn = ?", param, function(err, rows) {
     
     createMD(defaultPath, "README.md", "");
     
-    //menuNum
+    //
     let step = -999;
-    db.all("SELECT * FROM content WHERE isbn = ? and contentIndex in ("+contentIndexStr+") order by contentIndex", param, function(err, rows) {
+    db.all("SELECT * FROM content WHERE isbn = ? and contentIndex > "+contentIndexStr+" order by contentIndex", param, function(err, rows) {
         rows.forEach(function(value, index, array) {
             if (step != value.menuNum) {
                 step = value.menuNum;
