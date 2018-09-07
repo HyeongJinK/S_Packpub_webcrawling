@@ -28,7 +28,7 @@ db.get('SELECT * FROM content WHERE isbn = ? and contentIndex = 60'
             //temp(this).prepend("&lt;span style='color:red'&gt;").append("&lt;/span&gt;");
             temp(this).prepend("\`").append("\`");
         });
-        temp("div.note p").prepend("> ")
+        temp("div.note p").prepend("> ");
 
         temp("p").each(function(i, elem) {
             temp(this).prepend("\n\n");
@@ -71,8 +71,8 @@ db.get('SELECT * FROM content WHERE isbn = ? and contentIndex = 60'
             });
             temp(this).find("td").append("|")
         });
-        console.log(temp.text());
-        //console.log(temp.html());
+        //console.log(temp.text());
+        console.log(temp.html());
         //console.log(replace(htmlReplace(temp.html())));
     }
 );

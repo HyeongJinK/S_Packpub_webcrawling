@@ -5,7 +5,7 @@ var fs =require('fs');
 var cheerio = require("cheerio"); 
 
 const isbn = "9781786468734"
-let contentIndexStr= "63";
+let contentIndexStr= "71";
 let currentNaver = 0;
 
 let gitbookPath = "./gitbook"
@@ -37,8 +37,9 @@ let naverSecret = ['IC57QXbTkQ', 'KkBf_8n9nP', 'pePl0dDFLK', 'LlEHqsIH8P','_oA5h
 , 'oMzTFOvzn7', 'eQP2hUp7PI', 'KUWg0lEeR1', 'EonGckqKSk', 'bFwuSy6WfI', 'GqMSH9D7al', 'fT0KTkTgUj', 'ALUKeRQ8dj', 'Toulsx9UHX', 't6BdmjhiCd'];
 function translateApiCall(oriStr) {
     oriStr = oriStr.replace(/^\n/g, "");
-    if (oriStr.replace(/\s/g, "") == "")
+    if (oriStr.replace(/\s/g, "") == "") {
         return "";
+    }
     try {
         let formData = "source=en&target=ko&text="+oriStr
             
@@ -83,6 +84,10 @@ function parser(h) {
         temp(this).text(temp(this).text() + " - " + translateApiCall(temp(this).text()));  
         temp(this).prepend("\n\n### ");
     });
+    temp("h5.title").each(function(i, elem) {
+        temp(this).text(temp(this).text() + " - " + translateApiCall(temp(this).text()));  
+        temp(this).prepend("\n\n#### ");
+    });
     
     temp("pre.programlisting").prepend("\n\n```java\n").append("\n```");
     temp("strong").prepend("**").append("**");
@@ -93,6 +98,7 @@ function parser(h) {
         temp(this).prepend("\`").append("\`");
         //temp(this).prepend("[[").append("]]");
     });
+    temp("div.note p").prepend("> ");
     
     temp("p").each(function(i, elem) {
         temp(this).text(translateApiCall(temp(this).text()));  
@@ -116,7 +122,27 @@ function parser(h) {
         } 
     });
 
-    return unescape(replace(htmlReplace(temp.html())));
+    temp("td").each(function(i, elem) {
+        temp(this).text(temp(this).text().replace(/^\n/g, "").replace(/^\n/g, ""));
+    });
+
+    temp("table").each(function(i, elem) {
+        temp(this).prepend("\n");
+        temp(this).find("tr").each(function(j, elem) {
+            let tdCount = temp(this).find("td").length;
+            temp(this).prepend("\n|");
+
+            if (j == 0) {
+                temp(this).append("\n|")
+                for (var z = 0; tdCount > z; z++) {
+                    temp(this).append("-|")
+                }
+            }
+        });
+        temp(this).find("td").append("|")
+    });
+
+    return temp.text();//unescape(replace(htmlReplace(temp.html())));
 }
 
 db.get("SELECT * FROM book WHERE isbn = ?", param, function(err, rows) {  
