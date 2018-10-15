@@ -8,7 +8,7 @@ function playlist(url) {
   var video = ytdl(url);
  
   video.on('error', function error(err) {
-    console.log('error 2:', err);
+    console.log('error :', err);
   });
  var size = 0;
   video.on('info', function(info) {
@@ -32,6 +32,6 @@ function playlist(url) {
   video.on('next', playlist);
  
 }
-//https://www.youtube.com/watch?v=5GmnfYWe7WA&list=PLFoH8spXdgNE4Wz9-WZ8Yd8TbTpRq1Wqa
-playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNEidI7YRa87uk22A5Ex1acK');
+//https://www.youtube.com/watch?v=lIJnM6iXcIg&list=PLFoH8spXdgNEOPudCROJIBV-1IqGmIRwT
+playlist('https://www.youtube.com/playlist?list=PLFoH8spXdgNEOPudCROJIBV-1IqGmIRwT');
 
