@@ -31,6 +31,10 @@ function createMD(path, fileName, content) {
     console.log(fileName+' File write completed');
 }
 
+function createDBContent() {
+    
+}
+
 let naverId = ['PIzcrH8b_OVhgqHKguPr','c39XRmuZCJ3A1fANGlcf','3eJTPsF5z0Pd0M_nq5P8', 'pxbwvspJZrne2m7B4sdM','OXxix1TtpCJiToTABQT9','VcwBQ20yokWNxNXr28_P','XpfDMtSUjHpFaov4WPZm','V7rQE4ImkaHPCWwJL_G_','U9QnRU7H0Yc7JOvdHmHo','AqcSjeObhRngK9fLdXPe'
 ,'TS5gt1Hp5fQnYwaMc4nU','p1z0mZotzmhC21NQXrnX','IoDbeaQW6IheuqU8_0Pc','sY5yuCgciE4C_o49U75w','3paoxaYXx5idPL_oMQq9','V6vwzLk9TRuzlc4_EV1y','h1KwBaBrNGRXS2oOdItm','Dm9ko64LmAvtnbV1NwGP','6GVGU9_7lT7EWhjM_M8i','1sOur5xeWdrC3ZJgymgE'];
 let naverSecret = ['IC57QXbTkQ', 'KkBf_8n9nP', 'pePl0dDFLK', 'LlEHqsIH8P','_oA5h0Wsg4', '7pxQoakogu', '7063e9k4FZ', 'inliX0U89t', '8ZYQZxPyMY', 'BAPgAbfZwR'
