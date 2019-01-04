@@ -3,7 +3,7 @@ var db = new sqlite3.Database('./DB/books.db');
 var fs =require('fs');
 var cheerio = require("cheerio"); 
 
-const isbn = "9781786468734"
+const isbn = "9781787287945"
 let gitbookPath = "./gitbook"
 
 let FolderReplace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
