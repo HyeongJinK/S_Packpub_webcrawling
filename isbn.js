@@ -6,11 +6,7 @@ var request = require("sync-request");
 var cheerio = require("cheerio");
 var fs =require('fs');
 var downBook = 0;
-<<<<<<< HEAD
 const allBookCount = 400;
-=======
-const allBookCount = 240;
->>>>>>> fdd844193e107f80719d064c5115683aa74ece21
 const pageBookLength = 48;
 
 var url = "https://www.packtpub.com/all-books?search=&availability_list%5BAvailable%5D=Available&offset=&rows=48&sort=&theme_raw=true";
