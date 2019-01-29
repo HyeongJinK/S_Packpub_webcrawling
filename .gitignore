@@ -4,3 +4,5 @@
 .DS_Store
 books.db
 package-lock.json
+/.vscode/
+.vscode
