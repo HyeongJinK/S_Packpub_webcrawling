@@ -17,7 +17,7 @@ const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YmI2Zj
 let data = fs.readFileSync("./downlist/isbn3.txt", 'utf8')
     
 let isbns = data.split("\t")
-let isbn = 9781789615265
+let isbn = 9781789340266
 	//https://www.packtpub.com/mapt-rest/products/9781789615265/metadata
 let menuUrl = "https://www.packtpub.com/mapt-rest/products/"+isbn+"/metadata";
 
@@ -70,13 +70,8 @@ if (menuParserData.data.title.indexOf("[Video]") == -1) {
 						let awsdata = request("GET", contentParserData.data)
 						let str = awsdata.getBody().toString("utf-8");
 						
-						if(str.indexOf("There's more...") != null) {
-							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", str);
-							console.log(parentID+"_"+element.index+"_"+element.title)
-						} else {
-							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", str);
-							console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
-						}
+						fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", str);
+						console.log(parentID+"_"+element.index+"_"+element.title)	
 					}
 				}
 			})

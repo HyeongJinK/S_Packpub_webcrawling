@@ -57,6 +57,11 @@ for (i in isbns) {
 					}
                     
                     //console.log(contentUrl)
+                    let me = request("GET", "https://services.packtpub.com/users-v1/users/me/metadata", {
+                        headers: {
+                            "Authorization" : user
+                    }});
+                    me.getBody("utf-8");
                     contentData = request("GET", contentUrl, {
                         headers: {
                             "Authorization" : user
@@ -68,13 +73,8 @@ for (i in isbns) {
                         let awsdata = request("GET", contentParserData.data)
 						let str = awsdata.getBody().toString("utf-8");
 						
-						if(str.indexOf("There's more...") != null) {
-							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", str);
-							console.log(parentID+"_"+element.index+"_"+element.title)
-						} else {
-							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", str);
-							console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
-						}
+						fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", str);
+						console.log(parentID+"_"+element.index+"_"+element.title)		
                     }
 				})
 			});    
