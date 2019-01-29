@@ -5,9 +5,9 @@ var fs =require('fs');
 
 let replace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "");
 
-const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMDBjODk3NC05OTNjLTQ2MzItODQzMS04NjY3ZmU4ZTJhOWMiLCJ1c2VybmFtZSI6InhwdG14bWRrZWwxMkBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUyOTY0MTEyNywiZXhwIjoxNTI5NjQ0NzI3fQ.D_uyQZ1KSSIAKM08VQ9XrCyJrFtDSTC3Ha4CrIWTf64zABioznt3QGFEIZZepZ-x04AsL9Vw4Dcu9A3IdtHMl0lBIGubK0kb8Ydt36c22LEzp0HBGQgGBMOfDuWccZhP2BNzmiqiTrmovajb-6tb8t81cpxmrhktpd75NAZG5-nlg0DlbbOidGOJggn1vvmWPHfwTefIvJGqS6uqZ_-uOOyMy9d0XbYxEEW2N8ReFDb2W51JMeufNt9e5YTdEW9myu57tx54CxACRM6-Dzr5vSyjdqyPeJdqjyVYD1KABabFWgjKXQVssqEbjUFgnDI4JTvRAAWUWX-7oaC6vgxCzww";
+const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxM2IzN2RmYi0xNjhiLTRhZGYtYTdhNy03YzAyZjA1ZWY1MGEiLCJ1c2VybmFtZSI6Iml0ZW1wYW5nMUBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUzMzEwNDA4NCwiZXhwIjoxNTMzMTA3Njg0fQ.Sx4IYc49EXpAM2MG_Pvgayw-lQlY7E_Pe0gaLl25ofE56aUG2BIVWKpB9ZZ1wPpZSXsPshjsmKjMvb383nMcLnRuXpLNrOFaBlrwwKIT2V1-1EUBm4UBv_4VqCqD5I7dCfmelm9qGWOJusgV3lrBT4dGYjHhFwNSYZ8im4L23tps0m7x50Mp6qgK3WshrzCg-VCbX9_zfVyj25mO8cf5rAcwrVBhlSo4Ak50gdVRD9kbxMgde1nFcgliIAwhtTR_mBYY5zsrbfNDZdXhIh3dXKVP9oo8EbhEAACnlJcY4uFNDD4f0vOaa4znam2B0sPopFbKn3oNSlCC41rWPoOpmQ";
 let downloadDataPath = "./download/"
-let isbn = "9781787120686";// 
+let isbn = "9781789340648";//  
 let menuUrl = "https://www.packtpub.com/mapt-rest/products/"+isbn+"/metadata";
 let menuData = request("GET", menuUrl);
 let menuParserData = JSON.parse(menuData.getBody());

@@ -12,9 +12,9 @@ var request = require("sync-request");
 var fs =require('fs');
 
 let downloadDataPath = "./download/"
-const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxM2IzN2RmYi0xNjhiLTRhZGYtYTdhNy03YzAyZjA1ZWY1MGEiLCJ1c2VybmFtZSI6Iml0ZW1wYW5nMUBnbWFpbC5jb20iLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTUzMjMyOTMwNiwiZXhwIjoxNTMyMzMyOTA2fQ.wxAfdts52jV7NoZAG4hhfIigKFnZlQbTX-d9TJ8Uu99iW1qog6uvaACzLkvKEXW7gkJn1ehsXCHrOWw1RIMR2Xl4YwEvBy3E_p-xfPbJ2woC1lVYhh5qHiXsLegsvU5HsgPAIUZQP0Q9JAzYl6YGQiwlvylWKPy9gQGJmrOeBpH3LB8WF5pYO8zNUZL5NRXBgzr9SfVjSYZ5G3Mb9wBfbdS-0BL-X9uW7wfs0IdAqDEQygxWnC-NrqFOxYaTrE0Tm-d0lczuSWQRAAinlEAwJpUz0wIxTcnW5tD8BBBkALuGrFI4ByrarlKKTNIeyERSN3Y0kCHKex2VC2M8N3jblg";
+const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YmI2Zjk3ZC1iMDRlLTRhYmYtODc5NC04ZmEyYmM5ZjAwMzciLCJ1c2VybmFtZSI6InBhY2twdWIxQGdtYWlsLmNvbSIsInBlcm1pc3Npb25zIjpbXSwiaWF0IjoxNTQ4NzI4MDgwLCJleHAiOjE1NDg3MzE2ODB9.q4eXqsyHcNYLQDDF91ObbK7LisiN-ckJd7ghepB9gpQiZktQudptDaxRufe1xd0bfQlJTGnhhk7Dg6tmLdIeb7KW44tB2fLxY8M1DAKnpFl1LoRMApkPmlzK9vOIk_j96yYw4La49QCbAibSFswPcg7NGFHebL3WoSrsfa-jYdN4NywE2ElUbEmMoiNuzynRsl5ju-Cflsv_ykKmc6U6DS3GdPt6prpgqeEJLHWir5tctvzhRXgN0vgigp0t2u55afkiLSwJwhIUldysO3JXUCkDXltThW1rDAtIjypOLsXRYW143M1YAJBcLiDV7zu3QWbh35QpoLgyBRpF8yzmiQ";
 
-let data = fs.readFileSync("./downlist/isbn2.txt", 'utf8')
+let data = fs.readFileSync("./downlist/isbn3.txt", 'utf8')
     
 let isbns = data.split("\t")
 
@@ -46,29 +46,33 @@ for (i in isbns) {
 					} else {
 						contentUrl = baseContentUrl;
 					}
-
-					contentData = request("GET", contentUrl, {
-						headers: {
-							"Authorization" : user
-						}
-					});
-
-					if (contentData.getBody().toString('utf-8') != "") {
-						contentParserData = JSON.parse(contentData.getBody().toString('utf-8'));
-
-						if (contentParserData.status === 'success') {
-							if (contentParserData.data.entitled) {
-								fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", contentParserData.data.content);
-								console.log(parentID+"_"+element.index+"_"+element.title)
-								//sleep(200);
-							} else {
-								fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", contentParserData.data.content);
-								console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
+					try {
+						contentData = request("GET", contentUrl, {
+							headers: {
+								"Authorization" : user
 							}
+						});
+
+						if (contentData.getBody().toString('utf-8') != "") {
+							contentParserData = JSON.parse(contentData.getBody().toString('utf-8'));
+
+							if (contentParserData.status === 'success') {
+								if (contentParserData.data.entitled) {
+									fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", contentParserData.data.content);
+									console.log(parentID+"_"+element.index+"_"+element.title)
+									//sleep(200);
+								} else {
+									fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", contentParserData.data.content);
+									console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
+								}
+							}
+						} else {
+							console.log("error :" +parentID+"_"+element.index+"_"+element.title)
 						}
-					} else {
-						console.log("error :" +parentID+"_"+element.index+"_"+element.title)
-					} 
+					} catch(err) {
+						console.log(contentData)
+						console.log(err);
+					}
 				})
 			});    
 		}
