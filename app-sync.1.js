@@ -3,6 +3,8 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 let replace = (s) => s.replace(/\?/g, "@").replace(/</g, "[").replace(/>/g, "]").replace(/:/g, "-").replace(/\*/g, "+").replace(/\\/g, " ").replace(/\//g, "&").replace(/\n/, "").replace(/|/, " ");
 
+
+
 function sleep(delay) {
     let start = new Date().getTime();
     while(new Date().getTime() < start + delay);
@@ -12,12 +14,14 @@ var request = require("sync-request");
 var fs =require('fs');
 
 let downloadDataPath = "./download/"
-const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YmI2Zjk3ZC1iMDRlLTRhYmYtODc5NC04ZmEyYmM5ZjAwMzciLCJ1c2VybmFtZSI6InBhY2twdWIxQGdtYWlsLmNvbSIsInBlcm1pc3Npb25zIjpbXSwic3Vic2NyaXB0aW9uIjpbImFsbCJdLCJwZXJtcyI6IkFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiaWF0IjoxNTQ4NzQyNjI0LCJleHAiOjE1NDg3NDYyMjR9.zq3OOWSrkGr3EnnuZ3P7Fu4GWBJyqorDGZ_PecyM1gopQkP-e91g8woVz_EcDgzclLAV1TTUTIEmUXuw8iOUyAAwNMl2UQQRnPvx5bWN1O4Th2J1UZqTydzb7wwOrIT9VyFR0CQ9LviWLpk9IhVzAVq_PS3GIiZv1HivN3x1TXt2kD14mZ0CvfxhDt6tA_bkLmXZUhZgsa3NGcnobzHomgorF1XdaC4H0XfxCPYBDFimrog20SVt00igu0JDUYk5P-RSDMsTB1KVb0_rtpC8VPnVuWuth1SXayDklzjXeiyhh9GF9UD-wYJQXmgNFFYCyByaDmZAdD3ILNz8CSRvDw";
+const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YmI2Zjk3ZC1iMDRlLTRhYmYtODc5NC04ZmEyYmM5ZjAwMzciLCJ1c2VybmFtZSI6InBhY2twdWIxQGdtYWlsLmNvbSIsInBlcm1pc3Npb25zIjpbXSwic3Vic2NyaXB0aW9uIjpbImFsbCJdLCJwZXJtcyI6IkFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiaWF0IjoxNTQ4NzUwNjEyLCJleHAiOjE1NDg3NTQyMTJ9.TwXLC1ispjFX_1N3wArXGcLGQVx0IeRGv_oGQtxcPkaxjEhlf-M2MEU3QQ6oHS5MGeYLSb-tK3isKJxZwnItbNbMQE7lRWpBhzb_tdIpGdVT1xKfTLaswXibRDOEhu4qY74J7PKVWe4N3ItOStIWM8FbXo9QjK9LWdXKlCuMBeU7rwlOpl-F0haQBRML2XLD0rvpbzmkVwBpwMuNwj1iyJrLiExTd_b8NTeDBunT_vsHsxHdwhK5on42H6Ank41a4gGPp1lHDLxbbKowRe_KqPna_0dTGAiFv79SdWuAe5EYU8Kwy13YqQ1DhO30DsnOsbJ7vev34u5WtkRYaO1Lpg";
+let me = request("GET", "https://services.packtpub.com/users-v1/users/me/metadata", {
+	headers: {
+		"Authorization" : user
+}});
+me.getBody("utf-8");
 
-let data = fs.readFileSync("./downlist/isbn3.txt", 'utf8')
-    
-let isbns = data.split("\t")
-let isbn = 9781789340266
+let isbn = 9781789534207
 	//https://www.packtpub.com/mapt-rest/products/9781789615265/metadata
 let menuUrl = "https://www.packtpub.com/mapt-rest/products/"+isbn+"/metadata";
 
@@ -42,7 +46,7 @@ if (menuParserData.data.title.indexOf("[Video]") == -1) {
 			let contentData;
 			let contentParserData;
 			element.children.forEach(element => {
-				if (element.index > 0) {
+				if (element.index > 56) {
 					if (parentID != element.id) {
 						contentUrl = baseContentUrl +"/"+ element.id
 					} else {
