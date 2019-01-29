@@ -65,12 +65,16 @@ for (i in isbns) {
                     
                     if (contentData.getBody().toString('utf-8') != "") {
                         contentParserData = JSON.parse(contentData.getBody().toString('utf-8'));
-                        //console.log("====================================================")
-                        //console.log(contentParserData.data)
-                        //console.log("====================================================")
                         let awsdata = request("GET", contentParserData.data)
-                        fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", awsdata.getBody("utf-8"));
-                        console.log(parentID+"_"+element.index+"_"+element.title)
+						let str = awsdata.getBody().toString("utf-8");
+						
+						if(str.indexOf("There's more...") != null) {
+							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", str);
+							console.log(parentID+"_"+element.index+"_"+element.title)
+						} else {
+							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", str);
+							console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
+						}
                     }
 				})
 			});    

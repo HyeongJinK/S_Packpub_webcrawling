@@ -42,7 +42,7 @@ if (menuParserData.data.title.indexOf("[Video]") == -1) {
 			let contentData;
 			let contentParserData;
 			element.children.forEach(element => {
-				if (element.index > 0) {
+				if (element.index > 90) {
 					if (parentID != element.id) {
 						contentUrl = baseContentUrl +"/"+ element.id
 					} else {
@@ -67,16 +67,13 @@ if (menuParserData.data.title.indexOf("[Video]") == -1) {
 						//console.log("====================================================")
 						//console.log(contentParserData.data)
 						//console.log("====================================================")
+						
 						let awsdata = request("GET", contentParserData.data)
 						let str = awsdata.getBody().toString("utf-8");
+						console.log(str.substr(str.indexOf("There's more...")))
 						
-						if(str.indexOf("There's more...") != null) {
-							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", str);
-							console.log(parentID+"_"+element.index+"_"+element.title)
-						} else {
-							fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+"_demo.txt", str);
-							console.log(parentID+"_"+element.index+"_"+element.title+"_demo")
-						}
+						//fs.writeFileSync(bookPath+"/"+parentID+"_"+element.index+"_"+replace(element.title)+".html", awsdata.getBody("utf-8"));
+						//console.log(parentID+"_"+element.index+"_"+element.title)
 					}
 				}
 			})
