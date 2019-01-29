@@ -46,7 +46,9 @@ if (menuParserData.data.title.indexOf("[Video]") == -1) {
 					if (parentID != element.id) {
 						contentUrl = baseContentUrl +"/"+ element.id
 					} else {
-						if (element.id < 10) {
+						if (element.id.match("ch") != null || element.id.match("app") != null || element.id.match("backindex") != null) {
+							contentUrl = baseContentUrl + "/" + element.id;
+						} else if (element.id < 10) {
 							contentUrl = baseContentUrl + "/ch0" + element.id;
 						} else {
 							contentUrl = baseContentUrl + "/ch" + element.id;
