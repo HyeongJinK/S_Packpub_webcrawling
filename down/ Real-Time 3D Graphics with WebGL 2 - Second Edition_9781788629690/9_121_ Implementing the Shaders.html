@@ -1,0 +1,91 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec124"></a>Implementing the Shaders</h2></div></div><hr /></div><p>With our shaders, we will implement <span class="strong"><strong>Phong shading</strong></span> and the <span class="strong"><strong>Phong reflection</strong></span> model. Remember that Phong shading interpolates vertex normals and creates a <span>normal</span><a id="id325358921" class="indexterm"></a> for every fragment–the processing happens in the <span>fragment</span><a id="id325400723" class="indexterm"></a> shader. The Phong reflection model describes illumination as the addition of ambient, diffuse, and <span>specular</span><a id="id325400731" class="indexterm"></a> interaction of the object with the light sources.</p><p>To be consistent with the Material Template Library (MTL) format, we’ll follow some typical conventions to set out uniform names that refer to material properties:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /></colgroup><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Material</strong></span><span class="strong"><strong>Uniform</strong></span></p></td><td style="border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Description</strong></span></p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uKa</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Ambient property.</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uKd</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Diffuse property.</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uKs</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Specular property.</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uNi</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Optical density. We will not use this feature, but you will see it in the MTL file.</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uNs</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Specular exponent. A high exponent results in a tight, concentrated highlight. <code class="literal">Ns</code> values normally range from <code class="literal">0</code> to <code class="literal">1000</code>.</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uD</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Transparency (alpha channel).</p></td></tr><tr><td style="border-right: 0.5pt solid ; "><p><code class="literal">uIllum</code></p></td><td style=""><p>Determines the illumination model for the object being rendered. Unlike previous chapters where we had one model for all objects, we let objects describe their reflective properties.
+According to the MTL file format specification, <span class="strong"><strong>illum</strong></span> can be any of the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Color on and Ambient off.</li><li style="list-style-type: disc">Color on and Ambient on.</li><li style="list-style-type: disc">Highlight on.</li><li style="list-style-type: disc">Reflection on and Ray trace on.</li><li style="list-style-type: disc">Transparency: Glass on, Reflection: Ray trace on.</li><li style="list-style-type: disc">Reflection: Fresnel on and Ray trace on.</li><li style="list-style-type: disc">Transparency: Refraction on, Reflection: Fresnel off and Ray trace on.</li><li style="list-style-type: disc">Transparency: Refraction on, Reflection: Fresnel on and Ray trace on.</li><li style="list-style-type: disc">Reflection on and Ray trace off.</li><li style="list-style-type: disc">Transparency: Glass on, Reflection: Ray trace off.</li><li style="list-style-type: disc">Casts shadows onto invisible surfaces.</li></ul></div></td></tr></tbody></table></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note84"></a>Note</h3><p><span class="strong"><strong><strong class="userinput"><code>The Wavefro</code></strong></strong></span><strong class="userinput"><code>nt</code></strong><strong class="userinput"><code>.obj</code></strong><span class="strong"><strong><strong class="userinput"><code> file</code></strong></strong></span>
+For more information on OBJ and MTL file specifications, please refer to the following link: <a class="ulink" href="https://en.wikipedia.org/wiki/Wavefront_.obj_file" target="_blank">https://en.wikipedia.org/wiki/Wavefront_.obj_file</a>.</p></div><p> </p><p>Our shaders will also support multiple lights by using uniform arrays, as described in earlier chapters. The number of lights is defined by a constant in both the vertex and fragment shaders:</p><pre class="programlisting">const int numLights = 4;</pre><p>We will use the following uniform arrays to work with lights:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /></colgroup><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Light </strong></span><span class="strong"><strong>Uniform Array</strong></span></p></td><td style="border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Description</strong></span></p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uLa[numLights]</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Ambient property.</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">uLd[numLights]</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Diffuse property.</p></td></tr><tr><td style="border-right: 0.5pt solid ; "><p><code class="literal">uLs[numLights]</code></p></td><td style=""><p>Specular property.</p></td></tr></tbody></table></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip85"></a>Note</h3><p><strong class="userinput"><code><span class="strong"><strong>Source code</strong></span></code></strong>
+You can refer to <code class="literal">ch09_02_showroom.html</code> if you wish to explore the source code for the shaders in this chapter.</p></div><p>Here's the <span>vertex</span><a id="id325659862" class="indexterm"></a> shader:</p><pre class="programlisting">&lt;script id="vertex-shader" type="x-shader/x-vertex"&gt;
+#version 300 es
+  precision mediump float;
+
+  const int numLights = 4;
+
+  uniform mat4 uModelViewMatrix;
+  uniform mat4 uProjectionMatrix;
+  uniform mat4 uNormalMatrix;
+  uniform vec3 uLightPosition[numLights];
+
+  in vec3 aVertexPosition;
+  in vec3 aVertexNormal;
+
+  out vec3 vNormal;
+  out vec3 vLightRay[numLights];
+  out vec3 vEye[numLights];
+
+  void main(void) {
+    vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
+    vec4 lightPosition = vec4(0.0);
+
+    for(int i= 0; i &lt; numLights; i++) {
+      lightPosition = vec4(uLightPosition[i], 1.0);
+      vLightRay[i] = vertex.xyz - lightPosition.xyz;
+      vEye[i] = -vec3(vertex.xyz);
+    }
+
+    vNormal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+    gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+  }
+&lt;/script&gt;</pre><p>Along with the corresponding fragment shader:</p><pre class="programlisting">&lt;script id="fragment-shader" type="x-shader/x-fragment"&gt;
+#version 300 es
+  precision mediump float;
+
+  const int numLights = 4;
+
+  uniform vec3 uLd[numLights];
+  uniform vec3 uLs[numLights];
+  uniform vec3 uLightPosition[numLights];
+  uniform vec3 uKa;
+  uniform vec3 uKd;
+  uniform vec3 uKs;
+  uniform float uNs;
+  uniform float uD;
+  uniform int uIllum;
+  uniform bool uWireframe;
+
+  in vec3 vNormal;
+  in vec3 vLightRay[numLights];
+  in vec3 vEye[numLights];
+
+  out vec4 fragColor;
+
+  void main(void) {
+    if (uWireframe || uIllum == 0) {
+      fragColor = vec4(uKd, uD);
+      return;
+    }
+
+    vec3 color = vec3(0.0);
+    vec3 light = vec3(0.0);
+    vec3 eye = vec3(0.0);
+    vec3 reflection = vec3(0.0);
+    vec3 normal = normalize(vNormal);
+
+    if (uIllum == 1) {
+      for (int i = 0; i &lt; numLights; i++) {
+        light = normalize(vLightRay[i]);
+        normal = normalize(vNormal);
+        color += (uLd[i] * uKd * clamp(dot(normal, -light), 0.0, 1.0));
+      }
+    }
+
+    if (uIllum == 2) {
+      for (int i = 0; i &lt; numLights; i++) {
+        eye = normalize(vEye[i]);
+        light = normalize(vLightRay[i]);
+        reflection = reflect(light, normal);
+        color += (uLd[i] * uKd * clamp(dot(normal, -light), 0.0, 1.0));
+        color += (uLs[i] * uKs * pow(max(dot(reflection, eye), 0.0), uNs) * 
+         4.0);
+      }
+    }
+
+    fragColor =  vec4(color, uD);
+  }
+&lt;/script&gt;</pre><p>As expected, the vertex and fragment shaders <span>borrow</span><a id="id325659884" class="indexterm"></a> concepts from earlier chapters covered in this book, except for <code class="literal">uIllum</code>. As described earlier, the <code class="literal">illum</code> property determines the illumination model for the object being rendered. We could default to a simpler fragment shader (such as <code class="literal">uIllum == 2</code>), but a simple example has been provided for educational purposes.</p><p>Next, we will configure the three main functions that hook into the life cycle of our WebGL application. These are the <code class="literal">configure</code>, <code class="literal">load</code>, and <code class="literal">render</code> functions.</p></div>

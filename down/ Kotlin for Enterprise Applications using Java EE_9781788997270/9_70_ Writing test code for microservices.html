@@ -1,0 +1,139 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec69"></a>Writing test code for microservices</h2></div></div><hr /></div><p>One of the key points of <span>developing</span><a id="id325802003" class="indexterm"></a> the software is to ease the <span>verification</span><a id="id325801998" class="indexterm"></a> process, thus improving the quality of the system. For any change in the code, we should also be in a position to identify the impacted test cases and re-verify those sets of test cases, thus improving the predictability in the system. Writing the test case for the services is important for maintaining the quality and hygiene of the system.</p><p>There are multiple ways of testing the services. We will discuss two commonly used approaches—unit testing and integration testing.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec68"></a>Unit testing</h3></div></div></div><p>We use unit tests to verify the <span>individual</span><a id="id325801985" class="indexterm"></a> code <span>components</span><a id="id325801976" class="indexterm"></a> as an independent unit without any external dependencies, mocking all the dependencies required. When we say testing the unit, this refers to testing a class and its functions. The response of all the functions of different classes and third-party libraries, if any, has to be mocked. We will write the test case for that particular class only. Here, the focus is on covering the test cases for a single class.</p><p>Let's write a unit test for our <code class="literal">createPerson()</code> function in the <code class="literal">PersonController</code> class.</p><p>We add the following dependencies to our <code class="literal">identity-service</code> module with a test scope for the purpose of unit testing the code:</p><pre class="programlisting">        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;${junit}&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.mockito&lt;/groupId&gt;
+            &lt;artifactId&gt;mockito-core&lt;/artifactId&gt;
+            &lt;version&gt;${mockito-core}&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec63"></a>Writing the skeleton for the test class</h4></div></div></div><p>We use <code class="literal">MockitoJUnitRunner</code> to run the unit test. We <span>inject</span><a id="id325793397" class="indexterm"></a> the required dependencies, such as the <code class="literal">PersonController</code> and <code class="literal">PersonServiceImpl</code> instances, by mocking the classes. We mock the <code class="literal">ResponseBuilder</code> class. We also use the <code class="literal">@InjectMocks</code> annotation to inject the <code class="literal">serviceImpl</code> instance into the controller object. This is shown in the following code:</p><pre class="programlisting">@RunWith(MockitoJUnitRunner::class)
+ class CreatePersonTest {
+    @InjectMocks
+    private lateinit var controller: PersonController
+
+    @Mock
+    private lateinit var serviceImpl: PersonServiceImpl
+
+    private var builder = mock(Response.ResponseBuilder::class.java)
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec64"></a>Setting up the test data</h4></div></div></div><p>In the <code class="literal">createPersonTest()</code> function, we <span>create</span><a id="id325793374" class="indexterm"></a> the request object of the <code class="literal">Person</code> type and initialize this with some test data values, shown as follows:</p><pre class="programlisting"> @Test
+ fun createPersonTest() {
+        val createPersonRequest = mock(Person::class.java)
+        createPersonRequest.name = "test user"
+        createPersonRequest.loginId = "user@some.com"
+        createPersonRequest.orgId = "123"
+        val uuid = UUID.randomUUID().toString()
+  }</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec65"></a>Mocking the response</h4></div></div></div><p>We then mock the <span>response</span><a id="id325808124" class="indexterm"></a> for the identity-creation operation:</p><pre class="programlisting"> val mockResponse = TestUtil.getResponseForIdentityCreation(uuid)</pre><p>When the <code class="literal">createPerson()</code> function is invoked on the <code class="literal">serviceImpl</code> instance, a <code class="literal">uuid</code> will be returned:</p><pre class="programlisting">`when`(serviceImpl.createPerson(createPersonRequest))
+                        .thenReturn(uuid)</pre><p>When the <code class="literal">build()</code> method of the <code class="literal">Response</code> class is invoked, the mocked <span>response</span><a id="id325812941" class="indexterm"></a> will be returned:</p><pre class="programlisting">`when`(builder.build())
+                .thenReturn(mockResponse)</pre><p>We invoke <code class="literal">createPerson()</code> on the mocked controller instance:</p><pre class="programlisting">controller.createPerson(createPersonRequest)</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec66"></a>Writing the assertions</h4></div></div></div><p>We assert for the response status, the <span>response</span><a id="id325813042" class="indexterm"></a> message, and the location header:</p><pre class="programlisting">assertTrue(mockResponse.status == 201)
+assertTrue(mockResponse.entity.toString() == Constants.IDENTITY_CREATED)
+assertNotNull(mockResponse.metadata["location"])
+
+</pre><p>The unit test appears as follows:</p><pre class="programlisting">@RunWith(MockitoJUnitRunner::class)
+class CreatePersonTest {
+    @InjectMocks
+    private lateiit var controller: PersonController
+
+    @Mock
+    private lateinit var serviceImpl: PersonServiceImpl
+
+    private var builder = mock(Response.ResponseBuilder::class.java)
+
+    @Test
+    fun createPersonTest() {
+        val createPersonRequest = mock(Person::class.java)
+        createPersonRequest.name = "test user"
+        createPersonRequest.loginId = "user@some.com"
+        createPersonRequest.orgId = "123"
+        val uuid = UUID.randomUUID().toString()
+
+        val response = TestUtil.getResponseForIdentityCreation(uuid)
+
+        `when`(serviceImpl.createPerson(createPersonRequest))
+                .thenReturn(uuid)
+        `when`(builder.build())
+                .thenReturn(response)
+
+        controller.createPerson(createPersonRequest)
+
+        assertTrue(response.status == 201)
+        assertTrue(response.entity.toString() == Constants.IDENTITY_CREATED)
+        assertNotNull(response.metadata["location"])
+    }
+}</pre><p>Let's run this unit test:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/f219d4b5-4510-489b-a48f-47c12f9e5c7d.png" /></div><p>As we can see, this unit test case has <span>executed</span><a id="id325813074" class="indexterm"></a> successfully.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec69"></a>Integration testing</h3></div></div></div><p>The purpose of <span>integration</span><a id="id325816094" class="indexterm"></a> testing—also <span>known</span><a id="id325816103" class="indexterm"></a> as <span class="strong"><strong>functional testing</strong></span>—is to verify the <span>system</span><a id="id325816182" class="indexterm"></a> as a whole. This is also known as <span class="strong"><strong>black-box testing</strong></span>. Throughout this process, we provide an input, expect the output, verify it, and don't worry about the internals of the code. We just give an input and <span>compare</span><a id="id325816193" class="indexterm"></a> the actual output against the expected one. This kind of testing is more suitable for verifying the RESTful APIs. Once the services are deployed, we make a call to the REST endpoints with an input and verify it for the HTTP status code, response body, response header (if any), and so on.</p><p>We will write a simple integration test for the GET organization API. Since this is an integration test case, the  GET organization API is behind the <code class="literal">AuthFilter</code> that checks for a valid <code class="literal">JWT</code>. So, in our test case, first we have to get a <code class="literal">JWT</code> token using the <span class="strong"><strong><code class="literal">/authorize/jwt/token</code></strong></span> API, and then invoke the <code class="literal">/identity/organization/{orgId}</code> API by passing the token in the request header.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec67"></a>Writing a REST client for the POST /authorize/jwt/token API</h4></div></div></div><p>Let's write a <span>simple</span><a id="id325818957" class="indexterm"></a> REST client for getting a <code class="literal">JWT</code> token. We use the <code class="literal">Jersey</code>client to write our integration test case. This actually makes an API call and gets the response. We write the <code class="literal">getToken()</code> function, where we instantiate the <code class="literal">Jersey </code> client and invoke the API by passing the required headers, as follows:</p><pre class="programlisting">fun getToken(): String {
+val client = Client.create()
+val webResource = client
+            .resource("http://localhost:8080/authentication-service/authorize/jwt/token")
+
+val response = webResource
+            .header("Accept", "application/json")
+            .header("Content-Type", "application/json")
+            .header("UserId", "testUser")
+            .header("Password", "testUserPass")
+            .post&lt;ClientResponse&gt;(ClientResponse::class.java)
+
+val responseBody = response.getEntity(String::class.java)
+return JSONObject(responseBody).get("JWT").toString()
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec68"></a>Writing a REST client for the /identity/organization/{orgId} API</h4></div></div></div><p>Let's write a REST client to invoke the GET <span>organization</span><a id="id325819056" class="indexterm"></a> API. This is similar to what we wrote in the <code class="literal">getToken()</code> function.</p><p>The <code class="literal">getOrg()</code> function takes the <code class="literal">jwt</code> token as an input parameter, which will be passed as a request header in the <span class="strong"><strong><code class="literal">/identity/organization/{orgId}</code> </strong></span>API. <code class="literal">AuthFilter</code> checks for the validity of the token. We then create a <code class="literal">Jersey</code> client instance, invoke the API and return the response, as shown in the following code:</p><pre class="programlisting">fun getOrg(jwt: String):JSONObject {
+
+val client = Client.create()
+val orgId: UUID = "9dc30f1e-fb0f-48c1-bccb-f6d89f5e1108"
+val webResource = client
+            .resource("http://localhost:8090/identity-service/identity/organization/orgId")
+
+val response = webResource
+            .accept("application/json")
+            .header("Authorization", "Bearer $jwt")
+            .get&lt;ClientResponse&gt;(ClientResponse::class.java)
+
+val responseBody= response.getEntity(String::class.java)
+return JSONObject(responseBody)
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec69"></a>Writing the assertions</h4></div></div></div><p>Now, let's assert the <span>response</span><a id="id326166588" class="indexterm"></a> by invoking the <code class="literal">getOrg()</code> function by passing the token returned from the <code class="literal">getToken()</code> function:</p><pre class="programlisting">@Test
+fun testGetOrg() {
+var response = getOrg(getToken())
+    assertNotNull(response)
+    assertNotNull(response.get("orgName"))
+    assertNotNull(response.get("orgId"))
+}</pre><p>Let's run this test case and see what happens:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/124c3e51-c950-420e-af7b-c811252357ca.png" /></div><p>As we can see, this <span>integration</span><a id="id326252023" class="indexterm"></a> test is able to invoke the APIs, and then the assertions are passed.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec70"></a>Refactoring the integration test cases</h4></div></div></div><p>Let's refactor the <span>integration</span><a id="id326252040" class="indexterm"></a> test code that we wrote by removing some duplicates and hardcoded string values.</p><p>Note that the code for creating the <code class="literal">Jersey</code> client and invoking the API is the same for the <code class="literal">getToken()</code> and <code class="literal">getOrg()</code> functions. Consequently, we will create a new function that takes the URI and headers and an HTTP method type:</p><pre class="programlisting">private fun execute(resourceUri: String, map: Map&lt;String, String&gt;, httpMethod: String):
+        JSONObject {
+val client = Client.create()
+val webResource = client.resource(resourceUri)
+            .accept(MediaType.APPLICATION_JSON)
+for (entry in map) {
+        webResource.header(entry.key, entry.value)
+    }
+
+val response: ClientResponse = webResource
+            .method(httpMethod, ClientResponse::class.java)
+
+val responseBody = response.getEntity(String::class.java)
+
+return JSONObject(responseBody)
+}</pre><p>Now, the <code class="literal">getToken()</code> and <code class="literal">getOrg()</code> function definitions become concise. At this point, we prepare the headers, use the proper resource URIs, and then invoke the <code class="literal">execute()</code> function, which, in turn, invoke the APIs, as follows:</p><pre class="programlisting">private fun getToken(): JSONObject {
+
+var headers = HashMap&lt;String, String&gt;()
+    headers.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
+    headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+    headers.put(USERID_HEADER, USERID)
+    headers.put(PASS_HEADER, PASS)
+
+return execute("$AUTHENTICATION_SERVICE_URL$TOKEN_API", headers, HttpMethod.POST)
+}
+
+private fun getOrg(jwt: String, orgId: String): JSONObject {
+var headers = HashMap&lt;String, String&gt;()
+    headers.put(HttpHeaders.AUTHORIZATION, "Bearer $jwt")
+return execute("$IDENTITY_SERVICE_URL$ORGANIZATION_API" + orgId,
+headers, HttpMethod.GET)
+}</pre><p>Then we assert the response in our test case:</p><pre class="programlisting">@Test
+fun testGetOrg() {
+val jwt = getToken().get("JWT").toString()
+
+val response = getOrg(jwt, "123")
+
+    assertNotNull(response)
+    assertNotNull(response.get(ORG_NAME))
+    assertNotNull(response.get(ORG_ID))
+}</pre><p>This is how we write the test cases. If we now change <span>anything</span><a id="id326430165" class="indexterm"></a> in our code (for example, the status code of an API), the test case will fail. However, we can fix this at an early stage before the code goes to the production environment, ensuring that the quality of the product to be delivered is acceptable.</p></div></div></div>

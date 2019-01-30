@@ -1,0 +1,141 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec62"></a>Building a Bayesian neural network</h2></div></div><hr /></div><p>For this project, we will <span>use</span><a id="id325617689" class="indexterm"></a> the German Traffic Sign <span>Dataset</span> (<a class="ulink" href="http://benchmark.ini.rub.de/?section=gtsrb&amp;subsection=dataset" target="_blank">http://benchmark.ini.rub.de/?section=gtsrb&amp;amp;subsection=dataset</a>) to build a Bayesian neural network. The training dataset contains 26,640 images in 43 classes. Similarly, the testing dataset contains 12,630 images.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note49"></a>Note</h3><p>Please read the <code class="literal">README.md</code> file in this book's repository before executing the code to install the appropriate dependencies and for instructions on how to run the code.</p></div><p>The following is an image that's present in this dataset: </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/800258ad-da5e-4267-ae58-eabc1c9e67f1.png" /></div><p>You can see that there are different kinds of traffic sign depicted by different classes in the dataset.</p><p>We begin by pre-processing our dataset and making it conform to the requirements of the learning algorithm. This is done by reshaping the images to a uniform size via histogram equalization, which is used to enhance contrast, and cropping them to only focus on the traffic signs in the image. Also, we convert the images to grayscale as traffic signs are identified by shape and not color inthe image. </p><p>For modeling, we define a <span>standard</span><a id="id325615011" class="indexterm"></a> Lenet model (<a class="ulink" href="http://yann.lecun.com/exdb/lenet/" target="_blank">http://yann.lecun.com/exdb/lenet/</a>), which was developed by Yann Lecun. Lenet is one of the first convolutional neural networks that was designed. It is small and easy to understand, yet large enough to provide interesting results.</p><p>A standard Lenet model has the following properties: </p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Three convolutional layers with increasing filter sizes</li><li style="list-style-type: disc">Four fully connected layers</li><li style="list-style-type: disc">No dropout layers</li><li style="list-style-type: disc"><span class="strong"><strong>Rectified linear</strong></span> (<span class="strong"><strong>ReLU</strong></span>) after every <span>fully</span><a id="id325611719" class="indexterm"></a> connected or convolutional layer</li><li style="list-style-type: disc">Max pooling after every convolutional layer</li></ul></div><p>We train this model to minimize the negative of ELBO loss that is defined in the <span class="emphasis"><em>Understanding TensorFlow Probability, Variational Inference, and Monte Carlo methods</em></span> section of this chapter. Specifically, we define ELBO loss as a combination of two terms:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Expected log likelihood or cross entropy that can be estimated through the Monte Carlo method </li><li style="list-style-type: disc">KL divergence</li></ul></div><p>Once the model is trained, we evaluate the predictions on the hold-out dataset. One of the major differences in Bayesian neural network evaluation is that there is no single set of parameters (weights of the model) that we can obtain from training. Instead, we obtain a distribution of all the parameters. For evaluation, we will have to sample values from the distribution of each parameter to obtain the accuracy on the testing set. We will sample the parameters of the model multiple times to obtain a confidence interval on our predictions.</p><p>Lastly, we will show some uncertainty in our predictions in sample images from the testing dataset and also plot the distribution of the weight parameters we obtain.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec33"></a>Defining, training, and testing the model</h3></div></div></div><p>Download both <span>the</span><a id="id325611694" class="indexterm"></a> training <span>and</span><a id="id325608627" class="indexterm"></a> testing datasets from <a class="ulink" href="http://benchmark.ini.rub.de/?section=gtsrb&amp;subsection=dataset" target="_blank">http://benchmark.ini.rub.de/?section=gtsrb&amp;amp;subsection=dataset</a>. Let's look at the steps to build the project after you <span>have</span><a id="id325610500" class="indexterm"></a> downloaded <span>the</span><a id="id325610509" class="indexterm"></a> dataset:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Begin by transforming the images present in the dataset using histogram equalization. This is essential as each image in the dataset may have a different scale of illumination. You can see from the following two images how images of the same traffic sign have very different illumination. Histogram equalization helps to normalize these differences and makes the training data more consistent:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/e6645129-d2de-4235-980f-2df8cf638278.png" /></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/1319e8db-b6fd-43dd-97a9-1297bc19e0e8.png" /></div><p>Once we have performed the equalization, crop the image to focus on just the sign, and resize the image to 32 x 32 as desired by our learning algorithm:</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip50"></a>Note</h3><p>Note that we use 32 x 32 as the shape of images for training as it is big enough to preserve the nuances of the image for detection and small enough to train the model faster. </p></div><pre class="programlisting">def normalize_and_reshape_img(img):
+# Histogram normalization in v channel
+hsv = color.rgb2hsv(img)
+hsv[:, :, 2] = exposure.equalize_hist(hsv[:, :, 2])
+img = color.hsv2rgb(hsv)
+# Crop of the centre
+min_side = min(img.shape[:-1])
+centre = img.shape[0] // 2, img.shape[1] // 2
+img = img[centre[0] - min_side // 2:centre[0] + min_side // 2,
+centre[1] - min_side // 2:centre[1] + min_side // 2,
+:]
+# Rescale to the desired size
+img = transform.resize(img, (IMG_SIZE, IMG_SIZE))
+return
+ img</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Create dictionaries with label and image information for the train/test dataset and store them as pickle files so that we don't have to run the pre-processing code every time we run the model. This means that we essentially pre-process the transformed data to create our train and test datasets:</li></ol></div><pre class="programlisting">def preprocess_and_save_data(data_type ='train'):
+'''
+Preprocesses image data and saves the image features and labels as pickle files to be used for the model
+:param data_type: data_type is 'train' or 'test'
+:return: None
+'''
+if data_type =='train':
+root_dir = os.path.join(DATA_DIR, 'GTSRB/Final_Training/Images/')
+imgs = []
+labels = []
+all_img_paths = glob.glob(os.path.join(root_dir, '*/*.ppm'))
+np.random.shuffle(all_img_paths)
+for img_path in all_img_paths:
+img = normalize_and_reshape_img(io.imread(img_path))
+label = get_class(img_path)
+imgs.append(img)
+labels.append(label)
+X_train = np.array(imgs, dtype='float32')
+# Make one hot targets
+Y_train = np.array(labels, dtype = 'uint8')
+train_data = {"features": X_train, "labels": Y_train}
+if not os.path.exists(os.path.join(DATA_DIR,"Preprocessed_Data")):
+os.makedirs(os.path.join(DATA_DIR,"Preprocessed_Data"))
+pickle.dump(train_data,open(os.path.join(DATA_DIR,"Preprocessed_Data","preprocessed_train.p"),"wb"))
+return train_data
+elif data_type == 'test':
+# Reading the test file
+test = pd.read_csv(os.path.join(DATA_DIR, "GTSRB", 'GT-final_test.csv'), sep=';')
+X_test = []
+y_test = []
+i = 0
+for file_name, class_id in zip(list(test['Filename']), list(test['ClassId'])):
+img_path = os.path.join(DATA_DIR, 'GTSRB/Final_Test/Images/', file_name)
+X_test.append(normalize_and_reshape_img(io.imread(img_path)))
+y_test.append(class_id)
+test_data = {"features": np.array(X_test,dtype ='float32'), "labels": np.array(y_test,dtype = 'uint8')}
+if not os.path.exists(os.path.join(DATA_DIR,"Preprocessed_Data")):
+os.makedirs(os.path.join(DATA_DIR,"Preprocessed_Data"))
+pickle.dump(test_data,open(os.path.join(DATA_DIR,"Preprocessed_Data","preprocessed_test.p"),"wb"))
+return test_data</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note51"></a>Note</h3><p>We will use grayscale images in our project as our task throughout this project is to classify traffic sign images into one of the 43 classes and provide a measure of uncertainty in our classification. We do not care about the color of the image.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Define the model using the LeNet architecture in Keras. Finally, we will assign the 43 sized vector of outputs from the LeNet model into a categorical distribution function (<code class="literal">tfd.categorical</code>) from TensorFlow <span>probability</span>. This will help us generating the uncertainty in predictions afterwards:</li></ol></div><pre class="programlisting">with tf.name_scope("BNN", values=[images]):
+model = tf.keras.Sequential([
+tfp.layers.Convolution2DFlipout(10,
+kernel_size=5,
+padding="VALID",
+activation=tf.nn.relu),
+tf.keras.layers.MaxPooling2D(pool_size=[3, 3],
+strides=[1, 1],
+padding="VALID"),
+tfp.layers.Convolution2DFlipout(15,
+kernel_size=3,
+padding="VALID",
+activation=tf.nn.relu),
+tf.keras.layers.MaxPooling2D(pool_size=[2, 2],
+strides=[2, 2],
+padding="VALID"),
+tfp.layers.Convolution2DFlipout(30,
+kernel_size=3,
+padding="VALID",
+activation=tf.nn.relu),
+tf.keras.layers.MaxPooling2D(pool_size=[2, 2],
+strides=[2, 2],
+padding="VALID"),
+tf.keras.layers.Flatten(),
+tfp.layers.DenseFlipout(400, activation=tf.nn.relu),
+tfp.layers.DenseFlipout(120, activation = tf.nn.relu),
+tfp.layers.DenseFlipout(84, activation=tf.nn.relu),
+tfp.layers.DenseFlipout(43) ])
+logits = model(images)
+targets_distribution = tfd.Categorical(logits=logits)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>We define <span>the</span><a id="id326545990" class="indexterm"></a> loss to minimize <span>the</span><a id="id326545998" class="indexterm"></a> KL divergence up to ELBO. Compute the ELBO loss that is defined in the <span class="emphasis"><em>Understanding TensorFlow Probability, Variational Inference, and Monte Carlo methods</em></span> section of this chapter. As you can see, we use the <code class="literal">model.losses</code> attribute to compute <span>the</span><a id="id326546013" class="indexterm"></a> KL divergence. This is because the <code class="literal">losses</code> attribute of a TensorFlow Keras Layer represents a side-effect computation such as regularizer penalties. Unlike regularizer penalties on specific TensorFlow variables, here the <code class="literal">losses</code> represent the KL divergence computation:</li></ol></div><pre class="programlisting"># Compute the -ELBO as the loss, averaged over the batch size.
+neg_log_likelihood = -
+  tf.reduce_mean(targets_distribution.log_prob(targets))
+kl = sum(model.losses) / X_train.shape[0]
+   elbo_loss = neg_log_likelihood + kl</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Use the Adam optimizer, as defined in <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span><span class="emphasis"><em>Sentiment Analysis in your browser using TensorFlow.js</em></span>,</span> to optimize the ELBO loss:</li></ol></div><pre class="programlisting">with tf.name_scope("train"):
+optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE)
+train_op = optimizer.minimize(elbo_loss)</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note52"></a>Note</h3><p>Note that we are using the Adam optimizer because it generally performs better than other optimizers with default parameters.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Train the model with the following parameters:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Epochs = 1,000</li><li style="list-style-type: disc">Batch size = 128</li><li style="list-style-type: disc">Learning rate = 0.001:</li></ul></div></li></ol></div><pre class="programlisting">with tf.Session() as sess:
+sess.run(init_op)
+# Run the training loop.
+train_handle = sess.run(train_iterator.string_handle())
+test_handle = sess.run(test_iterator.string_handle())
+for step in range(EPOCHS):
+_ = sess.run([train_op, accuracy_update_op],
+feed_dict={iter_handle: train_handle})
+if step % 5== 0:
+loss_value, accuracy_value = sess.run(
+     [elbo_loss, accuracy], feed_dict={iter_handle: train_handle})
+print("Epoch: {:&gt;3d} Loss: {:.3f} Accuracy: {:.3f}".format(
+step, loss_value, accuracy_value))</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Once the model is trained, each weight in the Bayesian neural network will have a distribution and not a fixed value. Sample each weight multiple times (50, in the code) and obtain different predictions for each sample. Sampling, although useful, is expensive. Therefore, we should only use Bayesian neural networks where we require some measure of uncertainty in our predictions. Here is the code for Monte Carlo sampling:</li></ol></div><pre class="programlisting">#Sampling from the posterior and obtaining mean probability for held out dataset
+probs = np.asarray([sess.run((targets_distribution.probs),
+        feed_dict={iter_handle: test_handle})
+for _ in range(NUM_MONTE_CARLO)])</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li> Once you have the samples, obtain the mean probability for each image in the test dataset and compute the mean accuracy like in usual machine learning classifiers.
+The mean accuracy we obtain for this dataset is ~ 89% for 1,000 <span>Epochs</span>. You can tune the parameters further or create a deeper model to obtain better accuracy.
+Here is the code for getting the mean accuracy:</li></ol></div><pre class="programlisting">mean_probs = np.mean(probs, axis=0)
+# Get the average accuracy
+Y_pred = np.argmax(mean_probs, axis=1)
+print("Overall Accuracy in predicting the test data = percent", round((Y_pred == y_test).mean() * 100,2))</pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>The next step is to calculate the distribution of accuracy for each Monte Carlo sample of each test image. For that, compute the predicted class and compare it with the test label. The predicted class can be obtained by assigning the label to the class with the maximum probability for a given network parameter sample. This way, you can get the range of accuracies and can also plot those accuracies on a histogram. Here is the code for obtaining accuracy and generating a histogram:</li></ol></div><pre class="programlisting">test_acc_dist = []
+for prob in probs:
+y_test_pred = np.argmax(prob, axis=1).astype(np.float32)
+accuracy = (y_test_pred == y_test).mean() * 100
+test_acc_dist.append(accuracy)
+plt.hist(test_acc_dist)
+plt.title("Histogram of prediction accuracies on test dataset")
+plt.xlabel("Accuracy")
+plt.ylabel("Frequency")
+save_dir = os.path.join(DATA_DIR, "..", "Plots")
+plt.savefig(os.path.join(save_dir, "Test_Dataset_Prediction_Accuracy.png"))</pre><p>The histogram that's generated will look something like the following:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/bf3b3f72-93a9-40b6-9e22-34f30d26c7b4.png" /></div><p>As you can see, we have a distribution of accuracies. This distribution can help us obtain the confidence interval over the accuracy of our model on the test dataset.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note53"></a>Note</h3><p>Note that the plot might look differently when you run the code, since it is obtained through random sampling.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>Take a few <span>images</span><a id="id325662246" class="indexterm"></a> from the test <span>dataset</span><a id="id325662254" class="indexterm"></a> and see <span>their</span><a id="id325662263" class="indexterm"></a> predictions for different samp<span>les in Mo</span>nte Carlo. Use the follow<span>ing function <code class="literal">plot_heldout_prediction</code> </span>to generate the histogram of predictions from different samples in Monte Carlo:</li></ol></div><pre class="programlisting">def plot_heldout_prediction(input_vals, probs , fname, title=""):
+save_dir = os.path.join(DATA_DIR, "..", "Plots")
+fig = figure.Figure(figsize=(1, 1))
+canvas = backend_agg.FigureCanvasAgg(fig)
+ax = fig.add_subplot(1,1,1)
+ax.imshow(input_vals.reshape((IMG_SIZE,IMG_SIZE)), interpolation="None")
+canvas.print_figure(os.path.join(save_dir, fname + "_image.png"), format="png")
+fig = figure.Figure(figsize=(10, 5))
+canvas = backend_agg.FigureCanvasAgg(fig)
+ax = fig.add_subplot(1,1,1)
+#Predictions
+y_pred_list = list(np.argmax(probs,axis=1).astype(np.int32))
+bin_range = [x for x in range(43)]
+ax.hist(y_pred_list,bins = bin_range)
+ax.set_xticks(bin_range)
+ax.set_title("Histogram of predicted class: " + title)
+ax.set_xlabel("Class")
+ax.set_ylabel("Frequency")
+fig.tight_layout()
+save_dir = os.path.join(DATA_DIR, "..", "Plots")
+canvas.print_figure(os.path.join(save_dir, fname + "_predicted_class.png"), format="png")
+print("saved {}".format(fname))</pre><p>Let's look at some of the images and their predictions:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/5707dd83-0903-4efb-8f18-dc607988e546.png" /></div><p>For the preceding image, all of the predictions bel<span>onged to th</span>e correc<span>t class 02, as shown in the following diagram:</span></p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/40bd38ea-7467-44cb-862b-bce5799e428e.png" /></div><p>In the following two cases, although our mean prediction was correct, some samples in Monte Carlo predicted the wrong class. You can imagine how quantifying uncertainty in such cases can make a self-driving car make better decisions on the road.</p><p><span class="strong"><strong>Case 1: </strong></span></p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/f408b4be-4ddd-4f8b-a5f0-30fd7fea62a1.png" /></div><p> </p><p>In the preceding image, some of the Monte Carlo predictions belonged to th<span>e wrong class, as shown in the following diagram:</span></p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/e233dff0-e131-4450-ad2b-193848f8602c.png" /></div><p><span class="strong"><strong>Case 2: </strong></span></p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/9af77d9c-0687-4e10-9ee4-b45886ba5fe8.png" /></div><p>In the preceding image, some of the Monte Carlo predictions belonged to th<span>e wrong class, as shown in the following diagram:</span></p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/88e6c352-9493-4f28-8d40-27367ee47ae4.png" /></div><p><span class="strong"><strong>Cas<span>e 3</span>:</strong></span></p><p>In the following case, <span>average</span><a id="id325681798" class="indexterm"></a> prediction <span>is</span><a id="id325681806" class="indexterm"></a> incorrect, but some samples were correctly predicted:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/c5f7fb28-3781-488d-97e1-74d3b29db386.png" /></div><p>For the preceding image, we obtained the following histogram: </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/e135ec1f-bc30-447f-9ce2-c68369a02e7d.png" /></div><p><span class="strong"><strong><span>Case 4:</span></strong></span></p><p>Obviously, we will get cases where we didn't predict correctly for any sample:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/3de5092f-2cca-4d33-b6ea-fb07ec052c49.png" /></div><p>For this image, we obtained the following histogram: </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/0e285375-f8b0-4b1b-a7f6-19ede8269960.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>Finally, visualize the posterior of weights in the network. In the following plot we are showing both the posterior mean and standard deviation of the different weights in the network:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/da4d2d84-524d-44dd-a45b-b2d22a8292e5.png" /></div><p>Having a distribution on weights enables us to develop predictions for the same image, which is extremely useful in developing a confidence interval around our predictions.</p></div></div>

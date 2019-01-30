@@ -1,0 +1,290 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec23"></a>Migrating to Azure</h2></div></div><hr /></div><p>Now that we have <span>configured</span><a id="id324953570" class="indexterm"></a> our tenant, let's look at <span>some</span><a id="id324953605" class="indexterm"></a> ways to migrate enterprise systems, VMs, or applications to Azure. While this book is hands-on with solutions in the cloud, I thought I would take a brief moment to talk about SaaS solutions as they may become an important part of providing well-rounded solutions in Azure.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec10"></a>Let's talk SaaS migrations</h3></div></div></div><p>When an organization looks to <span>move</span><a id="id324953620" class="indexterm"></a> to Azure, it's usually not just legacy applications or new greenfield development, but actually, some Enterprise packaged solutions like Exchange, SharePoint, or Dynamics.  As we discussed in <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Getting Started with Azure</em></span>, this all starts with Azure Active Directory.  With the complications of systems deployed within organizations, there isn't a one size fits all or a magic bullet for migrating to Azure, so I would like to give you some gotchas and pointers on how to get started with migrating your SaaS solutions in Office 365.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip7"></a>Note</h3><p>Before you start, it is a good idea to have an inventory of all your assets, such as sites, site collections, listed libraries, and the size of your databases.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec1"></a>Office 365</h4></div></div></div><p>Migrating to Office 365 requires planning and a <span>pretty</span><a id="id325433764" class="indexterm"></a> good knowledge of the environment you are going to migrate to. This will help you decide on the type of migration you need, for example, cut-over versus staged or hybrid migration. To help with this, you can use the <span>Exchange</span><a id="id325433770" class="indexterm"></a> Server Deployment Assistant at <a class="ulink" href="https://technet.microsoft.com/en-us/office/dn756393.aspx" target="_blank">https://technet.microsoft.com/en-us/office/dn756393.aspx</a>.</p><p>The aforementioned migration choices can be explained as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Cut-over</strong></span>: This is a one shot and you're done technique regarding moving all your data to Office 365. I would suggest you use the Assistant because there are limits as to how many mailboxes can be moved.</li><li style="list-style-type: disc"><span class="strong"><strong>Staged</strong></span>: This is a batch version of cut-over, where you move all your data in stages. This is a more managed approach to migrating.</li><li style="list-style-type: disc"><span class="strong"><strong>Hybrid</strong></span>: This option extends an on-premise server, and can be a permanent state or temporary. This option requires Azure AD Connect sync with an on-premise AD.</li></ul></div><p>You will want to use multi-factor authentication, DLP anti-spam, encryption, and rights management, especially in the healthcare or financial arena. Migrations do not handle server-side public folders, archive data, or emails larger than 25 MB, nor client-side PST or local settings. This can make things tricky, especially in hybrid scenarios.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip8"></a>Note</h3><p>Migration uses a lot of bandwidth, to ensure that you have the right circuit assigned or pick a time off hours. Also, deleted emails, by default, are saved for 14 days. You can increase this to 30 days by changing the Messaging Recording Management policy.</p></div><p>Looking at the solutions such as Dynamics and SharePoint, it is important to know that on-premise is most likely a version behind the cloud version and that most on-premise solutions work in Azure, but you must remember to test them.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip9"></a>Note</h3><p>SharePoint Farm level solutions are not supported in SharePoint online, so if your on-premise environment uses them, then you will need to rewrite them.</p></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec11"></a>Let's talk IaaS</h3></div></div></div><p>When looking at migrating an existing application to Azure, most <span>people</span><a id="id325433858" class="indexterm"></a> fall back on what they know, which is to move the virtual machines or use the <span class="strong"><strong>lift and shift</strong></span> model.  While lift and shift appear to be the easiest way to move your legacy application in the least cost-effective way, this can be very useful and fast when moving legacy applications to Azure that have not <span>been</span><a id="id325433870" class="indexterm"></a> modernized or have dependencies on third-party resources that may not have been modernized as well. With on-premise Active Directory services being synchronized with Azure Active Directory, help and virtual machine management are provided through an already established process, helping you ease into the Azure model.  This means that the virtual machine and services you move to Azure can still leverage their service accounts to function, as well as the data access service accounts, to your databases. Databases and AD services can also be moved out as managed services, meaning you can use domain joining within Active Directory domain services and move existing SQL databases as they are. This can be used to help bridge gaps when modernizing your applications.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note10"></a>Note</h3><p>Virtual machines in Azure are part of the IaaS. This would also refer to the infrastructure needed to support the virtual machines, like firewalls, gateways, routers, and so on. These will still need to be managed in a traditional way, such as patching.</p></div><p>A hybrid setup for sharing services generally requires a <span>permanent</span><a id="id325433884" class="indexterm"></a> connection to Azure, like a <span class="strong"><strong>Virtual Private Network</strong></span> (<span class="strong"><strong>VPN</strong></span>) or Express route, so as to expose the internal corporate network to Azure securely. At the beginning of this chapter, links were provided to configure a VPN or ExpressRoute to Azure. Because of network complications and devices, I would suggest you use the links for these configurations. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip11"></a>Note</h3><p>When considering using a VPN or Express Route solution for your hybrid solution, there are some things to note. First, Express Routes are bound to a subscription, so keeping a simplified subscription model helps with not having to manage too many VNET to VNET connections. Second, it leverages dynamic routing and does not support static routing.</p></div><p>The following diagram shows moving virtual machines into Azure and leveraging a VPN/Express Route to access on-premise services, as you can see:</p><div class="mediaobject"><img src="/graphics/9781786468659/graphics/77e45458-bcf9-4f6b-9b7a-12e37c6538fe.png" /></div><p>Simple VM move and on-premise services access</p><p>As we discussed in the previous chapter, Azure resources are deployed via ARM templates using PowerShell or Azure DevOps deployment services to deploy the resources.  ARM templates allow you to create, update, or delete all resources within the template. The templates use a parameters file that can be used to point at different environments and use a declarative syntax to define what resources are getting deployed, as we will see in a moment. Let's save the Azure DevOps version for our deployment chapter and focus on the PowerShell version. Let's discuss this structure before I show you a script that I use to deploy a virtual machine, which is modified from the standard one.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec2"></a>PowerShell and ARM Template</h4></div></div></div><p>Before we get started on this section, make sure that <span>you</span><a id="id325435350" class="indexterm"></a> have <span>installed</span><a id="id325435356" class="indexterm"></a> the Azure Development Workload, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786468659/graphics/aeef3cfd-8e85-40a7-ab52-7600facc02e6.png" /></div><p>Azure Development Workload in Visual Studio</p><p>Let's take a look at the basic structure of the template system used to deploy resources to Azure:</p><pre class="programlisting">{ 
+<span>"$schema"</span>: <span>"http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#"</span>, <span>"contentVersion"</span>: <span>""</span>,
+<span>"parameters"</span>: { }, 
+<span>"variables"</span>: { }, 
+<span>"functions"</span>: { }, 
+<span>"resources"</span>: [ ], 
+<span>"outputs"</span>: { }
+}
+</pre><p>Let's look at what the elements in the schema mean and whether some of them are required:</p><div class="mediaobject"><img src="/graphics/9781786468659/graphics/5bd67c7f-9080-42fe-8cbb-0729230fe06b.png" /></div><p>Now that we have seen how the template is structured, let's look at how a vanilla virtual machine is deployed to put it all together.  You can create an ARM template project in Visual Studio by selecting the <strong class="userinput"><code>Azure Resource Group</code></strong> project under <strong class="userinput"><code>New Projects</code></strong>, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786468659/graphics/daa07eee-ebc9-4235-bdba-805d25597a11.png" /></div><p>Visual Studio – Azure Resource Group</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch02lvl4sec0"></a>Deploy-AzureResourceGroup.ps1</h5></div></div></div><p>In this PowerShell script, we are going to check to <span>see</span><a id="id325438692" class="indexterm"></a> if you are logged in. If you are not logged in, the script will run a validation on your script, create a storage area, upload files to the storage, assign a 4-hour access key, and then run the deployment. The majority of PowerShell is generated when you select an Azure Resource Manager in Visual Studio, but I did add the following login function to help ensure that I am logged in to the right tenant:</p><pre class="programlisting">function Check-Login
+{
+    $needLogin = $true
+    Try 
+    {
+        $content = Get-AzureRmContext
+        if ($content) 
+        {
+            $needLogin = ([string]::IsNullOrEmpty($content.Account))
+        } 
+    } 
+    Catch 
+    {
+        if ($_ -like "*Login-AzureRmAccount to login*") 
+        {
+            $needLogin = $true
+        } 
+        else 
+        {
+            throw
+        }
+    }
+    if ($needLogin)
+    {
+        Login-AzureRmAccount
+    }
+}
+Check-Login
+
+</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch02lvl4sec1"></a>azuredeploy.parameters.json</h5></div></div></div><p>This file contains the parameters for the template <span>and</span><a id="id325439836" class="indexterm"></a> is called from within the preceding PowerShell script. These parameters will overwrite the parameters in the <code class="literal">Template</code> file.  You can use multiple parameter files to deploy to different environments; I usually also create a different PowerShell file as well by environment so I do not need modify it. I add the parameters for username and password, as well as the private Subnet definition:</p><pre class="programlisting">{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "value": "azureuser"
+    },
+    "adminPassword": {
+      "value": "Azure12345678"
+    },
+    "PrivateSubnet": {
+      "value": "10.0.1.0/24"
+    }
+  }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch02lvl4sec2"></a>azuredeploy.json</h5></div></div></div><p>This is the file that contains the code <span>version</span><a id="id325439882" class="indexterm"></a> of the VM being deployed.  It is made up of parameters, which are provided or overwritten by the preceding parameters file.  The JSON defines three resources: a VNET, a VM, and a NIC resource.  Let's look at how the resources in this file are added and how the sections are broken down. To add resources, you just need to right-click on the resource element in Visual Studio, as you can see in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786468659/graphics/ed78ca20-3b59-478f-877a-80f454a3d08f.png" /></div><p>Adding a resource to an ARM Template in Visual Studio</p><p> </p><p> </p><p>The <code class="literal">parameters</code> are the input to the template and are the values that are provided by the <code class="literal">parameters</code> file:</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip12"></a>Note</h3><p>It is a good practice to provide a meaningful description. Default values can also be provided if they are optional values.</p></div><p>Let's take a look at the following code:</p><pre class="programlisting">{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the administrator account of the new VM and domain"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password for the administrator account of the new VM and domain"
+      }
+    },
+    "PrivateSubnet": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": { "description": "Private VNet IP Subnet" }
+    }
+  },</pre><p>The <code class="literal">variables</code> section is for variables within the template that can leverage functions. As you can see, in the following code, we are using the split function to break apart the <code class="literal">PrivateSubnet</code> to help create unique names for our VMs:</p><pre class="programlisting">"variables": {
+    "GroupStart": "[split(parameters('PrivateSubnet'), '.')[0]]",
+    "GroupMain": "[split(parameters('PrivateSubnet'), '.')[1]]",
+    "GroupNumber": "[split(parameters('PrivateSubnet'), '.')[2]]",
+    "instWin1": "[concat(variables('GroupMain'),'-',variables('GroupNumber'),'-Win1')]",
+    "instWin1NIC": "[concat(variables('GroupMain'),'-',variables('GroupNumber'),'-Win1NIC')]",
+    "NetworkVNetID": "[resourceId('Microsoft.Network/virtualNetworks', 'NetworkVNet')]",
+    "PrivateSubnetName": "PrivateSubnet",
+    "PrivateSubnetRef": "[concat(variables('NetworkVNetID'), '/subnets/', variables('PrivateSubnetName'))]"
+  },</pre><p>In the resources section, we define the resource the template will deploy. In this scenario, we are deploying VNet, NIC, and VM resources. The VM will use the NIC card to connect to the VNet. The VNet is the virtual network that the VM will use to communicate to other resources deployed on the VNet. The following code explains how the NIC card is built into the ARM template:</p><pre class="programlisting">  "resources": [
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('instWin1NIC')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', 'NetworkVNet')]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[concat(variables('GroupStart'),'.',variables('GroupMain'),'.',variables('GroupNumber'),'.31')]",
+              "subnet": {
+                "id": "[variables('PrivateSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    }</pre><p>Now, let's look at VM resource creation and how we add the NIC resource we created previously to the VM.  As you can see, in the following code, the NIC is applied as the <span>network</span><a id="id325726456" class="indexterm"></a> interface resource for the VM:</p><pre class="programlisting">{
+    "apiVersion": "2016-04-30-preview",
+    "type": "Microsoft.Compute/virtualMachines",
+    "name": "[variables('instWin1')]",
+    "location": "[resourceGroup().location]",
+    "dependsOn": [
+      "[resourceId('Microsoft.Network/networkInterfaces/', variables('instWin1NIC'))]"
+    ],
+    "properties": {
+      "hardwareProfile": { "vmSize": "Standard_DS1" },
+      "osProfile": {
+        "computerName": "[variables('instWin1')]",
+        "adminUsername": "[parameters('adminUsername')]",
+        "adminPassword": "[parameters('adminPassword')]"
+      },
+      "storageProfile": {
+        "imageReference": {
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "2012-R2-Datacenter",
+          "version": "latest"
+        },
+        "osDisk": {
+          "createOption": "FromImage",
+          "caching": "ReadWrite"
+        }
+      },
+      "networkProfile": {
+        "networkInterfaces": [
+          {
+            "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('instWin1NIC'))]"
+          }
+        ]
+      }
+    }
+  }
+  ]
+}</pre><p>As you can see, the ARM template helps us create a repeatable and configurable process. However, let's look at taking things a bit further. One of the biggest things folks realize is that there are other resources like firewalls, routers, and load balancers that are required when you choose to manage your applications in virtual machines.  While this may be a choice that you may not be able to avoid, it also requires you to update the OS and Service Packs. </p></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec12"></a>Let's talk PaaS</h3></div></div></div><p>When looking at migrating to Azure, sometimes, you <span>need</span><a id="id325726476" class="indexterm"></a> to look past moving the virtual machine to Azure, as you can just move the service itself. Because we are looking at migration and not wholesale code changes, let's pick on some low hanging fruit.  In most organizations, you have web applications that usually have databases like SQL to support them. So, for this exercise, let's say that we have virtual machines we want to move—one has two websites and the other has two SQL databases. Instead of moving the two virtual machines, you could just move the websites and databases to Azure as instances.  The websites would be deployed to App Services, which is Azure's "IIS" for hosting web applications. Databases would either be migrated to a database instance within an Azure Server resource or through managed instances, which is used to maintain a prior or specific version of SQL.  We will dive deeper into this within the next chapter, as well as discuss cost, just looking to start building a quick virtual machine based on understanding. Let's look at how this changes the ARM template. Because the PowerShell is generic, we are not going to review that one again. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec3"></a>Deploy-Azure-WebsiteAndDatabase.parameters.json</h4></div></div></div><p>In our <code class="literal">parameters</code> file, we provide the hosting <span>plan</span><a id="id325726494" class="indexterm"></a> name and a username and password for the SQL instance:</p><pre class="programlisting">{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "hostingPlanName": {
+      "value": "Demo_Hosting_Plan"
+    },
+    "administratorLogin": {
+      "value": "sqlAdmin"
+    },
+    "databaseName": {
+      "value": "Pas@word123"
+    }
+  }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch02lvl3sec4"></a>Deploy-Azure-WebsiteAndDatabase.template.json</h4></div></div></div><p>The <code class="literal">parameters</code> section is the <span>same</span><a id="id325740749" class="indexterm"></a> as the previous section—it is the input to the template. One minor change is the use of the allowed values element, which helps the DSC to complain before the template is executed in the verification process. Let's look at some of the differences between these sections. We won't review the <code class="literal">variables</code> section in our discussion:</p><pre class="programlisting">{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "hostingPlanName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "skuName": {
+      "type": "string",
+      "defaultValue": "F1"
+    },
+    "skuCapacity": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 1
+    },
+    "administratorLogin": {
+      "type": "string"
+    },
+    "administratorLoginPassword": {
+      "type": "securestring"
+    },
+    "databaseName": {
+      "type": "string"
+    },
+    "collation": {
+      "type": "string",
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "edition": {
+      "type": "string",
+      "defaultValue": "Basic",
+    },
+    "maxSizeBytes": {
+      "type": "string",
+      "defaultValue": "1073741824"
+    },
+    "requestedServiceObjectiveName": {
+      "type": "string",
+      "defaultValue": "Basic"
+    }
+  },</pre><p>Let's see how the SQL instance is deployed within our template. An important thing to note is that the default firewall rules open the SQL instance to all public IP addresses. You will want to tighten the rules for QA and production:</p><pre class="programlisting">{
+      "name": "[variables('sqlserverName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "SqlServer"
+      },
+      "apiVersion": "2014-04-01-preview",
+      "properties": {
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]"
+      },
+      "resources": [
+        {
+          "name": "[parameters('databaseName')]",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "Database"
+          },
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers/', variables('sqlserverName'))]"
+          ],
+          "properties": {
+            "edition": "[parameters('edition')]",
+            "collation": "[parameters('collation')]",
+            "maxSizeBytes": "[parameters('maxSizeBytes')]",
+            "requestedServiceObjectiveName": "[parameters('requestedServiceObjectiveName')]"
+          }
+        },
+        {
+          "type": "firewallrules",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers/', variables('sqlserverName'))]"
+          ],
+          "location": "[resourceGroup().location]",
+          "name": "AllowAllWindowsAzureIps",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          }
+        }
+      ]
+    }</pre><p>Now, before we deploy the App Service, we need to have an App Service plan. Let's look at what that element looks like:</p><pre class="programlisting">{
+      "apiVersion": "2015-08-01",
+      "name": "[parameters('hostingPlanName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "HostingPlan"
+      },
+      "sku": {
+        "name": "[parameters('skuName')]",
+        "capacity": "[parameters('skuCapacity')]"
+      },
+      "properties": {
+        "name": "[parameters('hostingPlanName')]"
+      }
+    }</pre><p>Now that we have the plan, let's deploy the App Service. An important <span>thing</span><a id="id325740779" class="indexterm"></a> to note is that the connection string to the database is being added to the connections collection in the App Settings of the App Service:</p><pre class="programlisting">{
+      "apiVersion": "2015-08-01",
+      "name": "[variables('webSiteName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverFarms/', parameters('hostingPlanName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "empty",
+        "displayName": "Website"
+      },
+      "properties": {
+        "name": "[variables('webSiteName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]"
+      },
+      "resources": [
+        {
+          "apiVersion": "2015-08-01",
+          "type": "config",
+          "name": "connectionstrings",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites/', variables('webSiteName'))]"
+          ],
+          "properties": {
+            "DefaultConnection": {
+              "value": "[concat('Data Source=tcp:', reference(resourceId('Microsoft.Sql/servers/', variables('sqlserverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', parameters('databaseName'), ';User Id=', parameters('administratorLogin'), '@', variables('sqlserverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
+              "type": "SQLServer"
+            }
+          }
+        }
+      ]
+    }</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>As you can see, this template deployed an App Service Plan, an App Service, and a SQL database.  One thing we need to remember is that most resources require infrastructure in order to run, and PaaS resources are no different. App Service Plans, or commonly referred to as VM backed, are the physical resources assigned to run an App Service or a group of App Services.  You can think of these as your VM running IIS resources on your virtual machine, which would contain the website code that was deployed to that IIS website. Basically, it is like just moving the website code instead of the entire virtual machine containing IIS.  Not only is this more cost-effective in that you no longer have the virtual machine or the infrastructure to support, which costs a lot, but this also allows you to concentrate on application support and remove most of the worry around patching the underlying resources needed to support the website.  The SQL database functions in almost the same way as App Services—you create a SQL server instance and then add SQL database instances that use <span class="strong"><strong>Data Transfer Units</strong></span> (<span class="strong"><strong>DTU</strong></span>), which are the VM style resources assigned to run the database instance.  </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note13"></a>Note</h3><p>This is referred to as PaaS, in which you run the instance of the resource in Azure and not the full virtual machine.  An example of this would be a web application on a virtual machine that becomes an App Service in Azure without the cost of running the full virtual machine.</p></div><p>The following diagram shows you a simplified view of this process of moving only the instances out to Azure, as you can see in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781786468659/graphics/3968570e-0da6-4a13-b95d-0f4515200994.png" /></div><p>PaaS model</p><p></p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p>If you need to leverage a custom URL or SSL within an App Service you are going to use, use a Basic or Standard level App Service Plan. For Dev and QA, you can get away with the standard <a class="ulink" href="http://azurewebsite.net" target="_blank">azurewebsite.net</a> domain as it has a secure layer to force <code class="literal">https</code>.</p></div><p>In our <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>What it takes to Build Solutions in Azure</em></span>, we will discuss App Service settings in more detail, however it is worth pointing out now that you can lock down an App Service using the Azure Active Directory service we set up previously with no need to code change.  You would <span>want</span><a id="id325748441" class="indexterm"></a> to do this is you have network boundaries that isolate your websites. Once you move it to the cloud, you want to restrict access without having to rewrite the code.  You can do this through the App Service with the Azure Portal, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781786468659/graphics/ef63f83e-f9e6-45ae-abf1-ba0efb16a096.png" /></div><p>Authentication/Authorization for App Service</p><p>Moving legacy applications to Azure can be a tricky thing at the end of the day, but sometimes you have to look past the easy in order to conserve money.</p></div></div></div>

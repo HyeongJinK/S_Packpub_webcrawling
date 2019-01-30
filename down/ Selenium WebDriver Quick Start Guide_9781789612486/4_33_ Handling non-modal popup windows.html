@@ -1,0 +1,44 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec38"></a>Handling non-modal popup windows</h2></div></div><hr /></div><p>We will be using the website <a class="ulink" href="http://popuptest.com/goodpopups.html" target="_blank">http://popuptest.com/goodpopups.html</a> to demonstrate non-modal pop-up windows. We will write a small program to load this URL and then click the <strong class="userinput"><code>Good PopUp #1 link</code></strong>. A pop-up window will open and then we will <span>fetch</span><a id="id325162076" class="indexterm"></a> the window handles of both the open windows.</p><p>The following code clicks a link on the home page and fetches the window handles of both the open windows as well as their titles:</p><pre class="programlisting"> WebDriver driver = new ChromeDriver();
+ driver.manage().window().maximize();
+ driver.navigate().to("http://popuptest.com/goodpopups.html");
+driver.findElement(By.xpath("//a[text()='Good PopUp #1']")).click();
+Set openWindows = driver.getWindowHandles();
+System.out.println("No of open windows: " + openWindows.size());
+Iterator&lt;String&gt; it = openWindows.iterator();
+String parent = it.next();
+System.out.println("Parent Window: " + parent + " title: " + driver.getTitle());
+String child = it.next();
+System.out.println("Child Window:" + child + " title: "
+ + driver.getTitle());
+-------------------------------------------------------------------------------
+<span class="strong"><strong>
+Output:</strong></span>
+<span class="strong"><strong>No of open windows: 2</strong></span>
+<span class="strong"><strong>Parent Window: CDwindow-0F9E3C139C7C9BFEE7D9B981F83425D6 title: PopupTest - test your popup killer software</strong></span></pre><pre class="programlisting"><span class="strong"><strong>Child Window:CDwindow-1BD6347CF08C0721D66F726F9D04F52C title: PopupTest - test your popup killer software</strong></span>
+
+</pre><p>Did you notice something funny about the output? We have two windows and two unique window handles but the title printed in both the windows is the same. How can that be possible? This happened because we did not switch windows before calling the <code class="literal">getTitle()</code> method. Here comes the concept of switching windows.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec37"></a>Introducing the switchTo() method</h3></div></div></div><p>Selenium has to be explicitly told <span>which</span><a id="id325447100" class="indexterm"></a> window to focus on. In this case, it has focused on the first parent window. We switch windows in Selenium using the <code class="literal">switchTo()</code> command, which is invoked on the driver object. The signature of <code class="literal">switchTo</code> is <code class="literal">driver.switchTo.window(String)</code>. The <code class="literal">switchTo()</code> method is in the WebDriver interface, which returns an object of the <code class="literal">TargetLocator</code> interface: a child interface of WebDriver. On this object of <code class="literal">TargetLocator</code>, the window method is invoked and this returns a WebDriver object. The parameter is of a string type, which is the alpha-numeric handle of the window. Let's handle the small issue in our code by adding <code class="literal">switchTo().window(String)</code> at two places in our code right after extracting the window handles for parent and child windows. The string parameters will be <code class="literal">parent</code> and <code class="literal">child</code>.</p><p>The output After this addition is shown here:</p><pre class="programlisting">
+No of open windows: 2
+Parent Window: CDwindow-3378E656C226EBA5B5880A0DE93D1E24title: PopupTest - test your popup killer software
+Child Window:CDwindow-76B76D2A879C440BBC8A548230320459title: PopupTest Sunday August, 19 2018</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec38"></a>Looking at the getTitle() method</h3></div></div></div><p>We can perform operations on a <span>particular</span><a id="id325448859" class="indexterm"></a> window by using the <code class="literal">switchTo()</code> command first and then verifying the title. If the title of the window matches the one we want, we can start performing operations on that window or we can invoke the <code class="literal">switchTo</code> method again. We can iterate through all open windows using the while loop. Apart from this, we can also search for the existence of elements, we can fire up JavaScript events to check that some JavaScript function exists, and so on.</p><p>In the condition of the while loop, we utilize the <code class="literal">hasNext()</code> method on the iterator object. The <code class="literal">hasNext</code> method keeps on fetching values in the iterator object until it reaches the last value.</p><p>The following piece of code can be used to switch to the desired window. The code issues a break after finding the window with the desired title:</p><pre class="programlisting">public void switchWindowByTitle(String expectedTitle){
+    Set&lt;String&gt; windowHandles = driver.getWindowHandles();
+ Iterator it = windowHandles.iterator();
+ while (it.hasNext()){
+         driver.switchTo(it.next());
+         if (driver.getTitle().equalsIgnoreCase(expectedTitle)){
+             break;
+         }
+    } 
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec39"></a>Looping through all open windows using the simple for loop</h3></div></div></div><p>Sometimes, using a simple for loop instead of a set can prove easy to comprehend. Let's look at the <code class="literal">ArrayList</code> method <span>with</span><a id="id325448968" class="indexterm"></a> the same link <a class="ulink" href="http://popuptest.com/goodpopups.html" target="_blank">http://popuptest.com/goodpopups.html</a>.</p><p>The following code, when run from a main method, prints the titles of each popup:</p><pre class="programlisting"> WebDriver driver = new ChromeDriver();
+ driver.manage().window().maximize();
+ driver.navigate().to("http://popuptest.com/goodpopups.html");
+ try {
+ } catch (InterruptedException e) {
+ // TODO Auto-generated catch block
+ e.printStackTrace();
+ }
+ driver.findElement(By.xpath("//*[text()='Good PopUp #1']")).click();
+ for (String i : driver.getWindowHandles()) {
+ driver.switchTo().window(i);
+ System.out.println(driver.getTitle());
+ }
+}</pre></div></div>

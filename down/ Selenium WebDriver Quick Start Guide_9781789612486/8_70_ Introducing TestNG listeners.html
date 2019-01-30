@@ -1,0 +1,136 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec71"></a>Introducing TestNG listeners</h2></div></div><hr /></div><p>We have already looked at WebDriver listeners. TestNG also provides listeners which are basically used to signal when a particular event happens, such as <span>completion</span><a id="id325161569" class="indexterm"></a>of a test method. TestNG<span>listeners</span><a id="id325162054" class="indexterm"></a>are used for logging and reporting purposes. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec64"></a>Different types of listeners</h3></div></div></div><p>There are many different types of interfaces that allow us to modify TestNG behavior. Listed next are these interfaces:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">ITestListener</code>: A listener used for <span>listening</span><a id="id325162080" class="indexterm"></a> on running tests.</li><li style="list-style-type: disc"><code class="literal">ISuiteListener</code>: A listener <span>used</span><a id="id325450462" class="indexterm"></a> specifically for test suites.</li><li style="list-style-type: disc"><code class="literal">IReporter</code>: This is an interface to be <span>implemented</span><a id="id325450475" class="indexterm"></a> if a report has to be generated.</li><li style="list-style-type: disc"><code class="literal">IMethodInterceptor</code>: This is <span>used</span><a id="id325450488" class="indexterm"></a> to change the collection of methods that TestNG is going to execute.</li><li style="list-style-type: disc"><code class="literal">IInvokedMethodListener</code>: This gets into <span>action</span><a id="id325434540" class="indexterm"></a> before and after a test method is invoked by TestNG.</li></ul></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">IHookable</code>: If this interface is <span>implemented</span><a id="id325434556" class="indexterm"></a> by a class, then the <code class="literal">run()</code> method will be invoked instead of the<code class="literal">@test</code>method. The<code class="literal">test</code>method will be performed when the<code class="literal">callBack()</code>method of the<code class="literal">IHookCallBack</code>parameter is invoked.</li><li style="list-style-type: disc"><code class="literal">IAnnotationTransformer</code>: The<code class="literal">transform</code>method will be <span>invoked</span><a id="id325434588" class="indexterm"></a> by TestNG to give you a chance to modify a TestNG annotation read from your test classes. You can change the values by calling any of the setter methods on the <code class="literal">ITest</code> interface.</li><li style="list-style-type: disc"><code class="literal">IAnnotationTransformer2</code>: If any other test <span>annotation</span><a id="id325434604" class="indexterm"></a> needs to be modified apart from the <code class="literal">@Test</code> annotation, one can use this interface.</li></ul></div><p>We will mainly be looking at the <code class="literal">iTestListener</code> and <code class="literal">iSuiteListener</code> interface implementations.</p><p>There are two ways in which TestNG listeners can be used:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">By extending the <code class="literal">TestListenerAdapter</code> class</li><li style="list-style-type: disc">By implementing the corresponding interface, <code class="literal">iTestListener</code></li></ul></div><p>Let's understand both methods.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec65"></a>Implementing the ITestListener interface</h3></div></div></div><p>For this, let's <span>understand</span><a id="id325469500" class="indexterm"></a> a very simple program. We create a very simple listener first.</p><p>We have implemented the <code class="literal">ITestListener</code> and four of the methods, which are:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">onTestStart</code></li><li style="list-style-type: disc"><code class="literal">onTestSuccess</code></li><li style="list-style-type: disc"><code class="literal">onTestFailure</code></li><li style="list-style-type: disc"><code class="literal">onTestSkipped</code></li></ul></div><p>The following code shows the implementation of <code class="literal">ITestListener</code>:</p><pre class="programlisting">public class SampleListener implements ITestListener {
+     @Override
+     public void onTestStart(ITestResult result) {
+         System.out.println("The test that has started is: " + result.getName());
+     }
+<span>@Override
+ public void onTestSuccess(ITestResult result) {
+ System.out.println("The test that has passed is: " + result.getName());</span>
+     }
+     @Override
+ public void onTestFailure(ITestResult result) {
+ System.out.println("The test that has failed is: " + result.getName());
+ }
+     @Override
+     public void onTestSkipped(ITestResult result) {
+         System.out.println("The test that has skipped is: " + 
+         result.getName());
+     }
+     @Override
+     public void onTestFailedButWithinSuccessPercentage(ITestResult 
+     result) {
+     }
+     @Override
+     public void onStart(ITestContext context) {
+     }
+     @Override
+     public void onFinish(ITestContext context) {
+     }
+}</pre><p><span>A question</span><a id="id325497844" class="indexterm"></a> now arises: how do we use this listener to log messages and generate reports?</p><p>For this, we need to create a test class, as shown here:</p><pre class="programlisting">@Listeners(org.packt.listeners.SampleListener.class)
+public class ListenerClass {
+ @Test
+ public void checkListeners() {
+     System.setProperty(
+ "webdriver.chrome.driver",
+ System.setProperty("user.dir")+"\\src\\main\\resources\\chromedriver.exe");
+     WebDriver driver = new ChromeDriver();
+     driver.get("http://www.freecrm.com");
+     System.out.println("Title is : " + driver.getTitle());
+ }
+}</pre><p>When we right-click on this code and select <strong class="userinput"><code>Run As</code></strong> | <strong class="userinput"><code>TestNG Test</code></strong>, we get the following output:</p><pre class="programlisting"><span class="strong"><strong>The test that has started is: checkListeners</strong></span>
+<span class="strong"><strong>Title is : #1 Free CRM software in the cloud for sales and service</strong></span>
+<span class="strong"><strong>The test that has passed is: checkListeners</strong></span>
+<span class="strong"><strong>PASSED: checkListeners</strong></span></pre><p>Another way to use the listener class along with the test class is to use it as a tag in <code class="literal">TestNG</code> XML. For this, we just need to add the <span>following</span><a id="id325597665" class="indexterm"></a> tag in the <code class="literal">TestNG</code> XML file:</p><p><code class="literal">&lt;listener class-name="SampleListener"&gt;&lt;/listener&gt;</code></p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec66"></a>Extending the TestListenerAdapter class</h3></div></div></div><p>A second <span>approach</span><a id="id325597687" class="indexterm"></a> to implementing listeners is to extend the <code class="literal">TestListenerAdapter</code> class.</p><p>The following code shows a sample <code class="literal">listener</code> class:</p><pre class="programlisting">public class SampleListener1 extends TestListenerAdapter {
+     public void onTestSuccess(ITestResult testResult) {
+         System.out.println(testResult.getName() + " was a success");
+     }
+     public void onTestFailure(ITestResult testResult) {
+         System.out.println(testResult.getName() + " was a failure");
+     }
+     public void onTestSkipped(ITestResult testResult) {
+         System.out.println(testResult.getName() + " was skipped");
+     }
+}</pre><p>The test class for the preceding listener will not change. The output is shown here:</p><pre class="programlisting"><span class="strong"><strong>Title is : #1 Free CRM software in the cloud for sales and service</strong></span>
+<span class="strong"><strong>checkListeners was a success</strong></span></pre><p>With this knowledge, let's have a look at the listener for our framework.</p><p>The <code class="literal">UtilityListener</code> class, shown in the <span>following</span><a id="id325597729" class="indexterm"></a> code, indicates that we have implemented three interfaces:</p><pre class="programlisting">public class UtilityListener implements ITestListener, ISuiteListener,
+ IInvokedMethodListener {
+    // This will execute before the Suite start
+    @Override
+    public void onStart(ISuite arg0) {
+        Reporter.log("About to start Suite execution" + arg0.getName(), 
+        true);
+    }
+    // This will execute when suite has finished
+    @Override
+    public void onFinish(ISuite arg0) {
+        Reporter.log("About to exit executing Suite " + arg0.getName(), 
+        true);
+    }
+    // This will execute before start of Test
+    public void onStart(ITestContext arg0) {
+        Reporter.log("About to begin executing Test " + arg0.getName(), 
+        true);
+    }
+    // This will execute, once the Test is finished
+    public void onFinish(ITestContext arg0) {
+        Reporter.log("Completed executing test " + arg0.getName(), 
+        true);
+    }
+    // This will execute once the test passes
+    public void onTestSuccess(ITestResult arg0) {
+    // This calls the printTestResults method
+        printTestResults(arg0);
+    }
+    // This will execute only on the event of fail
+    public void onTestFailure(ITestResult arg0) {
+        printTestResults(arg0);
+    }
+    public void onTestStart(ITestResult arg0) {
+        System.out.println("The execution of the main test starts");
+    }
+    // This will execute only if any of the main test skipped
+    public void onTestSkipped(ITestResult arg0) {
+        printTestResults(arg0);
+    }
+    public void onTestFailedButWithinSuccessPercentage(ITestResult 
+     arg0) {
+    }</pre><p>This <code class="literal">printTestResults</code> method, shown in the <span>following</span><a id="id325597750" class="indexterm"></a> code, will be executed in case our tests pass or fail:</p><pre class="programlisting">private void printTestResults(ITestResult result) {
+    Reporter.log("Test Method resides in "
+         + result.getTestClass().getName(), true);
+    if (result.getParameters().length != 0) {    
+        String params = null;
+        for (Object parameter : result.getParameters()) {
+            params += parameter.toString() + ",";
+        }
+        Reporter.log(
+         "Test Method had the following parameters : " + params,true);
+        }
+        String status = null;
+        switch (result.getStatus()) {
+            case ITestResult.SUCCESS:
+            status = "Pass";
+            break;
+            case ITestResult.FAILURE:
+                status = "Failed";
+                break;
+            case ITestResult.SKIP:
+                status = "Skipped";
+            }
+            Reporter.log("Test Status: " + status, true);
+        }
+        public void beforeInvocation(IInvokedMethod arg0, ITestResult 
+         arg1) {
+            String textMsg = "About to begin executing following method 
+              : " + returnMethodName(arg0.getTestMethod());
+            Reporter.log(textMsg, true);
+        }
+        public void afterInvocation(IInvokedMethod arg0, ITestResult 
+         arg1) {
+            String textMsg = "Completed executing following method : "
+                 + returnMethodName(arg0.getTestMethod());
+            Reporter.log(textMsg, true);
+        }
+        private String returnMethodName(ITestNGMethod method) {
+            return method.getRealClass().getSimpleName() + "."
+                 + method.getMethodName();
+        }
+   }</pre><p>Let's now <span>explore</span><a id="id325597766" class="indexterm"></a> another important part of the framework: assertions.</p></div></div>

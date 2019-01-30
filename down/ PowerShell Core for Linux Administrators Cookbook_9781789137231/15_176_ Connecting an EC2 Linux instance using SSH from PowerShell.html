@@ -1,0 +1,30 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch15lvl1sec171"></a>Connecting an EC2 Linux instance using SSH from PowerShell</h2></div></div><hr /></div><p>In this recipe, we will look at how we can access an <span>EC2</span><a id="id326090203" class="indexterm"></a> instance from a Linux machine using SSH.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch15lvl2sec454"></a>Getting ready</h3></div></div></div><p>Before you connect to the Linux instance, make sure that you complete the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Ensure that the OpenSSH client is installed on your computer. By default, most Linux distribution include an SSH client.</li><li>Launch PowerShell and load the AWS PowerShell Core module.</li><li>Get the launch information from the AWS Service Portal. </li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch15lvl2sec455"></a>How to do it…</h3></div></div></div><p>The following instructions explain how to connect to an AWS Linux instance using the SSH client from the PowerShell console:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>To get the instance details, run the <code class="literal">Get-EC2Instance</code> command:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; Get-EC2Instance -Region us-east-2 </strong></span></pre><div class="mediaobject"><img src="/graphics/9781789137231/graphics/0f966d61-f227-4510-9c63-a990b439170f.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>While launching the instance, download the private key file.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Use the<code class="literal"> chmod</code> command to make the private key file publicly viewable:</li></ol></div><pre class="programlisting"><span class="strong"><strong># chmod 400 ./Downloads/linuxdemo.pem</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Use the <code class="literal">ssh</code> command to connect to the instance. You must specify the private key (<code class="literal">linuxdemo.pem</code>) and that <code class="literal">ec2-user</code> is the default user to access the Linux machine:</li></ol></div><pre class="programlisting"><span class="strong"><strong># ssh -i "./Downloads/linuxdemo.pem" ec2-user@ec2-18-191-134-57.us-east-2.compute.amazonaws.com</strong></span>
+
+</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>You will see the following response:</li></ol></div><pre class="programlisting">The authenticity of host 'ec2-18-191-134-57.us-east-2.compute.amazonaws.com (18.191.134.57)' can't be established.
+ECDSA key fingerprint is SHA256:Osf4nkGaPkHpsLuT73MUxcXCkWLXL0JHFWlc4UN1kgQ.
+ECDSA key fingerprint is MD5:0c:9a:f0:c8:1c:66:94:c5:02:4b:9b:95:b5:d0:c3:24.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'ec2-18-191-134-57.us-east-2.compute.amazonaws.com,18.191.134.57' (ECDSA) to the list of known hosts.
+
+       __| __|_ )
+       _| ( / Amazon Linux AMI
+      ___|\___|___|
+
+https://aws.amazon.com/amazon-linux-ami/2018.03-release-notes/
+11 package(s) needed for security, out of 13 available</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Now, connect to the superuser mode using <code class="literal">sudo -s</code> and run the <code class="literal">update</code> command:</li></ol></div><pre class="programlisting"><span class="strong"><strong>[ec2-user@ip-172-31-35-255 ~]$ sudo -s</strong></span>
+<span class="strong"><strong>[root@ip-172-31-35-255 ec2-user]# yum updat</strong></span><span class="strong"><strong>e</strong></span>
+Loaded plugins: priorities, update-motd, upgrade-helper
+Resolving Dependencies
+--&gt; Running transaction check
+---&gt; Package cloud-init.noarch 0:0.7.6-2.15.amzn1 will be updated
+---&gt; Package cloud-init.noarch 0:0.7.6-2.16.amzn1 will be an update
+---&gt; Package dhclient.x86_64 12:4.1.1-53.P1.27.amzn1 will be updated
+---&gt; Package dhclient.x86_64 12:4.1.1-53.P1.28.amzn1 will be an update
+---&gt; Package dhcp-common.x86_64 12:4.1.1-53.P1.27.amzn1 will be updated
+---&gt; Package dhcp-common.x86_64 12:4.1.1-53.P1.28.amzn1 will be an update
+---&gt; Package gnupg2.x86_64 0:2.0.28-1.30.amzn1 will be updated
+---&gt; Package gnupg2.x86_64 0:2.0.28-2.31.amzn1 will be an update
+---&gt; Package kernel.x86_64 0:4.14.47-56.37.amzn1 will be installed
+---&gt; Package ntp.x86_64 0:4.2.6p5-44.36.amzn1 will be updated
+---&gt; Package ntp.x86_64 0:4.2.8p11-2.38.amzn1 will be an update
+---&gt; Package ntpdate.x86_64 0:4.2.6p5-44.36.amzn1 will be updated</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch15lvl2sec456"></a>How it works…</h3></div></div></div><p>This recipe uses the Linux <code class="literal">ssh</code> tool to connect to the remote <span>EC2</span><a id="id325892151" class="indexterm"></a> instance that we created on AWS. First, we download the key pair to connect to the EC2 instance so that the SSH agent can use it, and then we use the <code class="literal">ssh</code> command to connect to the remote computer.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note93"></a>Note</h3><p>Save the private key file in a safe place. Amazon EC2 does not keep a copy of your private key; therefore, if you lose the private key, there is no way to recover it.</p></div><p>As with any cloud resource, release the resources when the lab exercise is complete in order to avoid wastage and save costs.</p><p>This concludes this chapter regarding the overview of cloud operations on Microsoft Azure and Amazon Web Services using PowerShell.</p></div></div>

@@ -1,0 +1,87 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec66"></a>Flask Caching</h2></div></div><hr /></div><p>In <a class="link" href="#" linkend="ch07"><span>Chapter 7</span></a>, <span class="emphasis"><em>Using NoSQL with Flask</em></span>, we <span>learned</span><a id="id325375175" class="indexterm"></a> that page load time is one of the most important factors that will determine the success or failure of your web app. Despite the facts that our pages do not change very often, and that new posts will not be made very often, we still render the template and query the database every single time the page is asked for by our users' browsers.</p><p>Flask Caching solves this problem by allowing us to store the results of our view functions and return the stored results, rather than render the template again. First, we need to install Flask Caching on our virtual environment. This was already done when running the <code class="literal">init.sh</code> bash script. The <code class="literal">init.sh</code> script will first install all the declared dependencies in<code class="literal">requirements.txt</code>:</p><pre class="programlisting">...
+Flask-Caching
+...</pre><p>Next, initialize it in <code class="literal">webapp/__init__.py</code> as follows:</p><pre class="programlisting">from flask_caching import Cache 
+...
+cache = Cache()
+... 
+def create_app(config):
+...
+    cache.init_app(app)
+...</pre><p>Before we can start caching our views, we need to tell <span>Flask Cache</span> how we want to store the results of our new functions:</p><pre class="programlisting">class DevConfig(Config): 
+ 
+    CACHE_TYPE = 'simple'</pre><p>The <code class="literal">simple</code> option tells Flask Cache to store the results in memory in a Python dictionary, which, for the vast majority of Flask apps, is adequate. We'll cover more types of cache backends later in this section.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec64"></a>Caching views and functions</h3></div></div></div><p>In order to cache the results of a view function, simply <span>add</span><a id="id325378676" class="indexterm"></a> a decorator to any function:</p><pre class="programlisting">...
+<span class="strong"><strong>from .. import cache</strong></span>
+...
+
+@blog_blueprint.route('/')
+@blog_blueprint.route('/&lt;int:page&gt;')
+<span class="strong"><strong>@cache.cached(timeout=60)</strong></span>
+def home(page=1):
+    posts = 
+    Post.query.order_by(Post.publish_date.desc()).paginate(page, 
+    current_app.config['POSTS_PER_PAGE'], False)
+    recent, top_tags = sidebar_data()
+
+return render_template(
+'home.html',
+posts=posts,
+recent=recent,
+top_tags=top_tags
+    )</pre><p>The <code class="literal">timeout</code> parameter specifies how many seconds the cached result should last, before the function should again be run and stored. To confirm that the view is actually being cached, check the SQLAlchemy section of the Debug toolbar. Also, we can see the impact that caching has on page load times, by activating the profiler and comparing the times for before and after. On the author's top-of-the-range laptop, the main blog page takes 34 ms to render, mainly due to the eight different queries that are made to the database. But, after the cache is activated, this decreases to 0.08 ms. That's a 462.5 percent increase in speed!</p><p>View functions are not the only thing that can be cached. To cache any Python function, simply add a similar decorator to the function definition, as follows:</p><pre class="programlisting">@cache.cached(timeout=7200, key_prefix='sidebar_data') 
+def sidebar_data(): 
+    recent = Post.query.order_by( 
+        Post.publish_date.desc() 
+    ).limit(5).all() 
+ 
+    top_tags = db.session.query( 
+        Tag, func.count(tags.c.post_id).label('total') 
+    ).join( 
+        tags 
+    ).group_by( 
+        Tag 
+    ).order_by('total DESC').limit(5).all() 
+ 
+    return recent, top_tags </pre><p>The <code class="literal">key_prefix</code>keyword argument is necessary in order for Flask Caching to properly store the results of non-view functions. This needs to be unique for every function cached, or the results of the functions will override each other. Also, note that the timeout for this function is set to two hours, rather than the 60 seconds, as in the previous examples. This is because the results for this function are less likely to change than the view functions, and if the data is stale, it is not as big of an issue as it would be for the view functions.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec65"></a>Caching functions with parameters</h3></div></div></div><p>However, the normal cache decorator does <span>not</span><a id="id325455531" class="indexterm"></a> take function parameters into account. If we cached a function that took parameters with the normal cache decorator, it would return the same result for every parameter set. In order to fix this, we use the <code class="literal">memoize</code> function:</p><pre class="programlisting">...
+from .. import db, cache
+...
+
+class User(db.Model):
+... 
+    @cache.memoize(60)
+    def has_role(self, name):
+for role in self.roles:
+if role.name == name:
+return True
+return False</pre><p> </p><p> </p><p><code class="literal">Memoize</code> stores the parameters passed to the function as well as the result. In the preceding example, <code class="literal">memoize</code> is being used to store the result of the <code class="literal">verify_auth_token</code> method, which is called many times, and queries the database every single time. This method can safely <span>memoized,</span> because it returns the same result every time if the same token is passed to it. The only exception to this rule is if the user object gets deleted during the 60 seconds that the function is stored, but this is very unlikely.</p><p>Be careful not to <code class="literal">memoize</code> or cache functions that rely on either globally-scoped variables, or on constantly changing data. This can lead to some very subtle bugs, and in the worst case, data race. The best candidates for memoization are what are referred to as pure functions. <span class="strong"><strong>Pure functions</strong></span> are functions that will <span>produce</span><a id="id325463875" class="indexterm"></a> the same result when the same parameters are passed to it. It does not matter how many times the function is run. Pure functions also don't have any <span class="emphasis"><em>side effects</em></span>, which means that they do not change globally scoped variables. This also means that pure functions cannot do any I/O operations. While the <code class="literal">verify_auth_token</code> function is not pure, because it does database I/O, this is okay, because, as was stated before, it is very unlikely that the underlying data will change.</p><p>While we are developing the application, we do not want the view functions to be cached, because results will be changing all the time. To fix this, set the <code class="literal">CACHE_TYPE</code> variable to <code class="literal">null</code> and, in the production configuration, set the <code class="literal">CACHE_TYPE</code> variable to simple, so when the app is deployed, everything works as expected:</p><pre class="programlisting">class ProdConfig(Config): 
+ 
+    CACHE_TYPE = 'simple'
+ 
+class DevConfig(Config): 
+ 
+    CACHE_TYPE = 'null' </pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec66"></a>Caching routes with query strings</h3></div></div></div><p>Some routes, such as our <code class="literal">home</code> and <code class="literal">post</code> routes, take the parameters through the URL and return content specific to those parameters. We run into a problem if routes like these are cached, as the first rendering of the route will be returned for all requests, regardless of the URL parameters. The solution to this is rather simple. The <code class="literal">key_prefix</code> keyword argument in the cache method can be either a string or a function, which will be executed to dynamically generate a key.</p><p>This means that a function can be created to create, in turn, a key that is tied to the URL parameters, so that each request only returns a cached page if that specific combination of parameters was called before. In the <code class="literal">blog/controllers.py</code> file, find the following function:</p><pre class="programlisting">def make_cache_key(*args, **kwargs):
+    path = request.path
+    args = str(hash(frozenset(request.args.items())))
+    messages = str(hash(frozenset(get_flashed_messages())))
+return (path + args + messages).encode('utf-8')</pre><p>We use this function to create a cache key, using a mixture of URL paths, arguments, and Flask messages. This will prevent messages from not being shown when a user logs out. We will be using this type of cache key generation on the home view and <span>show post by ID.</span></p><p>Now, each individual post page will be cached for 10 minutes.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec67"></a>Using Redis as a cache backend</h3></div></div></div><p>If the amount of view functions, or the <span>number</span><a id="id325499000" class="indexterm"></a> of unique parameters, passed to your cached functions becomes too large for memory, you can use a different backend for the cache. As was mentioned in <a class="link" href="#" linkend="ch07"><span>Chapter 7</span></a>, <span class="emphasis"><em>Using NoSQL with Flask</em></span>, Redis can be used as a backend for the cache. To implement that functionality, all that needs to be done is to add the following configuration variables to the <code class="literal">ProdConfig</code> class, as follows:</p><pre class="programlisting">class ProdConfig(Config): 
+    ... 
+    CACHE_TYPE = 'redis' 
+    CACHE_REDIS_HOST = 'localhost' 
+    CACHE_REDIS_PORT = '6379' 
+    CACHE_REDIS_PASSWORD = 'password' 
+    CACHE_REDIS_DB = '0' </pre><p>If you replace the values of the variables with your own data, Flask Cache will automatically create a connection to your <code class="literal">redis</code> database and use it to store the results of the functions. All that is needed is to install the Python <code class="literal">redis</code> library. This is already installed after issuing the <code class="literal">init.sh</code> script, which we did to set up the work environment for this chapter. You will find the library in <code class="literal">requirements.txt</code><span class="strong"><strong>:</strong></span></p><pre class="programlisting">...
+redis
+...</pre><p>If you want to test your Redis cache, we have prepared a Docker composer file that includes RabbitMQ and Redis. To launch it, just issue the following on the <span>CLI</span>:</p><pre class="programlisting"><span class="strong"><strong># Start dockers for RMQ and Redis in the background
+$ docker-compose up -d
+</strong></span>Creating rabbitmq ... done<span class="strong"><strong>
+</strong></span>Creating redis ... done<span class="strong"><strong>
+# Check the currently active containers</strong></span>
+<span class="strong"><strong>$ docker container list</strong></span>
+CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES
+3266cbdee1d7 redis "docker-entrypoint.s…" 43 seconds ago Up 58 seconds 0.0.0.0:6379-&gt;6379/tcp redis
+64a99718442c rabbitmq:3-management "docker-entrypoint.s…" 43 seconds ago Up 58 seconds 4369/tcp, 5671/tcp, 0.0.0.0:5672-&gt;5672/tcp, 15671/tcp, 25672/tcp, 0.0.0.0:15672-&gt;15672/tcp rabbitmq</pre><p><span>Remember to test your application using the production configuration as follows</span>:</p><pre class="programlisting"><span class="strong"><strong>$ export WEBAPP_ENV=prod</strong></span>
+<span class="strong"><strong>$ export FLASK_APP=main.py</strong></span>
+<span class="strong"><strong>$ flask run</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec68"></a>Using memcached as a cache backend</h3></div></div></div><p>Just like the Redis backend, the memcached backend provides an <span>alternative</span><a id="id325532930" class="indexterm"></a> way of storing results, should the storage constraints become too limiting. In contrast to Redis, memcached is designed to cache objects for later use and reduce load on the database. Both Redis and memcached serve the same purpose, and choosing one over the other comes down to personal preference. To use memcached, we need to install its Python library with the following command:</p><pre class="programlisting"><span class="strong"><strong>$ pip install memcache</strong></span></pre><p>The process of connecting to your memcached server is handled in the configuration object, just like the Redis setup:</p><pre class="programlisting">class ProdConfig(Config): 
+    ... 
+    CACHE_TYPE = 'memcached' 
+    CACHE_KEY_PREFIX = 'flask_cache' 
+    CACHE_MEMCACHED_SERVERS = ['localhost:11211'] </pre><p> </p><p> </p></div></div>

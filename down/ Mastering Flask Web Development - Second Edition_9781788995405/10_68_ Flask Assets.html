@@ -1,0 +1,50 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec67"></a>Flask Assets</h2></div></div><hr /></div><p>Another bottleneck in web applications is the amount of HTTP <span>requests</span><a id="id324974906" class="indexterm"></a> required to download the CSS and JavaScript libraries for the page. The extra files can only be downloaded after HTML for the page has been loaded and parsed. To combat this, many modern browsers download many of these libraries at once, but there is a limit to how many simultaneous requests the browser can make.</p><p>Several things can be done on the server to reduce the amount of time spent downloading these files. The main technique that developers use to solve this is to concatenate all of the JavaScript libraries into one file, and all of the CSS libraries into another, while removing all of the whitespace and <span>carriage</span><a id="id324974915" class="indexterm"></a> returns from the resulting files (also known as <span class="strong"><strong>minification</strong></span>). This reduces the overhead of multiple HTTP requests, and can reduce file's size by up to 30 percent. Another technique is to tell the browser to cache the files locally, with specialized HTTP headers, so the file is only loaded again once it changes. These can be tedious to do manually, because they need to be done after every deployment to the server.</p><p>Thankfully, Flask Assets implements all the discussed techniques. Flask Assets works by giving <span>it</span> a list of files and a way to concatenate them, and then adding a special control block into your templates, in place of the normal <span>link and script</span> tags. Flask Assets will then add in a <code class="literal">link</code> or a <code class="literal">script</code> tag that links to the new generated file. To get started, Flask Assets needs to be installed. We also need to install <code class="literal">cssmin</code> and <code class="literal">jsmin</code>—you can find these dependencies in <code class="literal">requirements.txt</code>.</p><p>Now, the collections of files to be concatenated, named bundles, need to be created. In <code class="literal">ewebapp/__init__.py</code>, we have the following:</p><pre class="programlisting">...
+from flask_assets import Environment, Bundle 
+...
+assets_env = Environment() 
+ 
+main_css = Bundle( 
+    'css/bootstrap.css', 
+    filters='cssmin', 
+    output='css/common.css' 
+) 
+ 
+main_js = Bundle( 
+    'js/jquery.js', 
+    'js/bootstrap.js', 
+    filters='jsmin', 
+    output='js/common.js' 
+) </pre><p>Each <code class="literal">Bundle</code> object takes an infinite number of files as positional arguments to define the files to be bundled, a keyword argument <code class="literal">filters</code> to define the filters to send the files through, and an <code class="literal">output</code> that defines the filename in the <code class="literal">static</code> folder to which the result will be saved.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note38"></a>Note</h3><p>The <code class="literal">filters</code> keyword can be a single value or a list. To get the full list of available filters, including automatic Less and CSS compilers, see the docs at <a class="ulink" href="http://webassets.readthedocs.org/en/latest/" target="_blank"><span>http://webassets.readthedocs.org/en/latest/</span></a>.</p></div><p>While it's true that, because our site is light on styles, the CSS bundle only has one file in it, it's still a good idea to put the file in a bundle for two reasons. Firstly, while we are in development, we can use the un-minified versions of the libraries, which makes debugging easier. When the app is deployed to production, the libraries are automatically minified. Secondly, these libraries will be sent to the browser with the cache headers, when linking them normally in HTML would not.</p><p>Before Flask Assets can be tested, three more changes need to be made. First, in the <code class="literal">_init_.py</code> format, the extension and bundles need to be registered:</p><pre class="programlisting">from .extensions import ( 
+    bcrypt, 
+    oid, 
+    login_manager, 
+    principals, 
+    rest_api, 
+    celery, 
+    debug_toolbar, 
+    cache, 
+    assets_env, 
+    main_js, 
+    main_css 
+) 
+ 
+def create_app(object_name): 
+    ... 
+    assets_env.init_app(app) 
+ 
+    assets_env.register("main_js", main_js) 
+    assets_env.register("main_css", main_css) </pre><p>Next, the <code class="literal">DevConfig</code> class needs an extra variable to tell Flask Assets not to compile the libraries while in development:</p><pre class="programlisting">class DevConfig(Config): 
+    DEBUG = True 
+    DEBUG_TB_INTERCEPT_REDIRECTS = False 
+    ASSETS_DEBUG = True</pre><p>Finally, the link and script tags in both of the <code class="literal">base.html</code> files need to be replaced with the control block from Flask Assets. We have the following in the files already:</p><pre class="programlisting">&lt;link rel="stylesheet" 
+ href=https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootst
+ rap.min.css&gt;</pre><p>Replace the preceding snippet with the following:</p><pre class="programlisting">{% assets "main_css" %} 
+&lt;link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" 
+ /&gt; 
+{% endassets %} </pre><p>Likewise, find the following in the <code class="literal">base.html</code> files:</p><pre class="programlisting">&lt;script 
+ src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery
+ .min.js"&gt;&lt;/script&gt;&lt;script 
+ src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstr
+ ap.min.js"&gt;&lt;/script&gt;</pre><p>Again, replace the preceding code with the following:</p><pre class="programlisting">{% assets "main_js" %} 
+&lt;script src="{{ ASSET_URL }}"&gt;&lt;/script&gt; 
+{% endassets %} </pre><p>Now, if you reload the page, all of the CSS and JavaScript will be <span>handled</span><a id="id325371644" class="indexterm"></a> by Flask Assets.</p></div>

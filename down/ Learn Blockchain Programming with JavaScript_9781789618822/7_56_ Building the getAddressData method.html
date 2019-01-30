@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec57"></a>Building the getAddressData method</h2></div></div><hr /></div><p>We'll build a new method on the <span>blockchain</span><a id="id325442705" class="indexterm"></a> prototype, called <code class="literal">getAddressData</code>, and we'll use this method inside of the <code class="literal">/address/:address</code> endpoint to fetch the data for a specific address that we are searching for:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Let's build this new method inside of the <code class="literal">blockchain.js</code> file. After the <code class="literal">getTransaction</code> method, define the <code class="literal">getAddressData</code> method as follows: </li></ol></div><pre class="programlisting">Blockchain.prototype.getAddressData = function(address) {
+
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Now, the first thing that we want to do inside of this method is to get all of the transactions that are associated with the address and put them into a single array. Let's define that array now:</li></ol></div><pre class="programlisting">Blockchain.prototype.getAddressData = function(address) {
+<span class="strong"><strong>const addressTransactions = [];</strong></span>
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Then, we want to cycle through all of the transactions inside of the blockchain. If any of those blocks have the address we're searching for as the recipient or sender in a transaction, then we want to add all those transactions into the <code class="literal">addressTransactions</code> array. Let's define this condition as follows. The first step is cycling through all of the blocks on the blockchain: </li></ol></div><pre class="programlisting">Blockchain.prototype.getAddressData = function(address) {
+       const addressTransactions = [];
+<span class="strong"><strong>this.chain.forEach(block =&gt; {</strong></span>
+<span class="strong"><strong></strong></span>
+<span class="strong"><strong>       });</strong></span>
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Now, in order to access the transactions that are inside the blockchain, we need to cycle through all of the transactions that are present on each block. So, inside of the <code class="literal">forEach</code> loop, we will have to define another <code class="literal">forEach</code> loop as follows: </li></ol></div><pre class="programlisting">Blockchain.prototype.getAddressData = function(address) {
+       const addressTransactions = [];
+       this.chain.forEach(block =&gt; {
+<span class="strong"><strong>block.transactions.forEach(transaction =&gt; {</strong></span>
+<span class="strong"><strong></strong></span>
+<span class="strong"><strong>               });</strong></span>
+       }); 
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Now, inside of the <code class="literal">forEach</code> loop that we <span>defined</span><a id="id325702157" class="indexterm"></a> just now, we have access to every single transaction that is on the blockchain. We just want to test each transaction to see if the sender or the recipient address matches with the address that we're searching for:</li></ol></div><pre class="programlisting">Blockchain.prototype.getAddressData = function(address) {
+       const addressTransactions = [];
+       this.chain.forEach(block =&gt; {
+<span class="strong"><strong></strong></span>block.transactions.forEach(transaction =&gt; {
+<span class="strong"><strong>if(transaction.sender === address ||</strong></span>
+<span class="strong"><strong>                          transaction.recipient === address) {</strong></span>
+<span class="strong"><strong>                        addressTransactions.push(transaction);</strong></span>
+<span class="strong"><strong>                       }</strong></span>
+               });
+       }); 
+});</pre><p>At this point in the code, we are cycling through all of the transactions inside of our blockchain. If we come across a transaction in which the sender address or the recipient address equals the address we are looking for, then we push that transaction into the <code class="literal">addressTransactions</code> array. So, after both <code class="literal">forEach</code> loop has completed, we'll have an array that has all of the transactions associated with the address that we're are searching for inside of the array.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec44"></a>Knowing the balance </h3></div></div></div><p>The next thing that we <span>want</span><a id="id325704634" class="indexterm"></a> to do is to cycle through the <code class="literal">addressTransactions</code> array to figure out what the balance of the address that we are searching for is. In order to know the balance:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Let's first define a variable<code class="literal">balance</code>as follows: </li></ol></div><pre class="programlisting">let balance = 0;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Next, we want to cycle through all of the transactions inside of the <code class="literal">addressTransactions</code> array. We will do that with the help of the <code class="literal">forEach</code> loop as follows: </li></ol></div><pre class="programlisting">let balance = 0;
+<span class="strong"><strong>addressTransactions.forEach(transaction =&gt; { 
+
+});</strong></span></pre><p> </p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Inside the loop, mention the conditions with the help of <code class="literal">if</code> and <code class="literal">else-if</code> statements, as follows: </li></ol></div><pre class="programlisting">let balance = 0;
+addressTransactions.forEach(transaction =&gt; { 
+<span class="strong"><strong>if (transaction.recipient === address) balance += transaction.amount;
+        else if (transaction.sender === address) balance -= transaction.amount; </strong></span>
+}); </pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Finally, at the end of the <code class="literal">forEach</code> loop, we want to return an object that has a property of <code class="literal">addressTransactions</code> that matches our <code class="literal">addressTransactions</code> array, and the same match for <code class="literal">addressBalance</code>:</li></ol></div><pre class="programlisting">let balance = 0;
+addressTransactions.forEach(transaction =&gt; { 
+       if (transaction.recipient === address) balance += transaction.amount;
+        else if (transaction.sender === address) balance -= transaction.amount; 
+}); 
+<span class="strong"><strong>return {</strong></span>
+<span class="strong"><strong>        addressTransactions: addressTransactions,</strong></span>
+<span class="strong"><strong>        addressBalance: balance</strong></span>
+<span class="strong"><strong>};</strong></span></pre><p>And with that, we're done <span>building</span><a id="id325460210" class="indexterm"></a> the <code class="literal">getAddressData</code> method.</p></div></div>

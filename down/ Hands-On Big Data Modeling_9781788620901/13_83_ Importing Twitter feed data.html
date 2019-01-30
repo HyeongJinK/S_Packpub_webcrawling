@@ -1,0 +1,24 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec79"></a>Importing Twitter feed data</h2></div></div><hr /></div><p>In this chapter, we are going to use the Twitter dataset. The <span>dataset</span><a id="id325883864" class="indexterm"></a> can be downloaded from Kaggle (<a class="ulink" href="https://www.kaggle.com/kingburrito666/better-donald-trump-tweets" target="_blank">https://www.kaggle.com/kingburrito666/better-donald-trump-tweets</a>). In addition to that, you can find the dataset inside this book's GitHub repository. The dataset is found inside the <code class="literal">CH13</code> folder. The file is called <code class="literal">Donald-Tweets!.csv</code>.</p><p> </p><p>Let's dive into the exercise by running the Jupyter notebook we've been using throughout this book. Once you have the notebook up and running, import the required essential packages. Most of the Python packages should be very familiar <span>by</span><span>now:</span></p><pre class="programlisting">from textblob import TextBlob
+import math
+import pandas as pd
+import numpy as np
+import os
+from pandas import DataFrame
+from sklearn.cluster import KMeans
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+from matplotlib import style
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn import neighbors, datasets
+style.use('ggplot')
+import matplotlib.pylab as plt
+
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 20, 10
+from pandas import read_csv
+from pandas import datetime
+from matplotlib import pyplot
+import sklearn
+from sklearn.metrics import mean_squared_error
+from wordcloud import WordCloud</pre><p>Most of the packages used here have been used in <span>previous</span><a id="id325789380" class="indexterm"></a> chapters too. By now, you should be familiar with the basics of how to import any file and get simpler statistics. Let's import the data file:</p><pre class="programlisting">tweet= pd.read_csv(u'Donald-Tweets!.csv', index_col=None)</pre><p>As usual, we can check how the data looks by using the <code class="literal">head</code> command:</p><pre class="programlisting">tweet.head(10)</pre><p>The output should contain the first 10 entries. A section of the output is given as follows:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/47927a1c-66d5-4946-a38f-706f260376c7.png" /></div><p>Figure 13.1: First 10 entries from the CSV file</p><p></p><p>We can see the entries from the files<span>contain</span><a id="id325804887" class="indexterm"></a>the following columns:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal"><span>Date</span></code></li><li style="list-style-type: disc"><code class="literal">Time</code></li><li style="list-style-type: disc"><code class="literal">Tweet_Text</code></li><li style="list-style-type: disc"><code class="literal">Type</code></li><li style="list-style-type: disc"><code class="literal">Media_Type</code></li><li style="list-style-type: disc"><code class="literal">Hashtags</code></li><li style="list-style-type: disc"><code class="literal">Tweet_Id</code></li><li style="list-style-type: disc"><code class="literal">Tweet_Url</code></li><li style="list-style-type: disc"><code class="literal">twt_favourites_IS_THIS_LIKE_QUESTION_MARK</code></li><li style="list-style-type: disc"><code class="literal">Retweets</code></li></ul></div><p>Now let's get started with the real modeling. </p></div>

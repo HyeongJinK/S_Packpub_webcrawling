@@ -1,0 +1,30 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec20"></a>Constraints and indexing</h2></div></div><hr /></div><p>Using constraints is considered a good practice. This way, you can <span>restrict</span><a id="id325375206" class="indexterm"></a> the domain of a certain model attribute and ensure data integrity and quality. There are many types of constraints that you can use; primary key and foreign key constraints<span class="strong"><strong> </strong></span>were already covered in the previous sections. The other kinds of constraints that are supported by SQLAlchemy are shown in the following list:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Not NULL (ensures that a certain attribute contains data)</li><li style="list-style-type: disc">UNIQUE (ensures that a certain attribute value is always unique in the <span>database</span><a id="id325378666" class="indexterm"></a> table, which contains the model data)</li><li style="list-style-type: disc">DEFAULT (sets a default value for the attribute when no values were provided)</li><li style="list-style-type: disc">CHECK (used to specify range of values)</li></ul></div><p>Using SQLAlchemy, you can ensure that your data's domain restrictions are explicit and all in the same place, not spread across your application code.</p><p>Let's improve our models by setting some constraints on the data. First, we should not accept NULL values for usernames on the user model, and ensure that a username is always unique. We do this using the following code:</p><pre class="programlisting">...
+class User(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    username = db.Column(db.String(255), <span class="strong"><strong>nullable=False, unique=True</strong></span>)
+...</pre><p>The same principle applies to the rest of our models: A <code class="literal">Post</code> must always have a title, a <code class="literal">Comment</code> is always made by someone, and a <code class="literal">Tag</code> always has a title, and this title value is unique. We put these constraints in place using the following code:</p><pre class="programlisting">...
+class Post(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    title = db.Column(db.String(255), <span class="strong"><strong>nullable=False</strong></span>)
+...
+class Comment(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(255), <span class="strong"><strong>nullable=False</strong></span>)
+...
+class Tag(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    title = db.Column(db.String(255), <span class="strong"><strong>nullable=True, unique=True</strong></span>)
+...</pre><p>Default values are really nice; they ensure data quality, and make your code shorter. We can let SQLAlchemy handle the date timestamp of when a comment or post was made using the following code:</p><pre class="programlisting">class Comment(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+...
+    date = db.Column(db.DateTime(), <span class="strong"><strong><span>default</span><span>=</span>datetime.datetime.now</strong></span>)
+...
+
+class Post(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+...
+    publish_date = db.Column(db.DateTime(), <span class="strong"><strong><span>default</span><span>=</span>datetime.datetime.now</strong></span>)</pre><p>Note how SQLAlchemy handles the default definitions. This is a powerful feature. We are passing a reference to a Python function, so we can use any Python function we want as long as no parameters are required (except for partials). This function will be called upon the creation of a record or an update, and its return value is used for the column's value. Of course, SQLAlchemy also supports simple scalar values on default definitions.</p><p> </p><p> </p><p>RDBMS indexes are used to improve query performance, yet you should be careful about using them as this comes at a cost of additional writes on <code class="literal">INSERT</code>, <code class="literal">UPDATE</code>, and <code class="literal">DELETE</code> functions, as well as an increase in storage. Careful index choice and configuration is out of the scope of this book, but take into account the fact that an index is used to reduce the O(N) lookup on certain table columns that may be frequently used, or that are in tables with a huge number of rows where a linear lookup is simply not possible in production. Index query performance can go from logarithmic to O(1). This is possible at a cost of additional writes and checks.</p><p>An example of creating an index using Flask SQLAlchemy, can be seen in the following code:</p><pre class="programlisting">...
+class User(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    username = db.Column(db.String(255), <span class="strong"><strong>nullable=False, index=True, unique=True</strong></span>)
+...</pre><p>The following code shows an example of using an index for multiple columns:</p><p> </p><pre class="programlisting">db.Index(<span>'idx_col_example'</span><span>,</span><span>User</span><span>.username</span><span>,</span><span>User</span><span>.password</span><span>)</span></pre></div>

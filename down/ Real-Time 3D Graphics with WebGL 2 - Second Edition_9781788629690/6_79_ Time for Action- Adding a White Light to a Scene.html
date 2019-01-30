@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec85"></a>Time for Action: Adding a White Light to a Scene</h2></div></div><hr /></div><p>Let's cover an <span>example</span><a id="id325358908" class="indexterm"></a> of how we'd add a new light to our scene:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch06_04_wall-light-arrays.html</code> file in your browser. This scene looks exactly like <code class="literal">ch06_03_wall-final.html</code>; however, the code is far less complex since we are now using uniform arrays. Let's see how using uniform arrays changes our code.</li><li>Open the <code class="literal">ch06_04_wall-light-arrays.html</code> file in your code editor. Let's take a look at the vertex shader. Note the use of the constant integer expression const int, <code class="literal">numLights = 3;</code>, to declare the number of lights that the shader will handle.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>There, you can also see that a uniform array is being used to operate on light positions. Note that we are using a varying array to pass the light rays (for each light) to the fragment shader:</li></ol></div><pre class="programlisting">for(int i = 0; i &lt; numLights; i++) {
+  vec4 lightPosition = uModelViewMatrix * vec4(uLightPosition[i], 
+   1.0);
+  vLightRay[i] = vertex.xyz - lightPosition.xyz;
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>This fragment of code calculates one varying light ray per light. Recall that the same code in the <code class="literal">ch06_03_wall-final.html</code> file looks like the following code:</li></ol></div><pre class="programlisting">vec4 redLightPosition = uModelViewMatrix * vec4(uPositionRedLight, 
+ 1.0);
+vec4 greenLightPosition = uModelViewMatrix * 
+ vec4(uPositionGreenLight, 1.0);
+vec4 blueLightPosition = uModelViewMatrix * 
+ vec4(uPositionBlueLight, 1.0);
+
+vRedRay = vertex.xyz - redLightPosition.xyz;
+vGreenRay = vertex.xyz - greenLightPosition.xyz;
+vBlueRay = vertex.xyz - blueLightPosition.xyz;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Once you compare these two snippets, the advantage of using uniform arrays (and varying arrays) should be clear.</li><li>The fragment shader also uses uniform arrays. In this case, the fragment shader iterates through the light diffuse properties to calculate the contribution of each one to the final color on the wall:</li></ol></div><pre class="programlisting">for(int i = 0; i &lt; numLights; i++) {
+  L = normalize(vLightRay[i]);
+  lambertTerm = dot(N, -L);
+  if (lambertTerm &gt; uCutOff) {
+    finalColor += uLightDiffuse[i] * uMaterialDiffuse * lambertTerm;
+  }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>For the sake of brevity, we won’t cover the verbose version from the <code class="literal">ch06_03_wall-final.html</code> exercise, but you should check it out for yourself and compare it with this one.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>In the <code class="literal">configure</code> function, the size of the JavaScript array containing the uniform names has decreased considerably by omitting the other unnecessary light attributes:</li></ol></div><pre class="programlisting">const uniforms = [
+'uPerspectiveMatrix',
+'uModelViewMatrix',
+'uNormalMatrix',
+'uMaterialDiffuse',
+'uMaterialAmbient',
+'uLightAmbient',
+'uLightDiffuse',
+'uLightPosition',
+'uWireframe',
+'uLightSource',
+'uCutOff'
+];</pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>The mapping between JavaScript lights and uniform arrays is now simpler because of the <code class="literal">getArray</code> method from the <code class="literal">LightsManager</code> class. As we described earlier, the <code class="literal">getArray</code> method concatenates the lights' data into one flat array.</li><li>The <code class="literal">load</code> and <code class="literal">render</code> functions look exactly the same. If we want to add a new light, we still need to load a new sphere with the <code class="literal">load</code> function (to represent the light source in our scene), and we still need to translate the sphere to the <span>appropriate</span><a id="id325631886" class="indexterm"></a> location in the <code class="literal">render</code> function.</li><li>Let's see how much effort we need to add a new light. Go to the <code class="literal">configure</code> function and create a new light object, as follows:</li></ol></div><pre class="programlisting">const whiteLight = new Light('whiteLight');
+whiteLight.setPosition([0, 10, 2]);
+whiteLight.setDiffuse([1.0, 1.0, 1.0, 1.0]);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="12" type="1"><li>Add <code class="literal">whiteLight</code> to the <code class="literal">lights</code> instance:</li></ol></div><pre class="programlisting">lights.add(whiteLight);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="13" type="1"><li>Move to the <code class="literal">load</code> function and append this line:</li></ol></div><pre class="programlisting">scene.load('/common/models/geometries/sphere3.json', 'whiteLight');</pre><div class="orderedlist"><ol class="orderedlist arabic" start="14" type="1"><li>Just like in the previous <span class="emphasis"><em>Time for Action</em></span> section, add this to the <code class="literal">render</code> function:</li></ol></div><pre class="programlisting">if (object.alias === 'whiteLight') {
+const whiteLight = lights.get(object.alias);
+mat4.translate(modelViewMatrix, modelViewMatrix, 
+   whiteLight.position);
+object.diffuse = whiteLight.diffuse;
+gl.uniform1i(program.uLightSource, true);
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="15" type="1"><li>Save the webpage with a different name and open it using your browser. We have also included the completed exercise in <code class="literal">ch06_05_wall-light-arrays-final.html</code>, including some minor improvements on keeping the light configuration more declarative. The following diagram shows the final result:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/1061fdbd-1863-4877-a3bf-d5125e6ad548.png" /></div><p>That’s all you need to do! If you want to <span>control</span><a id="id325647090" class="indexterm"></a> the white light properties with the controls widget, you would need to write the corresponding code.</p></div>

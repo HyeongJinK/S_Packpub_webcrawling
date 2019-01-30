@@ -1,0 +1,172 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec46"></a>Leveraging the power of NoSQL</h2></div></div><hr /></div><p>To show the unique <span>power</span><a id="id324993883" class="indexterm"></a> of NoSQL, let's add a feature that would be possible with SQLAlchemy, but which would be much more difficult: different post types, each with their own custom bodies. This will be much like the functionality of the popular blog platform Tumblr.</p><p>To begin, allow your post type to act as a parent class and remove the text field from the <code class="literal">Post</code> class, as not all posts will have text on them. This is shown in the following code:</p><pre class="programlisting">class Post(mongo.Document): 
+    title = mongo.StringField(required=True) 
+    publish_date = mongo.DateTimeField(default=datetime.datetime.now()) 
+    user = mongo.ReferenceField(Userm) 
+    comments = mongo.ListField( 
+    mongo.EmbeddedDocumentField(Commentm) 
+  ) 
+    tags = mongo.ListField(mongo.StringField()) 
+   
+    meta = { 
+        'allow_inheritance': True 
+    } </pre><p>Each post type will inherit from the <code class="literal">Post</code> class. Doing so will allow the code to treat any <code class="literal">Post</code> subclass as if it were a post. Our blogging app will have four types of post: a normal blog post, an image post, a video post, and a quote post. These are shown in the following code:</p><pre class="programlisting">class BlogPost(Post): 
+    text = db.StringField(required=True) 
+    
+    @property
+    def type(self): 
+      return "blog" 
+ 
+class VideoPost(Post): 
+    url = db.StringField(required=True) 
+    
+    @property
+    def type(self): 
+      return "video" 
+ 
+class ImagePost(Post): 
+    image_url = db.StringField(required=True) 
+  
+    @property 
+    def type(self): 
+      return "image" 
+ 
+class QuotePost(Post): 
+    quote = db.StringField(required=True) 
+    author = db.StringField(required=True) 
+  
+    @property 
+    def type(self): 
+      return "quote" </pre><p>Our post-creation page needs to be able to create each of these post types. The <code class="literal">PostForm</code> object in <code class="literal">forms.py</code>, which handles post creation, will need to be modified to handle the new fields first. We will add a selection field that determines the type of post, an <code class="literal">author</code> field for the quote type, an <code class="literal">image</code> field to hold a URL, and a <code class="literal">video</code> field that will hold the embedded HTML iframe. The <code class="literal">quote</code> and <code class="literal">blog</code> post content will both share the <code class="literal">text</code> field, as follows:</p><pre class="programlisting">class PostForm(Form): 
+    title = StringField('Title', [ 
+      DataRequired(), 
+      Length(max=255) 
+    ]) 
+    type = SelectField('Post Type', choices=[ 
+      ('blog', 'Blog Post'), 
+      ('image', 'Image'), 
+      ('video', 'Video'), 
+      ('quote', 'Quote') 
+    ]) 
+    text = TextAreaField('Content') 
+    image = StringField('Image URL', [URL(), Length(max=255)]) 
+    video = StringField('Video Code', [Length(max=255)]) 
+    author = StringField('Author', [Length(max=255)]) </pre><p>The <code class="literal">new_post</code> view function in the <code class="literal">blog/controllers.py</code> controller will also need to be updated to handle the new post types, as follows:</p><pre class="programlisting">@blog_blueprint.route('/new', methods=['GET', 'POST']) 
+@login_required 
+@poster_permission.require(http_exception=403) 
+def new_post(): 
+  form = PostForm() 
+  if form.validate_on_submit(): 
+    if form.type.data == "blog": 
+      new_post = BlogPost() 
+      new_post.text = form.text.data 
+    elif form.type.data == "image": 
+      new_post = ImagePost() 
+      new_post.image_url = form.image.data 
+    elif form.type.data == "video": 
+      new_post = VideoPost() 
+      new_post.video_object = form.video.data 
+    elif form.type.data == "quote": 
+      new_post = QuotePost() 
+      new_post.text = form.text.data 
+      new_post.author = form.author.data 
+    new_post.title = form.title.data 
+    new_post.user = User.objects( 
+      username=current_user.username 
+    ).one() 
+    new_post.save() 
+  return render_template('new.html', form=form) </pre><p>The <code class="literal">new.html</code> file that renders our <code class="literal">form</code> object will need to display the new fields that are added to the form, as follows:</p><pre class="programlisting">&lt;form method="POST" action="{{ url_for('.new_post') }}"&gt; 
+... 
+&lt;div class="form-group"&gt; 
+  {{ form.type.label }} 
+  {% if form.type.errors %} 
+    {% for e in form.type.errors %} 
+      &lt;p class="help-block"&gt;{{ e }}&lt;/p&gt; 
+    {% endfor %} 
+  {% endif %} 
+  {{ form.type(class_='form-control') }} 
+&lt;/div&gt; 
+... 
+&lt;div id="image_group" class="form-group"&gt; 
+  {{ form.image.label }} 
+  {% if form.image.errors %} 
+    {% for e in form.image.errors %} 
+      &lt;p class="help-block"&gt;{{ e }}&lt;/p&gt; 
+    {% endfor %} 
+  {% endif %} 
+  {{ form.image(class_='form-control') }} 
+&lt;/div&gt; 
+&lt;div id="video_group" class="form-group"&gt; 
+  {{ form.video.label }} 
+  {% if form.video.errors %} 
+    {% for e in form.video.errors %} 
+      &lt;p class="help-block"&gt;{{ e }}&lt;/p&gt; 
+    {% endfor %} 
+  {% endif %} 
+  {{ form.video(class_='form-control') }} 
+&lt;/div&gt; 
+&lt;div id="author_group" class="form-group"&gt; 
+  {{ form.author.label }} 
+    {% if form.author.errors %} 
+      {% for e in form.author.errors %} 
+        &lt;p class="help-block"&gt;{{ e }}&lt;/p&gt; 
+      {% endfor %} 
+    {% endif %} 
+    {{ form.author(class_='form-control') }} 
+&lt;/div&gt; 
+&lt;input class="btn btn-primary" type="submit" value="Submit"&gt; 
+&lt;/form&gt; </pre><p>Now that we have our new inputs, we can add some JavaScript to show and hide the fields based on the type of post, as follows:</p><pre class="programlisting">{% block js %} 
+&lt;script src="//cdn.ckeditor.com/4.4.7/standard/ckeditor.js"&gt;&lt;/script&gt; 
+&lt;script&gt; 
+  CKEDITOR.replace('editor'); 
+ 
+  $(function () { 
+    $("#image_group").hide(); 
+    $("#video_group").hide(); 
+    $("#author_group").hide(); 
+ 
+    $("#type").on("change", function () { 
+      switch ($(this).val()) { 
+        case "blog": 
+          $("#text_group").show(); 
+          $("#image_group").hide(); 
+          $("#video_group").hide(); 
+          $("#author_group").hide(); 
+          break; 
+        case "image": 
+          $("#text_group").hide(); 
+          $("#image_group").show(); 
+          $("#video_group").hide(); 
+          $("#author_group").hide(); 
+          break; 
+        case "video": 
+          $("#text_group").hide(); 
+          $("#image_group").hide(); 
+          $("#video_group").show(); 
+          $("#author_group").hide(); 
+          break; 
+        case "quote": 
+          $("#text_group").show(); 
+          $("#image_group").hide(); 
+          $("#video_group").hide(); 
+          $("#author_group").show(); 
+          break; 
+      } 
+    }); 
+  }) 
+&lt;/script&gt; 
+{% endblock %} </pre><p>Finally, the <code class="literal">post.html</code> file needs to be able to display our post types correctly. We have the following code:</p><pre class="programlisting">&lt;div class="col-lg-12"&gt;
+{{ post.text | safe }}
+&lt;/div&gt;</pre><p>All that is needed is to replace this <span>with</span><a id="id325371666" class="indexterm"></a> the following:</p><pre class="programlisting">&lt;div class="col-lg-12"&gt; 
+  {% if post.type == "blog" %} 
+    {{ post.text | safe }} 
+  {% elif post.type == "image" %} 
+    &lt;img src="{{ post.image_url }}" alt="{{ post.title }}"&gt; 
+  {% elif post.type == "video" %} 
+    {{ post.video_object | safe }} 
+  {% elif post.type == "quote" %} 
+    &lt;blockquote&gt; 
+      {{ post.text | safe }} 
+    &lt;/blockquote&gt; 
+    &lt;p&gt;{{ post.author }}&lt;/p&gt; 
+  {% endif %} 
+&lt;/div&gt; </pre><p> </p><p> </p></div>

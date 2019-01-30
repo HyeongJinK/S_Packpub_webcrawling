@@ -1,0 +1,30 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec131"></a>Handling dependencies and prerequisites</h2></div></div><hr /></div><p>A function, in fact, is <span>made</span><a id="id325585862" class="indexterm"></a> of three blocks, apart from the <code class="literal">param()</code> block. These are <code class="literal">begin</code>, <code class="literal">process</code>, and <code class="literal">end</code>.</p><p>By default, whatever <span>you</span><a id="id326063537" class="indexterm"></a> specify after the <code class="literal">param()</code> block will be treated as belonging to <code class="literal">process</code>, unless you specify otherwise.</p><p>Create a wrapper function to create three files, <code class="literal">test1.txt</code>, <code class="literal">test2.txt</code>, and <code class="literal">test3.txt</code>. However, before creating the files, output the date. You must be able to call the function like so:</p><pre class="programlisting"><span class="strong"><strong>PS&gt; New-File 'test1.txt', 'test2.txt', 'test3.txt'</strong></span></pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec341"></a>How to do it…</h3></div></div></div><p>The logic is simple. We will use a <code class="literal">begin</code> block to show the date, and have the file creation part in the process block. The <code class="literal">process</code> block will have a looping construct to create the files.</p><p> </p><p> </p><p>Open a new PowerShell script file and enter the following:</p><pre class="programlisting">function New-File {
+    param (
+        # The path to the file (or the name)
+        [Parameter(Mandatory=$true, Position=0)]
+        [string[]]
+        $Path
+    )
+    begin {
+        Write-Host "$(Get-Date)"
+    }
+    process {
+        foreach ($Item in $Path) {
+            New-Item -Path $Item -ItemType File
+        }
+    }
+    end {}
+}</pre><p>Now, call the function as specified in the requirement:</p><pre class="programlisting"><span class="strong"><strong>PS&gt; New-File 'test1.txt', 'test2.txt', 'test3.txt'</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec342"></a>How it works…</h3></div></div></div><p>The <code class="literal">begin</code> block contains a block of code that runs once per function call. Going by this method, the <code class="literal">begin</code> block will execute once, and then the entire <code class="literal">process</code> block will run for each of the objects passed into the function (either as a parameter, or via the pipeline).</p><p>Whatever is in the <code class="literal">process</code> block is the actual code for the function. This executes once for each object in the pipeline. We did not use the <code class="literal">end</code> block for this recipe, but it can be used if you would like your function to perform a post-processing step.</p><p>Typically, in production environments, we use the <code class="literal">begin</code> block to handle prerequisites, such as loading a certain module that is required in the <code class="literal">process</code> block. We add these steps in a <code class="literal">try–catch</code> block, with the <code class="literal">break</code> keyword in the <code class="literal">catch</code> block, to prevent the execution of the <code class="literal">process</code> block altogether if the prerequisite fails:</p><pre class="programlisting">function myFunction {
+    param ([string]$myParameter)
+
+    <span class="strong"><strong>begin</strong></span> {
+        try {
+            # Load the myAwesomeModule -ErrorAction Stop
+        }
+        catch {
+            "Uh oh, That module did not load."
+            <span class="strong"><strong>break</strong></span>
+        }
+    }
+    process { &lt;# Do some amazing stuff here. #&gt; }
+}</pre><p>When PowerShell encounters the <code class="literal">break</code> keyword within the <code class="literal">begin</code> block, it prevents the <code class="literal">process</code> block from executing. This <span>means</span><a id="id325898679" class="indexterm"></a> that there's no unnecessary processing, no barrage of errors, and no mess.</p><p>In the <code class="literal">end</code> block, we usually place commands for any cleanup that we <span>would</span><a id="id325901971" class="indexterm"></a> want to perform after the function is executed.</p></div></div>

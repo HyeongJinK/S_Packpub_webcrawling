@@ -1,0 +1,17 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec145"></a>Using exit codes</h2></div></div><hr /></div><p>Error <span>codes</span><a id="id326463952" class="indexterm"></a> are ubiquitous. PowerShell is no exception.</p><p>Find out whether the following command generated an error, and if it did, show the error code:</p><pre class="programlisting"><span class="strong"><strong>PS&gt; ping ghostname</strong></span></pre><p> </p><p>Would the same technique work with the following command?</p><pre class="programlisting"><span class="strong"><strong>PS&gt; Get-Item$HOME/random/randompackage.zip -ErrorAction SilentlyContinue</strong></span></pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec368"></a>How to do it…</h3></div></div></div><p>We will place the given cmdlet within a script and try to find whether the line generated an error, and if it did, find its error code.</p><p>Create a script with the following and run it. Dot-sourcing the script is optional:</p><pre class="programlisting">ping ghostname
+
+if (!$?) {
+    Write-Host "PowerShell seems to have encountered an error while running the last command."
+}
+
+Write-Host "The exit code for the last operation is $LASTEXITCODE."
+
+Remove-Variable LASTEXITCODE
+
+Get-Item $HOME/random/randompackage.zip -ErrorAction SilentlyContinue
+
+if (!$?) {
+    Write-Host "PowerShell seems to have encountered an error while running the last command."
+}
+
+Write-Host "The exit code for the last operation is $LASTEXITCODE."</pre><p>Observe the output:</p><div class="mediaobject"><img src="/graphics/9781789137231/graphics/be444934-416b-4cc4-b9b7-96fc474ab539.png" /></div><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec369"></a>How it works…</h3></div></div></div><p>Note that the first command given to us is a native Linux command; the second is a PowerShell command.</p><p>We use two automatic variables here to find out whether there was an error in execution. The first is <code class="literal">$?</code>, which checks if the last command executed without an error. The value the variable holds is Boolean, that is, <code class="literal">TRUE</code>, standing for successful execution. In our script, we negate this in order to use it with the <code class="literal">if</code> block.</p><p>The other variable is <code class="literal">$LASTEXITCODE</code>, which contains the exit code of the last command. In our case, the exit code was <code class="literal">2</code>. The <code class="literal">ping: ghostname: Name or service not known</code> error is also displayed.</p><p>In the second command, we use <code class="literal">-ErrorAction SilentlyContinue</code> to hide errors at the terminal. However, these errors are still recorded by PowerShell – they are simply not sent to the host. In this case, you will notice that <code class="literal">$LASTEXITCODE</code> is empty. This is because this variable is assigned the value of error codes from native applications. Errors from PowerShell cmdlets and scripts are handled in a different way, as shown in the next recipe, <span class="emphasis"><em>Working with the Error variable</em></span>.</p></div></div>

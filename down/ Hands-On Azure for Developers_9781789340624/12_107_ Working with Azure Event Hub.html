@@ -1,0 +1,144 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec104"></a>Working with Azure Event Hub</h2></div></div><hr /></div><p>Now that  you are familiar with some <span>basic</span><a id="id325122112" class="indexterm"></a> concepts, we can proceed and start working with a real instance of Azure Event Hub. In this section, you will learn both how to create and access Event Hub in the Azure portal and work with it using its SDK. In fact, using this service is possible both from the portal (as many Azure components seamlessly integrate with it and no additional configuration is required) and by providing custom implementations of consumers that read and process data further.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec124"></a>Creating an Azure Event Hub in the Azure portal</h3></div></div></div><p>To create an Azure Event Hub, we will start, as in <span>most</span><a id="id325122057" class="indexterm"></a> cases, by clicking on the <strong class="userinput"><code>+ Create a resource</code></strong><span class="strong"><strong> </strong></span>button. Enter <code class="literal">Event Hub</code><span class="emphasis"><em> </em></span>and select the service from the search results. Here, you can see an example of a configuration of my Event Hub instance:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/dcc617ff-5245-4762-af10-01aac5020836.png" /></div><p>Let's globally now focus on what we actually have here:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><strong class="userinput"><code>Name</code></strong>: This is the unique name of your Event Hub instance. Note, it has to be unique among all others supported by Azure.</li><li style="list-style-type: disc"><strong class="userinput"><code>Pricing tier</code></strong>: You can choose between Basic and Standard tiers. In fact, there is also one additional tier – Dedicated, which is, however, available only if you ask for it directly. The difference between Basic and Standard is quite huge in terms of capabilities and throughput; we will cover it in a second.</li><li style="list-style-type: disc"><strong class="userinput"><code>Enable Kafka</code></strong>: This is a new feature, which allows you to use Azure Event Hub<span class="emphasis"><em> </em></span>as if it was an <span class="strong"><strong>Apache Kafka</strong></span> instance. Thanks to that, you are able to switch to this Azure service without the need to reconfigure applications communicating with your Kafka instances.</li><li style="list-style-type: disc"><strong class="userinput"><code>Make this namespace zone redundant</code></strong>: If <span>you</span><a id="id324830065" class="indexterm"></a> wish, you can leverage availability zones for Event Hub and make the whole namespace zone redundant. This improves the availability of your instance of a service with no additional cost (you still have to pay for an additional instance, though). Currently, this feature is enabled for three locations – Central US, East US 2, and France Central.</li><li style="list-style-type: disc"><strong class="userinput"><code>Subscription</code></strong>: A subscription where an instance will be created.</li><li style="list-style-type: disc"><strong class="userinput"><code>Resource group</code></strong>: In which RG, an instance of Event Hub, will be created.</li><li style="list-style-type: disc"><strong class="userinput"><code>Location</code></strong>: In which region Azure Event Hub<span class="emphasis"><em> </em></span>will be created.</li><li style="list-style-type: disc"><strong class="userinput"><code>Throughput Units</code></strong>: This setting defines the throughput of the whole namespace. In Azure, each instance of Event Hub shares available TUs between all other hubs in a namespace. You can change the value later, depending on your needs.</li><li style="list-style-type: disc"><strong class="userinput"><code>Enable Auto-Inflate</code></strong>: Instead of manually scaling the throughput of your namespace, you can enable Auto-Inflate. This feature scales up your namespace automatically  as the load grows. Note, however, that it will not scale it down automatically. By enabling it, you can also define  the maximum value of TUs, so you will not be charged more than you are supposed to.</li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note153"></a>Note</h3><p>Remember that you are charged for each TU—that means that if you selected  the Basic<span class="strong"><strong> </strong></span>tier and require 10 TUs, you will pay 9.41 EUR * 10 = 94.1 EUR per month!</p></div><p>When you click on the <strong class="userinput"><code>Create</code></strong><span class="strong"><strong> </strong></span>button, Azure will take care of creating an instance of Azure Event Hub<span class="emphasis"><em> </em></span>for you.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec125"></a>Working with Azure Event Hub in the portal</h3></div></div></div><p>The following <span>screenshot</span><a id="id325115431" class="indexterm"></a> shows a brand-new instance of Azure Event Hub:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/5fce8a5b-0b4b-4fec-a12f-16cc587729a0.png" /></div><p>As you can see, it contains some basic info such as metrics, metadata, and access to connection strings. Of course, this is a view of a namespace—we have not created any Event Hub yet. Before we do so, I would like to focus a little on what we have available now. On the left, you can find the <strong class="userinput"><code>SETTINGS</code></strong><span class="strong"><strong> </strong></span>section, <span>which</span><a id="id325115457" class="indexterm"></a> contains additional features:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><strong class="userinput"><code>Shared access policies</code></strong>: In Azure Event Hub,<span class="emphasis"><em> </em></span>access policies have two levels—they are assigned either for a namespace or for a hub. With them, you are able to share an access key with a combination of three permissions—Manage<span class="strong"><strong>,</strong></span> Listen, and Send.</li><li style="list-style-type: disc"><strong class="userinput"><code>Scale</code></strong>: If you feel that you need more throughput, you can go to this blade and scale a namespace up (or down if you need fewer TUs). From that screen, you can also change the tier – for example, select Standard<span class="strong"><strong> </strong></span>to be able to use Auto-Inflate.</li><li style="list-style-type: disc"><strong class="userinput"><code>Geo-recovery</code></strong>: If you have a requirement to make your Event Hub highly available and you selected Standard<span class="strong"><strong> </strong></span>tier, from this blade you will able to initiate pairing with another region.</li></ul></div><p>Now let's create a hub:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Click on the <strong class="userinput"><code>Event Hubs</code></strong><span class="strong"><strong> </strong></span>blade:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789340624/graphics/8e661e4c-a3e6-4d2c-8988-fd02f7b0c805.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Click on the <strong class="userinput"><code>+ Event Hub</code></strong><span class="strong"><strong> </strong></span>button to see a form that <span>enables</span><a id="id325339866" class="indexterm"></a> you to configure a new instance of a hub:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789340624/graphics/30f75a9a-77ba-48bc-9ee6-573c9c4c3c63.png" /></div><p>Note that some fields are currently grayed out. This is because I used the Basic<span class="strong"><strong> </strong></span>tier for this example; both <strong class="userinput"><code>Message Retention</code></strong> (which <span>enables</span><a id="id325544329" class="indexterm"></a> you to extend the period an event is available to a maximum of seven days) and <strong class="userinput"><code>Capture<span class="strong"><strong> </strong></span></code></strong>(which will be described later) are features of the Standard<span class="strong"><strong> </strong></span>tier.</p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Click on the <strong class="userinput"><code>Create</code></strong><span class="strong"><strong> </strong></span>button to initiate the creation of a hub.</li></ol></div><p>Once a hub is created, you are able to click on it and access it, as shown:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/1bcc9a95-6ef2-48f6-a5b5-e6e00c0efdde.png" /></div><p>Note that this view is a bit different from the view of a namespace; while it also contains some metadata and metrics, available additional features are limited. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note154"></a>Note</h3><p>Note that for the Basic<span class="strong"><strong> </strong></span>tier, consumer groups<span class="strong"><strong> </strong></span>are also unavailable. With that tier, only the default group—named <code class="literal">$Default</code>—can be used.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec126"></a>Developing applications with Azure Event Hub</h3></div></div></div><p>We created and <span>configured</span><a id="id326430884" class="indexterm"></a> our instance of Azure Event Hub<span class="emphasis"><em> </em></span>in the <span>Azure</span><a id="id326432569" class="indexterm"></a> portal; now it is time to work with a concept I mentioned at the very beginning—Event Processor Host. In this section, you will learn:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">How to send events to Azure Event Hub</li><li style="list-style-type: disc">How to receive events by implementing your own Event Processor Host</li></ul></div><p>Before we start writing some code, however, you have to understand what really underlies such a concept. As opposed to competing consumers, where each consumer uses the same messaging channel, Azure Event Hub<span class="emphasis"><em> </em></span>uses the idea of an Event Processor Host, which is an intelligent agent able to distribute events between different, partitioned consumers. You may wonder how this idea works when implemented; to get an understanding, here you can see a diagram of the first scenario:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/38529489-5517-45e0-b07f-4f4feab6ec8d.png" /></div><p>In this diagram, you can see that there is a single <span class="strong"><strong>producer</strong></span> and four different <span class="strong"><strong>consumers</strong></span>. Each consumer implements <code class="literal">IEventProcessor</code>—an interface that is provided by the SDK and makes receiving events possible. Each <span class="strong"><strong>consumer</strong></span> covers one <span class="strong"><strong>partition</strong></span> and acquires a lease on it. Now let's check another scenario:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/8d901747-33dc-4a73-935a-4b4c891dca8e.png" /></div><p>The only <span>change</span><a id="id326432775" class="indexterm"></a> here is the number of <span class="strong"><strong>partitions</strong></span>—now the Event Hub has eight. Event Processor Host<span class="strong"><strong> </strong></span>makes sure that the load will be distributed equally, each <span class="strong"><strong>consumer</strong></span> will consume two <span class="strong"><strong>partitions</strong></span>. To make <span>things</span><a id="id326432801" class="indexterm"></a> even more complicated, there is a third scenario to consider:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/d8b71e5e-67a9-478a-be14-3f00d00b0af9.png" /></div><p>This time, we have more <span class="strong"><strong>consumers</strong></span> than <span class="strong"><strong>partitions</strong></span> available. In that case, you will notice a situation where one <span class="strong"><strong>consumer</strong></span> does not work as there is no <span class="strong"><strong>partition</strong></span> it can process. There is also one more caveat in that scenario; because lease duration (the time during which a partition is attached to a specific <span class="strong"><strong>consumer</strong></span>) is not infinite, at some point currently an idle <span class="strong"><strong>consumer</strong></span> can expropriate others and take control over a partition. Now, when the concept of Event Processor Host<span class="strong"><strong> </strong></span>is described, we can check how to write some code that can interact with Azure Event Hub. The following code is for an event producer:</p><pre class="programlisting">using System;
+using System.Text;
+using Microsoft.ServiceBus.Messaging;
+
+namespace HandsOnAzure.Sender
+{
+    internal class Program
+    {
+        private const string ConnectionString = "&lt;connection-string&gt;";
+
+        private static void Main()
+        {
+            var eventHubClient = EventHubClient.CreateFromConnectionString(ConnectionString);
+
+            try
+            {
+                var message = Guid.NewGuid().ToString();
+                Console.WriteLine("{0} &gt; Sending message: {1}", DateTime.Now, message);
+                eventHubClient.Send(new EventData(Encoding.UTF8.GetBytes(message)));
+            }
+            catch (Exception exception)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("{0} &gt; Exception: {1}", DateTime.Now, exception.Message);
+                Console.ResetColor();
+            }
+
+            Console.ReadLine();
+        }
+    }
+}</pre><p>To use this <span>code</span><a id="id326433597" class="indexterm"></a> example, you will need a connection string. To get it, I <span>accessed</span><a id="id326433606" class="indexterm"></a> my hub instance, went to the <strong class="userinput"><code>Shared access policies</code></strong><span class="strong"><strong> </strong></span>blade, and created a new policy with only the <strong class="userinput"><code>Send</code></strong><span class="strong"><strong> </strong></span>permission:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/a6e12721-01d2-4906-805d-58f96015c324.png" /></div><p>Now, when I execute my application, I will see that it sends events successfully:</p><pre class="programlisting">23.08.2018 11:20:50 &gt; Sending message: 1a09038b-1aeb-4729-ace0-104f26c7d376</pre><p>We have a producer, now we <span>need</span><a id="id326433646" class="indexterm"></a> a consumer! I created an <span>access</span><a id="id325211478" class="indexterm"></a> policy once more, this time only for <strong class="userinput"><code>Listen</code></strong>:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/a5d919ac-70f6-4436-a4de-06397488eb61.png" /></div><p>To create a consumer you will <span>need</span><a id="id325211502" class="indexterm"></a> the <code class="literal">Microsoft.Azure.ServiceBus.EventProcessorHost</code><span class="strong"><strong> </strong></span>NuGet package. Once <span>you</span><a id="id325211517" class="indexterm"></a> install it, you will be able to implement <code class="literal">IEventProcessor</code> just like this:</p><pre class="programlisting">public class MyFirstEventProcessor : IEventProcessor
+{
+  private Stopwatch _checkpointStopWatch;
+
+  public Task OpenAsync(PartitionContext context)
+  {
+    Console.WriteLine("SimpleEventProcessor initialized. Partition: '{0}', Offset: '{1}'", context.Lease.PartitionId, context.Lease.Offset);
+    _checkpointStopWatch = new Stopwatch();
+    _checkpointStopWatch.Start();
+    return Task.FromResult&lt;object&gt;(null);
+  }
+
+  public async Task ProcessEventsAsync(PartitionContext context, IEnumerable&lt;EventData&gt; messages)
+  {
+    foreach (var eventData in messages)
+    {
+      var data = Encoding.UTF8.GetString(eventData.GetBytes());
+      Console.WriteLine($"Message received. Partition: '{context.Lease.PartitionId}', Data: '{data}'");
+    }
+
+    if (_checkpointStopWatch.Elapsed &gt; TimeSpan.FromMinutes(5))
+    {
+      await context.CheckpointAsync();
+      _checkpointStopWatch.Restart();
+    }
+  }
+
+  public async Task CloseAsync(PartitionContext context, CloseReason reason)
+  {
+    Console.WriteLine("Processor Shutting Down. Partition '{0}', Reason: '{1}'.", context.Lease.PartitionId, reason);
+
+    if (reason == CloseReason.Shutdown)
+    {
+      await context.CheckpointAsync();
+    }
+  }
+}</pre><p>As you can see, it has three methods: <code class="literal">OpenAsync</code>, <code class="literal">ProcessEventsAsync</code>,<span class="strong"><strong> </strong></span>and <code class="literal">CloseAsync</code>. To be able to actually use such a processor, you have to initiate the whole event processing host:</p><pre class="programlisting">using System;
+using Microsoft.ServiceBus.Messaging;
+
+namespace HandsOnAzure.Receiver
+{
+    internal class Program
+    {
+        private const string EventHubConnectionString = "&lt;connection-string&gt;";
+        private const string EventHubName = "&lt;event-hub-name&gt;";
+        private const string StorageAccountName = "&lt;storage-account-name&gt;";
+        private const string StorageAccountKey = "&lt;storage-account-key&gt;";
+
+        private static void Main()
+        {
+            var storageConnectionString =
+                $"DefaultEndpointsProtocol=https;AccountName={StorageAccountName};AccountKey={StorageAccountKey}";
+
+            var eventProcessorHostName = Guid.NewGuid().ToString();
+            var eventProcessorHost = new EventProcessorHost(eventProcessorHostName, EventHubName, EventHubConsumerGroup.DefaultGroupName, EventHubConnectionString, storageConnectionString);
+            Console.WriteLine("Registering EventProcessor...");
+
+            var options = new EventProcessorOptions();
+            options.ExceptionReceived += (sender, e) =&gt; { Console.WriteLine(e.Exception); };
+            eventProcessorHost.RegisterEventProcessorAsync&lt;MyFirstEventProcessor&gt;(options).Wait();
+
+            Console.WriteLine("Receiving. Press enter key to stop worker.");
+            Console.ReadLine();
+            eventProcessorHost.UnregisterEventProcessorAsync().Wait();
+        }
+    }
+}</pre><p>Now when you run your application, you should be able to see incoming events.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note155"></a>Note</h3><p>Note that Event Processor Host<span class="strong"><strong> </strong></span>requires you to create a Storage Account instance. It uses it to internally manage leases and offsets.</p></div><p>Here, <span>you</span><a id="id325229728" class="indexterm"></a> can see the log <span>coming</span><a id="id325229736" class="indexterm"></a> from my processor:</p><pre class="programlisting">Registering EventProcessor...
+Receiving. Press enter key to stop worker.
+MyFirstEventProcessor initialized. Partition: '4', Offset: ''
+MyFirstEventProcessor initialized. Partition: '9', Offset: ''
+MyFirstEventProcessor initialized. Partition: '11', Offset: ''
+MyFirstEventProcessor initialized. Partition: '8', Offset: ''
+Message received. Partition: '9', Data: '5e0b2a73-ca9d-418d-8d47-43c7b7feb17e'
+Message received. Partition: '4', Data: '1a09038b-1aeb-4729-ace0-104f26c7d376'
+Message received. Partition: '4', Data: '859cce28-76e1-4a68-8637-a2349d898e8b'
+MyFirstEventProcessor initialized. Partition: '15', Offset: ''
+Message received. Partition: '15', Data: '36f13819-46d6-42c9-8afe-6776264e7aab'
+MyFirstEventProcessor initialized. Partition: '1', Offset: ''
+MyFirstEventProcessor initialized. Partition: '5', Offset: ''
+MyFirstEventProcessor initialized. Partition: '0', Offset: ''
+MyFirstEventProcessor initialized. Partition: '7', Offset: ''
+MyFirstEventProcessor initialized. Partition: '12', Offset: ''
+MyFirstEventProcessor initialized. Partition: '3', Offset: ''
+MyFirstEventProcessor initialized. Partition: '14', Offset: ''
+MyFirstEventProcessor initialized. Partition: '10', Offset: ''
+MyFirstEventProcessor initialized. Partition: '2', Offset: ''
+MyFirstEventProcessor initialized. Partition: '6', Offset: ''
+MyFirstEventProcessor initialized. Partition: '13', Offset: ''</pre><p>Note how a single receiver handles all 16 partitions I used for this particular hub. Now you can check what happens if I introduce another consumer:</p><pre class="programlisting">Microsoft.ServiceBus.Messaging.ReceiverDisconnectedException: New receiver with higher epoch of '4' is created hence current receiver with epoch '3' is getting disconnected. If you are recreating the receiver, make sure a higher epoch is used. TrackingId:628871df00003ffd002d0cc25b7fd487_C1655342710_B13, SystemTracker:handsonazure:eventhub:handsonazurehub~2047|$default, Timestamp:8/24/2018 9:49:09 AM
+   at Microsoft.ServiceBus.Common.AsyncResult.End[TAsyncResult](IAsyncResult result)
+   at Microsoft.ServiceBus.Messaging.MessageReceiver.RetryReceiveEventDataAsyncResult.TryReceiveEnd(IAsyncResult r, IEnumerable`1&amp; messages)
+   at Microsoft.ServiceBus.Messaging.MessageReceiver.EndTryReceiveEventData(IAsyncResult result, IEnumerable`1&amp; messages)
+   at Microsoft.ServiceBus.Messaging.EventHubReceiver.&lt;ReceiveAsync&gt;b__61_1(IAsyncResult result)
+   at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at Microsoft.ServiceBus.Common.TaskHelpers.EndAsyncResult(IAsyncResult asyncResult)
+   at Microsoft.ServiceBus.Messaging.IteratorAsyncResult`1.&lt;&gt;c.&lt;CallTask&gt;b__24_1(TIteratorAsyncResult thisPtr, IAsyncResult r)
+   at Microsoft.ServiceBus.Messaging.IteratorAsyncResult`1.StepCallback(IAsyncResult result)
+Processor Shutting Down. Partition '0', Reason: 'LeaseLost'.</pre><p>As you can see, <code class="literal">Partition 0</code> has been taken by another receiver, which will start processing events from it:</p><pre class="programlisting">Registering EventProcessor...
+Receiving. Press enter key to stop worker.
+MyFirstEventProcessor initialized. Partition: '0', Offset: ''
+Message received. Partition: '0', Data: '3c3bb090-2e0c-4d06-ad44-1d0ad4a106a7'
+Message received. Partition: '0', Data: '54fed07a-a51e-4f36-8f26-f2ded2da9faa'
+Message received. Partition: '0', Data: '69b8b291-8407-466a-a2c1-0b33a2ef03ad'
+Message received. Partition: '0', Data: 'ec45d759-01bb-41db-ab51-de469ee5da55'
+Message received. Partition: '0', Data: 'fcf41b0e-cd6b-465a-ac20-100ba13fd6af'
+Message received. Partition: '0', Data: '2f05104a-c4a2-4a8f-8689-957f2dca6c71'
+Message received. Partition: '0', Data: '63d77b4c-584f-4db3-86d0-9f73179ccb9f'
+Message received. Partition: '0', Data: '03c70d22-4efa-4bd6-9c5c-f666c2922931'
+Message received. Partition: '0', Data: '96f4c8be-831c-415c-8aa7-0a5125458f16'
+Message received. Partition: '0', Data: 'af2e8a21-d9ce-4256-a8eb-73483387912c'
+Message received. Partition: '0', Data: '73d9f92b-686b-44d1-b01a-50c0c63426ee'
+Message received. Partition: '0', Data: 'bf53ea8f-dd34-405f-a6a6-0e947ce2473b'</pre><p>It will gradually take control of half of the available partitions until the load is balanced. </p></div></div>

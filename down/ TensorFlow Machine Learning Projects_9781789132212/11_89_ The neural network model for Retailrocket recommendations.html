@@ -1,0 +1,22 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec87"></a>The neural network model for Retailrocket recommendations</h2></div></div><hr /></div><p>In this model, we set two <span>different</span><a id="id325608622" class="indexterm"></a> variables for <span>latent</span><a id="id325607384" class="indexterm"></a> factors for users and items but set both of them to <code class="literal">5</code>. The reader is welcome to experiment with different values of latent factors:</p><pre class="programlisting">n_lf_visitor = 5
+n_lf_item = 5</pre><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Build the item and visitor <span>embeddings</span> and vector space representations the same way we built earlier:</li></ol></div><pre class="programlisting">item_input = Input(shape=[1],name='Items')
+item_embed = Embedding(n_items + 1,
+                           n_lf_visitor, 
+                           name='ItemsEmbedding')(item_input)
+item_vec = Flatten(name='ItemsFlatten')(item_embed)
+
+visitor_input = Input(shape=[1],name='Visitors')
+visitor_embed = Embedding(n_visitors + 1, 
+                              n_lf_item,
+                              name='VisitorsEmbedding')(visitor_input)
+visitor_vec = Flatten(name='VisitorsFlatten')(visitor_embed)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Instead of <span>creating</span><a id="id325601683" class="indexterm"></a> a dot product layer, we concatenate the user and visitor representations, and then <span>apply</span><a id="id325601655" class="indexterm"></a> fully connected layers to get the recommendation output:</li></ol></div><pre class="programlisting">concat = keras.layers.concatenate([item_vec, visitor_vec], name='Concat')
+fc_1 = Dense(80,name='FC-1')(concat)
+fc_2 = Dense(40,name='FC-2')(fc_1)
+fc_3 = Dense(20,name='FC-3', activation='relu')(fc_2)
+
+output = Dense(1, activation='relu',name='Output')(fc_3)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Define and compile the model as follows:</li></ol></div><pre class="programlisting">optimizer = keras.optimizers.Adam(lr=0.001)
+model = keras.Model([item_input, visitor_input], output)
+model.compile(optimizer=optimizer,loss= 'mse')</pre><p>Let's see how this model looks visually:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/f24ad80a-b24e-43ca-a2a2-4c0a55bb447f.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Train <span>and</span><a id="id325601674" class="indexterm"></a> evaluate <span>the</span><a id="id325610524" class="indexterm"></a> model:</li></ol></div><pre class="programlisting">model.fit([train.visitorid, train.itemid], train.event, epochs=50)
+score = model.evaluate([test.visitorid, test.itemid], test.event)
+print('mean squared error:', score)</pre><p> </p><p>We get a pretty good accuracy with a very low error rate:</p><pre class="programlisting">275611/275611 [==============================] - 4s 14us/step
+mean squared error: 0.05709125054560985</pre><p>That's it. We encourage <span>the</span><a id="id325611662" class="indexterm"></a> reader to learn <span>more</span><a id="id325611671" class="indexterm"></a> about different recommendation system algorithms and try implementing them with Retailrocket or other publicly available datasets.</p></div>

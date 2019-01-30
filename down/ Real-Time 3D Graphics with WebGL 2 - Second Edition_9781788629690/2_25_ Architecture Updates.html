@@ -1,0 +1,97 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec35"></a>Architecture Updates</h2></div></div><hr /></div><p>Let's cover some useful functions that we can refactor for use in later chapters:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open <code class="literal">common/js/utils.js</code> in your editor to see the following changes.</li><li>We have added two additional methods, <code class="literal">autoResizeCanvas</code>and<code class="literal">getShader</code>, to <code class="literal">utils.js</code> that look very similar to the code we implemented earlier in this chapter:</li></ol></div><pre class="programlisting">'use strict';
+
+// A set of utility functions for /common operations across our 
+// application
+const utils = {
+
+// Find and return a DOM element given an ID
+getCanvas(id) {
+    // ...
+},
+
+// Given a canvas element, return the WebGL2 context
+getGLContext(canvas) {
+    // ...
+},
+
+// Given a canvas element, expand it to the size of the window
+  // and ensure that it automatically resizes as the window changes
+autoResizeCanvas(canvas) {
+const expandFullScreen = () =&gt; {
+      canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+};
+expandFullScreen();
+window.addEventListener('resize', expandFullScreen);
+},
+
+// Given a WebGL context and an id for a shader script,
+  // return a compiled shader
+getShader(gl, id) {
+const script = document.getElementById(id);
+if (!script) {
+return null;
+}
+
+const shaderString = script.text.trim();
+
+let shader;
+if (script.type === 'x-shader/x-vertex') {
+      shader = gl.createShader(gl.VERTEX_SHADER);
+}
+else if (script.type === 'x-shader/x-fragment') {
+      shader = gl.createShader(gl.FRAGMENT_SHADER);
+}
+else {
+return null;
+}
+
+    gl.shaderSource(shader, shaderString);
+gl.compileShader(shader);
+
+if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(shader));
+return null;
+}
+
+return shader;
+}
+
+};</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>The <code class="literal">autoResizeCanvas</code> method takes a <code class="literal">canvas</code> element and dynamically resizes it to be fullscreen by watching browser-resizing events.</li><li>The <code class="literal">getShader</code> function takes a <code class="literal">gl</code> instance and an <code class="literal">id</code> script to compile and return the shader source. Internally, <code class="literal">getShader</code> reads the source code of the script and stores it in a local variable. Then, it creates a new shader by using the WebGL <code class="literal">createShader</code> function. After that, it will add the source code to it using the <code class="literal">shaderSource</code> function. Finally, it will try to compile the shader using the <code class="literal">compileShader</code> function.</li><li>Open <code class="literal">ch02_09_ajax-car-final.html</code> in your editor to see the following changes.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Scroll to the <code class="literal">init</code> functionwhere the necessary changes were made to use the <code class="literal">utils.autoResizeCanvas</code> method:</li></ol></div><pre class="programlisting">function init() {
+const canvas = utils.getCanvas('webgl-canvas');
+<span class="strong"><strong>// Handle automatic resizing
+utils.autoResizeCanvas(canvas)</strong></span><span class="strong"><strong>;</strong></span>
+
+// Retrieve a valid WebGL2 context
+gl = utils.getGLContext(canvas);
+gl.clearColor(0, 0, 0, 1);
+gl.enable(gl.DEPTH_TEST);
+
+initProgram();
+// We are no longer blocking the render until `load` has 
+  // resolved, as we're not returning a Promise.
+load();
+render();
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Scroll to the <code class="literal">initProgram</code> function inside of <code class="literal">ch02_09_ajax-car-final.html</code>, where the necessary changes were made to use the <code class="literal">utils.getShader</code> method:</li></ol></div><pre class="programlisting">function initProgram() {
+<span class="strong"><strong>// Retrieve shaders based on the shader script IDs
+const vertexShader = utils.getShader(gl, 'vertex-shader');
+const fragmentShader = utils.getShader(gl, 'fragment-shader')</strong></span><span class="strong"><strong>;</strong></span>
+
+program = gl.createProgram();
+gl.attachShader(program, vertexShader);
+gl.attachShader(program, fragmentShader);
+gl.linkProgram(program);
+
+if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('Could not initialize shaders');
+}
+
+  gl.useProgram(program);
+
+program.aVertexPosition = gl.getAttribLocation(program, 
+   'aVertexPosition');
+program.uProjectionMatrix = gl.getUniformLocation(program, 
+   'uProjectionMatrix');
+program.uModelViewMatrix = gl.getUniformLocation(program, 
+   'uModelViewMatrix');
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Open <code class="literal">ch02_09_ajax-car-final.html</code> in a browser to see these changes in action.</li></ol></div></div>

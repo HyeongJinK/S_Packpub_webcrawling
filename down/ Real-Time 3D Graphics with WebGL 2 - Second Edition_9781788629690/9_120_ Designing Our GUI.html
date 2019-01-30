@@ -1,0 +1,99 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec123"></a>Designing Our GUI</h2></div></div><hr /></div><p>We will define a very simple <span>layout</span><a id="id325358908" class="indexterm"></a> for our application. First, we will define our HTML document and include all of the necessary dependencies:</p><pre class="programlisting">&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Real-Time 3D Graphics with WebGL 2&lt;/title&gt;
+  &lt;link rel="shortcut icon" type="image/png" 
+   href="/common/images/favicon.png" /&gt;
+
+  &lt;!-- libraries --&gt;
+&lt;link rel="stylesheet" href="/common/lib/normalize.css"&gt;
+ &lt;script type="text/javascript" src="/common/lib/dat.gui.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/lib/gl-matrix.js"&gt;&lt;/script&gt;
+
+&lt;!-- modules --&gt;
+&lt;script type="text/javascript" src="/common/js/utils.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/EventEmitter.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Camera.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Clock.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Controls.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Floor.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Light.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Program.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Scene.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Texture.js"&gt;&lt;/script&gt;
+ &lt;script type="text/javascript" src="/common/js/Transforms.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre><p>As you can see, we've included the following libraries that are required for our application:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">normalize.css</code>: A set of styles that makes browsers render all elements more consistently</li><li style="list-style-type: disc"><code class="literal">dat.gui.js</code>: A lightweight graphical user interface for changing variables in JavaScript</li><li style="list-style-type: disc"><code class="literal">gl-matrix.js</code>: A JavaScript matrix and vector library for high performance applications</li></ul></div><p>Now that we've included the required libraries, we will include the various components we've covered throughout this book.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec143"></a>Adding canvas Support</h3></div></div></div><p>Now that we have the <span>shell</span><a id="id325358957" class="indexterm"></a> for our application, let's add the <code class="literal">canvas</code> that's required for our WebGL application:</p><pre class="programlisting">&lt;canvas id="webgl-canvas"&gt;
+Your browser does not support the HTML5 canvas element.
+&lt;/canvas&gt;</pre><p>The <code class="literal">canvas</code> element with the <code class="literal">webgl-canvas</code> ID goes between the <code class="literal">body</code> of our HTML document.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec144"></a>Adding Shader Scripts</h3></div></div></div><p>Next, let's include the two <span>shaders</span><a id="id325617368" class="indexterm"></a> that we'll need for our application by using the following code:</p><pre class="programlisting">&lt;script id="vertex-shader" type="x-shader/x-vertex"&gt;
+#version 300 es
+  precision mediump float;
+
+  void main(void) {}
+&lt;/script&gt;
+
+&lt;script id="fragment-shader" type="x-shader/x-fragment"&gt;
+#version 300 es
+  precision mediump float;
+
+  void main(void) {}
+&lt;/script&gt;</pre><p>These <code class="literal">scripts</code> are placed inside the <code class="literal">head</code> of our document.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec145"></a>Adding WebGL Support</h3></div></div></div><p>Now that we have the basic <span>boilerplate</span><a id="id325631832" class="indexterm"></a> for our application, let's initialize our WebGL application:</p><pre class="programlisting">&lt;script type="text/javascript"&gt;
+'use strict';
+
+let gl, program, scene, clock;
+
+function configure() {
+const canvas = utils.getCanvas('webgl-canvas');
+utils.autoResizeCanvas(canvas);
+
+gl = utils.getGLContext(canvas);
+gl.clearColor(0.9, 0.9, 0.9, 1);
+gl.clearDepth(1);
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LESS);
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+program = new Program(gl, 'vertex-shader', 'fragment-shader');
+
+scene = new Scene(gl, program);
+
+clock = new Clock();
+}
+
+function draw() {
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}
+
+function init() {
+configure();
+clock.on('tick', draw);
+}
+
+  window.onload = init;
+&lt;/script&gt;</pre><p>This <code class="literal">script</code> tag goes after the shader scripts to ensure that we can reference them as needed.</p><p>Let's cover this code in detail:</p><pre class="programlisting">let gl, program, scene, clock;</pre><p>We need to define the various global <span>variables</span><a id="id325631892" class="indexterm"></a> that we'll be setting and using throughout the application. As in all of our previous exercises, we need to define the entry point for the application. We do this with the following code:</p><pre class="programlisting">function init() {
+configure();
+clock.on('tick', draw);
+}
+
+window.onload = init;</pre><p>The <code class="literal">init</code> function is called once our document has loaded via <code class="literal">window.onload</code>. In the <code class="literal">init</code> function, we set up our application by calling <code class="literal">configure</code> and using the <code class="literal">clock</code> instance to call <code class="literal">draw</code> on every <code class="literal">tick</code>—that is, every <code class="literal">requestAnimationFrame</code> call:</p><pre class="programlisting">function configure() {
+const canvas = utils.getCanvas('webgl-canvas');
+utils.autoResizeCanvas(canvas);
+
+gl = utils.getGLContext(canvas);
+gl.clearColor(0.9, 0.9, 0.9, 1);
+gl.clearDepth(1);
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LESS);
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+program = new Program(gl, 'vertex-shader', 'fragment-shader');
+
+scene = new Scene(gl, program);
+
+clock = new Clock();
+}</pre><p>We initialize and set our <code class="literal">canvas</code> with the ID of <code class="literal">webgl-canvas</code>. Then, we pass the <code class="literal">canvas</code> instance to our utility function for full screen and auto resizing capabilities. This function is useful because it automatically updates the size of the <code class="literal">canvas</code> to the available window space without hardcoding the size of the <code class="literal">canvas</code>. Then, we initialize <code class="literal">gl</code>, <code class="literal">scene</code>, <code class="literal">clock</code>, and <code class="literal">program</code> using the provided shaders. Finally, we set the <code class="literal">gl</code> context with the basic configurations, such as a clear color, depth testing, and blending functions:</p><pre class="programlisting">function draw() {
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}</pre><p>The <code class="literal">draw</code> function is simple, as it simply sets the <span>viewport</span><a id="id325647187" class="indexterm"></a> and clears the <code class="literal">canvas</code>. You can find this source code inside the <code class="literal">ch09_scaffolding.html</code> file for this book.</p><p>Now, if you run<code class="literal">ch09_scaffolding.html</code>in your browser, you will see that the <code class="literal">canvas</code> resizes according to the size of the browser, as follows:</p><div class="mediaobject"><img src="/graphics/9781788629690/graphics/99197109-09d5-43aa-a9e2-69d33de4cf38.png" /></div><p> </p><p> </p></div></div>

@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec86"></a>The matrix factorization model for Retailrocket recommendations</h2></div></div><hr /></div><p>Now let's create a <span>matrix</span><a id="id325091922" class="indexterm"></a> factorization <span>model</span><a id="id325091931" class="indexterm"></a> in Keras:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Store the number of visitors and items in a variable, as follows:</li></ol></div><pre class="programlisting">n_visitors = events.visitorid.nunique()
+n_items = events.itemid.nunique()</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Set the number of latent factors for embedding to <code class="literal">5</code>. You may want to try different values to see the impact on the model training:</li></ol></div><pre class="programlisting">n_latent_factors = 5</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Import the Input, Embedding, and Flatten layers from the Keras library:</li></ol></div><pre class="programlisting">from tensorflow.keras.layers import Input, Embedding, Flatten</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Start with the items – create an input layer for them as follows:</li></ol></div><pre class="programlisting">item_input = Input(shape=[1],name='Items')</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Create an Embedding representation layer and then flatten the Embedding layer to get the output in the number of latent dimensions that we set earlier:</li></ol></div><pre class="programlisting">item_embed = Embedding(n_items + 1,
+                           n_latent_factors, 
+                           name='ItemsEmbedding')(item_input)
+item_vec = Flatten(name='ItemsFlatten')(item_embed)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Similarly, create the vector space representation for the visitors:</li></ol></div><pre class="programlisting">visitor_input = Input(shape=[1],name='Visitors')
+visitor_embed = Embedding(n_visitors + 1,
+                          n_latent_factors,
+                          name='VisitorsEmbedding')(visitor_input)
+visitor_vec = Flatten(name='VisitorsFlatten')(visitor_embed)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Create a layer for the dot product of both vector space representations:</li></ol></div><pre class="programlisting">dot_prod = keras.layers.dot([item_vec, visitor_vec],axes=[1,1],
+                             name='DotProduct') </pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Build the Keras <span>model</span><a id="id325611568" class="indexterm"></a> from the <span>input</span><a id="id325611662" class="indexterm"></a> layers, and the dot product layer as the output layer, and compile it as follows:</li></ol></div><pre class="programlisting">model = keras.Model([item_input, visitor_input], dot_prod)
+model.compile('adam', 'mse')
+model.summary()</pre><p>The model is summarized as follows:</p><pre class="programlisting">________________________
+Layer (type)                    Output Shape         Param #     Connected to                     
+================================================================================
+Items (InputLayer)              (None, 1)            0                                            
+________________________________________________________________________________
+Visitors (InputLayer)           (None, 1)            0                                            
+________________________________________________________________________________
+ItemsEmbedding (Embedding)      (None, 1, 5)         1175310     Items[0][0]                      
+________________________________________________________________________________
+VisitorsEmbedding (Embedding)   (None, 1, 5)         7037905     Visitors[0][0]                   
+________________________________________________________________________________
+ItemsFlatten (Flatten)          (None, 5)            0           ItemsEmbedding[0][0]             
+________________________________________________________________________________
+VisitorsFlatten (Flatten)       (None, 5)            0           VisitorsEmbedding[0][0]          
+________________________________________________________________________________
+DotProduct (Dot)                (None, 1)            0           ItemsFlatten[0][0]               
+                                                                 VisitorsFlatten[0][0]            
+================================================================================
+Total params: 8,213,215
+Trainable params: 8,213,215
+Non-trainable params: 0
+________________________________________________________________________________</pre><p>Since the model is complicated, we can also draw it graphically using the following commands:</p><pre class="programlisting">keras.utils.plot_model(model, 
+                       to_file='model.png', 
+                       show_shapes=True, 
+                       show_layer_names=True)
+from IPython import display
+display.display(display.Image('model.png'))</pre><p> </p><p>You can see the layers and output sizes clearly in this plotted visualization:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/311c5086-e63a-4dc3-b615-d9ff4de02343.png" /></div><p>Now let's train and evaluate the model:</p><pre class="programlisting">model.fit([train.visitorid, train.itemid], train.event, epochs=50)
+score = model.evaluate([test.visitorid, test.itemid], test.event)
+print('mean squared error:', score)</pre><p>The training and <span>evaluation</span><a id="id325611715" class="indexterm"></a> loss will be <span>very</span><a id="id325611723" class="indexterm"></a> high. We can improve this by using advanced methods for matrix factorization.</p><p>Now, let's build the neural network model to provide the same recommendations.</p></div>

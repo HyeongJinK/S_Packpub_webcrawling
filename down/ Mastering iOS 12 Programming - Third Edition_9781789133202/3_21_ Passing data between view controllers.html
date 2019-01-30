@@ -1,0 +1,51 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec27"></a>Passing data between view controllers</h2></div></div><hr /></div><p>The final bridge to cross for the <span><span class="strong"><strong>HelloContacts</strong></span></span> app is to display <span>some</span><a id="id325337193" class="indexterm"></a> actual information about a selected contact. In order to do this, a couple of new outlets should be added to <code class="literal">ContactDetailViewController</code>. The code that fetches contact information also needs to be expanded a little bit so a contact's phone number, email address, and postal address are fetched.</p><p>Finally, the contact data needs to be passed from the overview to the details page so the details page is able to actually display the data. The steps involved in this process are the following:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Update the data loading and model.</li><li>Pass the model to the details page.</li><li>Implement new outlets and display data.</li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec17"></a>Updating the data loading and model</h3></div></div></div><p>Currently, the code in <code class="literal">ViewController.swift</code> specifies <span>that</span><a id="id325337229" class="indexterm"></a> just the given name, family name, image data, and image availability for a contact should be fetched. This needs to be expanded to the email address, postal address, and phone number are fetched as well. Update the <code class="literal">retrieveContacts(store:)</code> method with the <span>following</span><a id="id325337241" class="indexterm"></a> code for <code class="literal">keysToFetch</code>:</p><pre class="programlisting">let keysToFetch = [CNContactGivenNameKey as CNKeyDescriptor,
+                   CNContactFamilyNameKey as CNKeyDescriptor,
+                   CNContactImageDataAvailableKey as CNKeyDescriptor,
+                   CNContactImageDataKey as CNKeyDescriptor,
+                   CNContactEmailAddressesKey as CNKeyDescriptor,
+                   CNContactPhoneNumbersKey as CNKeyDescriptor,
+                   CNContactPostalAddressesKey as CNKeyDescriptor]</pre><p>Now that the code will fetch these new attributes for the contacts, the <code class="literal">Contact</code> class must be updated so it allows these new properties to be used. Add the following variable declarations to <code class="literal">Contact.swift</code>:</p><pre class="programlisting">var emailAddress: String {
+  // 1
+  return String(contact.emailAddresses.first?.value ?? "--")
+}
+
+var phoneNumber: String {
+  // 2
+  return contact.phoneNumbers.first?.value.stringValue ?? "--"
+}
+
+var address: String {
+  // 3
+  let street = contact.postalAddresses.first?.value.street ?? "--"
+  let city = contact.postalAddresses.first?.value.city ?? "--"
+
+  return "\(street) \(city)"
+}</pre><p>Each of the three properties you have added is <span>annotated</span><a id="id325337277" class="indexterm"></a> with a comment. This is because these properties are not as straightforward to pass on as the others. Let's go over these comments one by one:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Because <code class="literal">emailAddresses</code> is an array and the value of an email address is an <code class="literal">NSString?</code> <span>object</span> instead of a <code class="literal">String</code> <span>object</span>, the first item in the list of email addresses is retrieved using optional chaining. If there is no first email address, the string <code class="literal">--</code> is returned instead. This is then passed to the <code class="literal">String</code> initializer to convert the resulting <code class="literal">NSString</code><span>object </span>to the <code class="literal">String</code><span>object </span>that is expected to be returned. Being able to implement logic like this on the <code class="literal">Contact</code> model is convenient because it makes using the email address a lot more convenient for anybody who wants to display it.</li><li style="list-style-type: disc">Retrieving the string value for the phone number is a bit simpler. Optional chaining is used again to try and retrieve the first item in a list. If a phone number is found, the value's <code class="literal">stringValue</code> is used to turn the phone number into a <code class="literal">String</code> <span>object</span>. If no phone numbers are found, <code class="literal">--</code> is returned here too.</li><li style="list-style-type: disc">The address is built by retrieving the first available address and extracting the <code class="literal">street</code> and <code class="literal">city</code><span>objects </span>from it. These values are then combined in a string and returned. Again, missing values are replaced with <code class="literal">--</code>.</li></ul></div><p>Now that the model is prepared, the time has come to pass the model to the contact details page so it can display real contact data.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec18"></a>Passing the model to the details page</h3></div></div></div><p>The transition from the overview page to the <span>details</span><a id="id325580658" class="indexterm"></a> page is implemented with a segue. The segue is triggered when the user taps a contact, putting the detail page on the screen. Because this transition uses a segue, there is a special method that can be implemented to pass data from the first view controller to the second view controller. This special method is called <code class="literal">prepare(for:sender:)</code>.</p><p>This method is called on the source view controller right before a segue is performed and it provides access to the destination view controller. The segue's destination is used to configure data on the view controller that is about to be presented. Let's implement this right now so you can pass the tapped contact to the detail page. Add the following extension to <code class="literal">ViewController.swift</code>:</p><pre class="programlisting">extension ViewController {
+  override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+    if let contactDetailVC = segue.destination as? ContactDetailViewController,
+      segue.identifier == "detailViewSegue",
+      let selectedIndex = collectionView.indexPathsForSelectedItems?.first {
+        contactDetailVC.contact = contacts[selectedIndex.row]
+    }
+  }
+}</pre><p>This implementation first verifies that the destination of the segue has the correct type. Then, it also makes sure that the segue's identifier matches the identifier that was added for this segue in <strong class="userinput"><code>Interface Builder</code></strong>. Finally, the first (and only) selected index path is read from the collection view. This information is then used to assign the correct contact from the contacts array to a contact property on the destination view controller. This property does not exist yet, but you will add it to <code class="literal">ContactDetailViewController</code> in a moment.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec19"></a>Implementing the new outlets and displaying data</h3></div></div></div><p>The initial view <span>controller</span><a id="id325580694" class="indexterm"></a> is now fully prepared to pass data along to the <span>contact</span><a id="id325602482" class="indexterm"></a> detail view controller. To display a contact, you will need to add a variable that holds on to the selected contact and a couple of outlets so you can update the view with the appropriate contact information. Add the following code to <code class="literal">ContactDetailViewController</code> to prepare it for displaying a contact:</p><pre class="programlisting">@IBOutlet var contactPhoneLabel: UILabel!
+@IBOutlet var contactEmailLabel: UILabel!
+@IBOutlet var contactAddressLabel: UILabel!
+
+var contact: Contact?
+
+override func viewDidLoad() {
+  // existing implementation...
+
+  if let contact = self.contact {
+    // 1
+    contact.fetchImageIfNeeded { [weak self] image in
+      self?.contactImage.image = image
+    }
+
+    contactNameLabel.text = "\(contact.givenName) \(contact.familyName)"
+    contactPhoneLabel.text = contact.phoneNumber
+    contactEmailLabel.text = contact.emailAddress
+    contactAddressLabel.text = contact.address
+  }
+}</pre><p>The preceding snippet configures the view controller so it uses contact data to populate its labels and image view. The comment in this snippet highlights the <code class="literal">fetchImageIfNeeded(completion:)</code> method that is used to retrieve and use the image.</p><p>The final step is to go to the storyboard, select the detail view controller, and connect the outlets in the <strong class="userinput"><code>Connections Inspector</code></strong> to the user interface elements. After doing this, build and run your app to see the details page in its full glory. Now, let's add some icing to this cake by implementing peek and pop using 3D Touch!</p></div></div>

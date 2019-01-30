@@ -1,0 +1,126 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch18lvl1sec126"></a>Implementing notification extensions</h2></div></div><hr /></div><p>Apple has created two <span>extension</span><a id="id325333110" class="indexterm"></a> types for notifications that you can use to take the notification experience up a notch from custom actions. The available extensions are <span class="strong"><strong>s</strong></span><strong class="userinput"><code>ervice extensions</code></strong> and <strong class="userinput"><code>content extensions.</code></strong> These extensions are both very powerful and relatively simple to implement. In this section, you will learn how to add both a service extension and a content extension to the Notifications app.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch18lvl2sec102"></a>Adding a service extension to your app</h3></div></div></div><p>Service extensions are <span>intended</span><a id="id325333142" class="indexterm"></a> to act as middleware for push notifications. A service extension receives a notification before it's displayed to the user. This allows you to manipulate or enrich the notification's content before it's shown to the user.</p><p>A service extension is perfect if you're implementing end-to-end encryption, for example. Another great use for a service extension is to download a media attachment from a push notification, save it locally, and add it as a media attachment to the notification contents, because all media attachments that are shown in a notification must be stored locally on the device. This means that a push notification can't really have media attachments, unless a service extension is used to download and store the media locally, before appending it to the notification.</p><p>Service extensions can only be implemented for push notifications that have the <code class="literal">mutable-content</code> property added to their <code class="literal">aps</code> payload, as shown in the following sample:</p><pre class="programlisting">{  
+  "aps": {  
+    "alert": “You have a new message!”,  
+    "badge": 1,  
+    "mutable-content": 1  
+  },  
+  "custom-encrypted-message": "MyEncryptedMessage"  
+}</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>When the <code class="literal">mutable-content</code> property is detected by iOS, your service extension is activated and receives the notification before it's displayed to the user. A service extension is created in the same way as other extensions. You go to the project settings in Xcode, and in the sidebar that shows all targets, you click the <strong class="userinput"><code>+</code></strong> icon. In the dialog that appears, you select <span class="strong"><strong>Notification Service Extension</strong></span> and give it a name, and Xcode will provide you with the required boilerplate code. When you add a service extension, a sample extension is added to your project to illustrate what a service extension that updates the notification's body text looks like.</p><p>Imagine that the <span class="strong"><strong>Notifications</strong></span> app uses a backend server that sends push notifications when a certain reminder is due. To maintain the user's privacy, you send the following payload to the user:</p><pre class="programlisting">{  
+  "aps": {  
+    "alert": “A reminder is due.”,  
+    "badge": 1,  
+    "mutable-content": 1  
+  },  
+  "reminder-uuid": "D82ED5AE-C363-46AF-9B0D-301C2E21C58E"  
+}</pre><p>The preceding payload contains a <span>very</span><a id="id325333838" class="indexterm"></a> plain message and has the unique identifier for the reminder added as a custom property. You can implement a service extension to read that identifier, and retrieve the appropriate reminder from the Core Data store to show it to the user.</p><p>First, add a new <span class="strong"><strong>Notification Service Extension</strong></span> to the Notifications app and name it <code class="literal">ReminderContent</code>. After doing this, you need to make sure that the extension and the app can both access the Core Data database. Enable the <strong class="userinput"><code>App Groups</code></strong> capability for the app and create a new app group identifier. Make sure to enable <strong class="userinput"><code>App Groups</code></strong> for the extension as well, and add the extension to the group you just created for the app. Next, make sure the <code class="literal">.xcdatamodeld</code> and <code class="literal">PersistentHelper.swift</code> files are added to both the app and the extension target, and then update the code to load the persistent container in <code class="literal">PersistentHelper.swift</code> as follows:</p><pre class="programlisting">static let persistentContainer: NSPersistentContainer = {
+  let container = NSPersistentContainer(name: "Notifications")
+
+  let containerUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.donnywals.notifications-app")!
+  let databaseUrl = containerUrl.appendingPathComponent("Notifications.sqlite")
+  let description = NSPersistentStoreDescription(url: databaseUrl)
+  container.persistentStoreDescriptions = [description]
+
+  container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+
+  })
+  return container
+}()
+}</pre><p>The process of sharing a Core Data store, as outlined in the preceding section, is described in more detail in <a class="link" href="#" linkend="ch16">Chapter 16</a>, <span class="emphasis"><em>Streamlining Experiences With Siri</em></span>. Once you have set up the shared Core Data store, let's have a look at the service extension example that Xcode has generated for you.</p><p>The boilerplate code that Xcode generates for a  service extension is rather interesting. Two properties are created: <code class="literal">contentHandler</code> and <code class="literal">bestAttemptContent</code>. The properties are initially given a value in <code class="literal">didReceive(_:withContentHandler:)</code>. This method is called as soon as the extension is expected to handle the notification.</p><p>If the extension fails to call the callback handler in a timely manner, the system calls <code class="literal">serviceExtensionTimeWillExpire()</code>. This is essentially the last chance to quickly come up with content for the notification. If the extension still fails to call the callback, the pushed notification is displayed to the user in its original form. The default version of <code class="literal">serviceExtensionTimeWillExpire()</code>, generated by Xcode, simply calls the system callback with the notification immediately to ensure a timely response.</p><p>Add the following <span>implementation</span><a id="id325369924" class="indexterm"></a> for <code class="literal">didReceive(_:withContentHandler:)</code> to retrieve the identifier from the push message payload that was shown previously, and create a new notification with the appropriate reminder. Don't forget to import Core Data at the top of <code class="literal">NotificationService.swift</code>:</p><pre class="programlisting">override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -&gt; Void) {
+  self.contentHandler = contentHandler
+  bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
+
+  guard let identifier = request.content.userInfo["reminder-uuid"] as? String else {
+    contentHandler(request.content)
+    return
+  }
+
+  let predicate = NSPredicate(format: "identifier == %@", identifier)
+  let fetchRequest: NSFetchRequest&lt;Reminder&gt; = Reminder.fetchRequest()
+  fetchRequest.predicate = predicate
+
+  let moc = PersistentHelper.persistentContainer.viewContext
+  guard let results = try? moc.fetch(fetchRequest),
+    let reminder = results.first else {
+      contentHandler(request.content)
+      return
+  }
+
+  if let bestAttemptContent = bestAttemptContent {
+    bestAttemptContent.title = "Reminder"
+    bestAttemptContent.body = reminder.title ?? ""
+    bestAttemptContent.categoryIdentifier = "reminder"
+
+    contentHandler(bestAttemptContent)
+  }
+}</pre><p>The preceding code extracts data from the pushed notification to find the appropriate reminder to show to the user, and applies this information to the original notification. This means that the server can send a very candid notification that contains no information about the reminder itself, apart from its identifier. It isn't until the notification reaches the device that the notification is transformed and enriched to show the reminder details. Pretty neat, right?</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch18lvl2sec103"></a>Adding a content extension to your app</h3></div></div></div><p>The last feature of <span>notifications</span><a id="id325578343" class="indexterm"></a> that you will learn about in this chapter is a feature that can really make your notification experience pop. Content extensions enable developers to take custom notification actions to a whole new level. You already know that 3D-Touching a notification will make custom actions pop up. However, the notification maintains a standard look and feel, which might not be exactly what you want.</p><p>Consider receiving an invite for an event. The notification allows you to accept the invite, or decline it. Wouldn't it be great if your calendar popped up inside that notification as well, allowing you to check your calendar without having to actually open your calendar app, before responding to the invite? This is what content extensions are for. When implemented correctly, they can provide users with essential information relevant to the notification that's currently on display.</p><p> </p><p>To demonstrate the possibilities for content extensions, you will use the simple notification you created for the Notifications app, and take it to the next level. Earlier, you scheduled a local notification that simply notified the user about a reminder. The notification itself contained only the notification title and custom actions that allow the user to mark a task as finished.</p><p>You will now use a content extension to show more context about the reminder. The content extension will show the user when the notification was due, and whether it is currently pending. In addition to this, you will also update the notification UI when the user taps the <strong class="userinput"><code>Complete</code></strong> action, so the UI reflects the current reminder status. If a notification is no longer pending by the time the notification is delivered, the <strong class="userinput"><code>Complete</code></strong> action will be replaced with a <strong class="userinput"><code>Pending</code></strong> action.</p><p>Get started by adding a new extension to your project, and select the <strong class="userinput"><code>Notification Content Extension</code></strong> type. Make sure to add your extension to the shared <strong class="userinput"><code>App Group</code></strong> you have set up before, and add the Core Data model definition and <code class="literal">PersistentHelper</code> to the extension target.</p><p>When you add a content extension to your project, Xcode generates a small sample implementation for you, which you can use as a reference to see a minimal working implementation for a content extension. Open the <code class="literal">NotificationViewController</code> class and have a quick look at its content, before removing all generated code and adding the following outlets:</p><pre class="programlisting">@IBOutlet var reminderTitleLabel: UILabel!
+@IBOutlet var reminderDueDateLabel: UILabel!
+@IBOutlet var reminderStatusLabel: UILabel!</pre><p>Next, add the following implementation for <code class="literal">didReceive(_:)</code> to set the correct values on the outlets you added:</p><pre class="programlisting">func didReceive(_ notification: UNNotification) {
+  guard let identifier = notification.request.content.userInfo["reminder-uuid"] as? String
+    else { return }
+
+  let predicate = NSPredicate(format: "identifier == %@", identifier)
+  let fetchRequest: NSFetchRequest&lt;Reminder&gt; = Reminder.fetchRequest()
+  fetchRequest.predicate = predicate
+
+  let moc = PersistentHelper.persistentContainer.viewContext
+  guard let results = try? moc.fetch(fetchRequest),
+    let reminder = results.first
+    else { return }
+
+  let dateFormatter = DateFormatter()
+  dateFormatter.dateStyle = .long
+  dateFormatter.timeStyle = .medium
+
+  reminderTitleLabel.text = reminder.title
+  reminderDueDateLabel.text = dateFormatter.string(from: reminder.dueDate!)
+  reminderStatusLabel.text = reminder.isCompleted ? "Done" : "Pending"
+}</pre><p>In the storyboard for the <span>content</span><a id="id325618085" class="indexterm"></a> extension, remove the existing label and add three new labels, one for the reminder title, one for the due date, and one for the reminder status. Don't forget to connect the labels to their corresponding outlets, and remove the original outlet that was present in the storyboard. Giving the view controller a height of ±100 points will help you position the labels more easily. You can use stack views and <span>Auto Layout</span> to replicate the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/947d81f5-e3fc-454a-a85c-cd41cd75b3c8.png" /></div><p>Finally, open the content extension's <code class="literal">Info.plist</code> file. As mentioned before, content extensions are associated with notifications through categories. The <code class="literal">Info.plist</code> file is used to specify the category that the current extension should be associated with. Expand the <code class="literal">NSExtension</code> and <code class="literal">NSExtensionAttributes</code> properties to find the <code class="literal">UNNotificationExtensionCategory</code> property. Give this field a value of <code class="literal">reminder</code>.</p><p>You are now ready to take your extension for a spin. Select your extension from the drop-down menu next to the run and stop controls in the top-left corner of Xcode, and run your project. Xcode will ask you for an app to run; pick <strong class="userinput"><code>Notifications</code></strong>. Schedule a new reminder in the Notifications app and wait for a notification to appear.</p><p> </p><p>Once the notification appears, the following UI should be shown when you 3D-Touch on the notification:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/3f168ae9-a926-4ebf-bafe-77babb4c105c.png" /></div><p>If you've tested this example yourself, you may have noticed that the notification's custom view was too high initially, and that it animated to the correct size for properly fitting your notification contents. The notification determines its final size using <code class="literal">AutoLayout</code>, so the final size won't be known until the notification content is on screen. The animation doesn't look very good, but luckily, there is a way to minimize the amount of resizing that your content extension has to do.</p><p>In the extension's <code class="literal">Info.plist</code> file, there is a property called <code class="literal">UNNotificationExtensionInitialContentSizeRatio</code>, which sits right below the notification category property. The default value for this property is <code class="literal">1</code>, but for your notification, you could probably use a value that's a lot smaller. Try setting this value to <code class="literal">0.2</code> and run your extension again. It doesn't have to animate nearly as much because the initial height is now just 20% of the extension's width. Much better.</p><p> </p><p>You probably also noticed that the original notification contents are visible below the custom view. You can hide this default <span>content</span><a id="id325333905" class="indexterm"></a> by adding the <code class="literal">UNNotificationExtensionDefaultContentHidden</code> property to the extension's <code class="literal">Info.plist</code> file. All the properties you add for your extension should be added at the same level as <code class="literal">UNNotificationExtensionInitialContentSizeRatio</code> and <code class="literal">UNNotificationExtensionCategory</code>:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/4f6e29df-bb77-4f48-84a6-b66b8c5f4bcc.png" /></div><p>This wraps up the interface part of the content extension. In addition to showing a custom UI for a notification, content extensions can respond to actions that the user selects right inside the content extension itself. To do this, you should implement the <code class="literal">didReceive(_:completionHandler:)</code> delegate method in the extension. Once this method is implemented, the extension becomes responsible for all actions that are chosen by the user. This means that the extension should either handle all the actions, or that it should explicitly pass them on to the host app if the selected action can't be handled within the content extension.</p><p>After handling the incoming action, the notification extension determines what should happen next. This is done by calling the completion handler with a <code class="literal">UNNotificationContentExtensionResponseOption</code>. There are three options to choose from:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Dismiss the notification and do nothing</li><li style="list-style-type: disc">Dismiss the notification and forward the chosen action to the host app</li><li style="list-style-type: disc">Keep the extension active so the user can pick more actions or, using Apple's <span class="emphasis"><em>Messages</em></span> app as an example, so that the user can carry on the conversation inside the content extension</li></ul></div><p>Add the following implementation for <code class="literal">didReceive(_:completionHandler:)</code> to mark a reminder as completed when a user taps the <strong class="userinput"><code>Complete</code></strong> action:</p><pre class="programlisting">func didReceive(_ response: UNNotificationResponse, completionHandler completion: @escaping (UNNotificationContentExtensionResponseOption) -&gt; Void) {
+
+  guard let reminder = extractReminderFromResponse(response) else {
+    completion(.dismissAndForwardAction)
+    return
+  }
+
+  if response.actionIdentifier == "complete-reminder" {
+    setCompleted(true, forReminder: reminder, completionHandler: completion)
+  } else {
+    setCompleted(false, forReminder: reminder, completionHandler: completion)
+  }
+}
+
+func setCompleted(_ completed: Bool, forReminder reminder: Reminder, completionHandler completion: @escaping (UNNotificationContentExtensionResponseOption) -&gt; Void) {
+
+  reminder.managedObjectContext!.perform {
+    reminder.isCompleted = true
+    self.reminderStatusLabel.text = reminder.isCompleted ? "Done" : "Pending"
+
+    try! reminder.managedObjectContext!.save()
+
+    completion(.doNotDismiss)
+  }
+}
+
+func extractReminderFromResponse(_ response: UNNotificationResponse) -&gt; Reminder? {
+  let userInfo = response.notification.request.content.userInfo
+
+  guard let identifier = userInfo["reminder-uuid"] as? String else {
+      return nil
+  }
+
+  let fetchRequest: NSFetchRequest&lt;Reminder&gt; = Reminder.fetchRequest()
+  fetchRequest.predicate = NSPredicate(format: "identifier == %@", identifier)
+
+  let moc = PersistentHelper.persistentContainer.viewContext
+  guard let results = try? moc.fetch(fetchRequest),
+    let reminder = results.first else {
+      return nil
+  }
+
+  return reminder
+}</pre><p>The preceding code takes very similar approach to marking the reminder as completed to the one you implemented earlier in <code class="literal">AppDelegate</code>. Note that the reminder can also be marked as not completed. The reason this is taken into account is that once the user has tapped the <strong class="userinput"><code>Complete</code></strong> action, this action should be swapped out for a <strong class="userinput"><code>Pending</code></strong> action, in case the user marked the reminder as completed by accident.</p><p>Add the following code to replace the action that is shown underneath the <span>content</span><a id="id325333955" class="indexterm"></a> extension:</p><pre class="programlisting">func setNotificationForReminder(_ reminder: Reminder) {
+  let identifier = reminder.isCompleted ? "pending-reminder": "complete-reminder"
+  let label = reminder.isCompleted ? "Pending" : "Complete"
+
+  let action = UNNotificationAction(identifier: identifier, title: label, options: [])
+  extensionContext?.notificationActions = [action]
+}</pre><p>The preceding method creates and applies a new action, depending on the current reminder status. Add calls to this method after setting the current reminder's completion status and in the initial <code class="literal">didReceive(_:)</code> method, so that the correct action is shown in the event that the reminder associated with the notification has already been completed.</p><p>As you've seen just in the preceding examples, content extensions are not complex to implement, yet they are amazingly powerful. You can add an entirely new layer of interaction and increase the relevance of notifications by implementing a content extension, and it is strongly recommended that you always consider ways to implement extensions for your notifications to provide the user with rich information about their notification as quickly as possible.</p></div></div>

@@ -1,0 +1,28 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec46"></a>Cognitive search – adding AI to the indexing workload</h2></div></div><hr /></div><p>When creating and <span>managing</span><a id="id325120005" class="indexterm"></a> an index, you always have to <span>make</span><a id="id325120001" class="indexterm"></a> sure that you have selected all required fields and marked them as searchable where needed. Additionally, we are limited to the current service functionalities, so we cannot use things such as image or natural language processing. Fortunately, Azure Service is about to start supporting the Cognitive Search feature, which adds AI to your indexing operations, allowing for richer analysis using more vectors. In this chapter, you will learn how to configure it, so you can start using it from the very beginning.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec44"></a>Configuring Cognitive Search</h3></div></div></div><p>Cognitive Search can be configured <span>when</span><a id="id325117162" class="indexterm"></a> importing data for your service. When you click on the <strong class="userinput"><code>Import data</code></strong> button, you will see that one of the available sections is that feature exactly:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/d8a0d8a2-67ef-4cff-8bb9-272bad35451c.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note80"></a>Note</h3><p>At the time of writing, this feature is available only in the South Central US and Western Europe regions.</p></div><p>There is a list of Cognitive Skills that can be used for indexing your data. Whether you use one or not depends on your actual requirements—for the purpose of this exercise, I selected <strong class="userinput"><code>Detect language</code></strong>. You can customize the name of a field also; this could be crucial if your index will contain another one named the same, as it will be added to the result of a query. When you finish configuring your index, you can compare the previous one with the new one enriched by AI:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/2a352b6c-65df-407f-b60a-87a7b3c06587.png" /></div><p>As you can see, we are missing the <strong class="userinput"><code>language</code></strong> field here since we did not use it. Let's compare it with the newest index:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/2f65b7cb-a46b-4d89-bd9f-3ee00ac1a5bd.png" /></div><p>Additionally, when I query a service using a <span>newer</span><a id="id325697001" class="indexterm"></a> index, I will get a result containing the <strong class="userinput"><code>language</code></strong> field filled:</p><pre class="programlisting">{
+(...)
+"location": {
+  "type": "Point",
+  "coordinates": [
+    -122.388,
+    47.576
+  ],
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "EPSG:4326"
+    }
+  }
+},
+"price": 762048,
+"thumbnail": "https://searchdatasets.blob.core.windows.net/images/bd2bt2apt.jpg",
+"tags": [
+  "condominium",
+  "dream home",
+  "lake access",
+  "no outlet",
+  "miele appliances",
+  "wall of windows",
+  "guest room"
+],
+"language": "en"
+}</pre></div></div>

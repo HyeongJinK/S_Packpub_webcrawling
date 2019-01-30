@@ -1,0 +1,15 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec111"></a>Clicking on the Canvas</h2></div></div><hr /></div><p>The next step is to <span>capture</span><a id="id325358908" class="indexterm"></a> and read the mouse coordinates of a user click from the offscreen framebuffer. We can use the standard <code class="literal">onmouseup</code> event from the <code class="literal">canvas</code> element in our webpage:</p><pre class="programlisting">const canvas = document.getElementById('webgl-canvas');
+
+canvas.onmouseup = event =&gt; {
+  // capture coordinates from the `event`
+};</pre><p>Since the given <code class="literal">event</code> returns the mouse coordinates (<code class="literal">clientX</code> and <code class="literal">clientY</code>) from the top-left rather than the coordinates with respect to the <code class="literal">canvas</code>, we need to leverage the DOM hierarchy to know the total offset that we have around the <code class="literal">canvas</code> element.</p><p>We can do this with a code fragment inside the <code class="literal">canvas.onmouseup</code> function:</p><pre class="programlisting">let top = 0,
+left = 0;
+
+while (canvas &amp;&amp; canvas.tagName !== 'BODY') {
+  top += canvas.offsetTop;
+left += canvas.offsetLeft;
+canvas = canvas.offsetParent;
+}</pre><p>The following diagram shows how we use the offset calculation to obtain the clicked <code class="literal">canvas</code> coordinates:</p><div class="mediaobject"><img src="/graphics/9781788629690/graphics/bc8c3e8b-a53b-44ed-b6bc-8ddeab3fef13.png" /></div><pre class="programlisting">const x = ev.clientX - (a + b + c);
+const y = canvasHeight - (ev.clientY - (d + e + f));</pre><p>Also, we should take any possible page offset into account. The page offset is the result of scrolling, which affects the calculation of the coordinates. We want to obtain the same <span>coordinates</span><a id="id325617284" class="indexterm"></a> for the <code class="literal">canvas</code> every time, regardless of any scrolling. To do so, we add the following two lines of code just before calculating the clicked <code class="literal">canvas</code> coordinates:</p><pre class="programlisting">left += window.pageXOffset;
+top -= window.pageYOffset;</pre><p>Then, we calculate the <code class="literal">canvas</code> coordinates:</p><pre class="programlisting">x = ev.clientX - left;
+y = canvas.height - (ev.clientY - top);</pre><p>Remember that unlike the browser window, the <code class="literal">canvas</code> coordinates (and also the framebuffer coordinates for this purpose) start in the lower-left corner.</p></div>

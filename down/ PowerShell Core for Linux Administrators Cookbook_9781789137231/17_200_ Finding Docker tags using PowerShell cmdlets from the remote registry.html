@@ -1,0 +1,107 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch17lvl1sec193"></a>Finding Docker tags using PowerShell cmdlets from the remote registry</h2></div></div><hr /></div><p>There is no direct way to list all of the tags of the repository using Docker commands or using PowerShell cmdlets. In some cases, it is required to download the specific images. In <span>this</span><a id="id325677261" class="indexterm"></a> recipe, you'll find out how you can list all of the tags of the repository using PowerShell as well as using the <code class="literal">sed</code> and <code class="literal">awk</code> commands.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch17lvl2sec516"></a>How to do it…</h3></div></div></div><p>We will perform two activities in this recipe, one using PowerShell cmdlets and the other using Docker CLI commands:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Define a variable, called <code class="literal">repo</code>, which contains the repository names. This will become part of the repo URLs:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; $repo='centos'</strong></span>
+
+</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Use the <code class="literal">Invoke-WebRequest</code> cmdlet to extract useful information from a web page, and use the <code class="literal">ConvertFrom-Json</code> cmdlet to convert the web page data from JSON into a PowerShell object:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; Invoke-WebRequest https://registry.hub.docker.com/v1/repositories/$repo/tags | ConvertFrom-Json | Select-Object -Property *</strong></span></pre><p> </p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Assign the output to a variable, say, <code class="literal">$result</code>:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; $result = Invoke-WebRequest https://registry.hub.docker.com/v1/repositories/$repo/tags | ConvertFrom-Json | Select-Object -Property *</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>There is a lot of data that comes in. Initially, none of it seems useful. However, the <code class="literal">SyncRoot</code> property seems to have what we may need. Pick only the <code class="literal">SyncRoot</code> object, and select the <code class="literal">Name</code> property:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; $result.SyncRoot | Select-Object Name</strong></span>
+      name  
+      latest
+      5
+      5.11
+      6
+      6.6
+      6.7
+      6.8
+      6.9
+      7
+      7.0.1406
+      7.1.1503
+      7.2.1511
+      7.3.1611
+      7.4.1708
+      centos5
+      centos5.11
+      centos6
+      centos6.6
+      centos6.7
+      centos6.8
+      centos6.9
+      centos7
+      centos7.0.1406
+      centos7.1.1503
+      centos7.2.1511
+      centos7.3.1611
+      centos7.4.1708</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>The entire command can be executed in a single line, as follows:</li></ol></div><pre class="programlisting">
+<span class="strong"><strong>PS&gt; (Invoke-WebRequest https://registry.hub.docker.com/v1/repositories/$repo/tags | ConvertFrom-Json | Select-Object -Property *).SyncRoot.Name</strong></span>
+      latest
+      5
+      5.11
+      6
+      6.6
+      6.7
+      6.8
+      6.9
+      7
+      7.0.1406
+      7.1.1503
+      7.2.1511
+      7.3.1611
+      7.4.1708
+      centos5
+      centos5.11
+      centos6
+      centos6.6
+      centos6.7
+      centos6.8
+      centos6.9
+      centos7
+      centos7.0.1406
+      centos7.1.1503
+      centos7.2.1511
+      centos7.3.1611
+      centos7.4.1708</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Let's wrap this into a simple function:</li></ol></div><pre class="programlisting">function Get-AllImages {
+    param(
+        # Get the base image name
+        [Parameter(Mandatory=$true)]
+        [string]
+        $Repo
+    )
+    begin {
+        $UriTest = Invoke-WebRequest "https://registry.hub.docker.com/v1/repositories/$Repo/tags" -DisableKeepAlive -UseBasicParsing
+        if ($UriTest.StatusCode -eq 200) {
+            # Just proceed
+        }
+        else {
+            break
+        }
+    }
+    process {
+        (Invoke-WebRequest "https://registry.hub.docker.com/v1/repositories/$Repo/tags" | ConvertFrom-Json).SyncRoot.Name
+    }
+}
+
+# Call the function as `Get-AllImages -Repo centos`</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Now, let's look at how we can execute this in a Bash shell with the <code class="literal">sed</code> and <code class="literal">awk</code> programs:</li></ol></div><pre class="programlisting"><span class="strong"><strong># wget -q</strong></span> https://registry.hub.docker.com/v1/repositories/centos/tags -O - | sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n' | awk -F: '{print $3}'
+latest
+5
+5.11
+6
+6.6
+6.7
+6.8
+6.9
+7
+7.0.1406
+7.1.1503
+7.2.1511
+7.3.1611
+7.4.1708
+centos5
+centos5.11
+centos6
+centos6.6
+centos6.7
+centos6.8
+centos6.9
+centos7
+centos7.0.1406
+centos7.1.1503
+centos7.2.1511
+centos7.3.1611
+centos7.4.1708</pre><p> </p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch17lvl2sec517"></a>How it works…</h3></div></div></div><p>As an example, use a JSON interface to query the <a class="ulink" href="http://registry.hub.docker.com" target="_blank">registry.hub.docker.com</a> web page. This permits the use of <code class="literal">Invoke-WebRequest</code> and returns a JSON-formatted string. The <code class="literal">invoke-WebRequest</code> cmdlet performs a lookup of the specified URL. In this case, it's the CentOS tag's web page and returns a name field. The query contains the website, the API, the name, and the format that's been requested. After execution, the data is converted from JSON using <code class="literal">ConvertFrom-Json</code>.</p><p>In the function, we create a simple <code class="literal">begin</code> block with a ping test to the URI. We look for the HTML status code (<code class="literal">200</code> stands for success). Once done, we fetch the JSON from the page, and then strip out only the <code class="literal">name</code> field to get a list of all of the tags that are available for CentOS.</p><p>Next, we will look at how we can pull the tags using the <span>Docker</span><a id="id325906053" class="indexterm"></a> CLI <code class="literal">sed</code> and <code class="literal">awk</code> commands. The <code class="literal">wget</code> download options, <code class="literal">-O</code> and <code class="literal">-</code>, are used to write the document to files.</p><p><code class="literal">-</code> is used as file output. The web page tags are printed to standard output. The output is then processed to fetch the desired result using <code class="literal">sed</code>. You can see that the <code class="literal">sed</code> data selection process is not as easy to understand as PowerShell, and writing conditional logic requires effort.</p><p>This recipe shows how comfortable PowerShell is with structured data, and how, with very limited knowledge and after working with a few sample examples, PowerShell starts to seem much friendlier.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch17lvl2sec518"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Try <code class="literal">Get-Help Invoke-WebRequest -Detailed</code> to learn more about its parameters.</li><li style="list-style-type: disc">Check out more <code class="literal">wget</code> examples (<a class="ulink" href="https://gist.github.com/bueckl/bd0a1e7a30bc8e2eeefd" target="_blank">https://gist.github.com/bueckl/bd0a1e7a30bc8e2eeefd</a>).</li></ul></div></div></div>

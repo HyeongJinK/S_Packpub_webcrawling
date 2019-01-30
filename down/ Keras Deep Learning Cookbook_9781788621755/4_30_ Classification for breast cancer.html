@@ -1,0 +1,207 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec36"></a>Classification for breast cancer</h2></div></div><hr /></div><p>We will work on a problem of classification to <span>predict</span><a id="id324812542" class="indexterm"></a> whether a cancer is benign or malignant. We will drive through developing an algorithm that uses neural networks to accurately predict (~94 percent accuracy) if a breast cancer tumor is benign or malignant, basically teaching a machine to predict breast cancer. This may seem difficult, but using Keras APIs, we will have this seemingly complex model ready for use. The <span>dataset</span><a id="id325546961" class="indexterm"></a> description is provided in the following content:</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note14"></a>Note</h3><p><span class="strong"><strong>Breast Cancer Wisconsin (Diagnostic) dataset</strong></span>:</p><p>Features are computed from a digitized image of a <span class="strong"><strong>fine needle aspirate</strong></span> (<span class="strong"><strong>FNA</strong></span>) of a breast mass. They describe characteristics of the cell nuclei present in the image. A few of the images can be found at <a class="ulink" href="http://www.cs.wisc.edu/~street/images/" target="_blank">http://www.cs.wisc.edu/~street/images/</a>.</p><p>Class distribution: 357 benign, 212 malignant.</p><p>This database is also available via the UW CS FTP server: <code class="literal">ftp ftp.cs.wisc.edu cd math-prog/cpo-dataset/machine-learn/WDBC/</code></p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec42"></a>How to do it...</h3></div></div></div><p>In this recipe, we will develop a modeling pipeline for classification which tries to classify cancer type. The modeling pipelines use the Adam <span>model</span><a id="id325547005" class="indexterm"></a> written using the Keras functional API. The pipelines also use various data manipulation libraries. We will be using Keras; more specifically, we will be using <code class="literal">sklearn</code>, <code class="literal">numpy</code>, and <code class="literal">pandas</code> to create our model.</p><p>Import the following libraries for use. pandas is a data analysis library in Python. The <code class="literal">sklearn</code> is a machine learning library that is famous for data mining and analysis. Keras is a neural network API that will help us create the actual neural network:</p><pre class="programlisting">import pandas as pd
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from keras.wrappers.scikit_learn import KerasClassifier
+from keras.models import Sequential, load_model
+from keras.layers import Dense
+from sklearn.metrics import confusion_matrix</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec34"></a>Data processing</h4></div></div></div><p>It is crucial that we serve the <span>right</span><a id="id325633159" class="indexterm"></a> data as input to the neural network architecture for training and validation. We need to make sure that data has useful scale and format and even that meaningful features are included. This will lead to more consistent and better results.</p><p>Perform the following steps for data preprocessing:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Load the dataset using pandas</li><li>Split the dataset into the input and output variables for machine learning</li><li>Apply a preprocessing transform to the input variables</li><li>Summarize the data to show the change</li></ol></div><p>We use the panda's library to load data and review the shape of our dataset:</p><pre class="programlisting">dataset = pd.read_csv('/deeplearning/google/kaggle/breast-cancer/data.csv')
+
+# get dataset details
+print(dataset.head(5))
+print(dataset.columns.values)
+print(dataset.info())
+print(dataset.describe())</pre><p>The output is shown in the following code:</p><pre class="programlisting">id diagnosis     ...       fractal_dimension_worst  Unnamed: 32
+0    842302         M     ...                       0.11890          NaN
+1    842517         M     ...                       0.08902      
+NaN
+2  84300903         M     ...                       0.08758          NaN
+3  84348301         M     ...                       0.17300          NaN
+4  84358402         M     ...                       0.07678          NaN
+Data columns (total 33 columns):
+id                         569 non-null int64
+diagnosis                  569 non-null object
+radius_mean                569 non-null float64
+texture_mean               569 non-null float64
+perimeter_mean             569 non-null float64
+area_mean                  569 non-null float64
+smoothness_mean            569 non-null float64
+compactness_mean           569 non-null float64
+concavity_mean             569 non-null float64
+concave points_mean        569 non-null float64
+symmetry_mean              569 non-null float64
+fractal_dimension_mean     569 non-null float64
+radius_se                  569 non-null float64
+texture_se                 569 non-null float64
+perimeter_se               569 non-null float64
+area_se                    569 non-null float64
+smoothness_se              569 non-null float64
+compactness_se             569 non-null float64
+concavity_se               569 non-null float64
+concave points_se          569 non-null float64
+symmetry_se                569 non-null float64
+fractal_dimension_se       569 non-null float64
+radius_worst               569 non-null float64
+texture_worst              569 non-null float64
+perimeter_worst            569 non-null float64
+area_worst                 569 non-null float64
+smoothness_worst           569 non-null float64
+compactness_worst          569 non-null float64
+concavity_worst            569 non-null float64
+concave points_worst       569 non-null float64
+symmetry_worst             569 non-null float64
+fractal_dimension_worst    569 non-null float64
+Unnamed: 32                0 non-null float64
+dtypes: float64(31), int64(1), object(1)
+memory usage: 146.8+ KB
+None
+id     ...       Unnamed: 32
+count  5.690000e+02     ...               0.0
+mean   3.037183e+07     ...               NaN
+std    1.250206e+08     ...               NaN
+min    8.670000e+03     ...               NaN
+25%    8.692180e+05     ...               NaN
+50%    9.060240e+05     ...               NaN
+75%    8.813129e+06     ...               NaN
+max    9.113205e+08     ...               NaN</pre><p>The output describes the starting values, features, missing values, and distribution of numerical features of the dataset.</p><p>In order to teach our machine how to predict whether  a tumor is malignant or benign, we need to input it a dataset of previously classified tumors. We have 33 columns <span>where</span><a id="id325637129" class="indexterm"></a> the last column, <code class="literal">Unnamed: 32</code>, contains all null values, which will be excluded. Our label or the class is called <span class="strong"><strong>diagnosis</strong></span>. We will also not include <code class="literal">id</code> in our training set, since it does not have any effect on the classification. Thus, we are <span>left</span><a id="id325637148" class="indexterm"></a> with 30 features that are all of type <code class="literal">float64</code> and do not contain missing values. We will separate the features and labels:</p><pre class="programlisting"># data cleansing
+X = dataset.iloc[:, 2:32]
+print(X.info())
+print(type(X))</pre><pre class="programlisting">y = dataset.iloc[:, 1]
+print(y)</pre><p>The output is shown in the following code:</p><pre class="programlisting">Data columns (total 30 columns):
+radius_mean                569 non-null float64
+texture_mean               569 non-null float64
+...
+concave points_worst       569 non-null float64
+symmetry_worst             569 non-null float64
+fractal_dimension_worst    569 non-null float64
+dtypes: float64(30)
+memory usage: 133.4 KB
+None
+&lt;class 'pandas.core.frame.DataFrame'&gt;
+0      M
+1      M
+2      M
+3      M
+4      M</pre><p>Mark that <code class="literal">diagnosis</code> contains <code class="literal">M</code> or <code class="literal">B</code> to represent a malignant or benign tumor. We will encode them to 0 and 1 using <code class="literal">LabelEncoder()</code>:</p><pre class="programlisting">'''encode the labels to 0, 1 respectively'''
+print(y[100:110])
+encoder = LabelEncoder()
+y = encoder.fit_transform(y)
+print([y[100:110]])</pre><p>The output is shown in the following code:</p><pre class="programlisting">Name: diagnosis, dtype: object
+[array([1, 0, 0, 0, 0, 1, 0, 0, 1, 0])]</pre><p>We now split data into training and validation sets. The training dataset is used to fit the model and the validation dataset is used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters; 80 percent of the data is for training and the other 20% for validation:</p><pre class="programlisting"># lets split dataset now
+XTrain, XTest, yTrain, yTest = train_test_split(X, y, test_size=0.2, random_state=0)</pre><p>Now let's apply feature scaling. Scaling makes sure <span>that</span><a id="id325637516" class="indexterm"></a> simply because certain features are large, the model won't lead to using them as the main predictor:</p><pre class="programlisting"># feature scaling
+scalar = StandardScaler()
+XTrain = scalar.fit_transform(XTrain)
+XTest = scalar.transform(XTest)</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec35"></a>Modeling</h4></div></div></div><p>Let's now create a model and add layers to it.. We can work around and modify the number of units, but if we are not sure what number to initialize with then simply <span>initialize</span><a id="id325637537" class="indexterm"></a> the units of all layers except the last one with the (<span class="emphasis"><em>number of features + number of output nodes/2</em></span>), which equals 15 in our case. As explained in the following points, we have to provide an input dimension for the first layer only. <code class="literal">relu</code> activation refers to the rectified linear unit and <code class="literal">sigmoid</code> refers to the <code class="literal">sigmoid</code> activation function. With the help of the <code class="literal">sigmoid</code> activation function, we can get the probabilities of the classification, which might be beneficial in some cases to conduct further study.</p><p>For every model, there are hyperparameters that are set before the learning process starts. Let's first find the hyperparameters using which the model can give more precise predictions. We will tune <code class="literal">batch_size</code>, <code class="literal">epochs</code>, and <code class="literal">optimizer</code>. This will take some time to run.</p><p>Tuning is a final step in the pipeline of machine learning before showing results. It is called <span class="strong"><strong>hyperparameter optimization</strong></span>, where the algorithm parameters are referred to as hyperparameters, whereas <span>the</span><a id="id325637683" class="indexterm"></a> coefficients are referred to as <span class="strong"><strong>parameters</strong></span>. Optimization implies <span>the</span><a id="id325637693" class="indexterm"></a> searching nature of the problem. The grid search is a method for parameter tuning that will build and evaluate a model for the various combination of algorithm parameters specified in a grid:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><code class="literal">GridSearchCV</code> provides an exhaustive search over specified parameter values for an estimator:</li></ol></div><pre class="programlisting"># choosing hyper parameters
+def classifier(optimizer):
+    model = Sequential()
+    model.add(Dense(units=16, kernel_initializer='uniform', activation='relu', input_dim=30))
+    model.add(Dense(units=8, kernel_initializer='uniform', activation='relu'))
+    model.add(Dense(units=6, kernel_initializer='uniform', activation='relu'))
+    model.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+
+model = KerasClassifier(build_fn=classifier)
+params = {'batch_size': [1, 5], 'epochs': [100, 120], 'optimizer': ['adam', 'rmsprop']}
+gridSearch = GridSearchCV(estimator=model, param_grid=params, scoring='accuracy', cv=10)
+gridSearch = gridSearch.fit(XTrain, yTrain)
+score = gridSearch.best_score_
+bestParams = gridSearch.best_params_
+print(score)
+print(bestParams)</pre><p>The output is shown in the following code:</p><pre class="programlisting">1/455 [..............................] - ETA: 3:36 - loss: 0.6932 - acc: 0.0000e+00
+44/455 [=&gt;............................] - ETA: 4s - loss: 0.6928 - acc: 0.5227      
+88/455 [====&gt;.........................] - ETA: 2s - loss: 0.6912 - acc: 0.6136
+130/455 [=======&gt;......................] - ETA: 1s - loss: 0.6849 - acc: 0.7154
+166/455 [=========&gt;....................] - ETA: 1s - loss: 0.6723 - acc: 0.7530
+200/455 [============&gt;.................] - ETA: 0s - loss: 0.6613 - acc: 0.7850
+
+</pre><pre class="programlisting"><span class="strong"><strong>best_parameters</strong></span>: {'batch_size': 1, 'epochs': 100, 'optimizer': 'rmsprop'}
+<span class="strong"><strong>best_accuracy</strong></span>: 0.998021978022</pre><p> </p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Now let's build the neural network with the parameters that we found earlier:</li></ol></div><pre class="programlisting"># modeling
+model = Sequential()
+model.add(Dense(units=16, kernel_initializer='uniform', activation='relu', input_dim=30))
+model.add(Dense(units=8, kernel_initializer='uniform', activation='relu'))
+model.add(Dense(units=6, kernel_initializer='uniform', activation='relu'))
+model.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Compile the classifier using the <code class="literal">adam</code> optimizer and using <code class="literal">binary_crossentropy</code> as a loss function, since classification is binary; that is, there are only two classes, <code class="literal">M</code> or <code class="literal">B</code>:</li></ol></div><pre class="programlisting">model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Now let's fit the data. We will train it with a batch size of <code class="literal">1</code> and <code class="literal">120</code> epochs and save the model for future classifications:</li></ol></div><pre class="programlisting">model.fit(XTrain, yTrain, batch_size=1, epochs=120)
+model.save('./cancer_model.h5')</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>We will not use the model to classify and test the dataset, calculating the training accuracy and confusion matrix:</li></ol></div><pre class="programlisting">yPred = model.predict(XTest)
+yPred = [1 if y &gt; 0.5 else 0 for y in yPred]
+matrix = confusion_matrix(yTest, yPred)
+print(matrix)
+accuracy = (matrix[0][0] + matrix[1][1]) / (matrix[0][0] + matrix[0][1] + matrix[1][0] + matrix[1][1])
+print("Accuracy: " + str(accuracy * 100) + "%")</pre><p>The output is shown in <span>the</span><a id="id325638088" class="indexterm"></a> following code:</p><pre class="programlisting">[[64 3]
+[ 3 44]]
+<span class="strong"><strong>Accuracy</strong></span>: 94.73684210526315%</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec43"></a>Full code listing </h3></div></div></div><p>Following is <span>the</span><a id="id325638113" class="indexterm"></a> full code listing of the recipe <span class="emphasis"><em>Classification for breast cancer</em></span>:</p><pre class="programlisting">import pandas as pd
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from keras.wrappers.scikit_learn import KerasClassifier
+from keras.models import Sequential, load_model
+from keras.layers import Dense
+from sklearn.metrics import confusion_matrix
+
+dataset = pd.read_csv('/deeplearning/google/kaggle/breast-cancer/data.csv')
+
+<span class="strong"><strong># get dataset details</strong></span>
+print(dataset.head(5))
+print(dataset.columns.values)
+print(dataset.info())
+print(dataset.describe())
+
+<span class="strong"><strong># data cleansing</strong></span>
+X = dataset.iloc[:, 2:32]
+print(X.info())
+print(type(X))
+y = dataset.iloc[:, 1]
+print(y)
+
+<span class="strong"><strong>'''encode the labels to 0, 1 respectively'''</strong></span>
+print(y[100:110])
+encoder = LabelEncoder()
+y = encoder.fit_transform(y)
+print([y[100:110]])
+
+<span class="strong"><strong># lets split dataset now</strong></span>
+XTrain, XTest, yTrain, yTest = train_test_split(X, y, test_size=0.2, random_state=0)
+
+# feature scaling
+scalar = StandardScaler()
+XTrain = scalar.fit_transform(XTrain)
+XTest = scalar.transform(XTest)
+
+<span class="strong"><strong># choosing hyper parameters</strong></span>
+'''
+def classifier(optimizer):
+    model = Sequential()
+    model.add(Dense(units=16, kernel_initializer='uniform', activation='relu', input_dim=30))
+    model.add(Dense(units=8, kernel_initializer='uniform', activation='relu'))
+    model.add(Dense(units=6, kernel_initializer='uniform', activation='relu'))
+    model.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+
+model = KerasClassifier(build_fn=classifier)
+params = {'batch_size': [1, 5], 'epochs': [100, 120], 'optimizer': ['adam', 'rmsprop']}
+gridSearch = GridSearchCV(estimator=model, param_grid=params, scoring='accuracy', cv=10)
+gridSearch = gridSearch.fit(XTrain, yTrain)
+score = gridSearch.best_score_
+bestParams = gridSearch.best_params_
+print(score)
+print(bestParams)
+'''
+
+<span class="strong"><strong># modeling</strong></span>
+model = Sequential()
+model.add(Dense(units=16, kernel_initializer='uniform', activation='relu', input_dim=30))
+model.add(Dense(units=8, kernel_initializer='uniform', activation='relu'))
+model.add(Dense(units=6, kernel_initializer='uniform', activation='relu'))
+model.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.fit(XTrain, yTrain, batch_size=1, epochs=120)
+model.save('/Users/manpreet.singh/git/deeplearning/google/kaggle/breast-cancer/cancer_model.h5')
+yPred = model.predict(XTest)
+yPred = [1 if y &gt; 0.5 else 0 for y in yPred]
+matrix = confusion_matrix(yTest, yPred)
+print(matrix)
+accuracy = (matrix[0][0] + matrix[1][1]) / (matrix[0][0] + matrix[0][1] + matrix[1][0] + matrix[1][1])
+print("<span class="strong"><strong>Accuracy</strong></span>: " + str(accuracy * 100) + "%")</pre></div></div>

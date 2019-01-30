@@ -1,0 +1,125 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec68"></a>Flask Admin</h2></div></div><hr /></div><p>In <a class="link" href="#" linkend="ch06"><span>Chapter 6</span></a>, <span class="emphasis"><em>Securing Your App</em></span>, we <span>created</span><a id="id325368996" class="indexterm"></a> an interface to allow users to create and edit blog posts without having to use the CLI. This was adequate to demonstrate the security measures presented in the chapter, but there is still no way for posts to be deleted, or to assign tags to posts, using the interface. We also do not have a way to delete or edit comments that is hidden from regular users. What our app needs is a fully featured administrator interface, in the same vein as the WordPress interface. This is such a common requirement for apps that a Flask extension, called Flask Admin, was produced to help developers create administrator interfaces easily. Once more, we can find Flask Admin on the list of dependencies in <code class="literal">requirements.txt</code>.</p><p>Since we are going to create a full administrator interface, with forms, views and templates, Flask Admin is a good candidate for a new module on our application. First, take a look at our new application structure:</p><pre class="programlisting">./
+  webapp/
+<span class="strong"><strong>admin/</strong></span>
+<span class="strong"><strong>      __init__.py</strong></span>
+<span class="strong"><strong>      forms.py</strong></span>
+<span class="strong"><strong>      controllers.py</strong></span>
+    api/
+    auth/
+    blog/
+    templates/
+<span class="strong"><strong>admin/</strong></span>
+<span class="strong"><strong>          ...
+</strong></span>      auth/
+      blog/
+      ...
+ ...</pre><p>As usual, we need to create the  <code class="literal">create_module</code> function in our <code class="literal">webapp/admin/__init__.py</code> file:</p><pre class="programlisting">...
+from flask_admin import Admin 
+...
+admin = Admin()
+
+def create_module(app, **kwargs):
+    admin.init_app(app)
+    ....
+
+</pre><p>Then, call the <code class="literal">create_module</code> function in the main <code class="literal">webapp/__init__.py</code> file:</p><pre class="programlisting"> 
+def create_app(object_name): 
+    ...
+    from .admin import create_module as admin_create_module
+    ...
+    admin_create_module(app)</pre><p>Flask Admin works by registering view classes on the <code class="literal">admin</code> object that define one or more routes. Flask Admin has three main types of views: <code class="literal">ModelView</code>, <code class="literal">FileAdmin</code>, and <code class="literal">BaseView</code>. Next, we are going to see how to use these views and customize them.</p><p> </p><p> </p><p>Finally, we add a navigation bar option to the admin interface, and only render it to the users that have the admin role. So, in the <code class="literal">templates/navbar.html</code> file, insert the following:</p><pre class="programlisting">{% <span class="strong"><strong>if current_user.is_authenticated and current_user.has_role('admin')</strong></span> %}
+&lt;li class="nav-item"&gt;
+    &lt;a class="nav-link" href="{{url_for('admin.index')}}"&gt;
+    Admin&lt;span class="sr-only"&gt;(current)&lt;/span&gt;&lt;/a&gt;
+&lt;/li&gt;
+{% endif %}</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec69"></a>Creating basic admin pages</h3></div></div></div><p>The <code class="literal">BaseView</code> class allows normal Flask <span>pages</span><a id="id325455539" class="indexterm"></a> to be added to your <code class="literal">admin</code> interface. This is normally the least used type of view in Flask Admin setups, but if you wish to include something like custom reporting with JavaScript charting libraries, you can do it with a base view alone. As expected, we are going to define our views in the <code class="literal">admin/controllers.py</code> file:</p><pre class="programlisting">from flask.ext.admin import BaseView, expose 
+ 
+class CustomView(BaseView): 
+    @expose('/')
+    @login_required
+    @has_role('admin')
+    def index(self): 
+        return self.render('admin/custom.html') 
+ 
+    @expose('/second_page')
+    @login_required
+    @has_role('admin')
+    def second_page(self):
+        return self.render('admin/second_page.html') </pre><p>In a subclass of <code class="literal">BaseView</code>, multiple views can be registered at once, if they are defined together. Keep in mind, however, that each subclass of <code class="literal">BaseView</code> requires at least one exposed method on the <code class="literal">/</code> path. Also, methods other than the method within the <code class="literal">/</code>path will not be in the navigation of the administrator interface, and will have to be linked to the other pages in the class. The expose and <code class="literal">self.render</code> functions work exactly the same as their counterparts in the normal Flask API.</p><p>To have your templates inherit the default styles of Flask Admin, we create a new folder in the templates directory, named <code class="literal">admin</code>, containing a file named <code class="literal">custom.html</code>, and add the following Jinja code:</p><pre class="programlisting">{% extends 'admin/master.html' %} 
+{% block body %} 
+    This is the custom view! 
+    &lt;a href="{{ url_for('.second_page') }}"&gt;Link&lt;/a&gt; 
+{% endblock %} </pre><p>To view this template, an instance of <code class="literal">CustomView</code> needs to be registered on the <code class="literal">admin</code> object. This will be done in the <code class="literal">create_module</code> function, following the same structure and logic as for the API module:</p><pre class="programlisting">...
+from .controllers import CustomView 
+...
+def create_module(object_name):
+    ,,,
+    admin.add_view(CustomView(name='Custom'))</pre><p>The <code class="literal">name</code> keyword argument specifies that the label, used in the navigation bar on the top of the <code class="literal">admin</code> interface, should read <code class="literal">Custom</code>. After you have registered <code class="literal">CustomView</code> to the <code class="literal">admin</code> object, your <code class="literal">admin</code> interface should now have a second link in the navigation bar, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/86c2b790-ad12-4e8b-a4e5-d736581765c2.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec70"></a>Creating database admin pages</h3></div></div></div><p>The main power of Flask Admin comes from the fact that you can automatically create administrator pages for your data by giving Flask Admin your SQLAlchemy or MongoEngine models. Creating these <span>pages</span><a id="id325571322" class="indexterm"></a> is very easy; in <code class="literal">admin.py</code>, you just need to write the following code:</p><pre class="programlisting">from flask_admin.contrib.sqla import ModelView 
+# or, if you use MongoEngine 
+# from flask_admin.contrib.mongoengine import ModelView 
+ 
+class CustomModelView(ModelView): 
+    pass</pre><p>Then, in <code class="literal">admin/__init__.py</code>, register  the database <code class="literal">session</code> object and the class with the model you wish to use, as follows:</p><pre class="programlisting">from flask_admin import Admin
+from .controllers import CustomView, CustomModelView 
+from webapp.blog.models import db, Reminder, Post, Comment, Tag
+from webapp.auth.models import User, Role 
+
+admin = Admin()
+def create_module(app, **kwargs): 
+    admin.init_app(app)
+    admin.add_view(CustomView(name='Custom'))
+    models = [User, Role, Comment, Tag, Reminder]
+ 
+    for model in models: 
+       <span class="strong"><strong>admin.add_view(CustomModelView(model, db.session, 
+       category='models'))</strong></span>
+...</pre><p>The <code class="literal">category</code> keyword tells Flask Admin to put all of the views with the same category value into the same drop-down menu on the navigation bar. If you go to the browser now, you will see a new drop-down menu labeled <strong class="userinput"><code>Models</code></strong>, with links to the admin pages of all of the tables in the database, as follows:</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/7b56e513-944c-45b3-bee7-28ff15cdbdd4.png" /></div><p>The generated interface for each model provides a lot of functionality. New posts can be created, and the existing posts can be deleted in bulk. All of the fields can be set from this interface, including the relationship fields, which are implemented as searchable drop-down menus. The <code class="literal">date</code> and <code class="literal">datetime</code> fields even have custom JavaScript inputs with drop-down calendar menus. Overall, this is a huge improvement to the hand-created interface that was created in <span><a class="link" href="#" linkend="ch06">Chapter 6</a></span>, <span class="emphasis"><em>Securing Your App</em></span>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec71"></a>Enhancing administration for the post page</h3></div></div></div><p>While this interface is a <span>huge</span><a id="id325591093" class="indexterm"></a> step up in quality, there are some features missing. We no longer have the WYSIWYG editor that was available in the original interface, but <span>this</span> page can be improved by enabling some of the more powerful Flask Admin features.</p><p>To add the WYSIWYG editor back into the <code class="literal"><span>post</span></code> creation page, we will need a new <code class="literal">WTForms</code> field, as Flask Admin constructs its forms with Flask WTF. We will also need to override the <code class="literal">textarea</code> field in the <code class="literal">post</code> edit and creation page with this new field type. The first thing that needs to be done is to create the new field type in <code class="literal">admin/forms.py</code> by using the <code class="literal">textarea</code> field as a base, as follows:</p><pre class="programlisting">from wtforms import ( 
+    widgets, 
+    TextAreaField
+) 
+
+class CKTextAreaWidget(widgets.TextArea):
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault('class_', 'ckeditor') 
+        return super(CKTextAreaWidget, self).__call__(field, 
+         **kwargs)
+ 
+class CKTextAreaField(TextAreaField): 
+    widget = CKTextAreaWidget() </pre><p>In this code, we created a new field type, <code class="literal">CKTextAreaField</code>, that adds a widget to the <code class="literal">textarea</code>. All that the widget does is adds a class to the HTML tag. Now, to add this field to the <code class="literal">Post</code> admin page, the <code class="literal">Post</code> will need its own <code class="literal">ModelView</code>:</p><pre class="programlisting">from webapp.forms import CKTextAreaField 
+ 
+class PostView(CustomModelView):
+    form_overrides = dict(text=CKTextAreaField)
+    column_searchable_list = ('text', 'title')
+    column_filters = ('publish_date',)
+ 
+    create_template = 'admin/post_edit.html'
+    edit_template = 'admin/post_edit.html'</pre><p>There are several new things in this code. First, the <code class="literal">form_overrides</code> class variable tells Flask Admin to override the field type of the name text with this new field type. The <code class="literal">column_searchable_list</code> function defines which columns are searchable via text. Adding this will allow Flask Admin to include a search field on the overview page, with which we can search the values of the defined fields. Next, the <code class="literal">column_filters</code> class variable tells Flask Admin to create a <code class="literal">filters</code> interface on the overview page of this model. The <code class="literal">filters</code> interface allows columns that are not text to be filtered down by adding conditions to the shown rows. An example that could be implemented with the preceding code is to create a filter that shows all rows with <code class="literal">publish_date</code> values greater than January 1, 2015.</p><p> </p><p> </p><p>Finally, the <code class="literal">create_template</code> and <code class="literal">edit_template</code> class variables allow you to define custom templates for Flask Admin to use. For the custom template that we will be using, we need to create a new file, <code class="literal">post_edit.html</code>, in the <code class="literal">admin</code> folder. In this template, we will include the same JavaScript library that was used in <a class="link" href="#" linkend="ch06"><span>Chapter 6</span></a>, <span class="emphasis"><em>Securing Your App</em></span>, as shown here:</p><pre class="programlisting">{% extends 'admin/model/edit.html' %} 
+{% block tail %} 
+    {{ super() }} 
+    &lt;script 
+        src="//cdn.ckeditor.com/4.4.7/standard/ckeditor.js"&gt; 
+    &lt;/script&gt; 
+{% endblock %} </pre><p>Finally, to add our newly created customized view to Flask-Admin, we need to add it to the <code class="literal">create_module</code> function in the <code class="literal">admin/__init__.py</code> file:</p><pre class="programlisting">def create_module(app, **kwargs):
+    ...
+    admin.add_view(PostView(Post, db.session, category='Models'))
+    ...    </pre><p>The tail block of the inherited template is located at the end of the file. Once the template is created, your <code class="literal">post</code> edit and creation page should look like this:</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/2b1c74fb-2d5d-4212-94f2-df9bda548c51.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec72"></a>Creating file system admin pages</h3></div></div></div><p>Another common <span>function</span><a id="id325627980" class="indexterm"></a> that most <code class="literal">admin</code> interfaces cover is being able to access the server's file system from the web. Thankfully, Flask Admin includes this feature with the <code class="literal">FileAdmin</code> class:</p><pre class="programlisting">class CustomFileAdmin(FileAdmin):
+    pass</pre><p>Now, just import the new class into your <code class="literal">admin/__init__.py</code> file, and pass in the path that you wish to be accessible from the web:</p><pre class="programlisting">admin.add_view(CustomFileAdmin(app.static_folder,'/static/',name='Static Files'))</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec73"></a>Securing Flask Admin</h3></div></div></div><p>Currently, the entire <code class="literal">admin</code> interface is <span>accessible</span><a id="id325661197" class="indexterm"></a> to the world—let's fix that. The routes in the <code class="literal">CustomView</code> can be secured just like any other route, as follows:</p><pre class="programlisting">class CustomView(BaseView): 
+    @expose('/') 
+    <span class="strong"><strong>@login_required 
+    @has_role('admin')</strong></span> 
+    def index(self): 
+        return self.render('admin/custom.html') 
+ 
+    @expose('/second_page') 
+    <span class="strong"><strong>@login_required 
+    @has_role('admin')</strong></span> 
+    def second_page(self): 
+        return self.render('admin/second_page.html') </pre><p>To secure the <code class="literal">ModeView</code> and <code class="literal">FileAdmin</code> subclasses, they need to have a method named <code class="literal">is_accessible</code> defined, which either returns <code class="literal">true</code> or <code class="literal">false</code>:</p><pre class="programlisting">class CustomModelView(ModelView): 
+    def is_accessible(self): 
+        return current_user.is_authenticated and 
+               current_user.has_role('admin') 
+ 
+class CustomFileAdmin(FileAdmin): 
+    def is_accessible(self): 
+        return current_user.is_authenticated and 
+               current_user.has_role('admin') </pre><p>Because we set up our authentication correctly in <a class="link" href="#" linkend="ch06"><span>Chapter 6</span></a>, <span class="emphasis"><em>Securing Your App</em></span>, this task was trivial.</p></div></div>

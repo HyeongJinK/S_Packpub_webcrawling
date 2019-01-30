@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec85"></a>Using the While loop construct</h2></div></div><hr /></div><p>We will create two scripts in this recipe: the first one to establish the similarities between <code class="literal">For</code> and <code class="literal">While</code>, and the other to lay the foundation to understanding the <code class="literal">Do–While</code> and <code class="literal">Do–Until</code> constructs. This way, the <span>learning</span><a id="id325585841" class="indexterm"></a> will be incremental, and the understanding will be easier.</p><p>For the first script, the scenario is the same as described in the previous recipe, <span class="emphasis"><em>Using the For loop construct</em></span>. For the second, the task is to take the year number as input and find the date for Mother's Day in that year.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec225"></a>How to do it…</h3></div></div></div><p>First, continue with the assumptions that you had for the previous recipe:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open a new file and paste the following content into it:</li></ol></div><pre class="programlisting">$Guests = Import-Csv './ch07/05-Write-GuestSeatDetails.csv'
+$CurrentGuest = 0
+
+<span class="strong"><strong>while ($CurrentGuest -lt $Guests.Length) {</strong></span>
+    $Guest = $Guests[$CurrentGuest]
+
+    $RowIdentifier = [byte][char](($Guest.Seat -split '-')[0].ToUpper())
+    $RowNumber = ($RowIdentifier - 64).ToString()
+
+    switch -Regex ($RowNumber) {
+        '1(1|2|3)$' { $RowNumber += 'th'; break }
+        '.?1$'      { $RowNumber += 'st'; break }
+        '.?2$'      { $RowNumber += 'nd'; break }
+        '.?3$'      { $RowNumber += 'rd'; break }
+        Default     { $RowNumber += 'th'; break }
+    }
+
+    $SeatNumber = ($Guest.Seat -split "-")[1]
+
+    if ($SeatNumber -gt 20) { $Side = 'right' }
+    else { $Side = 'left' }
+
+    Start-Sleep -Seconds 1
+    Write-Host "Welcome, $($Guest.Name)! " -NoNewline
+    Start-Sleep -Seconds 1
+    Write-Host "Your seat is in the $RowNumber row, to the $Side the aisle."
+
+    <span class="strong"><strong>$CurrentGuest++</strong></span>
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Run the script; the output should be the same as that of the previous recipe.</li><li>Now, create a new PowerShell file and add the following code:</li></ol></div><pre class="programlisting">$Year = Read-Host "Enter the year (YYYY) you would like to find Mothers’ Day for"
+
+<span class="strong"><strong>$CurrentDay = Get-Date "01 May $Year"</strong></span><span class="strong"><strong>while ($CurrentDay.DayOfWeek -ne 'Sunday') {
+    $CurrentDay = $CurrentDay.AddDays(1)</strong></span>
+}
+$MothersDay = $CurrentDay.AddDays(7)
+
+Write-Output "Mothers’ Day falls on $($MothersDay.ToLongDateString())."</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Run the script. Enter any year and you should get the date for Mother's Day for that year.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec226"></a>How it works…</h3></div></div></div><p>Every finite looping construct requires three things:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The starting point</li><li style="list-style-type: disc">The stopping point</li><li style="list-style-type: disc">The way to proceed toward the stopping point</li></ul></div><p>In the case of the <code class="literal">Foreach</code> construct, the entire logic is pre-coded. It takes an entire array, finds the <span>starting</span><a id="id325877547" class="indexterm"></a> and stopping points, and moves toward the stopping point one step at a time. The <code class="literal">For</code> construct has these parameters declared in the loop declaration statements itself, and each parameter is separated by a semicolon.</p><p>The <code class="literal">While</code> loop is not very different. Its starting point is defined outside of the loop, the stopping point is the only condition passed, and the operation on the index is specified within the loop. These three parameters have been highlighted in the scripts. The initialization should happen outside the loop so that it is not modified during the course of the loop. The operation on the index should happen for every iteration so that the loop moves in some direction. Therefore, this operation falls within the loop.</p><p> </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip58"></a>Note</h3><p>Be a little careful with the <code class="literal">While</code> loop; you are more prone to getting an infinite loop, because it is easy to forget to add the starting point or the operation to move toward the stopping point.</p></div><p>Now, on to Mother's Day. We first get the date object for May 1 for that year, so we can manipulate it using its members. This date is the starting point. We then specify the condition, keep the loop going if the day is not a Sunday. Then, we add one day at every iteration. After every iteration, the variable is checked against the condition. Finally, when the first Sunday is encountered, the variable comes out of the loop. We then add a week to it to find the second Sunday, and output the long date version of the value of <code class="literal">$MothersDay</code>.</p></div></div>

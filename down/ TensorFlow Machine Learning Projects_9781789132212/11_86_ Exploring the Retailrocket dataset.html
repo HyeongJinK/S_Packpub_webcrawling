@@ -1,0 +1,16 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec84"></a>Exploring the Retailrocket dataset</h2></div></div><hr /></div><p>Let's load the dataset and <span>explore</span><a id="id325091897" class="indexterm"></a> it to learn more about the data.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Set the path to the folder where we downloaded the data:</li></ol></div><pre class="programlisting">dsroot = os.path.join(os.path.expanduser('~'),
+                      'datasets',
+                      'kaggle-retailrocket')
+os.listdir(dsroot)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Load the <code class="literal">events.csv</code> in a pandas DataFrame:</li></ol></div><pre class="programlisting">events = pd.read_csv(os.path.join(dsroot,'events.csv'))
+print('Event data\n',events.head())</pre><p>The events data has the five columns of <code class="literal">timestamp</code>, <code class="literal">visitorid</code>, <code class="literal">event</code>, <code class="literal">itemid</code>, and <code class="literal">transactionid</code>, as shown here:</p><pre class="programlisting">Event data
+        timestamp  visitorid event  itemid  transactionid
+0  1433221332117     257597  view  355908            NaN
+1  1433224214164     992329  view  248676            NaN
+2  1433221999827     111016  view  318965            NaN
+3  1433221955914     483717  view  253185            NaN
+4  1433221337106     951259  view  367447            NaN</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Print the unique items, users, and transactions:</li></ol></div><pre class="programlisting">print('Unique counts:',events.nunique())</pre><p> </p><p>We get the following output:</p><pre class="programlisting">Unique counts: timestamp        2750455
+visitorid        1407580
+event                  3
+itemid            235061
+transactionid      17672
+dtype: int64</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Verify the kinds of <span>events</span><a id="id325091905" class="indexterm"></a> that we mentioned earlier:</li></ol></div><pre class="programlisting">print('Kind of events:',events.event.unique())</pre><p>We see the three kinds of events that we described before:</p><pre class="programlisting">Kind of events: ['view' 'addtocart' 'transaction']</pre></div>

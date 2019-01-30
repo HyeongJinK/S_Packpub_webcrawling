@@ -1,0 +1,134 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec37"></a>Classification for spam detection</h2></div></div><hr /></div><p>Spam detection is a common classification problem. In <span>the</span><a id="id324602825" class="indexterm"></a> following recipe, we have the corpus of raw text or documents, including labels of those documents marked spam or no spam. The data source here is the SMS Spam Collection v.1, which is a public set of SMS labeled messages that have been collected for mobile phone spam research.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note15"></a>Note</h3><p>The dataset can be downloaded from <a class="ulink" href="http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/" target="_blank">http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/</a>. The following table lists the provided dataset in different file formats, the number of samples in each class, and the total number of samples:</p></div><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /><col /><col /><col /><col /></colgroup><thead><tr><th style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Application</p></th><th style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>File format</p></th><th style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p># Spam</p></th><th style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p># Ham</p></th><th style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Total</p></th><th style="border-bottom: 0.5pt solid ; "><p>Link</p></th></tr></thead><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>General</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Plain text</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>747</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>4,827</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>5,574</p></td><td style="border-bottom: 0.5pt solid ; "><p><a class="ulink" href="http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/smsspamcollection.zip" target="_blank">http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/smsspamcollection.zip</a></p></td></tr><tr><td style="border-right: 0.5pt solid ; "><p>Weka</p></td><td style="border-right: 0.5pt solid ; "><p>ARFF</p></td><td style="border-right: 0.5pt solid ; "><p>747</p></td><td style="border-right: 0.5pt solid ; "><p>4,827</p></td><td style="border-right: 0.5pt solid ; "><p>5,574</p></td><td style=""><p><a class="ulink" href="http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/smsSpamCollection.arff" target="_blank">http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/smsSpamCollection.arff</a></p></td></tr></tbody></table></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec44"></a>How to do it...</h3></div></div></div><p>In this recipe, we develop a modeling pipeline for classification that tries to classify the spam type into ham or spam. The modeling pipelines use <span>the</span><a id="id325338109" class="indexterm"></a> RMSProp model written using the Keras functional API. </p><p>Import the following libraries for use. pandas is a data analysis library in Python. Numpy is a numerical computation and Keras is a neural network API that will help us create the actual neural network:</p><pre class="programlisting">from keras.layers import SimpleRNN, Embedding, Dense, LSTM
+from keras.models import Sequential
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+import numpy as np
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import pandas as pd</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec36"></a>Data processing</h4></div></div></div><p>We will use the panda's library to load data and review <span>the</span><a id="id325345129" class="indexterm"></a> shape of our dataset.</p><p>Perform the following steps for data preprocessing:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Load the dataset using pandas</li><li>Convert the labels to <code class="literal">[0,1]</code></li><li>Split the dataset into the input and output variables for machine learning</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Tokenize the data</li><li>Summarize the data to show the change:</li></ol></div><pre class="programlisting"><span class="strong"><strong># get dataset</strong></span>
+data = pd.read_csv('<span>.</span>/data.csv')
+texts = []
+classes = []
+for i, label in enumerate(data['Class']):
+    texts.append(data['Text'][i])
+if label == 'ham':
+        classes.append(0)
+else:
+        classes.append(1)
+
+texts = np.asarray(texts)
+classes = np.asarray(classes)
+
+print("number of texts :", len(texts))
+print("number of labels: ", len(classes))</pre><p>The output is shown in the following code:</p><pre class="programlisting">number of texts: 5572
+number of labels: 5572</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Let's now define the max features and max document length to be used by the classifier: </li></ol></div><pre class="programlisting"><span class="strong"><strong># number of words used as features</strong></span>
+maxFeatures = 10000
+<span class="strong"><strong># max document length</strong></span>
+maxLen = 500</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>We now split the data into training and validation sets. The training dataset is used to fit the model and the validation dataset is used to provide an unbiased evaluation of a model fit on the training dataset, while tuning model hyperparameters; 80% of <span>the</span><a id="id325348250" class="indexterm"></a> data is for training and the other 20% for validation:</li></ol></div><pre class="programlisting"><span class="strong"><strong># we will use 80% of data as training and 20% as validation data</strong></span>
+trainingData = int(len(texts) * .8)
+validationData = int(len(texts) - trainingData)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Words <span>are</span><a id="id325348275" class="indexterm"></a> known as <span class="strong"><strong>tokens</strong></span>, and <span>the</span><a id="id325348285" class="indexterm"></a> method of breaking the text into tokens is described as <span class="strong"><strong>tokenization</strong></span>. The Keras library gives the <code class="literal">Tokenizer()</code> class for preparing text documents for neural networks. The <code class="literal">tokenizer</code> should be created and then fit on either raw text documents or integer encoded text documents:</li></ol></div><pre class="programlisting"><span class="strong"><strong># tokenizer</strong></span>
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(texts)
+sequences = tokenizer.texts_to_sequences(texts)
+word_index = tokenizer.word_index
+print("Found {0} unique words: ".format(len(word_index)))
+data = pad_sequences(sequences, maxlen=maxLen)
+print("data shape: ", data.shape)</pre><p>The output is shown in the following code:</p><pre class="programlisting">Found 9006 unique words:
+data shape: (5572, 500)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Finally, we shuffle the dataset and create training and test sets for modeling, described in the next section:</li></ol></div><pre class="programlisting"># shuffle data
+indices = np.arange(data.shape[0])
+np.random.shuffle(indices)
+data = data[indices]
+labels = classes[indices]
+
+X_train = data[:trainingData]
+y_train = labels[:trainingData]
+X_test = data[trainingData:]
+y_test = labels[trainingData:]</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec37"></a>Modeling</h4></div></div></div><p>Now, we will create a sequential model using the Keras library, which is internally represented as a sequence of layers. First, we create a new sequential <span>model</span><a id="id325348414" class="indexterm"></a> and add layers to develop the network topology. After the model is defined, we compile it with the backend as TensorFlow. The backend here chooses the best way to represent the network for training and making predictions to run on the given hardware.</p><p>We define the embedding layer as part of the network modeling, as shown in the next code snippet. The embedding has the size of a max feature of <code class="literal">32</code>. The model, in this case, is a binary classifier. Finally, we can fit and evaluate the classification model.</p><p>We must specify the <code class="literal">loss</code> function to evaluate a set of weights, the optimizer used to search through different weights for the network, and any optional metrics we would like to collect and report during training. The code is as follows:</p><pre class="programlisting"><span class="strong"><strong># modeling</strong></span>
+model = Sequential()
+model.add(Embedding(maxFeatures, 32))
+model.add(LSTM(32))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['acc'])
+rnn = model.fit(X_train, y_train, epochs=10, batch_size=60, validation_split=0.2)</pre><p>The output is shown in the following code:</p><pre class="programlisting">Epoch 1/10
+60/3565 [..............................] - ETA: 2:00 - loss: 0.6927 - acc: 0.5833
+ 120/3565 [&gt;.............................] - ETA: 1:25 - loss: 0.6864 - acc: 0.7083
+ 180/3565 [&gt;.............................] - ETA: 1:13 - loss: 0.6812 - acc: 0.7556
+...
+Epoch 10/10
+3000/3565 [========================&gt;.....] - ETA: 9s - loss: 0.0175 - acc: 0.9933
+ 3540/3565 [============================&gt;.] - ETA: 0s - loss: 0.0155 - acc: 0.9944
+ 3565/3565 [==============================] - 61s 17ms/step - <span class="strong"><strong>loss</strong></span>: 0.0154 - <span class="strong"><strong>acc</strong></span>: 0.9944 - <span class="strong"><strong>val_loss</strong></span>: 0.0463 - <span class="strong"><strong>val_acc</strong></span>: 0.9865</pre><p>Finally, we can evaluate our model on the test data:</p><pre class="programlisting"><span class="strong"><strong># predictions</strong></span>
+pred = model.predict_classes(X_test)
+acc = model.evaluate(X_test, y_test)
+proba_rnn = model.predict_proba(X_test)
+print("Test loss is {0:.2f} accuracy is {1:.2f}
+".format(acc[0],acc[1]))
+print(confusion_matrix(pred, y_test))</pre><p>The output is shown in the following code:</p><pre class="programlisting">Test loss is 0.07 accuracy is 0.98
+ [[956 15]
+ [ 5 139]]</pre><p>Training and validation loss is shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/1e7887ac-7395-48b9-91c3-4520b8df7ded.png" /></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec45"></a>Full code listing</h3></div></div></div><p>Following is the full <span>code</span><a id="id325351916" class="indexterm"></a> listing of the recipe <span class="emphasis"><em>Classification for spam detection</em></span>:</p><pre class="programlisting">from keras.layers import Embedding, Dense, LSTM
+from keras.models import Sequential
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+import numpy as np
+from sklearn.metrics import confusion_matrix
+import pandas as pd
+
+<span class="strong"><strong># get dataset</strong></span>
+data = pd.read_csv('/spam-detection/spam_dataset.csv')
+texts = []
+classes = []
+for i, label in enumerate(data['Class']):
+    texts.append(data['Text'][i])
+if label == 'ham':
+        classes.append(0)
+else:
+        classes.append(1)
+
+texts = np.asarray(texts)
+classes = np.asarray(classes)
+
+print("number of texts :", len(texts))
+print("number of labels: ", len(classes))
+
+<span class="strong"><strong># number of words used as features</strong></span>
+maxFeatures = 10000
+<span class="strong"><strong># max document length</strong></span>
+maxLen = 500
+
+<span class="strong"><strong># we will use 80% data set for training and 20% data set for validation</strong></span>
+trainingData = int(len(texts) * .8)
+validationData = int(len(texts) - trainingData)
+
+<span class="strong"><strong># tokenizer</strong></span>
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(texts)
+sequences = tokenizer.texts_to_sequences(texts)
+word_index = tokenizer.word_index
+print("Found {0} unique words: ".format(len(word_index)))
+data = pad_sequences(sequences, maxlen=maxLen)
+print("data shape: ", data.shape)
+
+indices = np.arange(data.shape[0])
+np.random.shuffle(indices)
+data = data[indices]
+labels = classes[indices]
+
+X_train = data[:trainingData]
+y_train = labels[:trainingData]
+X_test = data[trainingData:]
+y_test = labels[trainingData:]
+
+<span class="strong"><strong># modeling</strong></span>
+model = Sequential()
+model.add(Embedding(maxFeatures, 32))
+model.add(LSTM(32))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['acc'])
+rnn = model.fit(X_train, y_train, epochs=10, batch_size=60, validation_split=0.2)
+
+<span class="strong"><strong># predictions</strong></span>
+pred = model.predict_classes(X_test)
+acc = model.evaluate(X_test, y_test)
+proba_rnn = model.predict_proba(X_test)
+print("Test loss is {0:.2f} accuracy is {1:.2f}  ".format(acc[0],acc[1]))
+print(confusion_matrix(pred, y_test))</pre></div></div>

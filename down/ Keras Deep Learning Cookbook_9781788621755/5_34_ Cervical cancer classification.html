@@ -1,0 +1,273 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec39"></a>Cervical cancer classification</h2></div></div><hr /></div><p>Cervical cancer is cancer that occurs in the cervix. Cervical cancer is easy to counter if caught in its early stages. However, due to lack of expertise in the field, one of the biggest challenges for cervical cancer screening and treatment programs is determining a suitable method of treatment. The treatment workflow would be greatly improved given the ability to make real-time determinations about a patients treatment eligibility based on cervix type.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec46"></a>Getting ready</h3></div></div></div><p>In this recipe, we develop a modeling pipeline that tries to identify a woman's cervix <span>type</span><a id="id324812532" class="indexterm"></a> based on images with greater accuracy. The modeling pipeline uses a CNN models written using the Keras functional API for image classification. The pipeline also use a various image manipulation libraries.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note16"></a>Note</h3><p>The data for this recipe can be found at <a class="ulink" href="https://www.kaggle.com/c/intel-mobileodt-cervical-cancer-screening" target="_blank">https://www.kaggle.com/c/intel-mobileodt-cervical-cancer-screening</a>. The dataset is part of the challenge to develop an algorithm that accurately identifies a woman's cervix type based on images. Doing so will prevent ineffectual treatments and allow healthcare providers to give a proper referral for cases that require more advanced treatment.</p></div><p>As a first step, clone the GitHub <span>repository at</span><a class="ulink" href="https://github.com/ml-resources/deeplearning-keras/tree/ed1/ch05" target="_blank">https://github.com/ml-resources/deeplearning-keras/tree/ed1/ch05</a>. Download and save the training and test sets to the <code class="literal">data</code> folder in the repository:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">train.7z</code>: The training set. The images are <span>organized</span><a id="id325638098" class="indexterm"></a> in their labeled categories: <code class="literal">Type_1</code>, <code class="literal">Type_2</code>, and <code class="literal">Type_3</code>.</li><li style="list-style-type: disc"><code class="literal">test.7z</code>: The test set.</li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note17"></a>Note</h3><p>To understand more about the background of how these cervix types are defined, please refer to this document: <a class="ulink" href="https://kaggle2.blob.core.windows.net/competitions/kaggle/6243/media/Cervix%20types%20clasification.pdf" target="_blank">https://kaggle2.blob.core.windows.net/competitions/kaggle/6243/media/Cervix%20types%20clasification.pdf)</a>.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec47"></a>How to do it…</h3></div></div></div><p>The training images are assumed to be stored in the <code class="literal">train</code> folder in subfolders <code class="literal">Type_1</code>, <code class="literal">Type_2</code>, and <code class="literal">Type_3</code>. The images are stored as <code class="literal">.jpg</code> files in separate folders depending on their classification. Image paths are read as strings; the function uses the image's folder name to get the corresponding label and returns the image paths and labels as two parallel arrays. Let's get started with the data preprocessing steps.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec38"></a>Data processing</h4></div></div></div><p>Cervical images are of varying sizes and have a high resolution. For CNNs, the <span>incoming</span><a id="id325657548" class="indexterm"></a> data needs to be of uniform size and also needs to have enough resolution to be able to differentiate the main features in classification, but a low enough resolution to avoid computational limits:</p><pre class="programlisting"><span class="strong"><strong># process cervical dataset</strong></span>
+def <span class="strong"><strong>processCervicalData</strong></span>():
+# image resizing
+imgPaths = []
+    labels = []
+    trainingDirs = ['/deeplearning-keras/ch05/data/train']
+for dir in trainingDirs:
+        newFilePaths, newLabels, numLabels = readFilePaths(dir)
+if len(newFilePaths) &gt; 0:
+            imgPaths += newFilePaths
+            labels += newLabels
+
+    imgPaths, labels = shuffle(imgPaths, labels)
+    labelCount = labelsCount(labels)
+
+    type1Count = labelCount[0]
+    type2Count = labelCount[1]
+    type3Count = labelCount[2]
+
+print("Count of type1 : ", type1Count)
+print("Count of type2 : ", type2Count)
+print("Count of type3 : ", type3Count)
+print("Total Number of data samples: " + str(len(imgPaths)))
+print("Number of Classes: " + str(numLabels))
+
+    newShape = [(256,256,3)]
+    destDir = ['/deeplearning-keras/ch05/data/resized_imgs']
+
+for newImgShape, destFolder in zip(newShape,destDir):
+for i, path,label in zip(count(),imgPaths,labels):
+            split_path = path.split('/')
+            newPath = 'size'+str(newImgShape[0])+'_'+split_path[-1]
+            newPath = '/'.join([destFolder]+split_path[8:-1]+[newPath])
+            add_flip = True
+if label == 1:
+                add_flip = False
+
+# Used to exclude corrupt data
+try:
+                resizeImage(path, maxSize=newImgShape, savePath=newPath, addFlip=add_flip)
+except OSError:
+print("Error at path " + path)</pre><p>The output will be as follows:</p><pre class="programlisting">Using TensorFlow backend.
+('Count of type1 : ', 250)
+('Count of type2 : ', 781)
+('Count of type3 : ', 450)
+Total Number of data samples: 1481
+Number of Classes: 3</pre><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Neural networks need the image size to be constant. Another consideration is that the images need to be small enough to leave enough RAM space for the model to train, but large enough that important characteristics are distinguishable for classification. We semi-arbitrarily chose 256 x 256 pixels for the image size.</li><li>The following function resizes the images while maintaining their aspect ratio:</li></ol></div><pre class="programlisting"># Image resizing is important considering memory footprint, but its important to maintain key #characteristics that will preserve the key features.
+def <span class="strong"><strong>resizeImage</strong></span>(imgPath, maxSize=(256,256,3), savePath=None, addFlip=False):
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+img = Image.open(imgPath)
+
+# set aspect ratio
+if type(img) == type(np.array([])):
+        img = Image.fromarray(img)
+    img.thumbnail(maxSize, Image.ANTIALIAS)
+    tmpImage = (np.random.random(maxSize)*255).astype(np.uint8)
+    resizedImg = Image.fromarray(tmpImage)
+    resizedImg.paste(img,((maxSize[0]-img.size[0])//2, (maxSize[1]-img.size[1])//2))
+
+if savePath:
+        resizedImg.save(savePath)
+
+if addFlip:
+        flip = resizedImg.transpose(Image.FLIP_LEFT_RIGHT)
+if savePath:
+            splitPath = savePath.split('/')
+            flip_path = '/'.join(splitPath[:-1] + ['flipped_'+splitPath[-1]])
+            flip.save(flip_path)
+return np.array(resizedImg, dtype=np.float32), np.array(flip,dtype=np.float32)
+return np.array(resizedImg, dtype=np.float32)</pre><p>Resized images are stored under the <code class="literal">resized_imgs</code> directory, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/be4f10c0-af85-4cd2-874c-a90078d47f17.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>The next phase in the recipe is to train the CNN on the training dataset. As <span>part</span><a id="id325675233" class="indexterm"></a> of the cervical training, we read in the resized image paths to be used for the rest of the project:</li></ol></div><pre class="programlisting">resizedImageDir = ['/deeplearning-keras/ch05/<span>data/resized_imgs/train</span>']
+
+ imagePaths = []
+ labels = []
+ for i, resizedPath in enumerate(resizedImageDir):
+     new_paths, new_labels, n_classes = readFilePaths(resizedPath)
+     if len(new_paths) &gt; 0:
+         imagePaths += new_paths
+         labels += new_labels
+
+ imagePaths, labels = shuffle(imagePaths, labels)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>We now split the data into training and validation sets. The training dataset is used to fit the model and the validation dataset is used to provide an unbiased evaluation of the model fit on the training dataset while tuning model hyperparameters. 80% of the data is for training and the other 20% is for validation. After splitting the data, we save the paths and labels to CSVs denoting which dataset they belong to; this ensures that the two datasets do not get mixed after being established:</li></ol></div><pre class="programlisting">trainCSV = '/deeplearning-keras/ch05/csvs/train_set.csv'
+validCSV = '/deeplearning-keras/ch05/csvs/valid_set.csv'
+
+training_portion = .8
+split_index = int(training_portion * len(imagePaths))
+X_train_paths, y_train = imagePaths[:split_index], labels[:split_index]
+X_valid_paths, y_valid = imagePaths[split_index:], labels[split_index:]
+
+print("Train size: ")
+print(len(X_train_paths))
+print("Valid size: ")
+print(len(X_valid_paths))
+
+savePaths(trainCSV, X_train_paths, y_train)
+savePaths(validCSV, X_valid_paths, y_valid)
+
+train_csv = 'csvs/train_set.csv'
+valid_csv = 'csvs/valid_set.csv'
+
+X_train_paths, y_train = getSplitData(train_csv)
+X_valid_paths, y_valid = getSplitData(valid_csv)
+n_classes = max(y_train) + 1
+</pre><p>Data is separated into training and validation sets, <code class="literal">X_train_paths</code> and <code class="literal">X_valid_paths</code>, as the output of the previous code.</p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Now, we use one-hot encoding to represent categorical variables as binary vectors. A one-hot vector represents the label of a data sample as a vector of zeros with a single <code class="literal">1</code> value. The index of the <code class="literal">1</code> value corresponds to the label. One-hot encoding is a useful representation of the truth labels because it is an easy format to produce from the neural net. This makes the loss easy to calculate and propagate backward:</li></ol></div><pre class="programlisting">Y_train = oneHotEncode(y_train, n_classes)
+y_valid = oneHotEncode(y_valid, n_classes)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>The one-hot function is described in the following code snippet:</li></ol></div><pre class="programlisting"><span class="strong"><strong># one hot encoding
+</strong></span>def oneHotEncode(labels, n_classes):
+    one_hots = []
+for label in labels:
+        one_hot = [0]*n_classes
+if label &gt;= len(one_hot):
+print("Labels out of bounds\nCheck your n_classes parameter")
+return
+one_hot[label] = 1
+one_hots.append(one_hot)
+return np.array(one_hots,dtype=np.float32)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Since there are too many images to be able to read all of them into memory as NumPy arrays, we create a generator to read the images into memory in batches. This will add random augmentations to effectively increase the size of our dataset:</li></ol></div><pre class="programlisting">batch_size = 110
+add_random_augmentations = False
+resize_dims = None
+n_train_samples = len(X_train_paths)
+train_steps_per_epoch = getSteps(n_train_samples, batch_size, n_augs=1)
+n_valid_samples = len(X_valid_paths)
+valid_steps_per_epoch = getSteps(n_valid_samples, batch_size, n_augs=0)
+train_generator = image_generator(X_train_paths, y_train, batch_size,
+resize_dims=resize_dims,
+randomly_augment=add_random_augmentations)
+valid_generator = image_generator(X_valid_paths, y_valid, batch_size,
+resize_dims=resize_dims, rand_order=False)</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec39"></a>Modeling</h4></div></div></div><p>The following diagram describes an input to the neural network, which <span>runs</span><a id="id325791450" class="indexterm"></a> through many layers (including <span class="strong"><strong>Convolutions</strong></span>, <span class="strong"><strong>Subsampling</strong></span>, and <span class="strong"><strong>Fully connected</strong></span>), before finally getting to the results:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/daa30a34-a484-4123-b062-e99bc071aed4.png" /></div><p>We create the model with two fully connected layers, decreasing in size, followed by an output layer. As <code class="literal">convModel</code> describes, we run 3 x 3, 4 x 4, and 5 x 5 filters in parallel at the first layer. For the following convolutional layers, we run 3 x 3 and 5 x 5 filters with decreasing depths due to RAM limits.</p><p>In Keras, we can just stack up layers by adding the desired layers one by one. That's exactly what we'll do here. In <code class="literal">convModel</code>, the depths of every layer are sequentially reduced. The stack of layers <span>used</span><a id="id325812862" class="indexterm"></a> is input, batch normalization, convolution, max pooling, dropout, <span class="strong"><strong>exponential linear unit</strong></span> (<span class="strong"><strong>ELU</strong></span>), and softmax. It is important to use dropout after max pooling because the dropout will have a more intense effect. This is because the effects of dropout can potentially go unnoticed if done before a max pooling layer.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip18"></a>Note</h3><p>ELU activations were chosen due to their protection against dead neurons.</p></div><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>We will be creating the CNN model first:</li></ol></div><pre class="programlisting">def <span class="strong"><strong>convModel</strong></span>(first_conv_shapes=[(4,4),(3,3),(5,5)], conv_shapes=[(3,3),(5,5)], conv_depths=[12,12,11,8,8], dense_shapes=[100,50,3], image_shape=(256,256,3), n_labels=3):
+    stacks = []
+    pooling_filter = (2,2)
+    pooling_stride = (2,2)
+
+    inputs = Input(shape=image_shape)
+    zen_layer = BatchNormalization()(inputs)
+
+for shape in first_conv_shapes:
+        stacks.append(Conv2D(conv_depths[0], shape, padding='same', activation='elu')(zen_layer))
+    layer = concatenate(stacks,axis=-1)
+    layer = BatchNormalization()(layer)
+    layer = MaxPooling2D(pooling_filter,strides=pooling_stride,padding='same')(layer)
+    layer = Dropout(0.05)(layer)
+
+for i in range(1,len(conv_depths)):
+        stacks = []
+for shape in conv_shapes:
+            stacks.append(Conv2D(conv_depths[i],shape,padding='same',activation='elu')(layer))
+        layer = concatenate(stacks,axis=-1)
+        layer = BatchNormalization()(layer)
+        layer = Dropout(i*10**-2+.05)(layer)
+        layer = MaxPooling2D(pooling_filter,strides=pooling_stride, padding='same')(layer)
+
+    layer = Flatten()(layer)
+    fclayer = Dropout(0.1)(layer)
+
+for i in range(len(dense_shapes)-1):
+        fclayer = Dense(dense_shapes[i], activation='elu')(fclayer)
+        fclayer = BatchNormalization()(fclayer)
+
+    outs = Dense(dense_shapes[-1], activation='softmax')(fclayer)
+
+return inputs, outs</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>We now use the preceding <code class="literal">convModel</code> to fit on the training set. The <span class="strong"><strong>adaptive moment estimation</strong></span> (<span class="strong"><strong>Adam</strong></span>) optimizer is <span>used</span><a id="id325872757" class="indexterm"></a> as an optimization algorithm, which helps us to minimize an objective function. The Adam optimizer is a combination of RMSProp and momentum, with the advantages of low memory requirements and little need for tuning of the hyperparameters.</li><li>We keep a learning rate of <code class="literal">.001</code>. If the learning rate is set very low, training will progress slowly, as you are making very small updates to the weights. But if our learning rate is kept too high, it can cause unwanted divergent behavior in our loss function.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>We use the <code class="literal">categorical_crossentropy</code>loss function, which measures the performance of a classification model and accuracy as metrics for measuring the performance of our model:</li></ol></div><pre class="programlisting">'''
+<span class="strong"><strong>modeling</strong></span>
+'''
+n_classes = 3
+image_shape = (256, 256, 3)
+
+first_conv_shapes = [(4, 4), (3, 3), (5, 5)]
+conv_shapes = [(3, 3), (5, 5)]
+conv_depths = [12, 12, 11, 8, 8]
+dense_shapes = [100, 50, n_classes]
+
+inputs, outs = convModel(first_conv_shapes, conv_shapes, conv_depths, dense_shapes, image_shape, n_classes)
+
+model = Model(inputs=inputs, outputs=outs)
+
+learning_rate = .0001
+for i in range(20):
+if i &gt; 4:
+        learning_rate = .00001  # Anneals the learning rate
+adam_opt = optimizers.Adam(lr=learning_rate)
+    model.compile(loss='categorical_crossentropy', optimizer=adam_opt, metrics=['accuracy'])
+history = model.fit_generator(train_generator, train_steps_per_epoch, epochs=1,
+validation_data=valid_generator,        validation_steps=valid_steps_per_epoch,max_queue_size=1)
+    model.save('/deeplearning-keras/ch05/weights/model.h5')</pre><p>The output will be as follows, using the TensorFlow backend:</p><pre class="programlisting">Train size:
+1744
+Valid size:
+437
+2018-09-10 06:58:45.775834: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+Epoch 1/1
+1/32 [..............................] - ETA: 1:16:46 - loss: 2.0438 -
+acc: 0.2545
+2/32 [&gt;.............................] - ETA: 1:11:16 - loss: 1.9240 - acc: 0.2727
+3/32 [=&gt;............................] - ETA: 1:08:00 - loss: 1.7749 - acc: 0.3091
+4/32 [==&gt;...........................] - ETA: 1:04:49 - loss: 1.7584 - acc: 0.2909
+5/32 [===&gt;..........................] - ETA: 1:01:39 - loss: 1.7117 -acc: 0.3109
+6/32 [====&gt;.........................] - ETA: 59:20 - loss: 1.6633 - acc: 0.3303
+7/32 [=====&gt;........................] - ETA: 56:58 - loss: 1.6607 - acc: 0.3221
+8/32 [======&gt;.......................] - ETA: 54:33 - loss: 1.6422 - acc: 0.3239
+9/32 [=======&gt;......................] - ETA: 52:12 - loss: 1.6201 - acc: 0.3222
+10/32 [========&gt;.....................] - ETA: 49:50 - loss: 1.6187 - acc: 0.3245
+11/32 [=========&gt;....................] - ETA: 47:38 - loss: 1.6232 - acc: 0.3223
+12/32 [==========&gt;...................] - ETA: 45:13 - loss: 1.6029 - acc: 0.3242
+13/32 [===========&gt;..................] - ETA: 42:55 - loss: 1.5900 - acc: 0.3224
+14/32 [============&gt;.................] - ETA: 40:39 - loss: 1.5931 - acc: 0.3234
+15/32 [=============&gt;................] - ETA: 38:19 - loss: 1.5896 - acc: 0.3261
+16/32 [==============&gt;...............] - ETA: 35:41 - loss: 1.5790 - acc: 0.3309
+17/32 [==============&gt;...............] - ETA: 33:25 - loss: 1.5626 - acc: 0.3345
+18/32 [===============&gt;..............] - ETA: 31:10 - loss: 1.5478 - acc: 0.3366
+19/32 [================&gt;.............] - ETA: 28:58 - loss: 1.5372 - acc: 0.3356
+20/32 [=================&gt;............] - ETA: 26:45 - loss: 1.5302 - acc: 0.3366
+
+
+1/32 [..............................] - ETA: 1:11:06 - loss: 0.8727 - acc: 0.6182
+2/32 [&gt;.............................] - ETA: 1:06:38 - loss: 0.8982 - acc: 0.6091
+3/32 [=&gt;............................] - ETA: 1:00:23 - loss: 0.8490 - acc: 0.6259
+4/32 [==&gt;...........................] - ETA: 58:48 - loss: 0.8642 - acc: 0.6172
+5/32 [===&gt;..........................] - ETA: 56:59 - loss: 0.8392 - acc: 0.6210
+6/32 [====&gt;.........................] - ETA: 54:59 - loss: 0.8635 - acc: 0.6008
+7/32 [=====&gt;........................] - ETA: 52:57 - loss: 0.8610 - acc: 0.6020
+8/32 [======&gt;.......................] - ETA: 50:59 - loss: 0.8534 - acc: 0.5972
+<span class="strong"><strong>3/32 [=&gt;............................] - ETA: 57:34 - loss: 0.8460 - acc: 0.6289</strong></span></pre><p>The model performs with an approximate <span class="strong"><strong>62% accuracy</strong></span> on the <span>validation</span><a id="id325872809" class="indexterm"></a> set.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec40"></a>Predictions</h4></div></div></div><p>As the last step, we perform <span>predictions</span><a id="id325873269" class="indexterm"></a> on the <code class="literal">test</code> dataset. We load the model and read in the test image paths. We then create a separate process for reading in and resizing the test images using <code class="literal">ThreadPool</code>. This allows the images to be processed while the model evaluates the samples. Predictions are stored in the predictions CSV file for evaluation:</p><pre class="programlisting">'''
+<span class="strong"><strong>get predictions
+</strong></span>'''
+data_path = '/deeplearning-keras/ch05/data/test'
+model_path = '/deeplearning-keras/ch05/weights/model.h5'
+
+resize_dims = (256, 256, 3)
+test_divisions = 20  # Used for segmenting image evaluation in threading
+batch_size = 100  # Batch size used for keras predict function
+
+ins, outs = convModel()
+model = Model(inputs=ins, outputs=outs)
+model.load_weights(model_path)
+test_paths, test_labels, _ = readFilePaths(data_path, no_labels=True)
+print(str(len(test_paths)) + ' testing images')
+
+pool = ThreadPool(processes=1)
+portion = len(test_paths) // test_divisions + 1  # Number of images to read in per pool
+
+async_result = pool.apply_async(convertImages, (test_paths[0 * portion:portion * (0 + 1)],
+test_labels[0 * portion:portion * (0 + 1)], resize_dims))
+
+total_base_time = time.time()
+test_imgs = []
+predictions = []
+for i in range(1, test_divisions + 1):
+    base_time = time.time()
+
+print("Begin set " + str(i))
+while len(test_imgs) == 0:
+        test_imgs, _ = async_result.get()
+    img_holder = test_imgs
+    test_imgs = []
+
+if i &lt; test_divisions:
+        async_result = pool.apply_async(convertImages, (test_paths[i * portion:portion * (i + 1)],
+test_labels[0 * portion:portion * (0 + 1)],
+resize_dims))
+
+    predictions.append(model.predict(img_holder, batch_size=batch_size, verbose=0))
+print("Execution Time: " + str((time.time() - base_time) / 60) + 'min\n')
+
+predictions = np.concatenate(predictions, axis=0)
+print("Total Execution Time: " + str((time.time() - total_base_time) / 60) + 'mins')
+
+conf = .95  # Prediction confidence
+savePredictions = '/deeplearning-keras/ch05/predictions.csv'
+predictions = confid(predictions, conf)
+header = 'image_name,Type_1,Type_2,Type_3'
+save(savePredictions, test_labels, predictions, header)</pre><p>The output will be as follows:</p><pre class="programlisting">image_name,Type_1,Type_2,Type_3
+63.jpg, 0.025,0.025,<span class="strong"><strong>0.95</strong></span>
+189.jpg, 0.025,<span class="strong"><strong>0.95</strong></span>,0.025
+77.jpg, 0.025,0.025,<span class="strong"><strong>0.95</strong></span>
+162.jpg, 0.025,0.025,<span class="strong"><strong>0.95</strong></span>
+176.jpg, 0.025,0.025,<span class="strong"><strong>0.95</strong></span>
+88.jpg, 0.025,<span class="strong"><strong>0.95</strong></span>,0.025
+348.jpg, 0.025,0.025,<span class="strong"><strong>0.95</strong></span></pre></div></div></div>

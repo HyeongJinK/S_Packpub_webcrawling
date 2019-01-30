@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec32"></a>DaemonSet</h2></div></div><hr /></div><p>If you want a single <span>instance</span><a id="id325268218" class="indexterm"></a> of a particular pod to be running on every node of your cluster (or a subset of your nodes), then you need to use a DaemonSet. When you schedule a DaemonSet to your cluster, an instance of your pod will be scheduled to every node, and when you add new nodes, the pod is scheduled there too. DaemonSet are very useful for providing ubiquitous services that need to be available everywhere on your cluster. You might use DaemonSet to provide services such as:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">An agent to ingest and ship logs, such as Fluentd or Logstash</li><li style="list-style-type: disc">A monitoring agent, such as collectd, Prometheus Node Exporter, datadog, NewRelic or SysDig, and so on</li><li style="list-style-type: disc">A daemon for a distributed storage system, such as Gluster or Ceph</li><li style="list-style-type: disc">Components for an overlay network, such as Calico or Flannel</li><li style="list-style-type: disc">Per node components, a virtualization tool, such as OpenStack</li></ul></div><p>Before Kubernetes, these sorts of services would require you to configure an init system, such as <code class="literal">systemd</code> or SysVnit, on every server in your infrastructure. When you came to update the service or its configuration, you would have to update that configuration and restart services across all your servers, which is not a problem when you are managing a few servers, but with tens, hundreds, or even thousands of servers, things quickly become much harder to manage.</p><p>DaemonSet lets you use exactly the same configuration and containerization we have been applying to the applications that run on your infrastructure to manage the infrastructure itself.</p><p>Let's look at a simple example to understand how we can create a DaemonSet for a useful purpose. We will be deploying the Prometheus Node Exporter. The purpose of this application is to expose an HTTP endpoint that includes metrics about the Linux system it is running on.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note33"></a>Note</h3><p>If you decide to monitor your cluster, PrometheusNode Exporter is a very useful tool. If you do decide to run it in your own cluster, I would recommend that you look at the extensive documentation available on the GitHub page at <a class="ulink" href="https://github.com/prometheus/node_exporter" target="_blank">https://github.com/prometheus/node_exporter</a>.</p></div><p>This manifest causes the pod specified in the template section to be scheduled to every node in your cluster:</p><pre class="programlisting"><span class="strong"><strong>node-exporter.yaml 
+apiVersion: apps/v1 
+kind: DaemonSet 
+metadata: 
+  labels: 
+    app: node-exporter 
+  name: node-exporter 
+spec: 
+  selector: 
+    matchLabels: 
+      app: node-exporter 
+  template: 
+    metadata: 
+      labels: 
+        app: node-exporter 
+    spec: 
+      containers: 
+      - name: node-exporter 
+        image: quay.io/prometheus/node-exporter:v0.15.2 
+        args: 
+        - --path.procfs=/host/proc 
+        - --path.sysfs=/host/sys 
+        volumeMounts: 
+        - mountPath: /host/proc 
+          name: proc 
+          readOnly: false 
+        - mountPath: /host/sys 
+          name: sys 
+          readOnly: false 
+        ports: 
+        - containerPort: 9100 
+          hostPort: 9100 
+      hostNetwork: true 
+      hostPID: true 
+      volumes: 
+      - hostPath: 
+          path: /proc 
+        name: proc 
+      - hostPath: 
+          path: /sys 
+        name: sys</strong></span></pre><p>Once you have prepared the manifest file for the Node Exporter, submit it to Kubernetes by running the <code class="literal">kubectl apply -f node-exporter.yaml</code> command.</p><p>You can check if the <span>DaemonSet</span><a id="id325751209" class="indexterm"></a> controller has scheduled our pod to the nodes in your cluster correctly by running the <code class="literal">kubectl describe ds/node-exporter</code> command. Assuming that the pod is successfully running, you should be able to make an HTTP request to port <code class="literal">9100</code> on one of your nodes to see the metrics that it exposes.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip34"></a>Note</h3><p>If you are trying this example on Minikube, you can discover the IP address of the (only) node in your cluster by running <code class="literal">minikube ip</code>.
+Then you can use a tool such as <code class="literal">curl</code> to make a request:<code class="literal"><span class="strong"><strong>curl 192.168.99.100:9100/metrics</strong></span></code></p></div><p>One of the key advantages to using DaemonSet to manage infrastructure tools and components, rather than relying on static configuration on your nodes to manage them, is that they can be updated just as easily as any other application you are running on your cluster.</p><p>By default, DaemonSet have an <code class="literal">updateStrategy</code> of <code class="literal">RollingUpdate</code>. This means if you edit the pod template in a DaemonSet, the existing pods currently running on the cluster are killed and replaced one by one.</p><p>Let's try using this functionality to upgrade to a newer version of the Prometheus Node Exporter:</p><pre class="programlisting"><span class="strong"><strong>kubectl set image ds/node-exporter node-exporter=quay.io/prometheus/node-exporter:v0.16.0</strong></span></pre><p>You can check on the progress of replacing the old pods with the new version by running: <code class="literal">kubectl rollout status ds/node-exporter</code> command. Once the update is completed, you should see the following message: <code class="literal">daemon set "node-exporter" successfully rolled out</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note35"></a>Note</h3><p>You might be wondering what other <code class="literal">updateStrategys</code> are available for DaemonSet. The only other option is <code class="literal">OnDelete</code>. With this option, when a DaemonSet is updated, no changes are made to the running pods running on the cluster, and it is left up to you to manually delete the running pods before the new version is launched. This mainly exists to provide compatibility with the behavior in previous versions of Kubernetes and is not, in practice, very useful.</p></div><p>It is worth bearing in mind that in order to roll out a new version of a pod with a DaemonSet, there will be a short period between the old pod being killed and the new one being launched, during which the service you are running will be unavailable.</p><p>DaemonSet can also be used to run pods on a subset of the nodes in your cluster. This is achieved by labeling the nodes in your cluster and adding a <code class="literal">nodeSelector</code> to the pod spec of your DaemonSet:</p><pre class="programlisting"><span class="strong"><strong>... 
+    spec: 
+      nodeSelector: 
+        monitoring: prometheus 
+      containers: 
+      - name: node-exporter 
+...</strong></span></pre><p>Once you have edited your manifest to add the <code class="literal">nodeSelector</code>, submit the new configuration to Kubernetes with: <code class="literal">kubectl apply -f node-exporter.yaml</code>.</p><p>You should notice that the running <span>node</span><a id="id325753371" class="indexterm"></a> exporter pods are terminated and removed from your cluster. This is because no nodes in your cluster match the label selector that we added to the DaemonSet. Nodes can be labeled on the fly by using <code class="literal">kubectl</code>:</p><pre class="programlisting"><span class="strong"><strong>kubectl label node/&lt;node name&gt; monitoring=prometheus</strong></span></pre><p>Once a node is correctly labeled, you should notice that the DaemonSet controller schedules a pod to it.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip36"></a>Note</h3><p>On AWS, nodes are automatically labeled with information including region, availability zone, instance type, and hostname. You might wish to use these labels to deploy services to certain nodes in your cluster, or to provide differently configured versions of tools for different types of node in your cluster.
+If you want to add additional labels, you can pass them as arguments to the kubelet using the <code class="literal">--node-labels</code> flag.</p></div></div>

@@ -1,0 +1,69 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch14lvl1sec122"></a>Handling outages and disasters</h2></div></div><hr /></div><p>If you make Azure Service Bus<span class="emphasis"><em> </em></span>the <span>center</span><a id="id325120038" class="indexterm"></a> of your architecture—a service that is <span>responsible</span><a id="id325120029" class="indexterm"></a> for integrating dozens of services and handling the communication—you have to make sure that it is replicated and invulnerable to disasters. There are two topics to consider here: disaster recovery and handling outages. As those terms are completely different concepts, you have both to understand them and be able to implement a solution in case unexpected issues and accidents occur. In the last section of this chapter, you will learn how Azure Service Bus<span class="emphasis"><em> </em></span>can be made into a durable cloud component, on which you and your applications can rely.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec148"></a>Disaster recovery</h3></div></div></div><p>When a disaster happens, you <span>may</span><a id="id325117193" class="indexterm"></a> lose a part or all of your data. In general, a disaster is defined as a temporal or permanent loss of the whole service with no guarantees that it will become available again. Such disasters are floods, earthquakes, or fires, just to name a few. Disasters tend to occur in a single region (the probability of disasters occurring in separate regions simultaneously is very small), so in general you need two different data centers to implement disaster recovery (DR).</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note173"></a>Note</h3><p>Remember, using two different data centers may not be enough if they are close to each other—you have to select two that can satisfy your requirements, but at the same time are as far from each other as possible.</p></div><p> </p><p> </p><p>When it comes to implementing DR in Azure Service Bus, the flow is the same as in Azure Event Hub:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Create the primary region</li><li style="list-style-type: disc">Create the secondary region</li><li style="list-style-type: disc">Create the pairing</li><li style="list-style-type: disc">Define a trigger for failover</li></ul></div><p>In general, to create the pairing, you need the following code snippet:</p><pre class="programlisting">var client = new ServiceBusManagementClient(creds) { SubscriptionId = subscriptionId };
+
+var namespace2 = 
+  await client.Namespaces.CreateOrUpdateAsync(
+  "&lt;resource-group-name&gt;", 
+  "&lt;secondary-namespace&gt;", 
+  new SBNamespace { ... params ... });
+
+ArmDisasterRecovery drStatus = 
+  await client.DisasterRecoveryConfigs.CreateOrUpdateAsync(
+            "&lt;resource-group-name&gt;",
+      "&lt;primary-namespace&gt;",
+      "&lt;alias&gt;",
+      new ArmDisasterRecovery { PartnerNamespace = namespace2.Id })</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note174"></a>Note</h3><p>The preceding sample uses the <code class="literal">Microsoft.Azure.Management.ServiceBus</code><span class="strong"><strong> </strong></span>NuGet package for operating on a namespace.</p></div><p>Once a pairing is configured and created, it is up to you to <span>trigger</span><a id="id325115458" class="indexterm"></a> and initiate a failover. To do so, the following line is all you need:</p><pre class="programlisting"><span>client</span>.<span>DisasterRecoveryConfigs</span>.<span>FailOver</span>(<span>"&lt;resource-group-name&gt;"</span>, <span>"&lt;secondary-namespace&gt;"</span>, <span>"&lt;alias&gt;"</span>);</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note175"></a>Note</h3><p>Note that a failover is initiated against the secondary region—this is crucial as the primary region may not be available at the time of initiating an operation. </p></div><p> </p><p>Once a failover is finished, you can start handling messages using your secondary region. There is, however, one important thing to remember: in case another outage happens, you want to be able to fail over again. Because of that, it is also very important to set up another secondary namespace (and make the current one your primary) and pair them to be secure again.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec149"></a>Handling outages</h3></div></div></div><p>While a disaster often means <span>that</span><a id="id325115408" class="indexterm"></a> some part of your data is lost, an outage may be described as a service being temporarily unavailable. This is why once it is resolved, you may want to synchronize both Service Bus namespaces. While this process is automatic, it may take a while. It is stated in the documentation that only 50-100 entities will be transferred per minute. For this reason, you may consider the concept of active/passive replication:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Active</strong></span>: In such an approach, you have two <span>active</span><a id="id325115425" class="indexterm"></a> namespaces, which actively receive messages. Then a receiver always receives both of them—you have to tag them properly with the same unique identifier used to detect duplicates (you can use either the <code class="literal">MessageId</code><span class="strong"><strong> </strong></span>or <code class="literal">Label</code><span class="strong"><strong> </strong></span>property for that).</li><li style="list-style-type: disc"><span class="strong"><strong>Passive</strong></span>: Instead of actively using both queues (or topics), you can use the second one only if a message cannot be delivered to the primary namespace. This <span>approach</span><a id="id325115454" class="indexterm"></a> has its caveats, however: it may cause a message delivery delay (or even loss) or duplicates.</li></ul></div><p>Here, you can find an example of passive replication:</p><pre class="programlisting">private async Task SendMessage(BrokeredMessage message1, int maxSendRetries = 10)
+{
+  do
+  {
+    var message2 = message1.Clone();
+    try
+    {
+      await _activeQueueClient.SendAsync(message1);
+      return;
+    }
+    catch
+    {
+      if (--maxSendRetries &lt;= 0)
+      {
+        throw;
+      }
+
+      lock (_swapMutex)
+      {
+        var client = _activeQueueClient;
+        _activeQueueClient = _backupQueueClient;
+        _backupQueueClient = client;
+      }
+
+      message1 = message2.Clone();
+    }
+  }
+  while (true);
+}</pre><p>As you can see, it clearly shows how a duplicate of a message is passed to a backup queue. An example of active replication is slightly different:</p><pre class="programlisting">var task1 = primaryQueueClient.SendAsync(m1);
+var task2 = secondaryQueueClient.SendAsync(m2);
+
+try
+{
+  await task1;
+}
+catch (Exception e)
+{
+  exceptionCount++;
+}
+
+try
+{
+  await task2;
+}
+catch (Exception e)
+{
+  exceptionCount++;
+}
+
+if (exceptionCount &gt; 1)
+{
+  throw new Exception("Send Failure");
+}</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>Here we are sending the same message to both namespaces, even if one of them fails. One more thing <span>that</span><a id="id325128381" class="indexterm"></a> should be considered to handle outages is using partitioned senders (though unavailable in the premium<span class="strong"><strong> </strong></span>tier). When using them, you are safe in case of an outage of a single messaging store, and you can still use other partitions to send and receive data. The following example enables partitioning on a topic:</p><pre class="programlisting">var ns = NamespaceManager.CreateFromConnectionString(myConnectionString);
+var td = new TopicDescription(TopicName);
+td.EnablePartitioning = true;
+ns.CreateTopic(td);</pre></div></div>

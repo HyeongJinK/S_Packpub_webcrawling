@@ -1,0 +1,69 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec33"></a>Understanding and controlling animation progress</h2></div></div><hr /></div><p>One of the best features of <code class="literal">UIViewPropertyAnimator</code> is that you can use it to create <span>animations</span><a id="id325333133" class="indexterm"></a> that can be interrupted, reversed, or interacted with. Many of the animations you see in iOS are interactive animations. For instance, swiping on a page to go back to the previous page is an interactive transition. Swiping between pages on the home screen, opening the control center, or pulling down the notification center are all examples of animations that you manipulate by interacting with them.</p><p>While the concept of interactive animations might sound complicated, <code class="literal">UIViewPropertyAnimator</code> makes it quite simple to implement them. As an example, you'll see how to implement a drawer on the contact detail page in the <span class="strong"><strong>Hello-Contact</strong></span>s app. First, you'll prepare the view, so the drawer is partially visible in the app. Once the view is all set up, you will write the code to perform an interactive show-and-hide animation for the drawer.</p><p>Open <code class="literal">Main.storyboard</code> in the <span class="strong"><strong>Hello-Contacts</strong></span> project and add a plain view to the contact-detail view controller's view. Make sure that you do not add the drawer view to the scroll view. It should be added on top of the scroll view. Set up Auto Layout constraints to make sure the drawer view's width is equal to the main view's width. Also, align the view with the horizontal center of its container. Next, make the drawer <code class="literal">350</code> points in height. The last constraint that you must add is a bottom space to the Safe Area constraint. Set the constant for this constraint to <code class="literal">-305</code> so most of the drawer view is hidden from sight. Make sure this constraint is relative to the safe area margins so it doesn't overlap with the iPhone Xs' home screen indicator.</p><p>Next, add a button to the drawer. Align it horizontally and space it 8 points from the top of the drawer. Set the button's label to <strong class="userinput"><code>Toggle Drawer</code></strong>. It's a good idea to give the drawer <span>view</span><a id="id325333367" class="indexterm"></a> a background color so you can easily see it sliding over the contact detail page. The following screenshot shows the desired result:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/04e29e34-41c4-4156-be47-f3f74187e093.png" /></div><p></p><p>The layout is now prepared. The implementation of the drawer functionality should implement the following features:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Toggle the drawer by tapping on the toggle button.</li><li style="list-style-type: disc">Toggle the drawer interactively when swiping on the drawer.</li><li style="list-style-type: disc">Allow the user to tap on the toggle button and then swipe the drawer to manipulate or reverse the animation.</li></ul></div><p>Behavior such as this is not straightforward; without <code class="literal">UIViewPropertyAnimator</code>, you would have to write a lot of complex code, and you'd still be pretty far from your desired results. Let's see what <code class="literal">UIViewPropertyAnimator</code> does to make implementing this effect manageable.</p><p>To prepare for the implementation of the drawer, add the <span>following</span><a id="id325369906" class="indexterm"></a> two properties to <code class="literal">ContactDetailViewController</code>:</p><pre class="programlisting">@IBOutlet var drawer: UIView!  
+var isDrawerOpen = false  
+var drawerPanStart: CGFloat = 0
+var animator: UIViewPropertyAnimator!</pre><p>Also, add an extension to <code class="literal">ContactDetailViewController</code> that holds an <code class="literal">@IBAction</code> for the tap action. <code class="literal">@IBAction</code> is similar to <code class="literal">@IBOutlet</code>, but it used to call a particular method in response to a specific user action. An extension is used so it's easy to group the animation code nicely:</p><pre class="programlisting">extension ContactDetailViewController {  
+    @IBAction func toggleDrawerTapped() {  
+    }  
+}</pre><p>Connect the outlet you've created to the drawer view in Interface Builder. Also, connect <code class="literal">@IBAction</code> to the toggle button's <strong class="userinput"><code>Touch Up Inside</code></strong> action. This is done by dragging from <code class="literal">toggleDrawerTapped</code> under the <strong class="userinput"><code>Received Actions</code></strong> header in the <strong class="userinput"><code>Connections Inspector</code></strong>. When you drag from the action to the button, a menu appears from which you can select the action for which <code class="literal">@IBAction</code> should trigger. To respond to a button tap, choose <strong class="userinput"><code>Touch Up Inside</code></strong> from this menu.</p><p>Lastly, add the following lines to the end of <code class="literal">viewDidLoad()</code>:</p><pre class="programlisting">let panRecognizer = UIPanGestureRecognizer(target: self, action: #selector(didPanOnDrawer(recognizer:)))  
+drawer.addGestureRecognizer(panRecognizer)</pre><p>The preceding code sets up and adds a pan gesture-recognizer to the drawer view so the app can detect when a user starts dragging their finger on the drawer. Gesture-recognizers are a great way to respond to user interactions such as tapping, double-tapping, pinching, swiping, and panning.</p><p>Also, add the <span>following</span><a id="id325580594" class="indexterm"></a> method to the extension you created earlier for <code class="literal">@IBAction</code>. This is the method that is called when the user performs a pan gesture on the drawer:</p><pre class="programlisting">@objc func didPanOnDrawer(recognizer: UIPanGestureRecognizer) {  
+
+}</pre><p>Now that all of the placeholders are implemented, let's create a simple first version of the open drawer animation. When the user taps on the toggle button, the drawer should open or close depending on the drawer's current state. The following snippet implements such an animation:</p><pre class="programlisting">@IBAction func toggleDrawerTapped() {  
+    animator = UIViewPropertyAnimator(duration: 1, curve: .easeOut) { [unowned self] in  
+        if self.isDrawerOpen {  
+            self.drawer.transform = CGAffineTransform.identity  
+        } else {  
+            self.drawer.transform = CGAffineTransform(translationX: 0, y: -305)  
+        }  
+    }  
+
+    animator?.addCompletion { [unowned self] _ in  
+        self.animator = nil  
+        self.isDrawerOpen = !(self.drawer.transform == CGAffineTransform.identity)  
+    }  
+
+    animator?.startAnimation()  
+}</pre><p>The animation that is passed to the property animator uses the value of <code class="literal">isDrawerOpen</code> to determine whether the animation should open or close the drawer. When the drawer is currently open, it should close and vice versa. Once the animation finishes, the <code class="literal">isDrawerOpen</code> variable is updated to reflect the new state of the drawer. To determine the current state, the application reads the drawer's current transformation. If the drawer is not transformed, its transformation will equal <code class="literal">CGAffineTransform.identity</code> and the drawer is considered closed. Otherwise, the drawer is considered opened. You can build and run the app now to see this animation in action.</p><p>To allow the user to interrupt or start the animation by dragging their finger on the screen, the code must check whether an existing property animator is performing an animation. If no animator exists or if the current animator is not running any animations, a new instance of the animator should be created. In all other circumstances, it's possible to make use of the existing animator. Let's refactor the animator creation code from <code class="literal">toggleDrawerTapped()</code> so it reuses the animator if possible and creates a new animator if needed.</p><p>Add the <span>following</span><a id="id325602537" class="indexterm"></a> method to the extension and update <code class="literal">toggleDrawerTapped()</code> as shown in the following code:</p><pre class="programlisting">func setUpAnimation() {
+  guard animator == nil || animator?.isRunning == false
+    else { return }
+
+  animator = UIViewPropertyAnimator(duration: 1, curve: .easeOut) { [unowned self] in
+    if self.isDrawerOpen {
+      self.drawer.transform = CGAffineTransform.identity
+    } else {
+      self.drawer.transform = CGAffineTransform(translationX: 0,
+                                                y: -305)
+    }
+  }
+
+  animator?.addCompletion { [unowned self] _ in
+    self.animator = nil
+    self.isDrawerOpen = !(self.drawer.transform == CGAffineTransform.identity)
+  }
+}
+
+@IBAction func toggleDrawerTapped() {
+  setUpAnimation()
+  animator?.startAnimation()
+}</pre><p>Now add the following implementation for <code class="literal">didPanOnDrawer(recognizer: UIPanGestureRecognizer)</code>:</p><pre class="programlisting">@objc func didPanOnDrawer(recognizer: UIPanGestureRecognizer) {
+  switch recognizer.state {
+  case .began:
+    setUpAnimation()
+    animator?.pauseAnimation()
+    drawerPanStart = animator?.fractionComplete ?? 0
+  case .changed:
+    if self.isDrawerOpen {
+      animator?.fractionComplete = (recognizer.translation(in: drawer).y / 305) + drawerPanStart
+    } else {
+      animator?.fractionComplete = (recognizer.translation(in: drawer).y / -305) + drawerPanStart
+    }
+  default:
+    drawerPanStart = 0
+    let timing = UICubicTimingParameters(animationCurve: .easeOut)
+    animator?.continueAnimation(withTimingParameters: timing, durationFactor: 0)
+
+    let isSwipingDown = recognizer.velocity(in: drawer).y &gt; 0
+    if isSwipingDown == !isDrawerOpen {
+      animator?.isReversed = true
+    }
+  }
+}</pre><p>This method is called for any change that occurs in the pan gesture-recognizer. When the pan gesture first starts, the animation is configured, and then <code class="literal">pauseAnimation()</code> is called on the animator object. This allows us to change the animation progress based on the user's pan behavior. Because the user might begin panning in the middle of the animation, for instance after tapping the toggle button first, the current <code class="literal">fractionComplete</code> value is stored in the <code class="literal">drawerPanStart</code> variable.</p><p>The value of <code class="literal">fractionComplete</code> is a value between <code class="literal">0</code> and <code class="literal">1</code> and it's decoupled from the time that your animation takes to run. So imagine that you are using an ease-in and ease-out <span>timing</span><a id="id325605895" class="indexterm"></a> parameter to animate a square from an <code class="literal">x</code> value of <code class="literal">0</code> to an <code class="literal">x</code> value of <code class="literal">100</code>, the <code class="literal">x</code> value of <code class="literal">10</code> is not at <code class="literal">10%</code> of the time the animation takes to complete. However, <code class="literal">fractionComplete</code> will be <code class="literal">0.1</code> which corresponds to the animation being <code class="literal">10%</code> complete. This is because <code class="literal">UIViewPropertyAnimator</code> converts the timescale for your animation to linear once you pause it. Usually, this is the best behavior for an interactive animation. However, you can change this behavior by setting the <code class="literal">scrubsLinearly</code> property on your animator to false. If you do this, <code class="literal">fractionComplete</code> will take any timing parameters you've applied into account. You can try playing with this to see what it feels like for the drawer animation.</p><p>Once the initial animation is configured and paused, the user can move their finger around. When this happens, the <code class="literal">fractionComplete</code> property is calculated and set on the animator by taking the distance traveled by the user's finger and dividing it by the total distance required. Next, the progress made by the animation before being interrupted is added to this new value.</p><p>Finally, if the gesture ends, is canceled, or anything else, the start position is reset. Also, a timing parameter to use for the rest of the animation is configured and the animation is set up to continue. By passing a <code class="literal">durationFactor</code> of <code class="literal">0</code>, the animator knows to use whatever time is left for the animation while taking into account its new timing function. Also, if the user tapped the toggle button to close the drawer, yet they catch it mid-animation and swipe upward, the animation should finish in the upward direction. The last couple of lines take care of this logic.</p><p>It's strongly recommended you experiment and play around with the code that you just saw. You can do powerful things with interruptible and interactive animations. Let's see how you can add some extra vibrancy to your animations with springs!</p></div>

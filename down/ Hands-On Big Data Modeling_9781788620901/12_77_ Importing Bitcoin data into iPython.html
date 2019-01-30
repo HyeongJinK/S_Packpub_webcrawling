@@ -1,0 +1,27 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec74"></a>Importing Bitcoin data into iPython</h2></div></div><hr /></div><p>In order to process the <span>Bitcoin</span><a id="id325337702" class="indexterm"></a> data, the first step is to get <span>started</span><a id="id325337693" class="indexterm"></a> with iPython. As mentioned in earlier chapters, iPython can be installed in different ways. One of the ways is described in <code class="literal">Chapter 6</code>, <span class="emphasis"><em>Modeling Structured Data</em></span>, and <a class="link" href="#" linkend="ch15">Chapter 15</a>, <span class="emphasis"><em>Modeling IMDb Data Points with Python,</em></span> using Anaconda. Assuming you have iPython running, let's open a notebook and get started. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec87"></a>Importing required libraries</h3></div></div></div><p><span>The first step</span> is to import all the <span>required</span><a id="id326539026" class="indexterm"></a> libraries. This can be done as follows:</p><pre class="programlisting">#import the packages
+import math
+import pandas as pd
+import numpy as np
+import os
+from pandas import DataFrame
+from sklearn.cluster import KMeans
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+from matplotlib import style
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn import neighbors, datasets
+style.use('ggplot')
+import matplotlib.pylab as plt
+from scipy.stats import linregress
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 15, 6
+from pandas import read_csv
+from pandas import datetime
+from matplotlib import pyplot
+import sklearn
+from sklearn.metrics import mean_squared_error
+from sklearn import datasets, linear_model</pre><p>Now let's import the Bitcoin data into our notebook. Download and place the Bitcoin data in the same drive as the notebook. You can find the current working directory using the following command:</p><pre class="programlisting"><span class="strong"><strong>&gt; os.getcwd()</strong></span></pre><p>It should give you the current <span>directory</span><a id="id326539240" class="indexterm"></a> the files are in. The output should look something like this:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/e6d7efd5-f240-465a-9405-c339c11fa73e.png" /></div><p>Figure 12.1: Output of the getcwd command</p><p>Once you have the current path, you can place the CSV file in the directory. The Bitcoin data can be found online in Kaggle, or it can be used from the GitHub repository inside <code class="literal">CH12/Bitcoin/bitcoin.csv</code>:</p><pre class="programlisting">df=pd.read_csv("bitcoin.csv", index_col=None)</pre><p>Once the CSV file is imported correctly, let's look at the first 10 entries to see how our data looks:</p><pre class="programlisting">df.head(10)</pre><p>The output looks like this:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/a9c47be5-3bc5-468a-a221-53afdb9b6059.png" /></div><p>Figure 12.2: First 10 entries in the Bitcoin data</p><p><span class="emphasis"><em>Figure 12.2</em></span> shows the first 10 entries from the CSV file. There are eight columns, excluding the index. Each of them has a specific meaning:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Timestamp</strong></span> (in Unix time)</li><li style="list-style-type: disc"><span class="strong"><strong>Open</strong></span>: Bitcoin price in currency units at the opening of the time period</li><li style="list-style-type: disc"><span class="strong"><strong>High</strong></span>: Highest Bitcoin price in currency units during the time period</li><li style="list-style-type: disc"><span class="strong"><strong>Low</strong></span>: Lowest Bitcoin price in currency units during the time period</li><li style="list-style-type: disc"><span class="strong"><strong>Close</strong></span>: Bitcoin price in currency units at the closing of the time period</li><li style="list-style-type: disc"><span class="strong"><strong>Volume_(BTC)</strong></span>: Volume of BTC transacted in the time period</li><li style="list-style-type: disc"><span class="strong"><strong>Volume_(Currency)</strong></span>: Volume of currency transacted in the time period</li><li style="list-style-type: disc"><span class="strong"><strong>Volume-weighted average price</strong></span> (<span class="strong"><strong>VWAP</strong></span>)</li></ul></div><p>Now let's save the <span>variables</span><a id="id325808142" class="indexterm"></a> into their respective variables:</p><pre class="programlisting">price=df['Weighted_Price']<span>
+</span>time=df['Timestamp']
+df2=DataFrame({'price':price,'time':time})</pre><p>In order to get simple statistics of any column, there is a function, <code class="literal">describe()</code>, that gives us detailed statistics of any particular column:</p><pre class="programlisting">#descriptive statistics
+df2.price.describe()</pre><p> </p><p> </p><p> </p><p> </p><p>The output should look like this:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/766450e0-9671-4de1-bdc4-916d11a4b6b2.png" /></div><p>Figure 12.3: Describing price to get statistics</p><p>In the same way, we can get the statistics for all the numeric columns. </p></div></div>

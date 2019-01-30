@@ -1,0 +1,22 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec54"></a>Provisioning add-ons</h2></div></div><hr /></div><p>Much of the power of Kubernetes <span>comes</span><a id="id325268185" class="indexterm"></a> from the fact that it is easy to extend by adding additional services to provide additional functionality.</p><p>We are going to look at an example of this by deploying <code class="literal">kube2iam</code>. This is a daemon that runs on every node in our cluster and intercepts calls to the AWS metadata service that are made by processes running in our pods.</p><p>A simple way to provision a service like this is by using a DaemonSet to run a pod on every node in the cluster, as shown in the following code. This approach is already used in our cluster to deploy the <code class="literal">aws-vpc-cni</code> networking plugin to every node and to run <code class="literal">kube-proxy</code>, the Kubernetes component that runs on every node and that is responsible for routing traffic that is destined for service IPs to the underlying pods:</p><pre class="programlisting"><span class="strong"><strong>kube2iam.yaml</strong></span>
+--- 
+apiVersion: v1 
+kind: ServiceAccount 
+metadata: 
+  name: kube2iam 
+  namespace: kube-system 
+--- 
+apiVersion: v1 
+kind: List 
+items:         
+...                                                           <span class="strong"><strong>kube2iam.tf</strong></span> 
+resource "null_resource" "kube2iam" { 
+  triggers = { 
+    manifest_sha1 = "${sha1(file("${path.module}/kube2iam.yaml"))}" 
+  } 
+ 
+  provisioner "local-exec" { 
+    command = " kubectl --kubeconfig=${local_file.kubeconfig.filename} apply -f 
+${path.module}/kube2iam.yaml" 
+  } 
+} </pre></div>

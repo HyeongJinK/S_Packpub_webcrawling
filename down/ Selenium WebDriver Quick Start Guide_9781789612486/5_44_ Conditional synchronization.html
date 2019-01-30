@@ -1,0 +1,166 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec48"></a>Conditional synchronization</h2></div></div><hr /></div><p>Let's jump into conditional <span>synchronization</span><a id="id325162069" class="indexterm"></a> now. There is polling involved in conditional synchronization. There are two categories in <span>conditional</span><a id="id325162077" class="indexterm"></a> synchronization: </p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Synchronization at the driver-instance level</li><li style="list-style-type: disc">Synchronization at the WebElement level</li></ul></div><p>Let's look at synchronization at the driver-instance level.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec46"></a>Synchronization at the WebDriver-instance level</h3></div></div></div><p>There are three <span>kinds</span><a id="id325438026" class="indexterm"></a> of <span>wait</span><a id="id325438035" class="indexterm"></a> in this category:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Implicit wait: Applies to all elements on a web page</li><li style="list-style-type: disc"><code class="literal">PageLoadTimeout</code>: Checks for page load time</li><li style="list-style-type: disc"><code class="literal">SetScriptTimeout</code>: Can be used to set the timeout for an asynchronous script execution</li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec14"></a>Implicit wait</h4></div></div></div><p>The implicit wait is the first type of conditional synchronization that is always at the WebDriver-instance level. As long as the WebDriver instance is active, this <span>wait</span><a id="id325444797" class="indexterm"></a> is effective. </p><p>The way to use the implicit wait is by phrasing it as <code class="literal">driver.manage().timeouts().implicitlyWait(14, TimeUnit.SECONDS);</code>.</p><p>The <code class="literal">manage()</code> method, when invoked on the <code class="literal">driver</code> object, returns an object of the options interface, after which we invoke the <code class="literal">timeouts()</code> method in the options interface. The <code class="literal">timeouts()</code> method returns an object of the timeouts interface. Finally, we invoke the <code class="literal">implicitelyWait(long, TimeUnit)</code> method of the timeouts interface. The <code class="literal">implicitelyWait</code> method is a factory <span>method</span><a id="id325447018" class="indexterm"></a> that returns an object of the same interface, namely<code class="literal">timeouts</code>.</p><p>When searching for a single element, the driver should poll the page until it finds the element under consideration. If the element is not found, or this timeout expires, a <code class="literal">NoSuchElementException</code> is thrown. When multiple elements are being <span>searched</span> in the DOM, the driver polls the page until at least one element has been found, or this timeout expires.</p><p>Increasing the implicit wait timeout is a method that should be used with caution, as it will have a negative effect on the test runtime, particularly when used with slower location techniques, such as XPath, when compared with CSS.</p><p>We will create a sample page in JavaScript, which will have a button. When the button is clicked, various tool names will get displayed at a time interval of <code class="literal">3</code> seconds. The following is the code for the web page: </p><pre class="programlisting">&lt;html&gt;
+ &lt;body&gt;
+     &lt;button onclick="timerText()"&gt;Timer Start&lt;/button&gt;
+     &lt;p id="demoText"&gt;Click on Timer Start&lt;/p&gt;
+     &lt;script&gt;
+         function timerText() {
+             setTimeout(displaySelenium,3000);
+             setTimeout(displayUFT,6000);
+             setTimeout(displayAppium,9000);
+             setTimeout(displaySilkTest,12000);
+             setTimeout(displayCucumber,15000);
+         }
+         function displaySelenium() {
+             document.getElementById("demoText").innerHTML="Selenium 
+             WebDriver";
+         }
+         function displayUFT() {
+             document.getElementById("demoText").innerHTML="Unified 
+             Functional Test";
+         }
+         function displayAppium() {
+             document.getElementById("demoText").innerHTML="Appium";
+         }
+         function displaySilkTest() {
+             document.getElementById("demoText").innerHTML="Silk Test";
+         }
+         function displayCucumber() {
+             document.getElementById("demoText").innerHTML="Cucumber 
+             Framework";
+         }
+     &lt;/script&gt;
+   &lt;/body&gt;
+&lt;/html&gt;</pre><p>Let's write a small program that prints <code class="literal">Element is displayed</code> when it finds an element with the text <code class="literal">Silk Test</code> on screen. Note that, as per the preceding JavaScript program, <code class="literal">Silk Test</code> appears after <code class="literal">12</code> seconds. </p><p>The following is the code to print details such as whether an <code class="literal">Element is displayed</code> and the exact time required to find the element. The <code class="literal">Start Time</code> and <code class="literal">End Time</code> are noted, and finally, a difference in time is <span>measured</span>:</p><pre class="programlisting">long startTime = 0L;
+long endTime = 0L;
+boolean status = false;
+System.setProperty("webdriver.chrome.driver","C:\\SeleniumWD\\src\\main\\resources\\chromedriver.exe");
+WebDriver driver = new ChromeDriver();
+driver.manage().window().maximize();
+driver.navigate().to( "C:\\Users\\Bhagyashree\\Desktop\\Documents\\Timer.html");
+driver.findElement(By.xpath("//*[text()='Timer Start']")).click();
+startTime = System.currentTimeMillis();
+driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
+try {
+        status = driver.findElement(By.xpath("//*[text()='Silk Test']"))         
+                .isDisplayed();
+     } catch (NoSuchElementException exception) {
+         System.out.println(exception.getMessage());
+       }
+ if (status) {
+    System.out.println("Element is displayed");
+ } else {
+     System.out.println("Element is not displayed");
+ }
+ endTime = System.currentTimeMillis();
+ timeDiff = endTime - startTime;
+ timeDiff = timeDiff / 1000;
+ System.out.println("Start Time: " + startTime);
+ System.out.println("End Time: " + endTime);
+ System.out.println("Difference in Time: " + timeDiff);</pre><p>The output from the preceding code is given here: </p><pre class="programlisting"><span class="strong"><strong>Element is displayed</strong></span>
+<span class="strong"><strong>Start Time: 1535203696762</strong></span>
+<span class="strong"><strong>End Time: 1535203708848</strong></span>
+<span class="strong"><strong>Difference in Time: 12</strong></span></pre><p>The page load timeout is a timeout that remains in action for the lifetime of the driver. It sets the amount of time for a page load to complete fully before throwing a<code class="literal">PageLoadTimeout</code>exception. Let's take the example of<a class="ulink" href="http://www.freecrm.com" target="_blank">http://www.freecrm.com</a>. The home page takes some time to fully load before it can display thelogin form. <span>As</span> you can see, we get the exact time for <code class="literal">Silk Test</code> to appear on screen, which is <code class="literal">12</code> seconds. Note that it is not feasible for us to use <code class="literal">Thread.sleep</code> in this kind of situation.</p><p>The following script displays the use of <code class="literal">PageLoadTimeout</code>, where we have deliberately set the <code class="literal">PageLoadTimeout</code> as <code class="literal">3</code> seconds:</p><pre class="programlisting"> System.setProperty("webdriver.chrome.driver",
+ "C:\\SeleniumWD\\src\\main\\resources\\chromedriver.exe");
+ WebDriver driver = new ChromeDriver();
+ driver.manage().timeouts().pageLoadTimeout(3, TimeUnit.SECONDS);
+ driver.manage().window().maximize();
+ driver.navigate().to("http://www.freecrm.com");</pre><p>This script will throw a <code class="literal">PageLoadTimeout</code> exception, as shown in the following output:</p><div class="mediaobject"><img src="/graphics/9781789612486/graphics/e5992e7d-9db0-41ac-97f8-c01de3e0be39.png" /></div><p> </p><p>Another timeout that can be applied at the driver-instance level is<code class="literal">setScriptTimeout</code>. This timeout requires an understanding of the<code class="literal">JavaScriptExecutor</code>, which is covered in a later chapter; <code class="literal">setScriptTimeout</code> will be discussed then.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec47"></a>Synchronization at the WebElement level</h3></div></div></div><p>We will now learn <span>about</span><a id="id325438169" class="indexterm"></a> synchronization at the <code class="literal">WebElement</code> level. There are two <span>waits</span><a id="id325438181" class="indexterm"></a> in this category:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Explicit wait</li><li style="list-style-type: disc">Fluent wait</li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec15"></a>Explicit wait</h4></div></div></div><p>To understand explicit waits, we have to explore the <code class="literal">WebDriverWait</code> class. This class extends the <code class="literal">FluentWait</code> class. The <code class="literal">FluentWait</code> class implements the <span>wait</span><a id="id325439238" class="indexterm"></a> interface.</p><p>The <code class="literal">WebDriverWait</code> constructor has three overloaded versions. We will be using the version with two arguments, which is the most common version. The signature of the <code class="literal">WebDriverWait</code> constructor with two arguments is <code class="literal">public WebDriverWait(WebDriver,long)</code>. The way to instantiate a <code class="literal">WebDriverWait</code> object is by phrasing the code as follows:</p><pre class="programlisting">WebDriverWait wdWait = new WebDriverWait(driver,15);</pre><p>Here, we specify the maximum waiting time as <code class="literal">15</code> seconds. To understand the explicit wait, we should first familiarize ourselves with a class called <code class="literal">ExpectedConditions</code>. This class has a number of useful methods for waiting on a WebElement to appear before throwing an <code class="literal">ElementNotFoundException</code>. A few of these very useful methods are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">presenceOfElementLocated</code>: Checks whether the element is present on the DOM of a page.</li><li style="list-style-type: disc"><code class="literal">visibilityOfElementLocated</code>: Checks whether the element is present on the DOM of a page and is also visible.</li><li style="list-style-type: disc"><code class="literal">frameToBeAvailableAndSwitchToIt</code>: Checks whether a given frame is available. If it is, it then switches to the frame.</li><li style="list-style-type: disc"><code class="literal">elementToBeClickable</code>: Checks whether a given element is visible and enabled.</li></ul></div><p>The syntax of using these methods is as follows:</p><pre class="programlisting">wdWait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[text()='Silk Test']")));</pre><p>Let's look at this line of code in a little more detail. First, let's split it. The <code class="literal">until</code> method is present in the <code class="literal">FluentWait</code> class. Since the <code class="literal">WebDriverWait</code> class extends the <code class="literal">FluentWait</code> class, we can invoke the <code class="literal">until</code> method on the <code class="literal">WebDriverWait</code> object. The <code class="literal">until</code> method keeps polling for the element passed as a parameter until the timeout value specified at the time of creating the <code class="literal">WebDriverWait</code> object. The default polling time is 500 milliseconds. Selenium will check for the presence of the element every 500 milliseconds before throwing a <code class="literal">NoSuchElement</code> exception.</p><p>Let's have a look at a small program that uses an explicit <span>wait</span><a id="id325439339" class="indexterm"></a> to find particular text when it is visible. We will use the same JavaScript file that was created earlier:</p><pre class="programlisting">long startTime = 0L;
+long endTime = 0L;
+boolean status = false;
+System.setProperty("webdriver.chrome.driver", "C:\\SeleniumWD\\src\\main\\resources\\chromedriver.exe");
+ WebDriver driver = new ChromeDriver();
+ WebDriverWait wdWait = new WebDriverWait(driver, 12);
+ driver.manage().window().maximize();
+ driver.navigate().to( "C:\\Users\\Bhagyashree\\Desktop\\Documents\\Timer.html");
+ wdWait.until( ExpectedConditions.presenceOfElementLocated(By.xpath("//*[text()='Timer Start']"))).click();
+ startTime = System.currentTimeMillis();
+ try {
+     wdWait.until(ExpectedConditions.presenceOfElementLocated(By
+         .xpath("//*[text()='Silk Test']")));
+     status = driver.findElement(By.xpath("//*[text()='Silk Test']"))
+ .isDisplayed();
+ } catch (NoSuchElementException exception) {
+     System.out.println(exception.getMessage());
+ }
+ if (status) {
+ System.out.println("Element is displayed");
+ } else {
+ System.out.println("Element is not displayed");
+ }
+ endTime = System.currentTimeMillis();
+ timeDiff = endTime - startTime;
+ timeDiff = timeDiff / 1000;
+ System.out.println("Start Time: " + startTime);
+ System.out.println("End Time: " + endTime);
+ System.out.println("Difference in Time: " + timeDiff);
+
+<span class="strong"><strong>The output from the preceding program is as follows:</strong></span>
+<span class="strong"><strong><span>Element is displayed</span></strong></span>
+<span class="strong"><strong>Start Time: 1535263491998</strong></span>
+<span class="strong"><strong>End Time: 1535263504312</strong></span>
+<span class="strong"><strong>Difference in Time: 12</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec16"></a>Fluent wait</h4></div></div></div><p>A fluent wait is the implementation of the <span>wait</span><a id="id325439383" class="indexterm"></a> interface in which we can configure the timeout and the polling interval dynamically. As well as this, it enables us to add exception exclusions, such as the following example, where we ignore the <code class="literal">NoSuchElement</code> exception. Each instance of the fluent wait defines the timeout value and the polling time or interval. The polling interval states the frequency with which to check for the presence of the element <span>under consideration</span>.</p><p>Let's take the example HTML we created and try to find out whether we are able to locate the element under consideration using fluent wait, using the following code:</p><pre class="programlisting">long startTime = 0L;
+long endTime = 0L;
+WebElement elem = null;
+boolean status = false;
+System.setProperty("webdriver.chrome.driver","C:\\SeleniumWD\\src\\main\\
+    resources\\chromedriver.exe");
+WebDriver driver = new ChromeDriver();
+Wait&lt;WebDriver&gt; wdWait = new FluentWait&lt;WebDriver&gt;(driver)
+                             .withTimeout(30, TimeUnit.SECONDS)
+                             .pollingEvery(1, TimeUnit.SECONDS)
+                             .ignoring(NoSuchElementException.class);
+driver.manage().window().maximize();
+driver.navigate().to("C:\\Users\\Bhagyashree\\Desktop\\Documents\\Timer.html");
+ wdWait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(
+                "//*[text()='Timer Start']"))).click();
+ startTime = System.currentTimeMillis();
+ try {
+         elem = wdWait.until(new Function&lt;WebDriver, WebElement&gt;() {
+             public WebElement apply(WebDriver driver) {
+             WebElement text1 = driver.findElement(By
+                             .xpath("//*[@id='demoText']"));
+             String value = text1.getAttribute("innerHTML");
+             if (value.equalsIgnoreCase("Silk Test")) {
+                 return text1;
+             } else {
+                 System.out.println("Text on screen: " + value);
+                 return null;
+               }
+           }
+         });
+ } catch (NoSuchElementException exception) {
+ System.out.println(exception.getMessage());
+ }
+ if (elem.isDisplayed()) {
+     System.out.println("Element is displayed");
+     } else {
+         System.out.println("Element is not displayed");
+       }
+ endTime = System.currentTimeMillis();
+ timeDiff = endTime - startTime;
+ timeDiff = timeDiff / 1000;
+ System.out.println("Start Time: " + startTime);
+ System.out.println("End Time: " + endTime);
+ System.out.println("Difference in Time: " + timeDiff);
+
+<span class="strong"><strong>The output from this program is as follows:</strong></span>
+<span class="strong"><strong>Text on screen: Click on Timer Start</strong></span>
+<span class="strong"><strong>Text on screen: Click on Timer Start</strong></span>
+<span class="strong"><strong>Text on screen: Click on Timer Start</strong></span>
+<span class="strong"><strong>Text on screen: Selenium WebDriver</strong></span>
+<span class="strong"><strong>Text on screen: Selenium WebDriver</strong></span>
+<span class="strong"><strong>Text on screen: Selenium WebDriver</strong></span>
+<span class="strong"><strong>Text on screen: Unified Functional Test</strong></span>
+<span class="strong"><strong>Text on screen: Unified Functional Test</strong></span>
+<span class="strong"><strong>Text on screen: Unified Functional Test</strong></span>
+<span class="strong"><strong>Text on screen: Appium</strong></span>
+<span class="strong"><strong>Text on screen: Appium</strong></span>
+<span class="strong"><strong>Text on screen: Appium</strong></span>
+<span class="strong"><strong><span>Element is displayed</span></strong></span>
+<span class="strong"><strong>Start Time: 1535286265688</strong></span>
+<span class="strong"><strong>End Time: 1535286278250</strong></span>
+<span class="strong"><strong>Difference in Time: 12</strong></span></pre><p>This output clearly shows that the DOM is polled every second and each piece of text appears three times. The reason for this is that in the JavaScript, the various text items are displayed after a delay of three seconds.</p><p>The polling stops when the required text is found and we get the exact time as <code class="literal">12</code> seconds.</p><p>Let's look at two important concepts to bear in mind when using fluent waits.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch05lvl4sec11"></a>Function keyword</h5></div></div></div><p>In the preceding example, we have used <code class="literal"><span>Function</span></code> keyword in the <span>form</span><a id="id325443329" class="indexterm"></a> of <code class="literal">new Function&lt;WebDriver, WebElement&gt;()</code>.</p><p>When we use <code class="literal">Function</code>, we can return any value. In this case, we return a web element. All instances of <code class="literal">Function</code> should have a single method called <code class="literal">apply</code>, which in the preceding case takes a <code class="literal">WebDriver</code> object as a parameter and returns the <code class="literal">WebElement</code> that is obtained from the <code class="literal">findElement</code> method. The advantage of using instances of <code class="literal">Function</code> is that one can pass an object of any type as the input and return an object of any type as the output.</p><p>It is not just web elements that can be returned. We can even <span>return</span><a id="id325443367" class="indexterm"></a> a Boolean condition. Boolean conditions of the kind shown in the following code are allowed:</p><pre class="programlisting">return driver.findElements(By.id("xyz")).size() &gt; 0 </pre><p>The <code class="literal">apply</code> method will look like the one shown in the following code when they are used to return a B<span>oolean value</span>:</p><pre class="programlisting">new Function&lt;WebDriver, Boolean&gt;() {
+    public Boolean apply(WebDriver driver) {
+        //Processing comes here
+    }
+};</pre><p>Let's have a look at some web pages that are created using JQuery and AJAX. In the following section, we will create a page using the JQuery library.</p></div></div></div></div>

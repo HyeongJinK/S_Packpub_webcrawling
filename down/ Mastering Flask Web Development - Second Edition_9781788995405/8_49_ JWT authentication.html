@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec50"></a>JWT authentication</h2></div></div><hr /></div><p>To solve our authentication problems, <code class="literal">Flask-Login</code> could be used and the cookie data <span>from</span><a id="id325375207" class="indexterm"></a> the login could be checked. However, this would require developers who wish to use our API to have their program login through the web interface. We could also have developers send their login data with every request, but it's a good design practice to only send sensitive information when absolutely necessary. Instead, our API will provide an <code class="literal">auth/api</code> endpoint that allows them to send login credentials and get an access token back.</p><p>For the authentication mechanism, we are going to use <span class="strong"><strong>JSON Web Token</strong></span> (<span class="strong"><strong>JWT</strong></span>) to create access tokens for the consumers of our API upon login. A JWT token asserts which user is logged in, thereby saving the server another call to the database for authentication. This token has an expiration date encoded inside it that will not allow the token to be used after it expires. This means that even if the token is stolen by a malicious user, it will only be useful for a limited amount of time before the client has to reauthenticate. As always, be sure to use HTTPS to encrypt all your client–server connections.</p><p>To leverage this feature, we are going to use another Flask extension—Flask-JWT-extended. You will find its dependency declared in the <code class="literal">requirements.txt</code> file, as follows:</p><pre class="programlisting">...
+flask-jwt-extended
+...</pre><p>The initialization of the extension is going to be made on the <code class="literal">auth</code> module.</p><p><span>Look at the following</span><code class="literal">auth/__init__.py</code> file:</p><pre class="programlisting">from flask_jwt_extended import JWTManager
+...
+jwt = JWTManager()
+...
+def create_module(app, **kwargs):
+    ...
+    jwt.init_app(app)
+    ...</pre><p> </p><p>Next, we use the following <span>helper</span> function to authenticate users that are defined on the same file:</p><pre class="programlisting">
+def authenticate(username, password):
+from .models import User
+    user = User.query.filter_by(username=username).first()
+if not user:
+return None
+# Do the passwords match
+if not user.check_password(password):
+return None
+return user</pre><p>The definition of the login endpoint itself can be found at <code class="literal">auth/controllers.py</code>, as shown in the following code:</p><pre class="programlisting">@auth_blueprint.route('/api', methods=['POST'])
+def api():
+<span class="strong"><strong>if not request.is_json</strong></span>:
+return jsonify({"msg": "Missing JSON in request"}), 400
+
+<span class="strong"><strong>username = request.json.get('username', None)</strong></span>
+<span class="strong"><strong>    password = request.json.get('password', None)</strong></span>
+if not username:
+return jsonify({"msg": "Missing username parameter"}), 400
+if not password:
+return jsonify({"msg": "Missing password parameter"}), 400
+<span class="strong"><strong>    user = authenticate(username, password)</strong></span>
+<span class="strong"><strong>if not user:</strong></span>
+return jsonify({"msg": "Bad username or password"}), 401
+# Identity can be any data that is json serializable
+<span class="strong"><strong>access_token = create_access_token(identity=user.id)</strong></span>
+return jsonify(access_token=access_token), 200</pre><p>First, we verify whether the request includes a JSON body. For this, we use a <code class="literal">request.is_json</code> function from Flask. Next, we extract the username and password from the JSON body using <code class="literal">request.json.get</code>. Then we check the user's credentials using the previous help function, <code class="literal">authenticate</code>. Finally, we return the JWT access token using the username as our identity. </p><p> </p><p>Users of our API will have to pass the token that is received from this resource to any method that requires user credentials. In order to test this code, a tool named <span class="strong"><strong>curl</strong></span> will be used. Curl is a command-line tool included in Bash that allows for the creation and manipulation of HTTP requests. To test it, use the <code class="literal">curl</code><span class="strong"><strong> </strong></span>utility to first log in, as shown in the following code:</p><pre class="programlisting"><span class="strong"><strong>$ curl -H "Content-Type: application/json" -d '{"username":"user1","password":"password"}' http://localhost:5000/auth/api
+</strong></span>{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyOGZjMDNkOC0xY2MyLTQwZDQtODJlMS0xMGQ0Mjc2YTk1ZjciLCJleHAiOjE1MzIwMTg4NDMsImZyZXNoIjpmYWxzZSwiaWF0IjoxNTMyMDE3OTQzLCJ0eXBlIjoiYWNjZXNzIiwibmJmIjoxNTMyMDE3OTQzLCJpZGVudGl0eSI6InVzZXIxIn0.Cs-ANWq0I2M2XMrZpQof-_cX0gsKE7U4UG1t1rB0UoY"
+}<span class="strong"><strong>
+</strong></span></pre><p>We then use the <code class="literal">-H</code> flag to send the request header stating that the content body is JSON and the <code class="literal">-d</code> flag to send the request body data. Next, we can use the token to access API-protected resources, as follows:</p><pre class="programlisting"><span class="strong"><strong>$ export ACCESS="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyOGZjMDNkOC0xY2MyLTQwZDQtODJlMS0xMGQ0Mjc2YTk1ZjciLCJleHAiOjE1MzIwMTg4NDMsImZyZXNoIjpmYWxzZSwiaWF0IjoxNTMyMDE3OTQzLCJ0eXBlIjoiYWNjZXNzIiwibmJmIjoxNTMyMDE3OTQzLCJpZGVudGl0eSI6InVzZXIxIn0.Cs-ANWq0I2M2XMrZpQof-_cX0gsKE7U4UG1t1rB0UoY"</strong></span>
+<span class="strong"><strong>$ curl -H "Authorization: Bearer $ACCESS" http://localhost:5000/api/post</strong></span></pre><p>Note how the access token is sent on the request header user <code class="literal">Authorization: Bearer &lt;TOKEN&gt;</code> convention. If we try to access the same resource without any token, we get the following:</p><pre class="programlisting"><span class="strong"><strong>$ curl -v http://localhost:5000/api/post</strong></span>
+...
+&lt; HTTP/1.0 401 UNAUTHORIZED
+...
+{
+  "msg": "Missing Authorization Header"
+}</pre><p>As expected, we get an HTTP <code class="literal">401</code> status code. To protect <span>API</span><a id="id325380315" class="indexterm"></a> endpoints, we <span>just</span><a id="id325380324" class="indexterm"></a> have to use the <code class="literal">flask-jwt-extended</code> decorator <code class="literal">@jwt_required</code>, and to fetch the username, we use the <code class="literal">get_jwt_identity()</code> function.</p><p> </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip35"></a>Note</h3><p>The <code class="literal">flask-jwt-extended</code> decorator provides some extra functionalities, such as token expiration, the ability to refresh token endpoints, and many configuration options. You can read more about it at <a class="ulink" href="http://flask-jwt-extended.readthedocs.io/en/latest/" target="_blank">http://flask-jwt-extended.readthedocs.io/en/latest/</a>.</p></div></div>

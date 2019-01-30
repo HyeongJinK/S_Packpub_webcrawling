@@ -1,0 +1,98 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec12"></a>Under-the-hood performance of UITableView</h2></div></div><hr /></div><p>E<span>arlier in this chapter</span>, you learned about cell-reuse in table views. You <span>assigned</span><a id="id325606062" class="indexterm"></a> a reuse-identifier to a table-view cell so that the table view would know which cell it should use to display contacts in. Cell-reuse is a concept that is applied so a table view can reuse cells that it has already created. This means that the only cells that are in memory are either on the screen or barely off the screen. The alternative would be to keep all cells in memory, which could potentially mean that hundreds or thousands of cells are held in memory at any given time. For a visualization of what cell reuse looks like, have a look at the following diagram:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/445584c5-44cf-4f30-b366-ed2ded97932b.png" /></div><p>As you can see, there are just a few cells in the picture that are not on the visible screen. This roughly equals the number of cells that a table view might keep in memory. This means that regardless of the total amount of rows you want to show, the table view has a roughly constant pressure on your app's memory usage.</p><p>Earlier, you witnessed a bug that showed the wrong image next to a contact in the table view. This bug is related to cell-reuse because the wrong image is actually only visible for contacts that don't have their own image. This means that the image from the contact that was previously shown in that particular cell is now shown for a different contact.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip4"></a>Note</h3><p>If you haven't seen this bug occur because you don't have that many contacts in your list, try adding more contacts in the contacts app. Alternatively, you can implement a workaround to pretend that you have a lot more contacts. To do this, update <code class="literal">tableView(_:numberOfRowsInSection:)</code> so it returns <code class="literal">contacts.count * 10</code>. Also, update <code class="literal">tableView(_:cellForRowAtIndexPath:)</code> so the contact is retrieved as <code class="literal">let contact = contacts[indexPath.row % contacts.count]</code>.</p></div><p>A cell is first created when <code class="literal">dequeueReusableCell(withIdentifier:)</code> is called on the table view and it does not have an unused cell available. Once the cell is either reused or created, <code class="literal">prepareForReuse()</code> is called on the cell. This is a great spot to reset your cells to their default state by removing any images or setting labels back to their default values. Next, <code class="literal">tableView(_:willDisplay:forRowAt:)</code> is called on the table views's delegate. This happens right before the cell is shown. You can perform some last-minute configuration here, but the majority of work should already be done in <code class="literal">tableView(_:cellForRowAtIndexPath:)</code>. When the cell <span>scrolls</span><a id="id325607110" class="indexterm"></a> offscreen, <code class="literal">tableView(_:didEndDisplaying:forRowAt:)</code> is called on the delegate. This signals that a previously-visible cell has just scrolled out of the view's bounds.</p><p>With all this cell life cycle information in mind, the best way to fix the image-reuse bug is by implementing <code class="literal">prepareForReuse()</code> on <code class="literal">ContactTableViewCell</code>. Add the following implementation to remove any images that have previously been set:</p><pre class="programlisting">override func prepareForReuse() {
+  super.prepareForReuse()
+
+  contactImage.image = nil
+}</pre><p>Quite an easy fix for a pesky bug, don't you think? Let's have a look at another performance optimization that table views have, called prefetching.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec6"></a>Improving performance with prefetching</h3></div></div></div><p>In addition to <code class="literal">UITableViewDelegate</code> and <code class="literal">UITableViewDataSource</code>, a third protocol exists that you can implement to improve your table view's performance. It's called <code class="literal">UITableViewDataSourcePrefetching</code> and you can use it to enhance your data source. If your data source performs some complex task, such as retrieving and decoding an image, it could slow down the performance of your table view if this task is performed at the moment the table view wants to retrieve a cell. Performing this operation a little bit sooner than that can positively impact your app in those cases.</p><p>Since <span class="strong"><strong>Hello-Contacts</strong></span> currently decodes <span>contact</span><a id="id325609923" class="indexterm"></a> images for its cells, it makes sense to implement prefetching to make sure the scrolling performance remains smooth at all times. The current implementation performs the decoding in <code class="literal">tableView(_:cellForRowAt:)</code>. To move this logic to <code class="literal">UITableViewDataSourcePrefetching</code>, there is one method that needs to be implemented, it's called <code class="literal">tableView(_:prefetchRowsAt:)</code>. Add the following extension to <code class="literal">ViewController.swift</code> to create a nice starting point for implementing prefetching:</p><pre class="programlisting">extension ViewController: UITableViewDataSourcePrefetching {
+  func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath]) {
+    for indexPath in indexPaths {
+      // Prefetching will be implemented here soon
+    }
+  }
+}</pre><p>Instead of receiving just a single <code class="literal">IndexPath</code>, <code class="literal">tableView(_:prefetchRowsAt:)</code> receives a list of index path for which you should perform a prefetch. Before implementing the prefetching, take a step back to come up with a good strategy to implement prefetching. For instance, it would be ideal if each image only has to be decoded once to prevent duplicate work from being done. Also, a mechanism is needed to decode images in cases where the image wasn't prefetched. And also in that case, only having to decode once would be great. This can be achieved by creating a class that wraps <code class="literal">CNContact</code> and has some helper methods to make prefetching and decoding nice and smooth.</p><p>First, create a new file (<span class="strong"><strong><strong class="userinput"><code>File | New | File...</code></strong></strong></span>) and select the <strong class="userinput"><code><span class="strong"><strong>Swift file</strong></span></code></strong> template. Name this file <code class="literal">Contact.swift</code>. Add the following code to this file:</p><pre class="programlisting">import UIKit
+import Contacts
+
+class Contact {
+  private let contact: CNContact
+  var image: UIImage?
+
+  // 1
+  var givenName: String {
+    return contact.givenName
+  }
+
+  var familyName: String {
+    return contact.familyName
+  }
+
+  init(contact: CNContact) {
+    self.contact = contact
+  }
+
+  //2
+  func fetchImageIfNeeded(completion: @escaping ((UIImage?) -&gt; Void) = {_ in }) {
+    guard contact.imageDataAvailable == true, let imageData = contact.imageData else {
+      completion?(nil)
+      return
+    }
+
+    if let image = self.image {
+      completion?(image)
+      return
+    }
+
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      self?.image = UIImage(data: imageData)
+      DispatchQueue.main.async {
+        completion?(self?.image)
+      }
+    }
+  }
+}</pre><p>The first thing to note about this code is the use of so-called <span class="emphasis"><em>computed variables</em></span>. These variables act as a proxy for properties from the private <code class="literal">CNContact</code> instance that <code class="literal">Contact</code> wraps. It's good practice to set up proxies such as these because they prevent exposing too many details to other objects. Imagine having to switch from <code class="literal">CNContact</code> to a different type of contact internally. That becomes a lot easier when as few places as possible know about <code class="literal">CNContact</code>.</p><p>The second segment of code you should pay extra attention to is the image-fetching part that ensures we fetch images as efficiently as possible. First, the code checks whether an image is present on the <span>contact</span><a id="id325615329" class="indexterm"></a> at all. If it is, a check is done to see whether a decoded image already exists. And if it does, the completion closure is called with the decoded image. If no image exists yet, it is decoded on the global dispatch queue. By executing code on the global dispatch queue, it is automatically executed off the main thread. This means that no matter how slow or lengthy the image decoding gets, the table view will never freeze up because of it, since the main thread is not doing the heavy lifting. Because this code is asynchronous, a <code class="literal">completion</code> closure is used to call back with the decoded images. Calling back is done on the main thread since that is where the image should be used eventually. Note that the completion closure has a default value in the signature for <code class="literal">fetchImageIfNeeded(completion:)</code>. Sometimes, the result of prefetching isn't needed so no completion handler will be given. Again, if this dispatch stuff makes you dizzy, don't worry. Or skip ahead to <a class="link" href="#" linkend="ch25">Chapter 25</a>, <span class="emphasis"><em>Offloading Tasks with Operations and GCD</em></span>, if you can't wait to learn more.</p><p>There are only a couple more changes that must be made to <code class="literal">ViewController</code> to make it uses the new <code class="literal">Contact</code> class and you're good to go. The following code snippet shows all the updates you will need to incorporate:</p><pre class="programlisting">class ViewController: UIViewController {
+  var contacts = [Contact]()
+
+  //...
+
+  func retrieveContacts(from store: CNContactStore) {
+    //...
+
+    // 1
+    contacts = try! store.unifiedContacts(matching: predicate, keysToFetch: keysToFetch)
+      .map { Contact(contact: $0) }
+
+    // ...
+  }
+}
+
+extension ViewController: UITableViewDataSource {
+  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -&gt; Int {
+    return contacts.count
+  }
+
+  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+    let cell = tableView.dequeueReusableCell(withIdentifier: "ContactTableViewCell") as! ContactTableViewCell
+    let contact = contacts[indexPath.row]
+
+    cell.nameLabel.text = "\(contact.givenName) \(contact.familyName)"
+
+    // 2
+    contact.fetchImageIfNeeded { image in
+      cell.contactImage.image = image
+    }
+
+    return cell
+  }
+}
+
+extension ViewController: UITableViewDelegate {
+  // extension implementation
+}
+
+extension ViewController: UITableViewDataSourcePrefetching {
+  func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath]) {
+    for indexPath in indexPaths {
+      // 3
+      let contact = contacts[indexPath.row]
+      contact.fetchImageIfNeeded()
+    }
+  }
+}</pre><p>The first addition is to make use of <code class="literal">map</code> to transform the list of <code class="literal">CNContact</code> instances to <code class="literal">Contact</code> instances. The second update uses the <code class="literal">fetchImageIfNeeded(completion:)</code> method to obtain an image. This method can be used because it has been set up to return either the existing decoded image or a freshly-decoded one if the prefetching wasn't able to decode the image in time.</p><p>The last change is to prefetch images as needed. Because <code class="literal">fetchImageIfNeeded(completion:)</code> has a default implementation for its <code class="literal">completion</code> argument, it <span>can</span><a id="id325618097" class="indexterm"></a> be called without a <code class="literal">completion</code> closure. The result isn't immediately relevant, so not having to provide a closure is convenient in this case. The prefetching is fully implemented now; you might not immediately notice any improvements when you run the app, but rest assured that proper use of prefetching can greatly benefit your apps.</p></div></div>

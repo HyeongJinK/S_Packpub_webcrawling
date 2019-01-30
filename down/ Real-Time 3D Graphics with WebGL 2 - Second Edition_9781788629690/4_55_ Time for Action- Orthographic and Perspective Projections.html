@@ -1,0 +1,35 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec63"></a>Time for Action: Orthographic and Perspective Projections</h2></div></div><hr /></div><p>Let's look at an <span>example</span><a id="id325358908" class="indexterm"></a> covering the <span>different</span><a id="id325358926" class="indexterm"></a> types of projections:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch04_06_projection-modes.html</code> file in your browser.</li><li>This exercise is very similar to the previous one. However, there are two new options under <strong class="userinput"><code>Projection Mode</code></strong>: <strong class="userinput"><code>Perspective</code></strong> and <strong class="userinput"><code>Orthogonal Projection</code></strong>. As you can see, <strong class="userinput"><code>Perspective</code></strong><span class="strong"><strong> </strong></span>is activated by default.</li><li>Change the camera type to <strong class="userinput"><code>Orbiting</code></strong>.</li><li>Change the projective mode to <strong class="userinput"><code>Orthographic</code></strong>.</li><li>Explore the scene. Notice the lack of the depth cues characteristic of orthogonal projections:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/1a876993-3383-41f9-b290-6c302fbaec22.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Switch to <strong class="userinput"><code>Perspective </code></strong>mode:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/c42031b1-ecf0-4391-9c31-89ae1cdb2909.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Explore the source code. Go to the <code class="literal">updateTransforms</code> function:</li></ol></div><pre class="programlisting">function updateTransforms() {
+const { width, height } = canvas;
+
+if (projectionMode === PERSPECTIVE_PROJECTION) {
+mat4.perspective(
+      projectionMatrix, 
+fov, 
+width / height, 
+10, 
+5000
+);
+}
+else {
+mat4.ortho(projectionMatrix,
+-width / fov,
+width / fov,
+-height / fov,
+height / fov,
+-5000,
+5000
+);
+}
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Take a look at the parameters we are using to set up the projective view.</li><li>Notice that as you increase the field of view (<code class="literal">fov</code>), your camera will capture more of the 3D space. Think of this as the lens of a real-world camera. With a wide-angle lens, you capture more space with the tradeoff of deforming the objects as they move toward the boundaries of your viewing box.</li></ol></div><p><span class="emphasis"><em><span class="strong"><strong>What just happened?</strong></span></em></span></p><p>We experimented with <span>different</span><a id="id325617270" class="indexterm"></a> configurations for <span>the</span><a id="id325617276" class="indexterm"></a> Projection matrix and we saw how these configurations produce different results in the scene.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec82"></a>Have a Go: Integrating the Model-View and the Projective Transform</h3></div></div></div><p>Recall that once we've applied the Model-View transformation to <span>the</span><a id="id325617289" class="indexterm"></a> vertices, the next step is to transform the view coordinates to NDC coordinates:</p><div class="mediaobject"><img src="/graphics/9781788629690/graphics/38a1d2f0-5553-43a9-9a43-3b00a9be927e.png" /></div><p>We do this by simple multiplication by using ESSL in the vertex shader:</p><pre class="programlisting">gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition,1.0);</pre><p>The predefined variable, <code class="literal">gl_Position</code>, stores the NDC coordinates for each vertex of every object defined in the scene.</p><p>In the previous multiplication, we augment the shader attribute, <code class="literal">aVertexPosition</code>, to a 4-component vertex because our matrices are 4x4. Unlike normals, vertices have a Homogeneous coordinate equal to one (<code class="literal">w=1</code>).</p><p>After this step, WebGL will convert the computed clipping coordinates to normalized device coordinates and from there to <code class="literal">canvas</code> coordinates using the WebGL <code class="literal">viewport</code> function. Let's see what happens when we change this mapping:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch04_06_projection-modes.html</code> file in your source code editor.</li><li>Go to the <code class="literal">draw</code> function. This is the rendering function that is invoked every time we interact with the scene (by using the mouse, the keyboard, or the widgets on the page).</li><li>Find the following line:</li></ol></div><pre class="programlisting">gl.viewport(0, 0, canvas.width, canvas.height);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Try each of the following three operations:</li></ol></div><pre class="programlisting">const width = canvas.width,
+  height = canvas.height,
+halfWidth = width / 2,
+halfHeight = height / 2;
+
+// First
+gl.viewport(0, 0, halfWidth, halfHeight);
+
+// Second
+gl.viewport(halfWidth, halfHeight, width, height);
+
+// Third
+gl.viewport(50, 50, width - 100, height - 100);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>For each option, save the file and open it on your browser.</li><li>What do you see? Please note that you can interact with the scene just like before.</li></ol></div></div></div>

@@ -1,0 +1,41 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec133"></a>Adding help to functions</h2></div></div><hr /></div><p>PowerShell is strong on help documentation. This is reflected in the extensive documentation given in all of the first-party cmdlets as well as most third-party and community cmdlets. As seen in <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Introducing PowerShell Core</em></span>, the <code class="literal">Get-Help</code> cmdlet itself runs in different modes, such as <code class="literal">Example</code> and <code class="literal">Full</code>.</p><p>Let's add some help documentation to the <code class="literal">Start-Count</code> cmdlet.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec345"></a>How to do it…</h3></div></div></div><p>Help in PowerShell is comment-based. Therefore, add the following comment block right after the function declaration:</p><pre class="programlisting">function Start-Count {
+    &lt;#
+    .SYNOPSIS
+    This cmdlet counts seconds by accepting a from and a to value. The from value is optional.
+    
+    .DESCRIPTION
+    This cmdlet is a counting function. It accepts two parameters: the TotalTime being the "to" and CurrentTime being the "from". CurrentTime defaults to 0 if not specified.
+    
+    .PARAMETER CurrentTime
+    The starting point, in seconds.
+    
+    .PARAMETER TotalTime
+    The stopping point, in seconds.
+    
+    .EXAMPLE
+    Start-Count 10 15
+    
+    .NOTES
+    Created as a demo for PowerShell 6.0 Linux Administration Cookbook
+    #&gt;
+    param (
+        # The current time, or the starting point
+        [Parameter(Mandatory=$false)]
+        [Alias("CT", "From")]
+        [int]
+        $CurrentTime=0,
+
+        # The total number of seconds to count
+        [Parameter(Mandatory=$false, Position=1)]
+        [Alias("TT", "To")]
+        [ValidateSet(5, 10, 15, 20)]
+        [int]
+        $TotalTime=10
+    )
+
+    while ($CurrentTime -le $TotalTime) {
+        Write-Progress -Activity "Counting to $TotalTime" -Status "Counting: $CurrentTime seconds" -PercentComplete ($CurrentTime / $TotalTime * 100)
+        Start-Sleep 1
+        $CurrentTime++
+    }
+}</pre><p>Run the script within Visual Studio Code, and then, at the <strong class="userinput"><code>Integrated Terminal</code></strong>, run <code class="literal">Get-Help</code> on this cmdlet.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip77"></a>Note</h3><p>It is not necessary to generate this documentation manually by typing the name of each of the parameters. Add a line before the function declaration when in Visual Studio Code and type <code class="literal">##</code>, after you are done writing the entire function. The PowerShell extension will automatically generate the help documentation based on the parameters you have declared. Use tabs to move through sections in the document.</p></div><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec346"></a>How it works…</h3></div></div></div><p>The formatting of the PowerShell help documentation is very specific. PowerShell, even without what you just added, would make <code class="literal">Get-Help</code> possible on the cmdlet, although the help information would only show the parameters, which parameter is mandatory, and so on. If you would like to provide the user with more information on each of the parameters (which is recommended, by the way), add this help documentation.</p><p>PowerShell typically looks for this large, formatted comment block before the function declaration or right after it. While it is possible that PowerShell recognizes these in more places, it is recommended that the help document be added right before the function declaration or right after.</p><p>PowerShell also recognizes (all the instances of) the <code class="literal">.EXAMPLE</code> heading and <span>shows</span><a id="id325898663" class="indexterm"></a> its contents when the <code class="literal">Examples</code> switch parameter is called along with <code class="literal">Get-Help</code>.</p></div></div>

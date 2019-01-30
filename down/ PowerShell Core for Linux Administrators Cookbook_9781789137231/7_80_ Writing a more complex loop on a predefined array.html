@@ -1,0 +1,35 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec83"></a>Writing a more complex loop on a predefined array</h2></div></div><hr /></div><p>In the <span class="emphasis"><em>Writing a basic loop construct</em></span> recipe, we passed content through the pipeline into an in-place <code class="literal">Foreach-Object</code> loop. Now, let's consider that we have these same guests, but specific seats have been allotted to them. We <span>would</span><a id="id325585861" class="indexterm"></a> like to show the seats to the guests. You have the following table in CSV format:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /></colgroup><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Name</strong></span></p></td><td style="border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Seat</strong></span></p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Mr Jain</p></td><td style="border-bottom: 0.5pt solid ; "><p>A-12</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Mr Jacobs</p></td><td style="border-bottom: 0.5pt solid ; "><p>C-28</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Ms Sanders</p></td><td style="border-bottom: 0.5pt solid ; "><p>B-17</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Mr Shah</p></td><td style="border-bottom: 0.5pt solid ; "><p>M-22</p></td></tr><tr><td style="border-right: 0.5pt solid ; "><p>Mr Hugo</p></td><td style=""><p>E-08</p></td></tr></tbody></table></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec221"></a>How to do it...</h3></div></div></div><p>The assumption here is that each row has 40 seats, and that the aisle goes through the center of the hall. Follow these steps to get started:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>If you have not cloned the repository, you could create your own CSV file. Either copy the comma-separated content in the following code block, or create a CSV file using PowerShell:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; @'
+Name,Seat
+Mr Jain,A-12
+Mr Jacobs,C-28
+Ms Sanders,B-17
+Mr Shah,M-22
+Mr Hugo,E-08
+'@ | Out-File -Path './ch07/05-Write-GuestSeatDetails.csv'</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Open a new PowerShell file in Visual Studio Code and type in the following script:</li></ol></div><pre class="programlisting">$Guests = Import-Csv './ch07/05-Write-GuestSeatDetails.csv'
+
+<span class="strong"><strong>foreach ($Guest in $Guests) {</strong></span>
+    $RowIdentifier = [byte][char](($Guest.Seat -split '-')[0].ToUpper())
+    $RowNumber = ($RowIdentifier - 64).ToString()
+
+    switch -Regex ($RowNumber) {
+        '1(1|2|3)$' { $RowNumber += 'th'; break }
+        '.?1$'      { $RowNumber += 'st'; break }
+        '.?2$'      { $RowNumber += 'nd'; break }
+        '.?3$'      { $RowNumber += 'rd'; break }
+        Default     { $RowNumber += 'th'; break }
+    }
+
+    $SeatNumber = ($Guest.Seat -split "-")[1]
+
+    if ($SeatNumber -gt 20) {
+        $Side = 'right'
+    }
+    else {
+        $Side = 'left'
+    }
+
+    Start-Sleep -Seconds 1
+    Write-Host "Welcome, $($Guest.Name)! " -NoNewline
+    Start-Sleep -Seconds 1
+    Write-Host "Your seat is in the $RowNumber row, to the $Side the aisle."
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Run the script.</li></ol></div><p>The output shows personalized greetings and the <span>seat</span><a id="id325898678" class="indexterm"></a> locations:</p><div class="mediaobject"><img src="/graphics/9781789137231/graphics/85ad5ab1-970e-4143-b621-d36538fade6b.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec222"></a>How it works…</h3></div></div></div><p>The main idea here is the use of the <code class="literal">foreach</code> statement. When using the <code class="literal">Foreach</code> loop construct, you refer to each element with a variable; variables are not identified with an index, in this case. For every iteration, in our case, <code class="literal">$Guest</code> picks one value from <code class="literal">$Guests</code>, in sequence, so that the current element can be referred to using <code class="literal">$Guest</code>. Also, <code class="literal">$Guest in $Guests</code> has been used to make it more English-like. To PowerShell, it would not matter if you said <code class="literal">$Item in $Guests</code> or <code class="literal">$Person in $Guests</code>.</p><p>The seat numbers have a pattern: an alpha row identifier, followed by a hyphen, followed by the numeric seat identifier.</p><p>The seat number is a string. We split it at <code class="literal">-</code>, pick the first element in the resultant array, convert it to uppercase (in case it isn't already), convert this letter to a character, and then use the <code class="literal">[byte]</code> cast operator to find its ASCII identifier. And, yes, we subtract 64 from it (so <code class="literal">A</code> becomes <code class="literal">1</code>).</p><p>To be able to use the number with <code class="literal">Switch–Case</code> without errors, we convert the number back into a string. We make the number friendly for use in a sentence. We take the second (numeric) part of the array to see which side of the aisle the <span>seat</span><a id="id325905985" class="indexterm"></a> is located on. We combine all of these to get the resultant greeting-and-guidance strings, which are displayed after a delay of one second each.</p><p> </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note56"></a>Note</h3><p>There are two kinds of <code class="literal">foreach</code> statement in PowerShell: one that follows the pipeline (which is in fact an alias for the <code class="literal">Foreach-Object</code> cmdlet), and the <code class="literal">foreach</code> looping statement itself that this recipe talks about. To identify which is which, see if <code class="literal">foreach</code> follows a pipeline: if it does, it is the alias; if the line itself begins with <code class="literal">foreach</code>, it is the <code class="literal">foreach</code> looping statement.</p></div></div></div>

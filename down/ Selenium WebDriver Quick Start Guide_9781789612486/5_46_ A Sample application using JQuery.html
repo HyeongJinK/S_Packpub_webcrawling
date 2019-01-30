@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec50"></a>A Sample application using JQuery</h2></div></div><hr /></div><p>In this section, we will create a very <span>simple</span><a id="id325162069" class="indexterm"></a> JQuery application that will pull data from a text file on the server. We are using Tomcat 6 as the web server. You are free to use a later version, if you wish.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec48"></a>Tomcat setup</h3></div></div></div><p>Tomcat can be <span>downloaded</span><a id="id325162084" class="indexterm"></a> from <a class="ulink" href="https://tomcat.apache.org/" target="_blank">https://tomcat.apache.org/</a>. Once <span>Tomcat</span><a id="id325438021" class="indexterm"></a> is downloaded, go through the following the steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Extract the ZIP file to a convenient folder</li><li>Go to the <code class="literal">bin</code> directory in the <span>Tomcat</span><a id="id325438042" class="indexterm"></a> installation and double-click <code class="literal">startup.bat</code></li></ol></div><p>A console window similar to the one shown in the following screenshot will pop up: </p><div class="mediaobject"><img src="/graphics/9781789612486/graphics/ce3bfdd3-1c57-4db5-9319-02b24f4e99f1.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>When the text <code class="literal">INFO: Server startup in ... ms</code> is displayed, it means that Tomcat has started successfully. To verify the Tomcat server, simply go to <code class="literal">http://localhost:8080</code>. A screen similar to the one shown in the following <span>screenshot</span><a id="id325450377" class="indexterm"></a> will <span>then</span><a id="id325450386" class="indexterm"></a> be displayed:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789612486/graphics/690477f3-9895-4702-89ae-0a86648d2aa5.png" /></div><p>Creating the HTML fileThe next step is to create the HTML and JavaScript files for our sample application.</p><p>Next, we create the HTML file with an internal JQuery.</p><p>The following code shows <span>the HTML file</span> with the internal JQuery and CSS: </p><pre class="programlisting">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+    &lt;style&gt;
+        #waitlogo {
+             border: 16px solid #f3f3f3; /* Light grey */
+             border-top: 16px solid #3498db; /* Blue */
+             border-radius: 50%;
+             width: 120px;
+             height: 120px;
+             animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+&lt;/style&gt;
+&lt;script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    $(document).ready(function(){
+    $(document).ajaxStart(function(){
+        $("#waitlogo").css("display", "block");
+    });
+     $(document).ajaxComplete(function(){
+     $("#waitlogo").css("display", "none");
+     });
+     $("button").click(function(){
+         $("#txt").load("demo_ajax_load.txt");
+     });
+    });
+&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id="txt"&gt;&lt;h2&gt;Ajax will change the page contents&lt;/h2&gt;&lt;/div&gt;
+    &lt;button id="changecontent"&gt;Change Page Content&lt;/button&gt;
+    &lt;div id="waitlogo" style="display:none;width:69px;height:89px;border:1px             solid black;position:absolute;top:50%;left:50%;padding:2px;"&gt;&lt;img                 src='giphy.gif' width="64" height="64" /&gt;&lt;br&gt;Loading..&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p><span>(<code class="literal">giphy.gif</code> has been taken from <a class="ulink" href="https://giphy.com/" target="_blank">https://giphy.com/</a>)</span></p><p>We do not need to go into the details of the preceding snippet. This HTML should be placed in the <code class="literal">webapps/ROOT</code> folder of the Tomcat installation. The page that is generated is shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781789612486/graphics/f3aad02c-5267-451f-951f-f453e9873258.png" /></div><p>Upon clicking the <strong class="userinput"><code>Change Page Content</code></strong> button, a spinner will load while data is fetched from <code class="literal">demo_ajax_load.txt</code>, which is also <span>present</span><a id="id325450489" class="indexterm"></a> in the same <span>Tomcat</span><a id="id325450498" class="indexterm"></a> directory as the <code class="literal">html</code> file, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781789612486/graphics/68073eeb-ed51-442a-b3cf-63eec9d16e30.png" /></div><p>
+Once the AJAX call completes, the data from the text file is displayed on screen.</p><p>The Selenium script to check whether any active JQuery request is currently going on is shown in the following code:</p><pre class="programlisting"> System.setProperty("webdriver.chrome.driver",
+ "C:\\SeleniumWD\\src\\main\\resources\\chromedriver.exe");
+ RemoteWebDriver driver = new ChromeDriver();
+ driver.navigate().to("http://localhost:8080/spinnerDemo.html");
+ driver.findElement(By.xpath("//*[@id='changecontent']")).click();
+ Boolean isJqueryCallDone = false;
+ int counter = 0;
+ while (counter &lt; 10) {
+     isJqueryCallDone = (Boolean) driver
+         .executeScript("return jQuery.active==0");
+     System.out.println("JQuery call in loop: " + isJqueryCallDone);
+     if (isJqueryCallDone == true) {
+         break;
+     } else {
+        counter++;
+     }
+ }
+ System.out.println("JQuery call done: " + isJqueryCallDone);
+
+<span class="strong"><strong>The output is shown in the following printout:</strong></span>
+<span class="strong"><strong>JQuery call in loop: false</strong></span>
+<span class="strong"><strong>JQuery call in loop: false</strong></span>
+<span class="strong"><strong>JQuery call in loop: false</strong></span>
+<span class="strong"><strong>JQuery call done: true </strong></span></pre><p>The output prints <code class="literal">false</code> in the console <span>until</span><a id="id325437971" class="indexterm"></a> the JQuery has <span>completed</span><a id="id325437979" class="indexterm"></a> the AJAX call. The duration of the AJAX call depends on the size of the <code class="literal">demo_ajax_load.txt</code>. During this execution, the size of the text file was 4,692 KB. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec17"></a>Exposing the JavascriptExecutor</h4></div></div></div><p>As we can see in the preceding code, there is a new entry in our encyclopedia of Selenium concepts, which is <code class="literal">JavascriptExecutor</code>. It is one of the <span>interfaces</span><a id="id325438070" class="indexterm"></a> in Selenium that can be used to accomplish things that cannot be accomplished through regular locators. It lets us execute JavaScript code in Selenium. Let's study the following line from the code in the previous section:</p><pre class="programlisting">isJqueryCallDone = (Boolean) ((JavascriptExecutor) driver).executeScript("return jQuery.active===0");</pre><p>The <code class="literal">isJqueryCallDone</code> phrase is a Boolean variable that is assigned the value of <code class="literal">return jQuery.active===0</code>.</p><p>Here, we are invoking the <code class="literal">executeScript</code> function on the <code class="literal">driver</code> object after casting it to <code class="literal">JavascriptExecutor</code>. Only then will the driver able to execute the JavaScript commands.</p><p>We will see more of <code class="literal">JavascriptExecutor</code> in a later chapter, where we will do a thorough examination of <code class="literal">JavascriptExecutor</code>.</p></div></div></div>

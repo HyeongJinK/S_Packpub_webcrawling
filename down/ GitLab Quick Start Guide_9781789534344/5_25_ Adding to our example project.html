@@ -1,0 +1,82 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec29"></a>Adding to our example project</h2></div></div><hr /></div><p>To get started with testing, let's make an <span>issue</span><a id="id325277118" class="indexterm"></a> on our GitLab project and then create a branch, starting with the issue number.</p><p>In our example project, we'll need to update our <code class="literal">composer.json</code> file to look like the following:</p><pre class="programlisting">{
+<span></span>"name": "judges119/monorot13",
+<span></span>"description": "A MonoLog formatter that puts logs through the ROT13 transformation before logging them.",
+<span></span>"type": "library",
+<span></span>"license": "BSD",
+<span></span>"authors": [
+<span></span>{
+<span></span>"name": "Adam O'Grady",
+<span></span>"email": "adam.ogrady@gmail.com"
+<span></span>}
+<span></span>],
+<span></span>"require": {
+<span></span>"monolog/monolog": "^1.23"
+<span></span>},
+<span></span>"require-dev": {
+<span></span>"phpunit/phpunit": "~4.5"
+<span></span>},
+<span></span>"autoload": {
+<span></span>"psr-4": {
+<span></span>"Judges119\\Monolog\\": "src"
+<span></span>}
+<span></span>}
+}</pre><p>After you've done that, run the following command:</p><pre class="programlisting"><span class="strong"><strong>composer install</strong></span></pre><p>This will install the PHPUnit testing framework and set up the PSR-4 autoloading for our project. After you've run this, let's create a folder called <code class="literal">tests</code> and in that, a file called <code class="literal">ROT13FormatterTest.php</code>. In that file, put the following code:</p><pre class="programlisting">&lt;?php
+require_once 'vendor/autoload.php';
+
+use PHPUnit\Framework\TestCase;
+use Judges119\Monolog\Formatter\ROT13Formatter;
+
+final class ROT13FormatterTest extends TestCase
+{
+
+<span></span>public function testFormatReturnsString()
+<span></span>{
+<span></span>$formatter = new ROT13Formatter();
+<span></span>$this-&gt;assertInternalType(
+<span></span>'string',
+<span></span>$formatter-&gt;format(["message" =&gt; "Changed to ROT13"])
+<span></span>);
+<span></span>}
+
+<span></span>public function testROT13IsAccurate()
+<span></span>{
+<span></span>$formatter = new ROT13Formatter();
+<span></span>$record = ['message' =&gt; 'ABC'];
+<span></span>$transformed = $formatter-&gt;format($record);
+<span></span>$this-&gt;assertEquals(
+<span></span>$transformed,
+<span></span>'NOP'
+<span></span>);
+<span></span>}
+
+<span></span>public function testROT13TextCanBeReversed()
+<span></span>{
+<span></span>$formatter = new ROT13Formatter();
+<span></span>$record = ['message' =&gt; 'Changed to ROT13'];
+<span></span>$transformed = $formatter-&gt;format($record);
+<span></span>$transformed2 = $formatter-&gt;format(['message' =&gt; $transformed]);
+<span></span>$this-&gt;assertEquals(
+<span></span>$transformed2,
+<span></span>$record['message']
+<span></span>);
+<span></span>}
+
+<span></span>public function testFormatBatchReturnsArrayOfStrings()
+<span></span>{
+<span></span>$formatter = new ROT13Formatter();
+<span></span>$records = [
+<span></span>['message' =&gt; 'Changed to ROT13'],
+<span></span>['message' =&gt; 'From ancient Rome'],
+<span></span>['message' =&gt; 'Modified Caesar cipher']
+<span></span>];
+<span></span>$transformed = $formatter-&gt;formatBatch($records);
+<span></span>$this-&gt;assertInternalType(
+<span></span>'array',
+<span></span>$transformed
+<span></span>);
+<span></span>$this-&gt;assertInternalType(
+<span></span>'string',
+<span></span>$transformed[0]
+<span></span>);
+<span></span>}
+}</pre><p>If you want to run the tests manually, you can change into your project directory in a terminal session and run the following command:</p><pre class="programlisting"><span class="strong"><strong>vendor/bin/phpunit tests/ROT13FormatterTest</strong></span></pre><p>You should see our tests pass, four for four. If your tests don't, you should <span>examine</span><a id="id325171413" class="indexterm"></a> the output of the logs to help you find and fix any errors. I'd recommend adding and committing the work you've done so far before we move on to learning about the <code class="literal">.gitlab-ci.yml</code> file.</p></div>

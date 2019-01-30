@@ -1,0 +1,104 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch14lvl1sec85"></a>Modeling with data</h2></div></div><hr /></div><p>Now, we are only interested in finding the <span>temperature</span><a id="id326425861" class="indexterm"></a> across Nepal. So, let's filter all the countries and extract entries related to Nepal only:</p><pre class="programlisting">#take a look at Nepal
+nepal=bycountry.loc[bycountry['Country'] == "Nepal"]
+type(nepal)
+nepal.infer_objects()</pre><p>This should output only entries <span>related</span><a id="id326572808" class="indexterm"></a> to Nepal, as shown in the following screenshot: </p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/ac3ae46b-4f9d-4d5f-80b1-3eff4964a466.png" /></div><p>Screenshot 14.2: Entries related to Nepal</p><p></p><p>Now let's save the temperature into a separate variable to normalize it:</p><pre class="programlisting">temp=nepal['AverageTemperature']
+temp=temp.dropna(how='any')</pre><p>Here, the <code class="literal">dropna</code> function removes the missing value, and <code class="literal">how = 'any'</code> tells us that if any NA values are present, we should drop that row or column.</p><p>Now, let's preprocess the <span>temperature</span><a id="id326572822" class="indexterm"></a> to normalize it. And then plot the chart:</p><pre class="programlisting">#pre-processing
+scale=preprocessing.scale(temp)
+plt.plot(scale)
+scale </pre><p>We should get a model like the following:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/e49a2a99-4500-499d-8450-8c0df62e9f82.png" /></div><p>Screenshot 14.3: Plot for the whole dataset of the temperature of Nepal (preprocessed data)</p><p></p><p>Now, let's just take a small sample of the <span>data</span><a id="id326062010" class="indexterm"></a> and plot it:</p><pre class="programlisting">#let's get a small sample to see
+scale
+df=DataFrame(scale)
+sample=df[0:500]
+sample
+plt.plot(sample)</pre><p>The preceding snippet should output the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/d5a89d6d-f391-42de-a7bd-2e4458b3ad09.png" /></div><p>Screenshot 14.4: Plotting a small sample of 500 entries</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec96"></a>Persistence model forecast</h3></div></div></div><p>A <span>persistent</span><a id="id326193414" class="indexterm"></a> forecast is a good baseline forecast for a time series that is linearly increasing. The persistence forecast is where the observation from the prior time step (<span class="emphasis"><em>t-1</em></span>) is used to predict the observation at the current time step (<span class="emphasis"><em>t</em></span>). We can implement this by taking the last observation from the training data and history accumulated by walk-forward validation, and using that to predict the current time step:</p><pre class="programlisting">#now we can see the patterns
+X=sample.values
+X
+train, test = X[0:-100], X[-100:]
+train
+test</pre><p>In the sample of the first 500 observations, we set the first 400 observations to be the training data and the last 100 to be the test data. After the training and predicting, we get a one-step-ahead forecast as the following plot along with the original dataset:</p><pre class="programlisting"># walk-forward validation
+history = [x for x in train]
+predictions = list()
+for i in range(len(test)):
+ # make prediction
+ predictions.append(history[-1])
+ # observation
+ history.append(test[i])
+# report performance
+rmse = math.sqrt(mean_squared_error(test, predictions))
+print('RMSE: %.3f' % rmse)
+# line plot of observed vs predicted
+pyplot.plot(test)
+pyplot.plot(predictions)
+pyplot.show()
+rmse</pre><p>This snippet should plot the difference between the original <span>data</span><a id="id326193450" class="indexterm"></a> and the predicted data. The output screenshot is given as follows:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/a5935fe2-1f50-423c-adc1-8e42e31e0d43.png" /></div><p>Screenshot 14.5: Original data and predicted data</p><p></p><p>The total <span class="strong"><strong>Root Mean Squared Error</strong></span> (<span class="strong"><strong>RMSE</strong></span>) in our case was 0.5302435957527816. </p><p>For a sample size of 50, we set the first 40 observations as the training <span>data</span><a id="id326195060" class="indexterm"></a> and the last 10 as the test data. After the training and predicting, we get the one-step-ahead forecast as the following plot along with the original dataset:</p><pre class="programlisting">#a smaller sample of 50
+sample2=sample[0:50]
+X2=sample2.values
+X2
+train2, test2 = X2[0:-10], X2[-10:]
+train2
+test2</pre><p>In this case, we considered a small sample to see the effect with some precision. Now, let's make a prediction and see the difference:</p><pre class="programlisting"># walk-forward validation
+history2 = [x for x in train2]
+predictions2 = list()
+for i in range(len(test2)):
+# make prediction2
+    predictions2.append(history2[-1])
+# observation
+history2.append(test2[i])
+# report performance
+rmse2 = math.sqrt(mean_squared_error(test2, predictions2))
+print('RMSE: %.3f' % rmse2)
+# line plot of observed vs predicted
+pyplot.plot(test2)
+pyplot.plot(predictions2)
+pyplot.show()
+rmse2</pre><p> </p><p> </p><p> </p><p> </p><p>The output graph should look like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/29d94b75-5db9-434e-88b9-5b1b7e4ec4a2.png" /></div><p>Screenshot 14.6: Original data versus predicted data when the sample size is small</p><p>In this case, the RMSE is 0.6220490938792729, which is way more than with our original case. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec97"></a>Weather statistics by country</h3></div></div></div><p>Now, let's generate a <span>model</span><a id="id326425847" class="indexterm"></a> to show the top 20 countries with the greatest temperature difference. As always, the first step is to import the <code class="literal">.CSV</code> file. By now, you must be familiar with the pattern. We have already created a <code class="literal">DataFrame</code> in the preceding example. To keep the modeling simple, we will be reimporting the <code class="literal">.CSV</code> file under a different <code class="literal">DataFrame</code> name:</p><pre class="programlisting">tempByCountry = pd.read_csv('GlobalLandTemperaturesByCountry.csv')
+countries = tempByCountry['Country'].unique()</pre><p>Now, to visualize the data, we are going to use another Python package, called <code class="literal">seaborn</code> (<a class="ulink" href="https://seaborn.pydata.org/" target="_blank">https://seaborn.pydata.org/</a>). We can import the package as follows:</p><pre class="programlisting">import seaborn as sns</pre><p> </p><p>Now, let's get the <span>minimum</span><a id="id326425900" class="indexterm"></a> and maximum temperature lists:</p><pre class="programlisting">max_min_list = []
+
+# getting max and min temperatures
+for country in countries:
+    curr_temps = tempByCountry[tempByCountry['Country'] == country]['AverageTemperature']
+    max_min_list.append((curr_temps.max(), curr_temps.min()))</pre><p>There are some NaN values. Let's clean those values:</p><pre class="programlisting"># NaN cleaning
+res_max_min_list = []
+res_countries = []
+
+for i in range(len(max_min_list)):
+    if not np.isnan(max_min_list[i][0]):
+        res_max_min_list.append(max_min_list[i])
+        res_countries.append(countries[i])</pre><p>Once the data is cleaned, let's calculate the difference:</p><pre class="programlisting"># calculating the differences 
+differences = []
+
+for tpl in res_max_min_list:
+    differences.append(tpl[0] - tpl[1])</pre><p>We have the differences in the <code class="literal">differences</code> array. We can sort it out so that we can extract the top 20 entries. We can do that with the following: </p><pre class="programlisting"># sorting the result
+differences, res_countries = (list(x) for x in zip(*sorted(zip(differences, res_countries), key=lambda pair: pair[0], reverse=True)))</pre><p>Finally, let's plot the chart:</p><pre class="programlisting"># ploting the chart
+f, ax = plt.subplots(figsize=(8, 8))
+sns.barplot(x=differences[:20], y=res_countries[:20], palette=sns.color_palette("coolwarm", 25), ax=ax)
+
+texts = ax.set(ylabel="", xlabel="Temperature difference", title="Countries with the highest temperature differences")</pre><p> </p><p> </p><p> </p><p> </p><p>We should <span>have</span><a id="id326438827" class="indexterm"></a> a nice chart now:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/83e3e053-835b-44dd-b283-142f657e0bea.png" /></div><p>Screenshot 14.7: Top 20 countries with the greatest temperature difference</p><p></p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec98"></a>Linear regression to predict the temperature of a city</h3></div></div></div><p>In this section, we are <span>going</span><a id="id326572796" class="indexterm"></a> to use another file. The file is found in the directory for <a class="link" href="#" linkend="ch13">Chapter 14</a>, <span class="emphasis"><em>Modeling Weather Data Points with Python</em></span>. The file is called <code class="literal">GlobalLandTemperaturesByMajorCity.csv</code>.</p><p>Let's import the file into our notebook:</p><pre class="programlisting">#reading the file and collecting only the timestamp and the year 
+dframe= pd.read_csv('GlobalLandTemperaturesByMajorCity.csv')
+df_ny = dframe[dframe['City']=='New York']
+df_ny= df_ny.iloc[:, :2]</pre><p>It is always a good idea to examine the first few entries to see how our dataset looks. This can be done using a <code class="literal">head</code> function:</p><pre class="programlisting">df_ny.head(10)</pre><p>The output should look like the following:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/3bad29af-3fcc-4b0f-ae3e-951158c71c3e.png" /></div><p>Screenshot 14.8: First 10 entries from the file</p><p></p><p>Now, we can select only the year from the time stamp and <span>group</span><a id="id326574528" class="indexterm"></a> the data by the <code class="literal">mean</code> temperature of each year. This can be done using the following snippet:</p><pre class="programlisting">a = df_ny['dt'].apply(lambda x: int(x[0:4]))
+grouped = df_ny.groupby(a).mean()
+grouped.head(10)</pre><p>And let's plot the temperature by year:</p><pre class="programlisting">#plotting the data
+plt.plot(grouped['AverageTemperature'])
+plt.show()</pre><p>The graph should like the following:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/5b5a394f-4b1b-48f1-8b8a-31119af0960c.png" /></div><p>Screenshot 14.9: Temperature of New York City by year</p><p>We can see there are several blank <span>spaces</span><a id="id325873092" class="indexterm"></a> due to the NaN blocks in the data. We can fix the anomalies by filling each of the NaN blocks with its preceding block value:</p><pre class="programlisting">#Then Plotting the fixed data
+df_ny['AverageTemperature'] = df_ny['AverageTemperature'].fillna(method = 'ffill')
+grouped = df_ny.groupby(a).mean()
+plt.plot(grouped['AverageTemperature'])
+plt.xlabel('year')
+plt.ylabel('temperature in degree celsius')
+plt.title('New York average temperature versus year')
+plt.show()</pre><p>It can be seen from the following chart that <code class="literal">AverageTemperature</code> is an increasing function for the most part:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/48995e66-6244-4dfd-87bc-d48f8da6388b.png" /></div><p>Screenshot 14.10: Temperature of New York City with preprocessed data</p><p>Now that the date is fixed, let's use <span>linear</span><a id="id325873126" class="indexterm"></a> regression to predict the temperature of New York City in the future. The first step is to import the library:</p><pre class="programlisting">from sklearn.linear_model import LinearRegression as LinReg</pre><p>And we need to reshape the data:</p><pre class="programlisting">#Reshape the index of 'grouped' i.e. years
+x= grouped.index.values.reshape(-1,1)
+#obtaining values of temperature
+y = grouped['AverageTemperature'].values</pre><p>Now, let's create the model and find the precision:</p><pre class="programlisting">#Using linear regression and finding accuracy of our prediction
+reg = LinReg()
+reg.fit(x,y)
+y_preds = reg.predict(x)
+Accuracy = str(reg.score(x,y))
+print(Accuracy)</pre><p>The accuracy printed in this case is 0.24223324942541424. We can also plot the temperature data with years to fit the model:</p><pre class="programlisting">#plotting data along with regression
+plt.scatter(x=x, y=y_preds)
+plt.scatter(x=x,y=y, c='r')
+plt.ylabel('Average Temperature in degree celsius')
+plt.xlabel('year')
+plt.show()</pre><p>The output of the code should appear as follows:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/311d1d53-5e3f-42e0-82ad-1327203e5365.png" /></div><p>Screenshot 14.11: Linear regression model generated from the dataset</p><p>Now, let's use the model to <span>predict</span><a id="id325876247" class="indexterm"></a> future temperature values:</p><pre class="programlisting">#finding future values of temperature
+reg.predict(2048)</pre><p>The output says <code class="literal">array([10.70528732])</code>. Similarly, we can use other types of algorithm to create beautiful models that can be used to analyze the data.</p><p> </p><p> </p></div></div>

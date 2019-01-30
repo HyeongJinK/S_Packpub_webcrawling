@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec132"></a>Point Sprites</h2></div></div><hr /></div><p><span class="strong"><strong>Particle effects </strong></span>is a <span>common</span><a id="id325358833" class="indexterm"></a> technique used in many 3D applications and games. A particle effect is a generic term for any special effect <span>created</span><a id="id325358860" class="indexterm"></a> by rendering <span>groups</span><a id="id325358867" class="indexterm"></a> of <span class="strong"><strong>particles</strong></span> (displayed as points, textured quads, or repeated geometry), typically with some simple physics simulation acting on the individual particles. They can be used for simulating smoke, fire, bullets, explosions, water, sparks, and many other effects that are difficult to represent by a single geometric model.</p><p>One very efficient way of rendering <span>particles</span><a id="id325358880" class="indexterm"></a> is to use <span class="strong"><strong>point sprites</strong></span>. Throughout this book, we've been rendering triangle primitives, but if you render vertices with the <code class="literal">POINTS</code> primitive type, then each vertex will be rendered as a single pixel on the screen. A point sprite is an extension of the <code class="literal">POINTS</code> primitive rendering, where each point is provided a size and is textured in the shader.</p><p>A point sprite is created by setting the <code class="literal">gl_PointSize</code> value in the vertex shader. It can be set to either a constant value or a value calculated from shader inputs. If it's set to a number greater than one, the point is rendered as a quad that always faces the screen (also known as a <span class="strong"><strong>billboard</strong></span>). The <span>quad</span><a id="id325617255" class="indexterm"></a> is centered on the original point and has a width and height equal to the <code class="literal">gl_PointSize</code> in pixels:</p><div class="mediaobject"><img src="/graphics/9781788629690/graphics/d65505dd-2070-4821-8658-ce0404513861.png" /></div><p> </p><p> </p><p>When the point sprite is rendered, it also generates <span>texture</span><a id="id325617284" class="indexterm"></a> coordinates for the quad, covering a simple <code class="literal">0-1</code> range from the upper left to the lower right:</p><div class="mediaobject"><img src="/graphics/9781788629690/graphics/852767f0-3e04-41a5-96ee-b0fdd488df1c.png" /></div><p>The texture coordinates are accessible in the fragment shader by the built-in <code class="literal">vec2 gl_PointCoord</code>. Combining these properties gives us a simple point sprite vertex shader that looks like this:</p><pre class="programlisting">#version 300 es
+precision mediump float;
+
+uniform mat4 uModelViewMatrix;
+uniform mat4 uProjectionMatrix;
+uniform float uPointSize;
+
+in vec4 aParticle;
+
+out float vLifespan;
+
+void main(void) {
+  gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aParticle.xyz, 
+   1.0);
+  vLifespan = aParticle.w;
+  gl_PointSize = uPointSize * vLifespan;
+}</pre><p>The corresponding fragment shader looks like this:</p><pre class="programlisting">#version 300 es
+precision mediump float;
+
+uniform sampler2D uSampler;
+
+in float vLifespan;
+
+out vec4 fragColor;
+
+void main(void) {
+  vec4 texColor = texture(uSampler, gl_PointCoord);
+  fragColor = vec4(texColor.rgb, texColor.a * vLifespan);
+}</pre><p>The following is an example of the appropriate draw command:</p><pre class="programlisting">gl.drawArrays(gl.POINTS, 0, vertexCount);</pre><p>This renders each point in the vertex buffer as a <code class="literal">16x16</code> texture.</p><p> </p><p> </p></div>

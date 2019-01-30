@@ -61,5 +61,5 @@ function getFiles (dir, files_){
     }
 }
 
-getFiles('./download05')
+getFiles('./down')
 

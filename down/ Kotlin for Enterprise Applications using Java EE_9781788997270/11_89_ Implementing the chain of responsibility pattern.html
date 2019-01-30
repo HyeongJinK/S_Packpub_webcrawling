@@ -1,0 +1,110 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec86"></a>Implementing the chain of responsibility pattern</h2></div></div><hr /></div><p>The chain-of-responsibility <span>pattern</span><a id="id325812914" class="indexterm"></a> is a behavioral pattern that decouples a <span>request</span><a id="id325812907" class="indexterm"></a> from a handling object in a chain of handlers until the handler is recognized as processing the request. This pattern avoids tight coupling between the sender and the receiver, and gives more than one chance to handle the request.</p><p>With this pattern, requests are sent to a sequential chain of potential handlers. One of the handlers is expected to take the request and return the response. If the request is not accepted by any of the handlers, it will not be handled by the application. This is depicted by the following diagram:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/ed2e3df1-f783-4213-937e-a7c419218472.png" /></div><p>Each of the handlers handles a single responsibility, which makes the design cleaner, loosely coupled, and easy to extend.</p><p>This pattern is useful when we want to perform different operations based on a request as well as keeping these operations separate. Instead of putting all operations in a single class, we can have different classes, each of these performing specific operations to process an incoming request and to return a result.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec87"></a>Illustrating the chain-of-responsibility pattern</h3></div></div></div><p>Consider audit messages for <span>different</span><a id="id325442832" class="indexterm"></a> identity types, including <code class="literal">Person</code>, <code class="literal">Group</code>, <code class="literal">Organization</code>, and <code class="literal">Device</code>. These identities will have different audit messages and must be handled separately. Keeping all audit-related code in a single class increases the overhead when we want to add audits for new identities.</p><p>The chain-of-responsibility pattern would be a good fit in this case. We will illustrate the chain of responsibility through this pattern, handling audits for different identities.</p><p>We will start with the <code class="literal">Handler</code> interface, which defines the contract for concrete handlers. Then we write an <code class="literal">AbstractHandler</code>. Some of the reusable code that can be used in the concrete implementation goes here. Then we have concrete handlers for handling the request. The following is the <span class="emphasis"><em>UML</em></span> diagram for this implementation:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/b9d452aa-0e5a-4c7d-bb01-aa4670d76008.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec88"></a>Defining the contracts</h3></div></div></div><p>Let's <span>write</span><a id="id326542107" class="indexterm"></a> the <code class="literal">Handler</code> interface:</p><pre class="programlisting">interface Handler {
+    fun addHandler(auditHandler: Handler)
+    fun handleRequest(identityRequest: Identity)
+}</pre><p> </p><p>As shown in the preceding code, we declare the following two functions:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <code class="literal">addHandler()</code> function is for adding the next handler in a chain.</li><li style="list-style-type: disc">The <code class="literal">handleRequest()</code> function is for handling the request. In our case, we will implement this function to generate audit message.</li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec89"></a>Writing the implementation</h3></div></div></div><p>The <code class="literal">AbstractAuditHandler</code> class will have some <span>reusable</span><a id="id326540795" class="indexterm"></a> components that are used by concrete implementation classes. We declare a field, <code class="literal">auditHandler</code>, of the <code class="literal">Handler</code> type, and set this using the <code class="literal">addHandler()</code> function. This handler instance is used in concrete implementation classes to add the next handler in the chain. Note that we override the <code class="literal">addHandler()</code> function in the abstract class itself, as in our case this function does not differ in concrete classes; the implementation is the same. We also have an instance of <code class="literal">AuditServiceImpl</code> for which we write the following audit message:</p><pre class="programlisting">abstract class AbstractAuditHandler : Handler {
+    protected lateinit var auditHandler: Handler
+    protected lateinit var auditService: AuditService
+
+    override fun addHandler(auditHandler: Handler) {
+        this.auditHandler = auditHandler
+    }
+}</pre><p>In the handler implementations class, we override the <code class="literal">handleRequest()</code> function. This function takes an identity object as a request . This can be an <code class="literal">Organization</code>, <code class="literal">Group</code>, a <code class="literal">Device</code>, or a <code class="literal">Person</code> type, as shown in the following code:</p><pre class="programlisting">abstract class Identity {
+    var id: String? = null
+    var name: String? = null
+    var description: String? = null
+    var identityType: IdentityType? = null
+    var requestMethod: String? = null
+}</pre><p><code class="literal">Identity</code> is an abstract class that contains basic information about an identity, including <code class="literal">identifier</code>, <code class="literal">name</code>, and <code class="literal">identityType</code>. <code class="literal">IdentityType</code> is an enum that represents the identity types that we use. Consider the following code example:</p><pre class="programlisting">enum class IdentityType {
+    ORGANIZATION, GROUP, PERSON, DEVICE
+}</pre><p> </p><p> </p><p>The information that is specific to the identities can go in the class extending the abstract <code class="literal">Identity</code> class. We have the <code class="literal">Person</code>, <code class="literal">Device</code>, <code class="literal">Group</code>, and <code class="literal">Organization</code> classes, which extend the <code class="literal">Identity</code> type, and these will have details specific to that identity.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec90"></a>Defining the concrete handlers</h3></div></div></div><p>Now let's add a concrete audit handler. We write <span>four</span><a id="id326541969" class="indexterm"></a> handlers at this point: <code class="literal">PersonAuditHandler</code>, <code class="literal">DeviceAuditHandler</code>, <code class="literal">GroupAuditHandler</code>, and <code class="literal">OrganizationAuditHandler</code>. Here, we will explain <code class="literal">PersonAuditHandler</code>.</p><p>In the <code class="literal">handleRequest()</code> function, we take the <code class="literal">Identity</code> instance as the request. If <code class="literal">identityType</code>is a person, we process the request in the handler class. If not, we pass the control to the next handler in the chain:</p><pre class="programlisting">override fun handleRequest(identityRequest: Identity) {
+        if (identityRequest.identityType == IdentityType.PERSON) {
+            //..
+        } else {
+            auditHandler.handleRequest(identityRequest)
+        }
+}</pre><p>If the identity is a <span class="emphasis"><em>person,</em></span> then we prepare an audit message and a participant object, as follows:</p><pre class="programlisting"> if (identityRequest.identityType == IdentityType.PERSON) {
+    var auditMessage: AuditMessage = AuditUtil.prepareAuditMessage(Constants.PERSON_AUDIT_MESSAGE)
+    auditMessage.participantObject = AuditUtil.createParticipantObject(identityRequest)
+ } </pre><p>The <code class="literal">AuditMessage</code> class looks as follows:</p><pre class="programlisting">class AuditMessage {
+    var auditMessageId: String? = null
+    var auditEventDate: Date? = null
+    var auditMessage: String? = null
+    var participantObject: ParticipantObject? = null
+    var event: Event? = null
+}</pre><p><code class="literal">AuditMessage</code> has the following information: <code class="literal">message</code>,<code class="literal">date</code>, <code class="literal">auditMessageId</code>, <code class="literal">participantObject</code>, and <code class="literal">event</code>.</p><p><code class="literal">ParticipantObject</code> will have identity-specific information such as <code class="literal">id</code>, <code class="literal">name</code>, and <code class="literal">type</code>. We map <code class="literal">requestIdentity</code> to <code class="literal">ParticipantObject</code> for auditing purposes:</p><pre class="programlisting">class ParticipantObject {
+    var participantObjectId: String? = null
+    var participantObjectName: String? = null
+    var participantObjectType: String? = null
+}</pre><p>The <code class="literal">Event</code> class has code that is a defined <span>constant</span><a id="id326542138" class="indexterm"></a> for each of the operations on the entities. This includes <code class="literal">GET</code>, <code class="literal">CREATE</code>, <code class="literal">UPDATE</code>, and <code class="literal">DELETE</code>.</p><pre class="programlisting">class Event {
+    var code: String? = null
+    var displayName: String? = null
+}</pre><p>We can input whichever type of operation is requested on the identity that we get from the <code class="literal">requestIdentity</code> object, as follows:</p><pre class="programlisting">when (identityRequest.requestMethod) {
+"GET" -&gt; {
+event.code = Constants.PERSON_READ_EVENT_CODE
+        event.displayName = Constants.PERSON_READ_EVENT_DISPLAYNAME
+}
+"POST" -&gt; {
+event.code = Constants.PERSON_CREATE_EVENT_CODE
+        event.displayName = Constants.PERSON_CREATE_EVENT_DISPLAYNAME
+}
+//..
+}</pre><p>We embed the event details in the audit message. Consequently, we have now constructed the audit message with a participant object and the event details of the request identity. We then use the <code class="literal">AuditService</code> instance that we have created in our <code class="literal">AbstractAuditHandler</code> class to invoke the <code class="literal">audit()</code> function, as follows:</p><pre class="programlisting">auditServiceImpl.audit(auditMessage)</pre><p>For our demo, we print the details of the audit message. In a real-world implementation, an audit service can be a rest API or it can push the audit messages to a <span>queue</span><a id="id326559810" class="indexterm"></a> or to a database. These stored audit messages can be used later by querying the audit record. So, our <code class="literal">PersonAuditHandler</code> class looks as follows:</p><pre class="programlisting">class PersonAuditHandler : AbstractAuditHandler() {
+
+    private var participantObject: ParticipantObject 
+
+    override fun handleRequest(identityRequest: Identity) {
+
+        if (identityRequest.identityType == IdentityType.PERSON) {
+            var auditMessage: AuditMessage = AuditUtil.prepareAuditMessage(Constants.PERSON_AUDIT_MESSAGE)
+            auditMessage.participantObject = AuditUtil.createParticipantObject(identityRequest)
+            var event: Event = Event()
+
+            when (identityRequest.requestMethod) {
+                "GET" -&gt; {
+                    event.code = Constants.PERSON_READ_EVENT_CODE
+                    event.displayName = Constants.PERSON_READ_EVENT_DISPLAYNAME
+                }
+                "POST" -&gt; {
+                    event.code = Constants.PERSON_CREATE_EVENT_CODE
+                    event.displayName = Constants.PERSON_CREATE_EVENT_DISPLAYNAME
+                }
+                "PUT" -&gt; {
+                    event.code = Constants.PERSON_UPDATE_EVENT_CODE
+                    event.displayName = Constants.PERSON_UPDATE_EVENT_DISPLAYNAME
+                }
+                "DELETE" -&gt; {
+                    event.code = Constants.PERSON_DELETE_EVENT_CODE
+                    event.displayName = Constants.PERSON_DELETE_EVENT_DISPLAYNAME
+                }
+            }
+            auditMessage.event = event
+            auditService.audit(auditMessage)
+        } else {
+            auditHandler.handleRequest(identityRequest)
+        }
+    }
+}</pre><p>The other handler-implementation classes, such as <code class="literal">GroupAuditHandler</code> and <code class="literal">DeviceAuditHandler</code>, are similar, but these classes create the audit message with details that are specific to a group or device identities.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec91"></a>Verifying the handler implementation</h3></div></div></div><p>Now let's write a test class to <span>verify</span><a id="id325793380" class="indexterm"></a> the chaining of handlers:</p><pre class="programlisting">fun main(args: Array&lt;String&gt;) {
+
+        val personAuditHandler = PersonAuditHandler()
+        val organizationAuditHandler = OrganizationAuditHandler()
+        val groupAuditHandler = GroupAuditHandler()
+        val deviceAuditHandler = DeviceAuditHandler()
+
+        organizationAuditHandler.addHandler(groupAuditHandler)
+        groupAuditHandler.addHandler(deviceAuditHandler)
+        deviceAuditHandler.addHandler(personAuditHandler)
+
+        organizationAuditHandler.handleRequest(creaeSamplePersonRequest())
+    }</pre><p>In this class, we created instances of handler implementations and chained them using the <code class="literal">addHandler()</code> function. We also created a sample <code class="literal">Person</code> identity that we pass to the <code class="literal">handleRequest()</code> function.</p><p>The function to generate the sample identity of a person is as follows:</p><pre class="programlisting">fun creaeSamplePersonRequest(): Person{
+        val identity = Person()
+        identity.id = "person123"
+        identity.description = "Person identity"
+        identity.identityType = IdentityType.PERSON
+        identity.name = "Name"
+        identity.organizationId = "orgId123"
+        identity.requestMethod = HttpMethod.POST
+        return identity
+    }</pre><p> </p><p>Note that the handlers will be executed in the order that we mention here when chaining them. So, the request is first sent to <code class="literal">OrganizationAuditHandler</code>. From there, since the identity type is <code class="literal">Person</code>, it goes to the next handler in the chain, which is <code class="literal">GroupAuditHandler</code> – this handler is for the <code class="literal">Group</code> identity type. It then goes to <code class="literal">DeviceAuditHandler</code>, which is not a match either. The request now goes to <code class="literal">PersonAuditHandler</code>, which prepares the audit message specific to the  <code class="literal">Person</code> identity and will be sent to <code class="literal">AuditService</code>. With <code class="literal">AuditService</code>, we print the audit message contents.</p><p>For the purpose of this demo, we have added <code class="literal">println()</code> messages in each handler's <code class="literal">handleRequest()</code> function to show the execution order. After that, we print the audit message to the console. Let's run this test class and see the output:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/8207c17f-41e7-43cd-b687-22557f463b4e.png" /></div><p>As expected, the control went through the chain of handlers for request processing until it found a handler, processed the request, generated the audit message, and printed it to the console.</p><p>There may be a situation in which a request may come with an unknown identity type or a type that is not yet supported in the system. In that case, we need a default handler to handle such requests and we may also choose to audit it. Let's take a look at our test class where we add the default handler to the chain:</p><pre class="programlisting">organizationAuditHandler.addHandler(groupAuditHandler)
+groupAuditHandler.addHandler(deviceAuditHandler)
+deviceAuditHandler.addHandler(personAuditHandler)
+personAuditHandler.addHandler(defaultAuditHandler)</pre><p> </p><p>Now let's invoke the <code class="literal">handleRequest()</code> function by <span>changing</span><a id="id325852705" class="indexterm"></a> the <code class="literal">IdentityType</code> to <code class="literal">TEST</code>. This is shown as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/95dfc05b-4d38-436b-b1ef-093b4b9ccfd7.png" /></div><p>As we can see, since the identity type in unknown, the request has finally reached <code class="literal">DefaultAuditHandler</code> and created an audit message with some values that the handler can recognize.</p><p>With these patterns, it is easy to add a new <code class="literal">Identity</code> to the system, and adding a request handler for the type is also easy. We just have to create a new handler and chain it to the other handlers.</p></div></div>

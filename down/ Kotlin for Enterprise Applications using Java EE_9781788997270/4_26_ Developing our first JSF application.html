@@ -1,0 +1,38 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec30"></a>Developing our first JSF application</h2></div></div><hr /></div><p>We will create a simple Maven web <span>application</span><a id="id326576638" class="indexterm"></a> to demonstrate how to use JSF with Kotlin. The application will have a JSF page that simply displays a greeting message. Perform the following steps to develop the JSF application:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>In IntelliJ IDEA, go to <strong class="userinput"><code>New,</code></strong> and then click on <strong class="userinput"><code>Project</code></strong>.</li><li>Select <strong class="userinput"><code>maven-ar</code></strong><strong class="userinput"><code>chetype-webapp</code></strong> and create the web app project. </li><li>This will create the project structure, as follows:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788997270/graphics/e114f266-f708-400a-86ba-c1e0efd53cd7.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Next, we need to add the following Maven dependencies to the project:</li></ol></div><pre class="programlisting">&lt;dependency&gt;
+    &lt;groupId&gt;javax.servlet&lt;/groupId&gt;
+    &lt;artifactId&gt;javax.servlet-api&lt;/artifactId&gt;
+    &lt;version&gt;${javax.servlet-api}&lt;/version&gt;
+    &lt;scope&gt;provided&lt;/scope&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.sun.faces&lt;/groupId&gt;
+    &lt;artifactId&gt;jsf-api&lt;/artifactId&gt;
+    &lt;version&gt;${com.sun.faces.jsf-api}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.sun.faces&lt;/groupId&gt;
+    &lt;artifactId&gt;jsf-impl&lt;/artifactId&gt;
+    &lt;version&gt;${com.sun.faces.jsf-impl}&lt;/version&gt;
+&lt;/dependency&gt;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Create a managed bean called <code class="literal">Person.kt</code>. This is shown in the following code:</li></ol></div><pre class="programlisting">@ManagedBean(name = "person")
+class Person {
+val name: String
+get() = "Mathur"
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Create a <code class="literal">jsf</code> file with an <code class="literal">xhtml</code> extension:</li></ol></div><pre class="programlisting">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"&gt;
+&lt;f:view&gt;
+    &lt;h:outputLabel value="JSF-App example"/&gt;
+&lt;/f:view&gt;
+
+&lt;body&gt;
+&lt;h3&gt;
+Welcome #{person.getName()}
+&lt;/h3&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Mention the <code class="literal">index.xhtml</code> page in the <span>deployment</span><a id="id325812912" class="indexterm"></a> descriptor to load it following the startup of the app:</li></ol></div><pre class="programlisting">&lt;welcome-file-list&gt;
+  &lt;welcome-file&gt;index.jsf&lt;/welcome-file&gt;
+&lt;/welcome-file-list&gt;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Now, build the application and deploy it on the Tomcat server. The output is as follows:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788997270/graphics/d031319c-9150-466c-a797-408d956d6e78.png" /></div><p></p></div>

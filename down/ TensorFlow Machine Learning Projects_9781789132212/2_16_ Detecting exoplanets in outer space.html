@@ -1,0 +1,100 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec23"></a>Detecting exoplanets in outer space</h2></div></div><hr /></div><p>For the project <span>explained</span><a id="id325611569" class="indexterm"></a> in this chapter, we use the <span class="emphasis"><em>Kepler labeled time series data</em></span> from Kaggle:<a class="ulink" href="https://www.kaggle.com/keplersmachines/kepler-labelled-time-series-data/home" target="_blank"> https://www.kaggle.com/keplersmachines/kepler-labelled-time-series-data/home</a>. This dataset is derived mainly from the Campaign 3 observations of the mission by NASA's Kepler space telescope.</p><p>In the dataset, column 1 values are the labels and columns 2 to 3198 values are the flux values over time. The training set has 5087 data points, 37 confirmed exoplanets, and 5050 non-exoplanet stars. The test set has 570 data points, 5 confirmed exoplanets, and 565 non-exoplanet stars.</p><p>We will carry out the following steps to download, and then preprocess our data to create the train and test datasets: </p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Download the dataset using the Kaggle API. The following code will be used for the same:</li></ol></div><pre class="programlisting">armando@librenix:~/datasets/kaggle-kepler$ kaggle datasets download -d keplersmachines/kepler-labelled-time-series-data
+
+Downloading kepler-labelled-time-series-data.zip to /mnt/disk1tb/datasets/kaggle-kepler
+100%|██████████████████████████████████████| 57.4M/57.4M [00:03&lt;00:00, 18.3MB/s]</pre><p>The folder contains the following two files:</p><pre class="programlisting">exoTest.csv
+exoTrain.csv</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Link the folder <code class="literal">datasets</code> to our home folder so we can access it from the <code class="literal">~/datasets/kaggle-kepler</code> path and then we define the folder path and list the contents of the folder through the Notebook to confirm if we have access to the data files through the Notebook:</li></ol></div><pre class="programlisting">dsroot = os.path.join(os.path.expanduser('~'),'datasets','kaggle-kepler')
+os.listdir(dsroot)</pre><p>We get the following output:</p><pre class="programlisting">['exoTest.csv', 'kepler-labelled-time-series-data.zip', 'exoTrain.csv']</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note20"></a>Note</h3><p>The ZIP file is just a leftover of the download process because the Kaggle API begins by downloading the ZIP file and then proceeds to unzip the contents in the same folder.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>We will then read the two <code class="literal">.csv</code> data files in the <code class="literal">pandas</code> DataFrames named <code class="literal">train</code> and <code class="literal">test</code> respectively:</li></ol></div><pre class="programlisting">import pandas as pd
+train = pd.read_csv(os.path.join(dsroot,'exoTrain.csv'))
+test = pd.read_csv(os.path.join(dsroot,'exoTest.csv'))
+print('Training data\n',train.head())
+print('Test data\n',test.head())</pre><p>The first five lines of the <code class="literal">training</code> and <code class="literal">test data</code> look similar to the following:</p><pre class="programlisting">Training data
+    LABEL   FLUX.1   FLUX.2   FLUX.3  \
+0      2    93.85    83.81    20.10     
+1      2   -38.88   -33.83   -58.54   
+2      2   532.64   535.92   513.73    
+3      2   326.52   347.39   302.35    
+4      2 -1107.21 -1112.59 -1118.95 
+     FLUX.4   FLUX.5   FLUX.6  FLUX.7  \
+0    -26.98   -39.56  -124.71 -135.18   
+1    -40.09   -79.31   -72.81  -86.55   
+2    496.92   456.45   466.00  464.50   
+3    298.13   317.74   312.70  322.33   
+4  -1095.10 -1057.55 -1034.48 -998.34   
+
+    FLUX.8  FLUX.9    ...      FLUX.3188  \
+0   -96.27  -79.89    ...         -78.07      
+1   -85.33  -83.97    ...          -3.28   
+2   486.39  436.56    ...         -71.69  
+3   311.31  312.42    ...           5.71      
+4 -1022.71 -989.57    ...        -594.37    
+
+    FLUX.3189  FLUX.3190  FLUX.3191  \
+0     -102.15    -102.15      25.13   
+1      -32.21     -32.21     -24.89   
+2       13.31      13.31     -29.89   
+3       -3.73      -3.73      30.05   
+4     -401.66    -401.66    -357.24  
+
+   FLUX.3192  FLUX.3193  FLUX.3194  
+0      48.57      92.54      39.32  
+1      -4.86       0.76     -11.70     
+2     -20.88       5.06     -11.80    
+3      20.03     -12.67      -8.77      
+4    -443.76    -438.54    -399.71   
+
+   FLUX.3195  FLUX.3196  FLUX.3197  
+0      61.42       5.08     -39.54  
+1       6.46      16.00      19.93  
+2     -28.91     -70.02     -96.67  
+3     -17.31     -17.35      13.98  
+4    -384.65    -411.79    -510.54  
+
+[5 rows x 3198 columns]
+
+Test data
+
+    LABEL   FLUX.1   FLUX.2   FLUX.3   \
+0      2   119.88   100.21    86.46      
+1      2  5736.59  5699.98  5717.16    
+2      2   844.48   817.49   770.07    
+3      2  -826.00  -827.31  -846.12    
+4      2   -39.57   -15.88    -9.16      
+
+       FLUX.4   FLUX.5   FLUX.6   FLUX.7  \
+0       48.68    46.12    39.39    18.57   
+1     5692.73  5663.83  5631.16  5626.39   
+2      675.01   605.52   499.45   440.77   
+3     -836.03  -745.50  -784.69  -791.22   
+4       -6.37   -16.13   -24.05    -0.90   
+
+    FLUX.8   FLUX.9    ...      FLUX.3188  \
+0     6.98     6.63    ...          14.52       
+1  5569.47  5550.44    ...        -581.91    
+2   362.95   207.27    ...          17.82     
+3  -746.50  -709.53    ...         122.34       
+4   -45.20    -5.04    ...         -37.87     
+    FLUX.3189  FLUX.3190  FLUX.3191  \
+0       19.29      14.44      -1.62   
+1     -984.09   -1230.89   -1600.45   
+2      -51.66     -48.29     -59.99   
+3       93.03      93.03      68.81   
+4      -61.85     -27.15     -21.18     
+
+   FLUX.3192  FLUX.3193  FLUX.3194  \  
+0      13.33      45.50      31.93    
+1   -1824.53   -2061.17   -2265.98     
+2     -82.10    -174.54     -95.23      
+3       9.81      20.75      20.25    
+4     -33.76     -85.34     -81.46    
+
+   FLUX.3195  FLUX.3196  FLUX.3197  
+0      35.78     269.43      57.72  
+1   -2366.19   -2294.86   -2034.72  
+2    -162.68     -36.79      30.63  
+3    -120.81    -257.56    -215.41  
+4     -61.98     -69.34     -17.84  
+
+[5 rows x 3198 columns]</pre><p>The training and test datasets have labels in the first column and 3197 features in the next columns. Now let us split the training and test data into labels and features with the following code:</p><pre class="programlisting">x_train = train.drop('LABEL', axis=1)
+y_train = train.LABEL-1 #subtract one because of TGBT
+x_test = test.drop('LABEL', axis=1)
+y_test = test.LABEL-1</pre><p>In the preceding code, we subtract <code class="literal">1</code> from the labels, since the TFBT estimator assumes labels starting with numerical zero while the features in the datasets are numbers 1 and 2.</p><p>Now that we have the label and feature vectors for training and test data, let us build the boosted tree models.</p></div>

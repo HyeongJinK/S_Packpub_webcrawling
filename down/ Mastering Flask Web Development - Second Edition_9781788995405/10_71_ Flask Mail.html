@@ -1,0 +1,36 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec70"></a>Flask Mail</h2></div></div><hr /></div><p>The final Flask extension that this chapter <span>will</span><a id="id324974901" class="indexterm"></a> cover is Flask Mail, which allows you to connect and configure your SMTP client from Flask's configuration. Flask Mail will also help to simplify application testing in <a class="link" href="#" linkend="ch12"><span>Chapter 12</span></a>, <span class="emphasis"><em>Testing Flask Apps</em></span>. The first step is to install Flask Mail with <code class="literal">pip</code>. You should already have done this in this chapter, in our <code class="literal">init.sh</code> script, so let's check our dependencies file for the following to make sure:</p><pre class="programlisting"><span class="strong"><strong>...
+Flask-Mail
+...</strong></span></pre><p><code class="literal">flask_mail</code> will connect to our SMTP server of choice by reading the configuration variables in our <code class="literal">app</code> object, so we need to add those values to our <code class="literal">config</code> object:</p><pre class="programlisting">class DevConfig(Config): 
+ 
+    MAIL_SERVER = 'localhost' 
+    MAIL_PORT = 25 
+    MAIL_USERNAME = 'username' 
+    MAIL_PASSWORD = 'password' </pre><p>Finally, the <code class="literal">mail</code> object is initialized on the <code class="literal">app</code> object in <code class="literal">_init_.py</code>:</p><pre class="programlisting">...
+from flask_mail import Mail
+...
+mail = Mail()
+ 
+def create_app(object_name): 
+...
+    mail.init_app(app)
+...</pre><p>To see how Flask Mail can simplify our emailing code, consider the following—this code snippet is the Remind task that we created in <a class="link" href="#" linkend="ch09"><span>Chapter 9</span></a>, <span class="emphasis"><em>Creating Asynchronous Tasks with Celery</em></span>, but uses Flask <span>Mail</span><a id="id325371639" class="indexterm"></a> instead of the standard library SMTP module:</p><pre class="programlisting">from flask_mail import Message
+from .. import celery, mail
+
+@celery.task(
+bind=True,
+ignore_result=True,
+default_retry_delay=300,
+max_retries=5
+)
+def remind(self, pk):
+    logs.info("Remind worker %d" % pk)
+    reminder = Reminder.query.get(pk)
+    msg = Message(body="Text %s" % str(reminder.text), 
+    recipients=[reminder.email], subject="Your reminder")
+try:
+        mail.send(msg)
+        logs.info("Email sent to %s" % reminder.email)
+return
+    except Exception as e:
+        logs.error(e)
+        self.retry(exc=e)</pre></div>

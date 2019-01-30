@@ -1,0 +1,139 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec39"></a>Handling modal popup windows</h2></div></div><hr /></div><p>In this section, we will be using a <span>simple</span><a id="id325162059" class="indexterm"></a> modal popup created using <a class="ulink" href="http://www.w3schools.org/" target="_blank">http://www.w3schools.org/</a> and then we will write a script to handle that popup. The simple modal pop-up code is given next. We will build the HTML page first and then we will plug the CSS and JavaScript. We have kept the CSS and JavaScript external for the sake of simplicity: </p><pre class="programlisting">&lt;html&gt;
+  &lt;head&gt;
+    &lt;link rel="stylesheet" type="text/css" href="GetModal.css"&gt;
+  &lt;/head&gt;
+  &lt;body onload="test()"&gt;
+
+     &lt;!-- Trigger/Open The Modal --&gt;
+     &lt;button id="myBtn"&gt;Open Modal&lt;/button&gt;
+     &lt;!-- The Modal --&gt;
+     &lt;div id="myModal" class="modal"&gt;
+     &lt;!-- Modal content --&gt;
+     &lt;frame name="MainWindow"&gt;
+         &lt;div class="modal-content"&gt;
+         &lt;div class="modal-header"&gt;
+         &lt;span class="close"&gt;&amp;times;&lt;/span&gt;
+         &lt;h2&gt;Login Form&lt;/h2&gt;
+     &lt;/div&gt;
+     &lt;div class="modal-body"&gt;
+         &lt;table id="credentials"&gt;
+         &lt;tr&gt;
+             &lt;td&gt;UserID&lt;/td&gt;
+             &lt;td&gt;&lt;input type="text" id="userid"/&gt;&lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;
+             &lt;td&gt;Password&lt;/td&gt;
+             &lt;td&gt;&lt;input type="text" id="password"/&gt;&lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;tr&gt;
+             &lt;td&gt;&lt;input type="button" id="ok" value="Ok"&gt;&lt;/td&gt;
+             &lt;td&gt;&lt;input type="button" id="cancel" value="Cancel"&gt;&lt;/td&gt;
+         &lt;/tr&gt;
+         &lt;/table&gt;
+    &lt;/div&gt;
+    &lt;div class="modal-footer"&gt;
+        &lt;h3&gt;Login to Application&lt;/h3&gt;
+    &lt;/div&gt; 
+&lt;/div&gt;
+&lt;/frame&gt;
+&lt;/div&gt;
+&lt;/body&gt;
+&lt;script src="GetModal.js"&gt;&lt;/script&gt;
+&lt;/html&gt;</pre><p>Next, we will look at the CSS. The CSS is used to give <span>styling</span><a id="id325437564" class="indexterm"></a> to our HTML. So let's look at the CSS for this HTML:</p><pre class="programlisting">         /* The Modal (background) */
+        .modal {
+             display: none; /* Hidden by default */
+             position: fixed; /* Stay in place */
+             z-index: 1; /* Sit on top */
+             left: 0;
+             top: 0;
+             width: 100%; /* Full width */
+             height: 100%; /* Full height */
+             overflow: auto; /* Enable scroll if needed */
+             background-color: rgb(0,0,0); /* Fallback color */
+             background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+        /* Modal Content/Box */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen 
+            size */
+        }
+        /* The Close Button */
+        .close {
+             color: #aaa;
+             float: right;
+             font-size: 28px;
+             font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+             color: black;
+             text-decoration: none;
+             cursor: pointer;
+        }
+        /* Modal Header */
+        .modal-header {
+             padding: 2px 16px;
+             background-color: #5cb85c;
+             color: white;
+        }
+        /* Modal Body */
+        .modal-body 
+        { 
+            padding: 2px 16px;
+        }
+        /* Modal Footer */
+        .modal-footer {
+            padding: 2px 16px;
+            background-color: #5cb85c;
+            color: white;
+         }
+        /* Modal Content */
+        .modal-content {
+            position: relative;
+            background-color: #fefefe;
+            margin: auto;
+            padding: 0;
+            border: 1px solid #888;
+            width: 80%;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 
+                        rgba(0,0,0,0.19);
+            animation-name: animatetop;
+            animation-duration: 0.4s
+         }
+        /* Add Animation */
+        @keyframes animatetop {
+             from {top: -300px; opacity: 0}
+             to {top: 0; opacity: 1}
+         }</pre><p>Now comes the final part of <span>plugging</span><a id="id325441753" class="indexterm"></a> in the JavaScript. Plug this in the HTML right before the ending script tag. The file should be named <code class="literal">ModalPopup.html</code>:</p><pre class="programlisting">  function test(){
+ // Get the modal
+ var modal = document.getElementById('myModal');
+ // Get the button that opens the modal
+ var btn = document.getElementById("myBtn"); 
+ // Get the &lt;span&gt; element that closes the modal 
+ var span = document.getElementsByClassName("close")[0];
+ // When the user clicks on the button, open the modal
+ btn.onclick = function() {
+ modal.style.display = "block";
+ }
+ // When the user clicks on &lt;span&gt; (x), close the modal
+ span.onclick = function() {
+ modal.style.display = "none";
+ }
+ // When the user clicks anywhere outside of the modal, close it
+ window.onclick = function(event) {
+ if (event.target == modal) {
+ modal.style.display = "none";
+ }
+ }
+}</pre><p>All the pieces are separate from each other. It becomes an HTML page created using plain HTML with inclusions for CSS and JavaScript. Clicking the cross closes the popup. The page does not have functionality for the <strong class="userinput"><code>OK</code></strong> and <strong class="userinput"><code>Cancel</code></strong> buttons. It is just a dummy page for demo purposes. </p><p>The following code <span>opens</span><a id="id325441780" class="indexterm"></a> up the demo page, clicks on the button, and then a modal popup opens, after which a username and password are entered: </p><pre class="programlisting"> WebDriver driver = new ChromeDriver();
+ // driver.manage().window().maximize();
+ driver.navigate().to(
+ "C:\\Users\\pinakin.chaubal\\Desktop\\ModalPopup.html");
+driver.findElement(By.id("myBtn")).click();
+System.out.println(driver.findElement(By.tagName("body")).getText());
+driver.findElement(By.id("userid")).sendKeys("testuser");
+driver.findElement(By.id("password")).sendKeys("testpass");</pre></div>

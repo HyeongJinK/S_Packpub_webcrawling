@@ -1,0 +1,148 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec125"></a>Setting up the Scene</h2></div></div><hr /></div><p>We can set up the scene by <span>defining</span><a id="id325358851" class="indexterm"></a> some global variables for our application and writing the code for the <code class="literal">configure</code> function. Let's analyze this line by line:</p><pre class="programlisting">let gl, program, scene, clock, camera, transforms, lights,
+floor, selectedCar, lightPositions, carModelData,
+clearColor = [0.9, 0.9, 0.9, 1];
+
+function configure() {
+ // ...
+}</pre><p> </p><p>At this stage, we want to set some of the WebGL properties, such as the clear color and the depth test. Then, we need to create a camera and set its initial position and orientation. We also <span>need</span><a id="id325358873" class="indexterm"></a> to create a camera controls instance so that we can update the position of the camera during scene interactions. Finally, we need to define the JavaScript variables that will be mapped to the shaders.</p><p>To accomplish these tasks, we will use <code class="literal">Camera.js</code>, <code class="literal">Controls.js</code>, <code class="literal">Program.js</code>, and <code class="literal">Transforms.js</code> from our architecture.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec146"></a>Configuring WebGL Properties</h3></div></div></div><p>We need to initialize and <span>configure</span><a id="id325358904" class="indexterm"></a> our <code class="literal">canvas</code> and <code class="literal">gl</code> instances:</p><pre class="programlisting">function configure() {
+  canvas = utils.getCanvas('webgl-canvas');
+utils.autoResizeCanvas(canvas);
+gl = utils.getGLContext(canvas);
+
+  // ...
+}</pre><p>Then, we need to initialize <code class="literal">scene</code>, <code class="literal">clock</code>, and <code class="literal">program</code>:</p><pre class="programlisting">clock = new Clock();
+program = new Program(gl, 'vertex-shader', 'fragment-shader');
+scene = new Scene(gl, program);</pre><p>These core components are defined globally so that we can reference them throughout our application.</p><p>Finally, we need to set the background color and the depth test properties, as follows:</p><pre class="programlisting">gl.clearColor(...clearColor);
+gl.clearDepth(1);
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LESS);
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec147"></a>Setting up the Camera</h3></div></div></div><p>To keep things simple, the <code class="literal">camera</code> variable will be <span>global</span><a id="id325400713" class="indexterm"></a> so that we can access it from the GUI controls:</p><pre class="programlisting">camera = new Camera(Camera.ORBITING_TYPE);</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec148"></a>Creating the Camera Controls</h3></div></div></div><p>We need to <span>instantiate</span><a id="id325617363" class="indexterm"></a> a <code class="literal">Controls</code> instance that will bind mouse gestures to <code class="literal">camera</code> actions. The first argument is the <code class="literal">camera</code> we are controlling, and the second argument is a reference to our <code class="literal">canvas</code>:</p><pre class="programlisting">new Controls(camera, canvas);
+</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec149"></a>Scene Transforms</h3></div></div></div><p>Once we have a <code class="literal">camera</code>, we can use it to <span>create</span><a id="id325631835" class="indexterm"></a> a new <code class="literal">Tranforms</code> instance, as follows:</p><pre class="programlisting">transforms = new Transforms(gl, program, camera, canvas);</pre><p>The <code class="literal">transforms</code> variable is also declared globally, so we can use it in the <code class="literal">draw</code> function to retrieve the current matrix transformations and pass them to the shaders.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec150"></a>Creating the Lights</h3></div></div></div><p>We will <span>create</span><a id="id325638038" class="indexterm"></a> four lights by using the <code class="literal">Light</code> class from our framework with the following configurations:</p><div class="mediaobject"><img src="/graphics/9781788629690/graphics/e61f0660-4fb8-4e72-af18-81c824646582.png" /></div><p>First, we instantiate a <code class="literal">LightsManager</code> instance to manage our lights:</p><pre class="programlisting">lights = new LightsManager();</pre><p>Then, we create four light positions for each light and iterate over each position to uniquely position each light:</p><pre class="programlisting">lightPositions = {
+farLeft: [-1000, 1000, -1000],
+farRight: [1000, 1000, -1000],
+nearLeft: [-1000, 1000, 1000],
+nearRight: [1000, 1000, 1000]
+};
+
+Object.keys(lightPositions).forEach(key =&gt; {
+const light = new Light(key);
+light.setPosition(lightPositions[key]);
+light.setDiffuse([0.4, 0.4, 0.4]);
+light.setSpecular([0.8, 0.8, 0.8]);
+lights.add(light)
+});</pre><p>Since every light has the same diffuse, ambient, and specular properties, we only set a dynamic position by using the <code class="literal">lightPositions</code> data.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec151"></a>Mapping Program Attributes and Uniforms</h3></div></div></div><p>Next, inside the <code class="literal">configure</code> function, we map the JavaScript values to the <span>attributes</span><a id="id325647134" class="indexterm"></a> and uniforms inside of our shaders.</p><p>Using the program <code class="literal">instance</code> from earlier, we will set up the values to map attributes and uniforms to the shaders. The code looks like this:</p><pre class="programlisting">const attributes = [
+'aVertexPosition',
+'aVertexNormal',
+'aVertexColor'
+];
+
+const uniforms = [
+'uProjectionMatrix',
+'uModelViewMatrix',
+'uNormalMatrix',
+'uLightPosition',
+'uWireframe',
+'uLd',
+'uLs',
+'uKa',
+'uKd',
+'uKs',
+'uNs',
+'uD',
+'uIllum'
+];
+
+program.load(attributes, uniforms);</pre><p>When creating shaders, make sure that the shader attributes and uniforms are properly mapped to JavaScript values. This mapping step allows us to refer to attributes and uniforms effortlessly. Check out the <code class="literal">setAttributeLocations</code> and <code class="literal">setUniformLocations</code> methods inside of <code class="literal">Program.js</code>, which are called by <code class="literal">program.load</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec152"></a>Uniform Initialization</h3></div></div></div><p>After mapping the variables, we can <span>initialize</span><a id="id325647204" class="indexterm"></a> shader uniforms, such as lights:</p><pre class="programlisting">gl.uniform3fv(program.uLightPosition, lights.getArray('position'));
+gl.uniform3fv(program.uLd, lights.getArray('diffuse'));
+gl.uniform3fv(program.uLs, lights.getArray('specular'));</pre><p> </p><p>The default material properties are as follows:</p><pre class="programlisting">gl.uniform3fv(program.uKa, [1, 1, 1]);
+gl.uniform3fv(program.uKd, [1, 1, 1]);
+gl.uniform3fv(program.uKs, [1, 1, 1]);
+gl.uniform1f(program.uNs, 1);</pre><p>Lastly, we will create a <code class="literal">floor</code> instance that we will use later. We will also <span>structure</span><a id="id325652523" class="indexterm"></a> the data that describes the car model that we'll be loading later:</p><pre class="programlisting">floor = new Floor(200, 2);
+
+carModelData = {
+'BMW i8': {
+paintAlias: 'BMW',
+partsCount: 25,
+path: '/common/models/bmw-i8/part'
+}
+};</pre><p>Although we have only described one car model here, we'll leverage this data format so that we can add other car models later in this chapter.</p><p>Here's the final <code class="literal">configure</code> function, which you can find in the <code class="literal">ch09_02_showroom.html</code> source code:</p><pre class="programlisting">function configure() {
+const canvas = utils.getCanvas('webgl-canvas');
+utils.autoResizeCanvas(canvas);
+
+gl = utils.getGLContext(canvas);
+gl.clearColor(...clearColor);
+gl.clearDepth(1);
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LESS);
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+program = new Program(gl, 'vertex-shader', 'fragment-shader');
+
+const attributes = [
+'aVertexPosition',
+'aVertexNormal',
+'aVertexColor'
+];
+
+const uniforms = [
+'uProjectionMatrix',
+'uModelViewMatrix',
+'uNormalMatrix',
+'uLightPosition',
+'uWireframe',
+'uLd',
+'uLs',
+'uKa',
+'uKd',
+'uKs',
+'uNs',
+'uD',
+'uIllum'
+];
+
+program.load(attributes, uniforms);
+
+scene = new Scene(gl, program);
+clock = new Clock();
+
+camera = new Camera(Camera.ORBITING_TYPE);
+new Controls(camera, canvas);
+
+transforms = new Transforms(gl, program, camera, canvas);
+
+lights = new LightsManager();
+
+lightPositions = {
+farLeft: [-1000, 1000, -1000],
+farRight: [1000, 1000, -1000],
+nearLeft: [-1000, 1000, 1000],
+nearRight: [1000, 1000, 1000]
+  };
+
+Object.keys(lightPositions).forEach(key =&gt; {
+const light = new Light(key);
+light.setPosition(lightPositions[key]);
+light.setDiffuse([0.4, 0.4, 0.4]);
+light.setSpecular([0.8, 0.8, 0.8]);
+lights.add(light)
+  });
+
+gl.uniform3fv(program.uLightPosition, lights.getArray('position'));
+gl.uniform3fv(program.uLd, lights.getArray('diffuse'));
+gl.uniform3fv(program.uLs, lights.getArray('specular'));
+
+gl.uniform3fv(program.uKa, [1, 1, 1]);
+gl.uniform3fv(program.uKd, [1, 1, 1]);
+gl.uniform3fv(program.uKs, [1, 1, 1]);
+gl.uniform1f(program.uNs, 1);
+
+floor = new Floor(200, 2);
+
+carModelData = {
+'BMW i8': {
+paintAlias: 'BMW',
+partsCount: 25,
+path: '/common/models/bmw-i8/part'
+}
+  };
+}</pre><p>We have finished setting up the scene. Next, we'll implement the <code class="literal">load</code> function.</p></div></div>

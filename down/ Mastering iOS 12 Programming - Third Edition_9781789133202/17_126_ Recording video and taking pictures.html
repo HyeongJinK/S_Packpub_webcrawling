@@ -1,0 +1,95 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch17lvl1sec118"></a>Recording video and taking pictures</h2></div></div><hr /></div><p>In addition to playing existing media, you can also make apps that allow users to create their own content. In this section, you will learn how you can use a built-in component to enable users to take a picture. You will also learn how you can use a raw video feed to record a video. If you want to follow along with the samples in this section, make sure to grab the starter project for <strong class="userinput"><code>Captured</code></strong> from this chapter's code bundle.</p><p>The starter project contains a couple of view <span>controllers</span><a id="id325333123" class="indexterm"></a> and some connected outlets and actions. Note that there is a <code class="literal">UIViewController</code> extension in the project, too. This extension includes a helper method that makes displaying an alert to the user a little bit simpler. This extension will be used to show an alert that informs the user when their photo or <span>video</span><a id="id325333134" class="indexterm"></a> is stored to the camera roll.</p><p>Since a user's camera and photo library are considered very privacy-sensitive, you need to make sure that you add the following privacy-related keys to the app's <code class="literal">Info.plist</code>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Privacy - Camera Usage Description</strong></span>: this property is required in order to access the camera so you can take pictures and record video.</li><li style="list-style-type: disc"><span class="strong"><strong>Privacy - Microphone Usage Description</strong></span>: you must add this property so that your videos record audio, as well as images.</li><li style="list-style-type: disc"><span class="strong"><strong>Privacy - Photo Library Additions Usage Description</strong></span>: this property allows you to write photos to the user's photo library.</li></ul></div><p>Make sure to provide a good description for the privacy keys, so the user knows why you need access to their camera, microphone, and photo library. The better your description is, the more likely the user is to allow your app to access the associated privacy-sensitive information. After adding the keys, you are ready to see how you can take a picture using the built-in <code class="literal">UIImagePickerController</code> component of the <code class="literal">UIKit</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch17lvl2sec94"></a>Taking and storing a picture</h3></div></div></div><p>When you need a user to supply an image, they can do this by either selecting an image from their photo library, or by taking a picture with the camera. The <code class="literal">UIImagePickerController</code> supports both ways of <span>picking</span><a id="id325369918" class="indexterm"></a> an image. In this sample, you will learn how you can allow users to take an image using the camera. Changing the <span>example</span><a id="id325571677" class="indexterm"></a> to allow users to select an image from their photo library should be trivial, as long as you remember to add the <span class="strong"><strong>Privacy - Photo Library Usage Description</strong></span> key to your <code class="literal">Info.plist</code>.</p><p>Add the following implementation for <code class="literal">viewDidLoad()</code> to the <code class="literal">ImageViewController</code> class:</p><pre class="programlisting">override func viewDidLoad() {
+  super.viewDidLoad()
+
+  let imagePicker = UIImagePickerController()
+  imagePicker.sourceType = .camera
+  imagePicker.delegate = self
+  present(imagePicker, animated: true, completion: nil)
+}</pre><p>The previous implementation creates an instance of the <code class="literal">UIImagePickerController</code> object, and configures it so that it uses the camera as the image source and presents <span>it</span> to the user. Note that the view controller is set as a delegate for the image picker. When the user has taken a picture, the image picker will notify its delegate about this, so that it can extract the image and use it. In this case, the image should be given the <code class="literal">selectedImage</code> label in the view controller so it can be shown in the image view, and saved when the user taps on the save button and the <code class="literal">saveImage()</code> method is called as a result.</p><p>Add the following extension to make <code class="literal">ImageViewController</code> conform to <code class="literal">UIImagePickerControllerDelegate</code>:</p><pre class="programlisting">extension ImageViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+  func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+    picker.dismiss(animated: true, completion: nil)
+
+    guard let image = info[.originalImage] as? UIImage
+      else { return }
+
+    selectedImage = image
+  }
+}</pre><p>Note that this extension also makes the image view controller conform to <code class="literal">UINavigationControllerDelegate</code>. The <code class="literal">delegate</code> property on the image picker controller requires all delegates to conform to both <code class="literal">UINavigationControllerDelegate</code> and <code class="literal">UIImagePickerControllerDelegate</code>.</p><p>When the user has taken a picture with the camera, <code class="literal">imagePickerController(_: didFinishPickingMediaWithInfo)</code> is called to notify the delegate about the photo that the user took. The first thing that the preceding code does is dismiss the picker, as it's no longer needed. The picture that the user just took is stored in the <code class="literal">info</code> dictionary as the original image. When the image is extracted from the dictionary, it is set as <code class="literal">selectedImage</code>.</p><p>To store the image, add the following implementation of <code class="literal">saveImage()</code>:</p><pre class="programlisting">@IBAction func saveImage() {
+  guard let image = selectedImage
+    else { return }
+
+  UIImageWriteToSavedPhotosAlbum(image, self, #selector(didSaveImage(_:withError:contextInfo:)), nil)
+}
+
+@objc func didSaveImage(_ image: UIImage, withError error: Error?, contextInfo: UnsafeRawPointer) {
+  guard error == nil
+    else { return }
+
+  presentAlertWithTitle("Success", message: "Image was saved succesfully")
+}</pre><p>The preceding code calls <code class="literal">UIImageWriteToSavedPhotosAlbum(_:_:_:_)</code> to store the image in the user's photo library. When the save operation completes, the <code class="literal">didSaveImage(_:withError:contextInfo:)</code> method will be called. If this method does not receive any errors, then the photo was successfully stored in the photo library and an alert is shown.</p><p>Allowing the user to take a picture by implementing <code class="literal">UIImagePickerController</code> is relatively straightforward, and it's a great way to implement a camera feature in your app without too much effort. Sometimes, you need more advanced access to the camera. In these cases, you can use <code class="literal">AVFoundation</code> to gain access to the raw video feed from the camera, as you will see next.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch17lvl2sec95"></a>Recording and storing video</h3></div></div></div><p>In the previous section, you used <code class="literal">AVFoundation</code> to build a simple audio player app. You will now use <code class="literal">AVFoundation</code> again, except instead of playing <span>video</span><a id="id325604100" class="indexterm"></a> or audio, you will now record <span>video</span><a id="id325604108" class="indexterm"></a> and store it in the user's photo library. When using <code class="literal">AVFoundation</code> to record a video feed, you do so with an <code class="literal">AVCaptureSession</code> object. A capture session is responsible for taking the input from one or more <code class="literal">AVCaptureDeviceInput</code> objects, and writing it to an <code class="literal">AVCaptureOutput</code> subclass.</p><p>The following diagram shows the objects that are involved with recording media through an <code class="literal">AVCaptureSession</code>:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/bce04b38-492e-4d4a-8383-12ae99a5d375.png" /></div><p>To get started on implementing the video recorder, make sure to import <code class="literal">AVFoundation</code> in <code class="literal">RecordVideoViewController.swift</code>. Also, add the following properties to the <code class="literal">RecordVideoViewController</code> class:</p><pre class="programlisting">let videoCaptureSession = AVCaptureSession()
+let videoOutput = AVCaptureMovieFileOutput()
+
+var previewLayer:  AVCaptureVideoPreviewLayer?</pre><p>Most of the preceding properties should look familiar, because they were also shown in the screenshot that outlined the components that are involved with an <code class="literal">AVCaptureSession</code>. Note that <code class="literal">AVCaptureMovieFileOutput</code> is a subclass of <code class="literal">AVCaptureOutput</code>, specialized in capturing video. The preview layer will be used to render the video feed at runtime and present it to the user, so they can see what they are capturing with the camera.</p><p> </p><p>The next step is to set up the <code class="literal">AVCaptureDevice</code> objects for the camera and microphone and associate them with the <code class="literal">AVCaptureSession</code>. Add the following code to the <code class="literal">viewDidLoad()</code> method:</p><pre class="programlisting">// 1
+guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+  let microphone = AVCaptureDevice.default(.builtInMicrophone, for: .audio, position: .unspecified)
+  else { return }
+
+// 2
+do {
+  let cameraInput = try AVCaptureDeviceInput(device: camera)
+  let microphoneInput = try AVCaptureDeviceInput(device: microphone)
+
+  videoCaptureSession.addInput(cameraInput)
+  videoCaptureSession.addInput(microphoneInput)
+  videoCaptureSession.addOutput(videoOutput)
+} catch {
+  print(error.localizedDescription)
+}</pre><p>The preceding code first obtains a reference to the camera and microphone that will be used to record the <span>video</span><a id="id325606091" class="indexterm"></a> and audio. The second step is to create the <code class="literal">AVCaptureDeviceInput</code> objects that are associated with the camera and microphone and associate them with the capture session. The video output is also added to the <span>video</span><a id="id325607094" class="indexterm"></a> capture session. If you examine the screenshot that you saw earlier and compare it with the preceding code snippet, you will find that all four components are present in this implementation.</p><p>The next step is to provide the user with a view that shows the current camera feed, so they can see what they are recording. Add the following code to <code class="literal">viewDidLoad()</code> after the capture session setup code:</p><pre class="programlisting">previewLayer = AVCaptureVideoPreviewLayer(session: videoCaptureSession)
+previewLayer?.videoGravity = .resizeAspectFill
+videoView.layer.addSublayer(previewLayer!)
+
+videoCaptureSession.startRunning()</pre><p>The preceding code sets up the preview layer and associates it with the video capture session. The preview layer will directly use the capture session to render the camera feed. The capture session is then started. This does not mean that the recording session starts; rather, only that the capture session will begin processing the data from its camera and microphone inputs.</p><p>The preview layer is added to the view at this point, but it doesn't cover the <span>video</span><a id="id325607116" class="indexterm"></a> view yet. Add the following implementation for <code class="literal">viewDidLayoutSubviews()</code> to <code class="literal">RecordVideoViewController</code> to set the preview layer's size and position, so it matches the size and position of <code class="literal">videoView</code>:</p><pre class="programlisting">override func viewDidLayoutSubviews() {
+  super.viewDidLayoutSubviews()
+
+  previewLayer?.bounds.size = videoView.frame.size
+  previewLayer?.position = CGPoint(x: videoView.frame.midX, y: videoView.frame.size.height / 2)
+}</pre><p>Running the app now will already show you the camera feed. However, tapping the record button doesn't work yet, because you haven't yet implemented the <code class="literal">startStopRecording()</code> method. Add the following implementation for this method:</p><pre class="programlisting">@IBAction func startStopRecording() {
+  // 1
+  if videoOutput.isRecording {
+    videoOutput.stopRecording()
+  } else {
+    // 2
+    guard let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+      else { return }
+
+    let fileUrl = path.appendingPathComponent("recording.mov")
+
+    // 3
+    try? FileManager.default.removeItem(at: fileUrl)
+
+    // 4
+    videoOutput.startRecording(to: fileUrl, recordingDelegate: self)
+  }
+}</pre><p>Let's go over the preceding snippet step by step to see what exactly is going on:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>First, the <code class="literal">isRecording</code> property for the <span>video</span><a id="id325609924" class="indexterm"></a> output is checked. If a recording is currently active, the recording should be stopped.</li><li>If no recording is currently active, a new path is created to store the video temporarily.</li><li>Since the video output can't overwrite an existing file, the <code class="literal">FileManager</code> object should attempt to remove any existing files at the temporary <span>video</span><a id="id325609940" class="indexterm"></a> file path.</li><li>The <span>video</span><a id="id325611489" class="indexterm"></a> output will start recording to the temporary file. The view controller itself is passed as a delegate to be notified when the recording has begun and is stopped.</li></ol></div><p>Since <code class="literal">RecordVideoViewController</code> does not conform to <code class="literal">AVCaptureFileOutputRecordingDelegate</code> yet, you should add the following extension to add conformance to <code class="literal">AVCaptureFileOutputRecordingDelegate</code>:</p><pre class="programlisting">extension RecordVideoViewController: AVCaptureFileOutputRecordingDelegate {
+  // 1
+  func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
+    startStopButton.setTitle("Stop Recording", for: .normal)
+  }
+
+  // 2
+  func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+    guard error == nil
+      else { return }
+
+    UISaveVideoAtPathToSavedPhotosAlbum(outputFileURL.path, self, #selector(didSaveVideo(at:withError:contextInfo:)), nil)
+  }
+
+  // 3
+  @objc func didSaveVideo(at path: String, withError error: Error?, contextInfo: UnsafeRawPointer?) {
+    guard error == nil
+      else { return }
+
+    presentAlertWithTitle("Success", message: "Video was saved succesfully")
+    startStopButton.setTitle("Start Recording", for: .normal)
+  }
+}</pre><p>The preceding extension contains three methods. The first is a delegate method, called when the video output has begun recording. When the recording has started, the title of the <code class="literal">startStopButton</code> button is updated to reflect the current state. The second method is also a delegate method. This method is called when the recording has completed. If no errors occur, the video is stored at the temporary location you set up earlier. <code class="literal">UISaveVideoAtPathToSavedPhotosAlbum(_:_:_:_:)</code> is then called, to move the <span>video</span><a id="id325612675" class="indexterm"></a> from the temporary location to the user's photo library. This method is very similar to the <code class="literal">UIImageWriteToSavedPhotosAlbum(_:_:_:_:)</code> method that you used to store a picture. The third and final method in the extension is called when the <span>video</span><a id="id325615282" class="indexterm"></a> is stored in the user's photo library. When the video has been successfully stored, an alert is shown, and the title of the <code class="literal">startStopButton</code> button is updated again.</p><p>You can now run the app and record some videos! Even though you have done a lot of manual work by implementing the video recording logic directly with an <code class="literal">AVCaptureSession</code>, most of the hard work is done inside of the <code class="literal">AVFoundation</code> framework. One final media-related feature to explore is applying visual filters to images using <code class="literal">Core Image</code>.</p></div></div>

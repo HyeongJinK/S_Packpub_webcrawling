@@ -1,0 +1,143 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec25"></a>Creating our views</h2></div></div><hr /></div><p>To get started, we need to <span>create</span><a id="id324847030" class="indexterm"></a> a new folder named <code class="literal">templates</code> in our project directory. This folder will store all of our Jinja files, which are just HTML files with Jinja syntax mixed in. Our first template will be our home page, which will be a list of the first 10 posts with summaries. There will also be a view for a post that will just show the post content, the comments on the page, links to the author's user page, and links to tag pages. There will also be user and tag pages that show all the posts that have been made by a user and all the posts with a specific tag. Each page will also have a sidebar showing the five most recent posts and the top five most used tags.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec28"></a>The view function</h3></div></div></div><p>Because each page will have the same sidebar information, we can <span>break</span><a id="id325369003" class="indexterm"></a> that into a separate function to simplify our code. In the <code class="literal">main.py</code> file, add the following code:</p><pre class="programlisting">from sqlalchemy import func 
+... 
+def sidebar_data(): 
+  recent = Post.query.order_by( 
+    Post.publish_date.desc() 
+  ).limit(5).all() 
+  top_tags = db.session.query( 
+    Tag, func.count(tags.c.post_id).label('total') 
+  ).join( 
+    tags 
+  ).group_by(Tag).order_by('total DESC').limit(5).all() 
+ 
+  return recent, top_tags </pre><p>The most recent posts query is straightforward, but the most popular tags query looks somewhat familiar, but a little odd. This is a bit outside the scope of this book, but using the SQLAlchemy <code class="literal">func</code> library to return a count on a group by query, we are able to order our tags by the most used tags. The <code class="literal">func</code> function is <span>explained</span><a id="id325371655" class="indexterm"></a> in detail at <a class="ulink" href="http://docs.sqlalchemy.org/en/latest/core/functions.html#module-sqlalchemy.sql.expression" target="_blank"><span>http://docs.sqlalchemy.org/en/rel_1_0/core/sqlelement.html#sqlalchemy.sql.expression.func</span></a>.</p><p>The <code class="literal">home</code> page function in <code class="literal">main.py</code> will need all the posts ordered by their publish date in a pagination object and the sidebar information, as follows:</p><pre class="programlisting">from flask import Flask, render_template 
+...
+@app.route('/')
+@app.route('/&lt;int:page&gt;')
+def home(page=1):
+    posts = Post.query.order_by(Post.publish_date.desc()).paginate(page, app.config['POSTS_PER_PAGE'], False)
+    recent, top_tags = sidebar_data()
+
+return render_template(
+'home.html',
+posts=posts,
+recent=recent,
+top_tags=top_tags
+    )</pre><p>Note that using the <code class="literal">app.config['POSTS_PER_PAGE']</code> phrase gives us the option to configure it without having to change code, which is nice. It's a candidate config key for the main <code class="literal">Config</code> class, and let all environments inherit its value. </p><p>Here, we finally see how Flask and Jinja tie together. The Flask function <code class="literal">render_template</code> takes the name of a file in the folder <code class="literal">templates</code> and passes all the <code class="literal">kwargs</code> to the template as variables. Also, our <code class="literal">home</code> function now has multiple routes to handle pagination, and will default to the first page if there is nothing after the slash.</p><p>Now that you have all the information that you need to write view functions, let's define the first view functions that we need:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">GET /post/&lt;POST_ID&gt;</code> to render a specific post by its ID. This also renders all recent posts and tags.</li><li style="list-style-type: disc"><code class="literal">GET /posts_by_tag/&lt;TAG_NAME&gt;</code> to render all posts by a specific tag name. This also renders all recent posts and tags.</li><li style="list-style-type: disc"><code class="literal">GET /posts_by_user/&lt;USER_NAME&gt;</code> to render all posts authored by a specific user. This also renders all recent posts and tags.</li></ul></div><p>This translates to the following view functions:</p><pre class="programlisting">@app.route('/post/&lt;int:post_id&gt;') 
+def post(post_id)
+....</pre><pre class="programlisting">@app.route('/posts_by_tag/&lt;string:tag_name&gt;') 
+def posts_by_tag(tag_name): 
+...</pre><pre class="programlisting">@app.route('/posts_by_user/&lt;string:username&gt;') 
+def posts_by_user(username): 
+...</pre><p> </p><p> </p><p> </p><p> </p><p>In Flask SQLAlchemy, there are two convenience functions that return HTTP <code class="literal">404</code> in the case of a nonexistent entry in the database, <code class="literal">get_or_404</code> and <code class="literal">first_or_404</code>, so on our get post by ID, as shown in the following code:</p><pre class="programlisting">@app.route('/post/&lt;int:post_id&gt;') 
+def post(post_id)
+    post = Post.query.get_or_404(post_id)</pre><p>All posts made by a user can be returned using the following code:</p><pre class="programlisting">@app.route('/posts_by_user/&lt;string:username&gt;') 
+def posts_by_user(username): 
+  user = User.query.filter_by(username=username).first_or_404() 
+  posts = user.posts.order_by(Post.publish_date.desc()).all() 
+  recent, top_tags = sidebar_data() 
+ 
+  return render_template( 
+    'user.html', 
+    user=user, 
+    posts=posts, 
+    recent=recent, 
+    top_tags=top_tags 
+  ) </pre><p>However, this doesn't check the <code class="literal">posts_by_tag</code> function in the <code class="literal">main.py</code> file (see the provided code for this chapter). After all of your views are written, the only thing left to do is to write the templates.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec29"></a>Writing the templates and inheritance</h3></div></div></div><p>Because this book does not focus on interface design, we will use the CSS library <span class="strong"><strong>Bootstrap</strong></span> and avoid <span>writing</span><a id="id325378677" class="indexterm"></a> custom CSS. If you have never used it before, Bootstrap is a set of default CSS rules that make your website work well across all browsers and platforms, from desktop to mobile. Bootstrap has tools that allow you to easily control the layout of your website.</p><p>We will be downloading Bootstrap, JQuery, and Font Awesome directly from their CDN upon page load, but any extra assets you may need should be included in a project directory named <code class="literal">static</code>. It's common practice to use <code class="literal">static/css</code> for CSS, <code class="literal">static/js</code> for JavaScript, <code class="literal">static/img</code> for images, and <code class="literal">static/fonts</code> for fonts. One of the best ways to use Bootstrap is to download its <code class="literal">sass</code> files and use<code class="literal">sass </code>to <span>customize</span><a id="id325378741" class="indexterm"></a> it.</p><p> </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note15"></a>Note</h3><p>For the official documentation about SASS and Bootstrap, visit <a class="ulink" href="https://getbootstrap.com/docs/4.0/getting-started/theming/" target="_blank">https://getbootstrap.com/docs/4.0/getting-started/theming/</a>.</p></div><p>Because every route will have a template assigned to it, each template will need the requisite HTML boilerplate code with our metainformation, style sheets, common JavaScript libraries, and so on. To keep our templates <span class="strong"><strong>DRY</strong></span> (<span class="strong"><strong>don't repeat yourself</strong></span>), we will use one of the most powerful features of Jinja, <span class="strong"><strong>template inheritance</strong></span>. Template inheritance is when a child template can import a base template as a starting point and only <span>replace</span><a id="id325378777" class="indexterm"></a> marked sections in the base. You can also include full sections of Jinja templates from other files; this will allow you to set some <span>rigid</span><a id="id325378784" class="indexterm"></a> default sections. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec19"></a>The base template</h4></div></div></div><p>We need to outline the base layout for our site, split it <span>into</span><a id="id325379653" class="indexterm"></a> sections, and give each section a specific purpose. The following diagram is an abstract description of the layout:</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/0c5c4803-4c10-450f-aa74-d572e75c0b47.png" /></div><p> </p><p>Some of these sections will always get rendered, and you don't want to repeat them on each template. Some possible options for these sections are the navigation bar, header, messages, and footer.</p><p>We will use the following include and block structure to maintain our DRY principal and implement the layout:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Include navbar</strong></span>: Jinja2 template: <code class="literal">navbar.html</code>—Renders a navigation bar.</li><li style="list-style-type: disc"><span class="strong"><strong>Block head</strong></span>: The header with the name of the site. Already includes the <code class="literal">head.html </code>Jinja2 template.</li><li style="list-style-type: disc"><span class="strong"><strong>Include messages</strong></span>: Jinja2 template: <code class="literal">messages.html</code>—Renders alerts for the users with different categories.</li><li style="list-style-type: disc"><span class="strong"><strong>Block body:</strong></span><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Block left body</strong></span>: Normally, templates will override this block.</li><li style="list-style-type: disc"><span class="strong"><strong>Block right body</strong></span>: This will display the most recent posts and tags.</li></ul></div></li><li style="list-style-type: disc"><span class="strong"><strong>Block footer</strong></span>: Jinja2 template: <code class="literal">footer.html</code>.</li></ul></div><p>Note how the fixed sections, the ones that will almost always get rendered, already include templates even when inside blocks. The base template will handle these by default. If for some reason you want to override these, you just have to implement/inherit their block on the rendered template. For example, say that you want to render a whole body section on a certain page, taking the space of the right body section that displays the most recent posts and tags. A good candidate for this will be the login page.</p><p>To start our base template, we need a basic HTML skeleton and the Jinja2 block structure that we previously outlined (see the highlighted code in the following snippet):</p><pre class="programlisting">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;meta http-equiv="X-UA-Compatible" content="IE=edge"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"&gt;
+    &lt;title&gt;{% block title %}Blog{% endblock %}&lt;/title&gt;
+    &lt;link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous"&gt;
+    &lt;link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+<span class="strong"><strong>{% include 'navbar.html' %}</strong></span>
+&lt;div class="container"&gt;
+    &lt;div class="row row-lg-4"&gt;
+        &lt;div class="col"&gt;
+<span class="strong"><strong>{% block head %}</strong></span>
+<span class="strong"><strong>            {% include 'head.html' %}</strong></span>
+<span class="strong"><strong>            {% endblock %}</strong></span>
+&lt;/div&gt;
+    &lt;/div&gt;
+<span class="strong"><strong>{% include 'messages.html' %}</strong></span>
+<span class="strong"><strong>    {% block body %}</strong></span>
+&lt;div class="row"&gt;
+        &lt;div class="col-lg-9"&gt;
+<span class="strong"><strong>{% block leftbody %}</strong></span>
+<span class="strong"><strong>            {% endblock %}</strong></span>
+&lt;/div&gt;
+        &lt;div class="col-lg-3 rounded"&gt;
+<span class="strong"><strong>{% block rightbody %}</strong></span>
+<span class="strong"><strong>            {% include 'rightbody.html' %}</strong></span>
+<span class="strong"><strong>            {% endblock %}</strong></span>
+&lt;/div&gt;
+    &lt;/div&gt;
+<span class="strong"><strong>{% endblock %}</strong></span>
+<span class="strong"><strong>    {% include 'footer.html' %}</strong></span>
+&lt;/div&gt;
+&lt;/body&gt;
+&lt;script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"&gt;&lt;/script&gt;
+&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ" crossorigin="anonymous"&gt;&lt;/script&gt;
+&lt;script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"&gt;&lt;/script&gt;    &lt;/body&gt;
+&lt;/html&gt;
+</pre><p> </p><p> </p><p> </p><p> </p><p>This is the <code class="literal">base.html</code> template in the provided code in your <code class="literal">templates</code> directory. First, we include the Bootstrap and Font Awesome CSS, then implement the HTML body section, and finally include all the necessary JavaScript libraries.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec20"></a>The child templates</h4></div></div></div><p>Now that we have outlined the base layout, we <span>need</span><a id="id324847206" class="indexterm"></a> to implement all the child pages that will extend the base. Take a look at the way we are implementing the home page and inherit/override the left body block, as shown in the following code:</p><pre class="programlisting">{% extends "base.html" %}
+{% import 'macros.html' as macros %}
+{% block title %}Home{% endblock %}
+<span class="strong"><strong>{% block leftbody %}</strong></span>
+{{ macros.render_posts(posts) }}
+{{ macros.render_pagination(posts, 'home') }}
+<span class="strong"><strong>{% endblock %}</strong></span></pre><p>Surprisingly simple, this template extends the base template has expected, and then overrides the <code class="literal">title</code> and <code class="literal">leftbody</code> block sections. Inside, the <code class="literal">leftbody</code> uses two macros to render the posts and their pagination. The macros help us to reuse Jinja2 code and use it like functions, and also to hide some complexity.</p><p>The <code class="literal">render_posts</code> macro is in the <code class="literal">macros.html</code> that was imported at the top of the file. We use macros more or less like modules in Python, as shown in the following code:</p><pre class="programlisting">{% macro render_posts(posts, pagination=True) %}
+...
+<span class="strong"><strong>{% for post in _posts %}</strong></span>
+&lt;div &gt;
+    &lt;h1&gt;
+        &lt;a class="text-dark" href="<span class="strong"><strong>{{ url_for('post', post_id=post.id) }}</strong></span>"&gt;{{ post.title }}&lt;/a&gt;
+    &lt;/h1&gt;
+&lt;/div&gt;
+&lt;div class="row"&gt;
+    &lt;div class="col"&gt;
+<span class="strong"><strong>{{ post.text | truncate(500) | safe }}</strong></span>
+&lt;a href="<span class="strong"><strong>{{ url_for('post', post_id=post.id) }}</strong></span>"&gt;Read More&lt;/a&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+<span class="strong"><strong>{% endfor %}</strong></span>
+{% endmacro %}</pre><p> </p><p> </p><p> </p><p> </p><p>The macro iterates on each post, and on each <code class="literal">post.title</code>, there is a link to the Flask endpoint <code class="literal">post</code> with its respective post ID. As explained, we always use <code class="literal">url_for</code> to generate the right URL that references Flask's endpoints. </p><p>We are using this macro three times on the templates: to render all posts, all posts by a certain tag, and all posts by a certain user.</p><p>The <code class="literal">tag.html</code> template renders all posts by a certain tag, as shown in the following code:</p><pre class="programlisting">{% extends "base.html" %}
+{% import 'macros.html' as macros %}
+
+{% block title %}{{ tag.title }}{% endblock %}
+<span class="strong"><strong>{% block leftbody %}</strong></span>
+&lt;div class="row"&gt;
+    &lt;div class="col bg-light"&gt;
+        &lt;h1 class="text-center"&gt;Posts With Tag {{ tag.title }}&lt;/h1&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+<span class="strong"><strong>{{ macros.render_posts(posts, pagination=False) }}</strong></span>
+
+<span class="strong"><strong>{% endblock %}</strong></span></pre><p>If you look at the <code class="literal">user.html</code> template in the preceding code, you'll see that they are almost identical. These templates are called by the Flask endpoint functions <code class="literal">posts_by_tag</code> and <code class="literal">posts_by_user</code>. When rendering the templates, they pass arguments for the <code class="literal">tag</code>/<code class="literal">user</code> object and a list of posts, as we saw before.</p><p>Let's check out how the blog site looks now. In the command line, call <code class="literal">init.sh</code> to build a Python <span>virtualenv</span>, and then migrate/create our database and insert some fake data, as follows:</p><pre class="programlisting"><span class="strong"><strong>$ ./init.sh
+....
+</strong></span><span class="strong"><strong>$ source venv/bin/activate
+</strong></span><span class="strong"><strong>$ export FLASK_APP=main.py; flask run</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>Open <code class="literal">http://127.0.0.1:5000/</code> in your browser. You should see the following:</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/bf68f39a-2d62-4755-b227-57b158c197b5.png" /></div><p>The <code class="literal">init.sh</code> phrase calls the <code class="literal">test_data.py</code>, which inserts fake data into the database. This Python module uses the <code class="literal">faker</code> library to generate data for user names and post text and tags (using color names).</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note16"></a>Note</h3><p>For more details regarding <code class="literal">faker</code>, you can go to <a class="ulink" href="http://faker.readthedocs.io/en/master/" target="_blank">http://faker.readthedocs.io/en/master/</a>.</p></div><p>The following code is an example taken from <code class="literal">test_data.py</code> that inserts users into the database and returns a list of user objects that is reused to insert posts:</p><pre class="programlisting">import logging
+from main import db
+from main import User, Post, Tag
+from faker import Faker
+...
+
+def generate_users(n):
+users = list()
+for i in range(n):
+        user = User()
+        user.username = faker.name()
+        user.password = "password"
+try:
+            db.session.add(user)
+            db.session.commit()
+users.append(user)
+except Exception as e:
+            log.error("Fail to add user %s: %s" % (str(user), e))
+            db.session.rollback()
+return users</pre><p>The <code class="literal">template</code> folder contains the following templates that are rendered using the <span>aforementioned</span><a id="id325747052" class="indexterm"></a> hierarchy:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">base.html</code>: Extended by all the other templates</li><li style="list-style-type: disc"><code class="literal">footer.html</code>: Included by <code class="literal">base.html</code></li><li style="list-style-type: disc"><code class="literal">head.html</code>: Included by <code class="literal">base.html</code></li><li style="list-style-type: disc"><code class="literal">messages.html</code>: Included by <code class="literal">base.html</code></li><li style="list-style-type: disc"><code class="literal">navbar.html</code>: Included by <code class="literal">base.html</code></li><li style="list-style-type: disc"><code class="literal">rightbody.html</code>: Included by <code class="literal">base.html</code></li><li style="list-style-type: disc"><code class="literal">home.html</code>: Rendered by the <code class="literal">home</code> Flask endpoint function</li><li style="list-style-type: disc"><code class="literal">post.html</code>: Rendered by the <code class="literal">post</code> Flask endpoint function</li><li style="list-style-type: disc"><code class="literal">tag.html</code>: Rendered by the <code class="literal">posts_by_tag</code> endpoint function</li><li style="list-style-type: disc"><code class="literal">user.html</code>: Rendered by the <code class="literal">posts_by_user</code> endpoint function</li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec21"></a>Writing the other templates</h4></div></div></div><p>Now that you know the ins and outs of inheritance, and <span>you</span><a id="id325768540" class="indexterm"></a> know which data is going to go to which template, you can have a clear idea of how to structure your web application to easily scale and maintain the same look and feel on every page. There is one final bit of functionality to add in this chapter—the ability for readers to add comments. For this, we will be using web forms.</p><p> </p></div></div></div>

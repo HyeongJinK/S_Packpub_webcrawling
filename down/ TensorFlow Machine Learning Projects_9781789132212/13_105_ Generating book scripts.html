@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec101"></a>Generating book scripts</h2></div></div><hr /></div><p>Now that the model <span>has</span><a id="id325611676" class="indexterm"></a> been trained, we can have some fun with it. In this section, we will see how we can use the model to generate book scripts. Use the following parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Script Length = 200 words</li><li style="list-style-type: disc">Starting word = <code class="literal">postgresql</code></li></ul></div><p>Follow these steps to generate the model:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Load the graph of the trained model.</li><li>Extract four tensors, as follows:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Input/input:0</li><li style="list-style-type: disc">Network/initial_state:0</li><li style="list-style-type: disc">Network/final_state:0</li><li style="list-style-type: disc">Network/probs:0</li></ul></div></li></ol></div><p>Extract the four tensors using the following code:</p><pre class="programlisting"> def extract_tensors(tf_graph):
+ """
+ Get input, initial state, final state, and probabilities tensor from the graph
+ :param loaded_graph: TensorFlow graph loaded from file
+ :return: Tuple (tensor_input,tensor_initial_state,tensor_final_state, tensor_probs)
+ """
+ tensor_input = tf_graph.get_tensor_by_name("Input/input:0")
+ tensor_initial_state = tf_graph.get_tensor_by_name("Network/initial_state:0")
+ tensor_final_state = tf_graph.get_tensor_by_name("Network/final_state:0")
+ tensor_probs = tf_graph.get_tensor_by_name("Network/probs:0")
+ return tensor_input, tensor_initial_state, tensor_final_state, tensor_probs</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Define the starting word and obtain an initial state from the graph, which will be used later:</li></ol></div><pre class="programlisting"># Sentences generation setup
+sentences = [first_word]
+previous_state = sess.run(initial_state, {input_text: np.array([[1]])})</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Given a starting word and an initial state, proceed to iterate over a for loop to generate the next word for the script. In each iteration of the for loop, generate the probabilities from the model using the previously generated sequence as input and select the word with a maximum probability using the <code class="literal">select_next_word</code> function:</li></ol></div><pre class="programlisting"> def select_next_word(probs, int_to_vocab):
+ """
+ Select the next work for the generated text
+ :param probs: list of probabilities of all the words in vocab which can be selected as next word
+ :param int_to_vocab: Dictionary of word ids as the keys and words as the values
+ :return: predicted next word
+ """
+ index = np.argmax(probs)
+ word = int_to_vocab[index]
+ return word</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Create a loop to generate the next word in the sequence:</li></ol></div><pre class="programlisting"> for i in range(script_length):
+
+ # Dynamic Input
+ dynamic_input = [[vocab_to_int[word] for word in sentences[-seq_length:]]]
+ dynamic_seq_length = len(dynamic_input[0])
+
+# Get Prediction
+ probabilities, previous_state = sess.run([probs, final_state], {input_text: dynamic_input, initial_state: previous_state})
+ probabilities= np.squeeze(probabilities)
+
+pred_word = select_next_word(probabilities[dynamic_seq_length - 1], int_to_vocab)
+ sentences.append(pred_word)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Join all of the words in the sentences using a space delimiter and replace the punctuation tokens with the actual symbols. The obtained script is then saved in a text file for future reference: </li></ol></div><pre class="programlisting"># Scraping out tokens from the words
+book_script = ' '.join(sentences)
+for key, token in token_dict.items():
+    book_script = book_script.replace(' ' + token.lower(), key)
+book_script = book_script.replace('\n ', '\n')
+book_script = book_script.replace('( ', '(')</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Here is a sample of the text that was generated from the execution:</li></ol></div><pre class="programlisting"> postgresql comparatively).
+one transaction is important, you can be used
+
+
+create index is seen a transaction will be provided this index.
+an index scan is a lot of a index
+the index is time.
+to be an index.
+you can see is to make expensive,
+the following variable is an index
+
+the table will index have to a transaction isolation level
+the transaction isolation level will use a transaction will use the table of the following index creation.
+the index is marked.
+the following number is one of the following one lock is not a good source of a transaction will use the following strategies
+in this is not, it will be a table
+in postgresql.
+the postgresql cost errors is not possible to use a transaction.
+postgresql 10. 0. 0. you can see that the data is not free into more than a transaction ids, the same time. the first scan is an example
+the same number.
+one index is not that the same time is needed in the following strategies
+
+in the same will copy block numbers.
+the same data is a table if you can not be a certain way, you can see, you will be able to create statistics.
+postgresql will</pre><p>Interestingly, the model learns to use a full stop after a sentence, leaves a blank line between paragraphs, and follows basic grammar. The model has learned all of this by itself, without us <span>having</span><a id="id325290165" class="indexterm"></a> to provide any guidance/rules. Despite the fact that the script is far from perfect, it's amazing how a machine is able to generate real-sounding sentences of a book. We can further fine-tune the hyperparameters of the model to generate more meaningful text.</p></div>

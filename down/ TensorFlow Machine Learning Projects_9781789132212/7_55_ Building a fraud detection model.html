@@ -1,0 +1,121 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec57"></a>Building a fraud detection model</h2></div></div><hr /></div><p>For this project, we are going to use the <span>credit</span><a id="id325091892" class="indexterm"></a> card dataset <span>from</span><a id="id325091888" class="indexterm"></a> Kaggle (<a class="ulink" href="https://www.kaggle.com/mlg-ulb/creditcardfraud" target="_blank">https://www.kaggle.com/mlg-ulb/creditcardfraud</a>), Andrea Dal Pozzolo, Olivier Caelen, Reid A. Johnson and Gianluca Bontempi. Calibrating Probability with Undersampling for Unbalanced Classification. In Symposium on Computational Intelligence and Data Mining (CIDM), IEEE, 2015. It consists of credit card transaction data from two days, from European cardholders. The dataset is highly imbalanced and contains approximately 284,000 pieces of transaction data with 492 instances of fraud (0.172% of the total).</p><p>There are 31 numerical columns in the dataset. Two of them are time and amount. <span class="strong"><strong>Time</strong></span> denotes the amount of time elapsed (in seconds) between each transaction and the first transaction in the dataset. <span class="strong"><strong>Amount</strong></span> is the total amount regarding the transaction. For our model, we will eliminate the time column as it doesn't help with the accuracy of the model. The rest of the features (V1, V2 ... V28) are obtained <span>from Principal Component Analysis (<a class="ulink" href="https://ocw.mit.edu/courses/mathematics/18-650-statistics-for-applications-fall-2016/lecture-videos/lecture-19-video/" target="_blank">https://ocw.mit.edu/courses/mathematics/18-650-statistics-for-applications-fall-2016/lecture-videos/lecture-19-video/</a>) </span>of original features for confidential reasons. <span class="strong"><strong>Class</strong></span> is the target variable, which indicates whether the transaction was fraudulent or not.</p><p>To pre-process the data, there is not much that needs to be done. This is mainly because a lot of the data is already cleaned up. </p><p>Usually, in a classical machine learning model such as logistic regression, we feed the data points of both negative and positive classes into the algorithm. However, since we are using auto-encoders, we will model it differently.</p><p>Essentially, our training set will consist of only non-fraudulent transaction data. The idea is that whenever we pass a fraudulent transaction through our trained model, it should detect it as an anomaly. We are framing this problem as anomaly detection rather than classification. </p><p>The model will consist of two fully connected encoder layers with 14 and seven neurons, respectively. There will be two decoder layers with seven and 29 neurons, respectively. Additionally, we will use L1 regularization during training.</p><p>Lastly, to define the model, we will <span>use</span><a id="id326026135" class="indexterm"></a> Keras with Tensorflow at the backend for training auto-encoders.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note43"></a>Note</h3><p>Regularization is a technique in machine learning that's used to reduce overfitting. Overfitting happens when the model learns a signal as well as noise in the training data and can't generalize well to unseen dataset. While there are many ways to avoid overfitting such as cross validation, sampling, and so on, regularization specifically adds a penalty to weights of the model so that we don't learn an overly complex model. L1 regularization adds an L1 norm penalty on all the weights of the model. This way, any weight that doesn't contribute to the accuracy is shrunk to zero.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec30"></a>Defining and training a fraud detection model </h3></div></div></div><p>The following are the steps <span>for</span><a id="id326026142" class="indexterm"></a> defining <span>and</span><a id="id326026650" class="indexterm"></a> training the model:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Transform <code class="literal">'Amount'</code> by removing the mean and scaling it to the unit's variance:</li></ol></div><pre class="programlisting">def preprocess_data(data):
+data = data.drop(['Time'], axis=1)
+data['Amount'] = StandardScaler().fit_transform(data['Amount'].values.reshape(-1, 1))
+return
+ data</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note44"></a>Note</h3><p>Note that we use the <code class="literal">StandardScaler</code> utility from scikit-learn for this purpose.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>To model our dataset, split it into train and test data, with train consisting of only non-fraudulent transaction and test consisting of both fraudulent and non-fraudulent transactions:</li></ol></div><pre class="programlisting">def get_train_and_test_data(processed_data):
+X_train, X_test = train_test_split(processed_data, test_size=0.25, random_state=RANDOM_SEED)
+X_train = X_train[X_train.Class == 0]
+X_train = X_train.drop(['Class'], axis=1)
+y_test = X_test['Class']
+X_test = X_test.drop(['Class'], axis=1)
+X_train = X_train.values
+X_test = X_test.values
+return X_train, X_test,y_test</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Define the model by using the following code:</li></ol></div><pre class="programlisting">def define_model(self):
+dim_input = self.train_data.shape[1]
+layer_input = Input(shape=(dim_input,))
+layer_encoder = Dense(DIM_ENCODER, activation="tanh",
+activity_regularizer=regularizers.l1(10e-5))(layer_input)
+layer_encoder = Dense(int(DIM_ENCODER / 2), activation="relu")(layer_encoder)
+layer_decoder = Dense(int(DIM_ENCODER / 2), activation='tanh')(layer_encoder)
+layer_decoder = Dense(dim_input, activation='relu')(layer_decoder)
+autoencoder = Model(inputs=layer_input, outputs=layer_decoder)
+return autoencoder</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Once the model is defined, train the model using Keras:</li></ol></div><pre class="programlisting">def train_model(self):
+self.model.compile(optimizer=OPTIMIZER,
+loss=LOSS,
+metrics=[EVAL_METRIC])
+checkpoint = ModelCheckpoint(filepath=os.path.join(MODEL_SAVE_DIR, "trained_model.h5"),
+verbose=0,
+save_best_only=True)
+log_tensorboard = TensorBoard(log_dir='./logs',
+histogram_freq=0,
+write_graph=True,
+write_images=True)
+history = self.model.fit(self.train_data, self.train_data,
+epochs=EPOCHS,
+batch_size=BATCH_SIZE,
+shuffle=True,
+validation_data=(self.test_data, self.test_data),
+verbose=1,
+callbacks=[checkpoint, log_tensorboard]).history
+self.history = history
+print("Training Done. Plotting Loss Curves")
+self.plot_loss_curves()</pre><p> </p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Use the following param<span>eters to find the output of the model:</span></li></ol></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">EPOCHS = 100.</li><li style="list-style-type: disc">BATCH_SIZE = 32.</li><li style="list-style-type: disc">OPTIMIZER = 'Adam'.</li><li style="list-style-type: disc">LOSS = Mean squared error between reconstructed and original input.</li><li style="list-style-type: disc">EVAL_METRIC = 'Accuracy'. This is the usual binary classification accuracy.</li></ul></div></li></ul></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Store a <code class="literal"><span>TensorBoard</span></code> file to visualize the graph or other variables on it. Also, store the best-performing model through the checkpoints provided by Keras. Generate the loss curves by epoch for the training and testing data: </li></ol></div><pre class="programlisting">def plot_loss_curves(self):
+fig = plt.figure(num="Loss Curves")
+fig.set_size_inches(12, 6)
+plt.plot(self.history['loss'])
+plt.plot(self.history['val_loss'])
+plt.title('Loss By Epoch')
+plt.ylabel('Loss')
+plt.xlabel('Epoch Num')
+plt.legend(['Train_Data', 'Test_Data'], loc='upper right');
+plt.grid(True, alpha=.25)
+plt.tight_layout()
+image_name = 'Loss_Curves.png'
+fig.savefig(os.path.join(PLOTS_DIR,image_name), dpi=fig.dpi)
+plt.clf()</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>The following <span>diagram</span><a id="id325908354" class="indexterm"></a> illustrates <span>the</span><a id="id325908368" class="indexterm"></a> loss curves that are generated when the model is trained for 100 epochs:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/d0d3f8fa-c506-4822-9492-002e43ebbd7d.png" /></div><p>We can observe that for the training set, the loss or reconstruction error decreases at the start of the training and saturates toward the end. This saturation implies that the model has finished learning the weights.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note45"></a>Note</h3><p>Save the model with the lowest loss in the testing set.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec31"></a>Testing a fraud detection model</h3></div></div></div><p>Once the training process is complete, break <span>down</span><a id="id325938029" class="indexterm"></a> the reconstruction error in the testing set by fraudulent and non-fraudulent (normal) transactions. Generate the reconstruction error by different classes of transactions:</p><pre class="programlisting">def plot_reconstruction_error_by_class(self):
+self.get_test_predictions()
+mse = np.mean(np.power(self.test_data - self.test_predictions, 2), axis=1)
+self.recon_error = pd.DataFrame({'recon_error': mse,
+'true_class': self.y_test})
+## Plotting the errors by class
+# Normal Transactions
+fig = plt.figure(num = "Recon Error with Normal Transactions")
+fig.set_size_inches(12, 6)
+ax = fig.add_subplot(111)
+normal_error_df = self.recon_error[(self.recon_error['true_class'] == 0) &amp; (self.recon_error['recon_error'] &lt; 50)]
+_ = ax.hist(normal_error_df.recon_error.values, bins=20)
+plt.xlabel("Recon Error Bins")
+plt.ylabel("Num Samples")
+plt.title("Recon Error with Normal Transactions")
+plt.tight_layout()
+image_name = "Recon_Error_with_Normal_Transactions.png"
+fig.savefig(os.path.join(PLOTS_DIR, image_name), dpi=fig.dpi)
+plt.clf()</pre><p>The following diagrams illustrate the reconstruction error distribution of fraudulent and normal transactions in the testing set:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/41d77b51-98ab-47ed-961d-2e475f53c38c.png" /></div><p>The next diagram is for fraud transactions:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/6b9f8842-6a09-4c35-ac38-8f039d683541.png" /></div><p>As we can see, the reconstruction <span>error</span><a id="id325938071" class="indexterm"></a> for normal transactions is very close to zero for most of the transactions. However, the reconstruction error with fraudulent transactions has a wide distribution, with the majority still being close to zero.</p><p>This suggests that a threshold on the reconstruction error can serve as a classification threshold on normal versus fraudulent transactions.</p><p>For evaluating the model, we will use the metrics Precision and Recall which were defined in <a class="link" href="#" linkend="ch04">Chapter 4</a>, <span class="emphasis"><em>Digit Classification Using TensorFlow Lite</em></span>, of the book. Firstly, let's look at the precision and recall at various thresholds of reconstruction error:</p><pre class="programlisting">def get_precision_recall_curves(self):
+precision, recall, threshold = precision_recall_curve(self.recon_error.true_class, self.recon_error.recon_error)
+# Plotting the precision curve
+fig = plt.figure(num ="Precision Curve")
+fig.set_size_inches(12, 6)
+plt.plot(threshold, precision[1:], 'g', label='Precision curve')
+plt.title('Precision By Recon Error Threshold Values')
+plt.xlabel('Threshold')
+plt.ylabel('Precision')
+plt.tight_layout()
+image_name = 'Precision_Threshold_Curve.png'
+fig.savefig(os.path.join(PLOTS_DIR, image_name), dpi=fig.dpi)
+plt.clf()
+plt.plot(threshold, recall[1:], 'g', label='Recall curve')
+plt.title('Recall By Recon Error Threshold Values')
+plt.xlabel('Threshold')
+plt.ylabel('Recall')
+plt.tight_layout()
+image_name = 'Recall_Threshold_Curve.png'
+fig.savefig(os.path.join(PLOTS_DIR, image_name), dpi=fig.dpi)
+plt.clf()</pre><p>The reconstruction error threshold for precision and recall are shown in the following graph:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/2bf07e84-8c07-49fe-9206-27eabc3e71a3.png" /></div><p>The diagram represents the <span>error</span><a id="id325938149" class="indexterm"></a> threshold for recall:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/a0c0eb14-f025-44c2-b498-ad2a9d7dd068.png" /></div><p>As we can see, recall decreases when there is an increase in reconstruction error, and vice versa for precision. There are a few dips due to the dataset.</p><p>There is one other thing that we need to keep in mind. As mentioned previously, there is always a trade-off between high precision and high recall in machine learning. We need to c<span>hoose any one</span> for our particular model. </p><p>Generally, businesses prefer a model with high precision or high recall. For fraud detection, we would like to have a model with high recall. This is essential as we can classify the majority of fraudulent transactions as fraud. One method to counter the loss of precision is to do a manual verification of transactions classified as fraud to determine whether they are actually fraudulent. This will help in ensuring a good experience for the end user.</p><p>Here is the code to ge<span>nerate a con</span>fusion matrix with <code class="literal">min_recall</code> = 80%:</p><pre class="programlisting">def get_confusion_matrix(self, min_recall = 0.8):
+# Get the confusion matrix with min desired recall on the testing dataset used.
+precision, recall, threshold = precision_recall_curve(self.recon_error.true_class, self.recon_error.recon_error)
+idx = filter(lambda x: x[1] &gt; min_recall, enumerate(recall[1:]))[-1][0]
+th = threshold[idx]
+print ("Min recall is : %f, Threshold for recon error is: %f " %(recall[idx+1], th))
+# Get the confusion matrix
+predicted_class = [1 if e &gt; th else 0 for e in self.recon_error.recon_error.values]
+cnf_matrix = confusion_matrix(self.recon_error.true_class, predicted_class)
+classes = ['Normal','Fraud']
+fig = plt.figure(figsize=(12, 12))
+plt.imshow(cnf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+plt.title("Confusion Matrix")
+plt.colorbar()
+tick_marks = np.arange(len(classes))
+plt.xticks(tick_marks, classes, rotation=45)
+plt.yticks(tick_marks, classes)
+fmt = 'd'
+thresh = cnf_matrix.max() / 2.
+for i, j in itertools.product(range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])):
+plt.text(j, i, format(cnf_matrix[i, j], fmt),
+horizontalalignment="center",
+color="white" if cnf_matrix[i, j] &gt; thresh else "black")
+plt.ylabel('True label')
+plt.xlabel('Predicted label')
+plt.tight_layout()
+image_name = 'Confusion_Matrix_with_threshold_{}.png'.format(th)
+fig.savefig(os.path.join(PLOTS_DIR, image_name), dpi=fig.dpi)
+plt.clf()</pre><p>The confusion matrix that's obtained <span>from</span><a id="id325938281" class="indexterm"></a> the preceding code is shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/960f3d90-4e4f-46a3-b65c-8af339cf7cbd.png" /></div><p>We can observe that out of 120 fraudulent transactions, 97 of them have been classified correctly. However, we have also classified 1,082 normal transaction as being fraudulent, which will have to go through a manual verification process to ensure a good experience for the end user.</p><p>As a note of caution, we should <span>not</span><a id="id325938306" class="indexterm"></a> assume that auto-encoders are helpful in all binary classification tasks and can achieve better performance than state-of-the-art classification models. The idea behind this project was to illustrate a different approach of using auto-encoders to perform classification tasks.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note46"></a>Note</h3><p>Note that in this chapter, we have used the same validation and test set for illustrative purposes. Ideally, once we have defined the threshold on the reconstruction error, we should test the model on some unseen dataset to evaluate its performance in a better manner.</p></div></div></div>

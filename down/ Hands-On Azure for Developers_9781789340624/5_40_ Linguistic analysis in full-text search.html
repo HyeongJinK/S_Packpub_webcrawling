@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec44"></a>Linguistic analysis in full-text search</h2></div></div><hr /></div><p>When using full-text search, you have to understand what are the rules for performing <span>such</span><a id="id325128284" class="indexterm"></a> operations. Search engines have to analyze search query lexically to be able to extract important information and <span>pass</span><a id="id325128274" class="indexterm"></a> it to a query tree. In this section, we will cover the most common lexical analysis, which is linguistic analysis, to help you understand how Azure Search works and how to perform correct queries.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec42"></a>Analyzers in Azure Search</h3></div></div></div><p>To perform <span>linguistic</span><a id="id325125013" class="indexterm"></a> analysis, Azure Search supports a variety of different analyzers, which can be specified in the index definition. However, before we start defining one of those, you have to catch a glimpse of what we are talking about. When creating an index, each search service has to analyze all <span>input</span><a id="id325125008" class="indexterm"></a> documents and decide what will be important when performing a search procedure.</p><p> </p><p> </p><p>Additionally, each search query should be adjusted to some common rules, so the search engine can understand it. The necessary operations can be described as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">All non-essential words should be removed (such as "the" in English)</li><li style="list-style-type: disc">All words should be lowercase</li><li style="list-style-type: disc">If a word contains multiple words in it (such as "up-front"), it should be divided into atomic ones</li></ul></div><p>Now let's assume you are searching for an apartment using the following search query:</p><pre class="programlisting">Spacious apartment with 4 and the Red Kitchen</pre><p>Your analyzer will have to perform all of the preceding operations before passing the query to a search engine and, in fact, here you can find the result of such analysis:</p><pre class="programlisting">{
+    "@odata.context": "https://handsonazuresearch.search.windows.net/$metadata#Microsoft.Azure.Search.V2016_09_01.AnalyzeResult",
+    "tokens": [
+        {
+            "token": "spacious",
+            "startOffset": 0,
+            "endOffset": 8,
+            "position": 0
+        },
+        {
+            "token": "apartment",
+            "startOffset": 9,
+            "endOffset": 18,
+            "position": 1
+        },
+        {
+            "token": "with",
+            "startOffset": 19,
+            "endOffset": 23,
+            "position": 2
+        },
+        {
+            "token": "4",
+            "startOffset": 24,
+            "endOffset": 25,
+            "position": 3
+        },
+        {
+            "token": "and",
+            "startOffset": 26,
+            "endOffset": 29,
+            "position": 4
+        },
+        {
+            "token": "the",
+            "startOffset": 30,
+            "endOffset": 33,
+            "position": 5
+        },
+        {
+            "token": "red",
+            "startOffset": 34,
+            "endOffset": 37,
+            "position": 6
+        },
+        {
+            "token": "kitchen",
+            "startOffset": 38,
+            "endOffset": 45,
+            "position": 7
+        }
+    ]
+}</pre><p>As you can see, each word has its particular position and offset. To get a result similar to the previous one, you can send the following query:</p><pre class="programlisting">POST /indexes/[index name]/analyze?api-version=2016-09-01 HTTP/1.1
+Host: [service name].search.windows.net
+api-key: [api key]
+Content-Type: application/json
+Cache-Control: no-cache
+
+{
+  "text": "Spacious apartment with 4 and the Red Kitchen",
+  "analyzer": "standard"
+}</pre><p>In the request's body, you have to provide both texts to <span>analyze</span><a id="id325117149" class="indexterm"></a> and use the analyzer. Note that I used <code class="literal">standard</code> here, which means that the standard Lucene analyzer is used here.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip75"></a>Note</h3><p>Azure Search supports several different analyzers for different languages—what is more, both Microsoft and Lucene versions are available. To get the full list, go to the documentation page: <a class="ulink" href="https://docs.microsoft.com/pl-pl/rest/api/searchservice/language-support" target="_blank">https://docs.microsoft.com/pl-pl/rest/api/searchservice/language-support</a>.</p></div><p> </p><p>If you are proficient in language analysis and syntax, you could create a custom analyzer that can be used for text analysis. Such analyzers can be defined during index creation, however, we will not cover that topic in this book as it is an advanced exercise and is out of our present scope. You will find a link to the tutorial in the <span class="emphasis"><em>Further reading</em></span> section of this chapter.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec34"></a>Analyzer selection</h4></div></div></div><p>You can select an analyzer for a specific field <span>either</span><a id="id325120011" class="indexterm"></a> during the creation of an index or while editing it. If you go to Azure Portal and to your Azure Search instance<span class="emphasis"><em>,</em></span> you can click on an index and select the <strong class="userinput"><code>Fields</code></strong> section. It should display a list of all fields used in that index:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/2e98c408-f44d-4d50-8290-0e1ca59dbd52.png" /></div><p>Now, when you scroll down, you will see that you are able to add a new field. If you would like to select an analyzer, you will need to do the following:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Select a checkbox <strong class="userinput"><code>Analyzer</code></strong> at the top of that blade</li><li>Select <strong class="userinput"><code>Searchable</code></strong> as an option of that field</li></ol></div><p>Now you should see a drop-down list from which you are able to select a different analyzer than the custom one:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/ad83dbea-773e-4a66-b6b7-bc19946d6b82.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip76"></a>Note</h3><p>Note that selecting a different analyzer than the custom one is crucial when you have fields containing multiple languages. In such a scenario, you should select an analyzer appropriate for the language used.</p></div></div></div></div>

@@ -1,0 +1,45 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec47"></a>Time for Action: Working on the Wall</h2></div></div><hr /></div><p>Let's cover an <span>example</span><a id="id325358908" class="indexterm"></a> showcasing the preceding concepts in action:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch03_05_wall.html</code> file in your browser. You will see something similar to the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/4aaee850-1722-408b-84c7-16517dc772d7.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Open the <code class="literal">ch03_05_wall.html</code> file in a code editor.</li><li>Go to the vertex shader. Make sure that you identify the attributes, uniforms, and varyings that are declared there.</li><li>Go to the fragment shader. Notice that there are no attributes here, because attributes are exclusive to the vertex shader.</li></ol></div><p></p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip50"></a>Note</h3><p><strong class="userinput"><code>Vertex and Fragment Shaders</code></strong>You can find these shaders inside the script tags with the appropriate ID names. For example, the vertex shader can be found inside <code class="literal">&lt;script id="vertex-shader" type="x-shader/x-vertex"&gt;</code>.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Go to the <code class="literal">init</code> function. Verify that we are calling <code class="literal">initProgram</code> and <code class="literal">initLights</code> there.</li><li>Go to <code class="literal">initProgram</code>. Make sure that you understand how the program is built and how we obtain references to attributes and uniforms.</li><li>Go to <code class="literal">initLights</code>. Update the values of the uniforms, as shown here:</li></ol></div><pre class="programlisting">function initLights() {
+  gl.uniform3fv(program.uLightDirection, [0, 0, -1]);
+gl.uniform4fv(program.uLightAmbient, [0.01, 0.01, 0.01, 1]);
+gl.uniform4fv(program.uLightDiffuse, [0.5, 0.5, 0.5, 1]);
+gl.uniform4f(program.uMaterialDiffuse, 0.1, 0.5, 0.8, 1);
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Notice that one of the updates consists of changing from <code class="literal">uniform4f</code> to <code class="literal">uniform4fv</code> for the <code class="literal">uMaterialDiffuse</code> uniform. </li><li>Save the file.</li><li>Open it again (or reload it) in your browser. What happened?</li><li>Let's do something a bit more interesting. We are going to create a key listener so that every time we hit a key, the light orientation changes.</li><li>Right after the <code class="literal">initLights</code> function, write the following code:</li></ol></div><pre class="programlisting">function processKey(ev) {
+const lightDirection = gl.getUniform(program, program.uLightDirection);
+const incrementValue = 10;
+
+switch (ev.keyCode) {
+// left arrow
+case 37: {
+      azimuth -= incrementValue;
+break;
+}
+// up arrow
+case 38: {
+      elevation += incrementValue;
+break;
+}
+// right arrow
+case 39: {
+      azimuth += incrementValue;
+break;
+}
+// down arrow
+case 40: {
+      elevation -= incrementValue;
+break;
+}
+  }
+
+  azimuth %= 360;
+elevation %= 360;
+
+const theta = elevation * Math.PI / 180;
+const phi = azimuth * Math.PI / 180;
+
+// Spherical to cartesian coordinate transformation
+lightDirection[0] = Math.cos(theta) * Math.sin(phi);
+lightDirection[1] = Math.sin(theta);
+lightDirection[2] = Math.cos(theta) * -Math.cos(phi);
+
+gl.uniform3fv(program.uLightDirection, lightDirection);
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="13" type="1"><li>This function processes the arrow keys and changes the light direction accordingly. There’s a bit of trigonometry (<code class="literal">Math.cos</code>, <code class="literal">Math.sin</code>) involved, but we are simply converting the angles (azimuth and elevation) into Cartesian coordinates.</li><li>Please note that we get the current light direction by using the following function:</li></ol></div><pre class="programlisting">const lightDirection = gl.getUniform(program, program.uLightDirection);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="15" type="1"><li>After processing <span>the</span><a id="id325643374" class="indexterm"></a> key strokes, we can save the updated light direction with the following code:</li></ol></div><pre class="programlisting">gl.uniform3fv(program.uLightDirection, lightDirection);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="16" type="1"><li>Save the work and reload the web page:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/6029541a-560f-413c-901c-5a1ee2c35dda.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="17" type="1"><li>Use the arrow keys to change the light direction.</li><li>If you have any problems during the development of this exercise or just want to verify the final result, please check the <code class="literal">ch03_06_wall_final.html</code> file, which contains the completed exercise.</li></ol></div><p><span class="emphasis"><em><span class="strong"><strong>What just happened?</strong></span></em></span></p><p>In this exercise, we created a keyboard listener that allows us to update the light's orientation so that we can move it around the wall and see how it reacts to surface normals. We also saw how the vertex shader and fragment shader input variables are declared and used. We learned how to build a program by reviewing the <code class="literal">initProgram</code> function. We also learned about initializing uniforms in the <code class="literal">initLights</code> function. Finally, we studied the <code class="literal">getUniform</code> function to retrieve the current value of a uniform. Although we haven't covered the examples entirely, this exercise was intended to familiarize you with vertex and <span>fragment</span><a id="id325643469" class="indexterm"></a> shaders so that you can implement various light-shading and reflection models.</p></div>

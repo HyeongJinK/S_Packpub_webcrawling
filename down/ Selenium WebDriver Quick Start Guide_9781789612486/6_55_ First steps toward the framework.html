@@ -1,0 +1,132 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec58"></a>First steps toward the framework</h2></div></div><hr /></div><p>Create the following packages in <code class="literal">src/main/java</code>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">org.packt.invokers</code></li><li style="list-style-type: disc"><code class="literal">org.packt.receivers</code></li><li style="list-style-type: disc"><code class="literal">org.packt.command</code></li><li style="list-style-type: disc"><code class="literal">org.packt.client</code></li><li style="list-style-type: disc"><code class="literal">org.packt.testbase</code></li></ul></div><p>In the <code class="literal">org.packt.testbase</code> package, create our <code class="literal">TestBase</code> class. This will <span>serve</span><a id="id325441773" class="indexterm"></a> as the base class for all of our classes.</p><p>This base class has methods for the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Sendkeys</li><li style="list-style-type: disc">Sendkeys using <code class="literal">JavascriptExecutor</code></li><li style="list-style-type: disc">Double click</li><li style="list-style-type: disc">Context click </li></ul></div><p>You can add additional methods to this test base and the changes will percolate throughout the framework since all of our classes will extend the test base. The following code shows the declarations, the various methods for sending different keystrokes, and clicking elements:</p><pre class="programlisting">public class TestBase {
+  public static WebDriver driver = null;
+  protected static Logger log = null;
+  protected static Utilities util = null;
+  protected static Actions actions = null;
+  protected static JavascriptExecutor js = null;
+  protected static WebDriverWait wdWait = null;
+  static String reportFileName = null;
+  protected static Map&lt;String, String&gt; resultMap = new HashMap&lt;String, 
+  String&gt;();
+  protected static Fillo fillo = null;
+  protected static Recordset recordSet = null;
+  protected static Connection connection = null;
+  protected static ExtentReports extentReport;
+  protected static ExtentTest extentTest;
+  private static Object tempElement;
+  private static String firstXPath = "//*[text()='";
+  private static String lastXPath = "']";
+
+  public TestBase() throws IOException, FilloException {
+  }
+
+  public static void sendKeys(WebElement element, String text) {
+ try {
+ wdWait.until(ExpectedConditions.visibilityOf(element));
+ element.clear();
+ element.sendKeys(text);
+ } catch (NoSuchElementException e){
+ throw new NoSuchElementException();
+ }
+  }
+
+
+  public static void sendKeysTAB(WebElement element, Keys text) {
+    element.sendKeys(text);
+  }
+
+  public static void clickElement(WebElement element) {
+    wdWait.until(ExpectedConditions.elementToBeClickable(element)).click();
+  }</pre><p>The following code shows the various <span>methods</span><a id="id325444752" class="indexterm"></a> for selecting data from drop-downs. Simply append this code to the preceding code:</p><pre class="programlisting">public static void selectDrpdwnData(WebElement element, String drpdwnData) {
+    new Select(element).selectByVisibleText(drpdwnData);
+  }
+
+  public static void selectDrpdwnDataByText(WebElement element,
+  String drpdwnData) {
+  List&lt;WebElement&gt; optionList = new Select(element).getOptions();
+  for (WebElement options : optionList) {
+  if (options.getText().equalsIgnoreCase(drpdwnData)) {
+  options.click();
+ }
+    }
+  }
+
+  public static void selectDrpdwnDataByText2(WebElement element,
+      String drpdwnData) {
+    List&lt;WebElement&gt; optionList = new Select(element).getOptions();
+    for (WebElement options : optionList) {
+      if (options.getText().equalsIgnoreCase(drpdwnData)) {
+        options.click();
+      }
+    }
+  }
+
+  public static void selectDrpdwnDataByCTRL(WebElement element,
+      String drpdwnData) {
+      List&lt;WebElement&gt; optionList = new Select(element).getOptions();
+      actions = new Actions(driver);
+      actions.keyDown(Keys.CONTROL);
+      for (WebElement options : optionList) {
+      options.click();
+    }
+    actions.keyUp(Keys.CONTROL);
+  }
+
+</pre><p>The following code is used for <span>double</span><a id="id325444797" class="indexterm"></a> click, right-click, and moving the mouse to a particular element:</p><pre class="programlisting">public static void doubleClickElement(WebDriver driver, WebElement element)
+      throws InterruptedException {
+    scrollintoviewJS(element);
+    System.out.println(element.getText());
+    Actions action1 = new Actions(driver).doubleClick(element);
+    action1.perform();
+ }
+
+  public static void rightClickElement(WebDriver driver, WebElement 
+  element) {
+    actions = new Actions(driver);
+    actions.contextClick(element).perform();
+  }
+
+  public static void moveToElement(WebDriver driver, WebElement   
+   element) {
+    actions = new Actions(driver);
+    actions.moveToElement(element)
+    actions.perform();
+  }
+
+</pre><p>The following code is used to set a text box value, enable the textbox, enter a textbox value, click an element, scroll into the view, and create a web eleme<span>nt from its text:</span></p><pre class="programlisting">public static void setValueJS(String element, String text) {
+    String jsscript1 = "document.getElementsByName('" + element
+ + "')[0].value='" + text + "';";
+    js.executeScript(jsscript1);
+  }
+
+  public static void enableTextBoxJS(String element) {
+    String jsscript1 = "document.getElementsByClassName('" + element
+        + "')[0].enabled='true';";
+    System.out.println(jsscript1);
+    js.executeScript(jsscript1);
+  }
+
+  public static void enterTextBoxValueJS(String element, String value) {
+    String jsscript1 = "document.getElementsByClassName('" + element
+        + "')[0].value='" + value + "';";
+    System.out.println(jsscript1);
+    driver.executeScript(jsscript1);
+  }
+
+  public static void clickElementJS(WebElement element) {
+    String jsscript1 = "arguments[0].click();";
+    js.executeScript(jsscript1, element);
+  }
+
+  public static void scrollintoviewJS(WebElement element) {
+    String jsscript1 = "arguments[0].scrollIntoView(false);";
+    js.executeScript(jsscript1, element);
+  }
+
+  public static List&lt;WebElement&gt; findWebElementList(String textFill)
+      throws NoSuchElementException {
+    tempElement = driver.findElements(By.xpath(firstXPath + textFill
+ + lastXPath));
+    return (List&lt;WebElement&gt;) tempElement;
+  }
+}</pre><p>These are just the methods that are <span>required</span><a id="id325447011" class="indexterm"></a> for now. We will add more methods as and when required.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip11"></a>Note</h3><p>If the preceding code does not work and fails on <code class="literal">ChromeDriver</code> initiation, try updating your version of Guava in the <code class="literal">pom.xml</code> file to 22.</p></div></div>

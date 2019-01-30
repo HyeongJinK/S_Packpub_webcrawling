@@ -1,0 +1,62 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec61"></a>HttpAuthenticationMechanism</h2></div></div><hr /></div><p>Once we have <code class="literal">IdentityStore</code> implementation, we can use it in our <span>application</span><a id="id325812933" class="indexterm"></a> code for security. In Java EE 8, there is an API that can achieve this <span>element</span><a id="id325812922" class="indexterm"></a> of security—<code class="literal">HttpAuthenticationMechanism</code>. This can be used to secure servlets, and equally, to secure any frameworks based on them. <code class="literal">HttpAuthenticationMechanism</code> is used to validate the user identity information. <code class="literal">HttpAuthenticationMechanism</code>, together with the <code class="literal">IdentityStore</code>, enables the application to control the identity stores that it uses for authentication in a portable manner.</p><p>The <code class="literal">HttpAuthenticationMechanism</code> validates the request and checks the authentication status. It then uses the identity store to validate the identity information that it has received from the incoming request. After this, it passes the request information to the identity store. Based on the validation result, it either grants access or denies it. The following diagram depicts this:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/2bc84601-4b72-42e1-9a21-cd4388c9cace.png" /></div><p><code class="literal">HttpAuthenticationMechanism</code> can be configured to use multiple identity stores, as shown in the preceding diagram, and can use <code class="literal">IdentityStoreHandler</code> to manage these identity stores. <code class="literal">IdentityStoreHandler</code> groups the <code class="literal">IdentityStore</code> implementations together. The handler can be injected using CDI into an <code class="literal">HttpAuthenticationMechanism</code> implementation.</p><p><code class="literal">HttpAuthenticationMechanism</code> is an interface. There are default implementations available for this.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec58"></a>BasicAuthenticationMechanismDefinition</h3></div></div></div><p><code class="literal">BasicAuthenticationMechanismDefinition</code> will trigger the browser of the client to prompt for a username and password, which maps to the HTTP basic authentication <span>mechanism</span><a id="id325442818" class="indexterm"></a> that isn't very widely used any more. The following code is an example of this:</p><pre class="programlisting">@BasicAuthenticationMechanismDefinition(
+        realmName = "top-level-realm")
+@ApplicationScoped
+class ApplicationConfig : Application() {
+    override fun getClasses(): Set&lt;Class&lt;*&gt;&gt; {
+        val classes = HashSet&lt;Class&lt;*&gt;&gt;()
+        classes.add(Controller::class.java)
+        return classes
+    }
+}</pre><p>The request has to specify the user ID and password in Base 64-encoded format, such as <code class="literal">Basic {{userId:secret}}</code>. It must then pass it to the authorization header.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note42"></a>Note</h3><p>For browser-based clients, the server sends a <code class="literal">WWW-Authenticate: Basic realm=top-level-realm</code> header when the request is made for the first time. The browser prompts the client to enter the credentials.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec59"></a>FormAuthenticationMechanismDefinition</h3></div></div></div><p>The <code class="literal">FormAuthenticationMechanismDefinition</code> will <span>present</span><a id="id326166590" class="indexterm"></a> the user with a web form for credentials. We can specify the login page to be displayed for user authentication, as well as an error page, in case an error arises. Alternatively, default pages can be used. The following code is an example of this:</p><pre class="programlisting">@FormAuthenticationMechanismDefinition(
+        loginToContinue = LoginToContinue(
+                loginPage = "/login.html",
+                errorPage = "/error.html"))
+@ApplicationScoped
+class ApplicationConfig : Application() {
+    override fun getClasses(): Set&lt;Class&lt;*&gt;&gt; {
+        val classes = HashSet&lt;Class&lt;*&gt;&gt;()
+        classes.add(Controller::class.java)
+        return classes
+    }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec60"></a>Custom form-based HTTP authentication</h3></div></div></div><p>Using the <code class="literal">@CustomFormAuthenticationMechanismDefinition</code> annotation, the application can be configured to use a custom form for authentication. Here, we can specify the custom login page and an <span>implementation</span><a id="id326504090" class="indexterm"></a> for validating the credentials, as follows:</p><pre class="programlisting">@CustomFormAuthenticationMechanismDefinition(
+        loginToContinue = LoginToContinue(loginPage = "/login.jsf"))
+@ApplicationScoped
+class ApplicationConfig : Application() {
+    override fun getClasses(): Set&lt;Class&lt;*&gt;&gt; {
+        val classes = HashSet&lt;Class&lt;*&gt;&gt;()
+        classes.add(Controller::class.java)
+        return classes
+    }
+}</pre><p>We can also implement the <code class="literal">HttpAuthenticationMechanism</code> interface and provide the custom authentication mechanism.</p><p>The <code class="literal">HttpAuthenticationMechanism</code> defines three functions, as follows:</p><pre class="programlisting">AuthenticationStatus validateRequest(HttpServletRequest request, HttpServletResponse response, HttpMessageContext httpMessageContext) throws AuthenticationException;
+
+  default AuthenticationStatus secureResponse(HttpServletRequest request, HttpServletResponse response, HttpMessageContext httpMessageContext) throws AuthenticationException {
+    return AuthenticationStatus.SUCCESS;
+  }
+
+  default void cleanSubject(HttpServletRequest request, HttpServletResponse response, HttpMessageContext httpMessageContext) {
+    httpMessageContext.cleanClientSubject();
+  }</pre><p>Note that the <code class="literal">validateRequest()</code> function is abstract, and default implementations are provided for the other two functions.</p><p>We need to implement the <code class="literal">validateRequest()</code> function and use an <code class="literal">IdentityStore</code> implementation to validate the credentials that we received from the request:</p><pre class="programlisting">override fun validateRequest (
+      req:HttpServletRequest,
+      res:HttpServletResponse,
+      context:HttpMessageContext):AuthenticationStatus {
+        val result = myIdentityStore.validate(
+          UsernamePasswordCredential(
+            req.getHeader("name"),
+            req.getHeader("password")))
+            //…
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec61"></a>The SecurityContext API</h3></div></div></div><p>As we mentioned earlier, the <code class="literal">SecurityContext</code> API provides <span>programmatic</span><a id="id326504666" class="indexterm"></a> security. The <code class="literal">IdentityStore</code> and authentication mechanisms are like declarative modes for handling security, whereas the <code class="literal">SecurityContext</code> API is geared toward more programmatic control for the authentication and authorization mechanisms in the application. This new <code class="literal">SecurityContext</code> interface unifies many different security APIs that were scattered across individual Java EE technology specifications.</p><p>The <code class="literal">SecurityContext</code> object represents all security information that has been gathered on the user who made the current request. An implementation of the <code class="literal">SecurityContext</code> API should be provided at runtime as a CDI-managed bean. We can inject <code class="literal">SecurityContext</code> to our application code via CDI as follows:</p><pre class="programlisting">@Inject
+lateinit var securityContext:SecurityContext</pre><p>At this point, we can authenticate the user, check the user's role/group membership, and grant or deny access to the resource. We can then use this context object in our code to make security decisions. The <code class="literal">SecurityContext</code> interface declares five methods:</p><pre class="programlisting">public interface SecurityContext {
+  Principal getCallerPrincipal ();
+
+  &lt;T extends Principal&gt; Set&lt;T&gt; getPrincipalsByType (Class&lt;T&gt; type);
+
+  boolean isCallerInRole (String role);
+
+  boolean hasAccessToWebResource (String resource, String... methods);
+
+  AuthenticationStatus authenticate (
+      HttpServletRequest httpServletRequest,
+      HttpServletResponse httpServletResponse,
+      AuthenticationParameters authParameteres);
+}</pre><p>Let's understand what these methods are:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The first method is the <code class="literal">getCallerPrincipal()</code>. When invoked, this method returns the <code class="literal">Principal</code> type object that represents the current user who issued the request.</li><li style="list-style-type: disc">Implementations of the security API can also provide their specialized <code class="literal">Principal</code>types. We should use<code class="literal">getPrincipalsByType()</code>by passing the desired type to get the <span>principal</span><a id="id326559795" class="indexterm"></a> object of that type.</li><li style="list-style-type: disc">The <code class="literal">isCallerInRole()</code>method can be used to find out the roles of the users in the current request.</li><li style="list-style-type: disc">There is also the <code class="literal">hasAccessToWebResource()</code> method, which is used to check the permission of the user as regards access to the resource residing on the server side. The authenticate method then triggers re-authentication for the user in the current request scope.</li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note43"></a>Note</h3><p>With applications, we will generally mostly be using the <code class="literal">getCallerPrincipal()</code> and <code class="literal">isCallerInRole()</code> methods.
+We can also use the <code class="literal">SecurityContext</code> and <code class="literal">getCallerPrincipal()</code> methods in place of the old <code class="literal">HttpServletRequest.getUserPrincipal()</code> and <code class="literal">EJBContext.getCallerPrincipal()</code> method implementations.</p></div><p>This is an overview of the Security 1.0 API. The very first version of the specification has standardized the security model in Java EE and is packed with the powerful features required for a modern enterprise applications. Next, we will demonstrate securing the resources using <code class="literal">IdentityStore</code> and <code class="literal">AuthenticationMechanism</code>.</p></div></div>

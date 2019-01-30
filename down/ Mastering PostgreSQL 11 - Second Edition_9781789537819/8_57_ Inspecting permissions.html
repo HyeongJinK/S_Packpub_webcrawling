@@ -1,0 +1,32 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec58"></a>Inspecting permissions</h2></div></div><hr /></div><p>When all of the permissions have been set, it is sometimes <span>necessary</span><a id="id326667676" class="indexterm"></a> to know who has which permissions. It is vital for administrators to find out who is allowed to do what. Unfortunately, this process is not so easy and requires a bit of knowledge. Usually, I am a big fan of command-line usage. However, in the case of the permission system, it can really make sense to use a graphical user interface to do things.</p><p>Before I show you how to read PostgreSQL permissions, let's assign rights to the <code class="literal">joe</code> role so that we can inspect them in the next step:</p><pre class="programlisting"><span class="strong"><strong>test=# GRANT ALL ON t_person TO joe; </strong></span><span class="strong"><strong>GRANT</strong></span></pre><p>Retrieving information about <span>permissions</span><a id="id326667623" class="indexterm"></a> can be done using the <code class="literal">z</code> command in <code class="literal">psql</code>:</p><pre class="programlisting"><span class="strong"><strong>test=# \x 
+Expanded display is on.  
+test=# \z t_person 
+Access privileges 
+-[ RECORD 1 ]-----+-------------------------------------------------------- 
+---- 
+Schema            | public 
+Name              | t_person 
+Type              | table 
+Access privileges | postgres=arwdDxt/postgres 
++ 
+                  | joe=arwdDxt/postgres 
+Column privileges | 
+Policies          | joe_pol_1 (r): 
++                 | (u):  (gender = 'male'::text)  </strong></span>
+<span class="strong"><strong>+                 | to: joe </strong></span>
+<span class="strong"><strong>+                 | joe_pol_2 (r):</strong></span>
+<span class="strong"><strong>+                 | (u): (gender IS NULL) </strong></span>
+<span class="strong"><strong>+                 | to: joe </strong></span>
+<span class="strong"><strong>+                 | joe_pol_3 (a): </strong></span>
+<span class="strong"><strong>+                 | (c): (gender = ANY (ARRAY['male'::text, 'female'::text]))</strong></span>
+<span class="strong"><strong>+                 | to: joe</strong></span></pre><p>This will return all those policies along with information about access privileges. Unfortunately, those shortcuts are hard to read and I have a feeling that they are not widely understood by administrators. In this example, the <code class="literal">joe</code> role has gotten <code class="literal">arwdDxt</code> from PostgreSQL. What do those shortcuts actually mean?</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">a</code>: This appends for the <code class="literal">INSERT</code> clause</li><li style="list-style-type: disc"><code class="literal">r</code>: This reads for the <code class="literal">SELECT</code> clause</li><li style="list-style-type: disc"><code class="literal">w</code>: This writes for the <code class="literal">UPDATE</code> clause</li><li style="list-style-type: disc"><code class="literal">d</code>: This deletes for the <code class="literal">DELETE</code> clause
+</li><li style="list-style-type: disc"><code class="literal">D</code>: This is used for the <code class="literal">TRUNCATE</code> clause (when this was introduced, <code class="literal">t</code> was already taken)</li><li style="list-style-type: disc"><code class="literal">x</code>: This is used for references</li><li style="list-style-type: disc"><code class="literal">t</code>: This is used for triggers</li></ul></div><p>If you don't know this code, there is also a second way to make things more readable. Consider the following function call:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT * FROM  aclexplode('{joe=arwdDxt/postgres}');</strong></span><span class="strong"><strong> grantor | grantee  | privilege_type | is_grantable 
+---------+----------+----------------+-------------- 
+      10 |   18481  | INSERT         | f 
+      10 |   18481  | SELECT         | f 
+      10 |   18481  | UPDATE         | f 
+      10 |   18481  | DELETE         | f 
+      10 |   18481  | TRUNCATE       | f 
+      10 |   18481  | REFERENCES     | f 
+      10 |   18481  | TRIGGER        | f 
+(7 rows)</strong></span></pre><p>As we can see, the set of <span>permissions</span><a id="id325854946" class="indexterm"></a> is returned as a simple table, which makes life really easy.</p></div>

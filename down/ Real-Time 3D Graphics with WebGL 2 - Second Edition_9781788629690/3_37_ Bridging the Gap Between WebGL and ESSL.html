@@ -1,0 +1,93 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec46"></a>Bridging the Gap Between WebGL and ESSL</h2></div></div><hr /></div><p>It’s now useful to test out <span>how</span><a id="id325357458" class="indexterm"></a> we integrate our ESSL program with our WebGL code by taking the code from <code class="literal">ch03_05_wall.html</code> and <span>making</span><a id="id325358919" class="indexterm"></a> some modifications.</p><p>Imagine a wall composed of the sections A, B, and C, and you are facing section B with a flashlight in your hand (frontal view). Intuitively, you know that section A and section C will be darker than section B. This fact can be modeled by starting at the color of the center of section B and darkening the color of the surrounding pixels as we move away from the center:</p><div class="mediaobject"><img src="/graphics/9781788629690/graphics/6957359d-a745-4cbb-875a-5de1bd4a97b7.png" /></div><p>Let's summarize the code we need to cover:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The ESSL program containing the vertex and fragment shaders. For the wall, we will select Goraud shading with a Diffuse/Lambertian reflection model.</li><li style="list-style-type: disc">The <code class="literal">initProgram</code> function. We need to make sure that we map all of the attributes and uniforms that we defined in the ESSL code, including the normals:</li></ul></div><pre class="programlisting">program.aVertexNormal= gl.getAttribLocation(program, 'aVertexNormal');</pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <code class="literal">initBuffers</code> function. Here, we need to create our geometry. We can represent the wall with eight vertices that define six triangles, such as the ones shown in the previous diagram. In <code class="literal">initBuffers</code>, we will apply what we <span>learned</span><a id="id325359380" class="indexterm"></a> in the previous chapters to set up the appropriate VAOs and buffers. This time, we need to set up an additional buffer: the VBO that contains information about normals. The code to set up the normals VBO looks like this:</li></ul></div><pre class="programlisting">function initBuffers() {
+const vertices = [
+    -20, -8, 20, // 0
+-10, -8, 0,  // 1
+10, -8, 0,   // 2
+20, -8, 20,  // 3
+-20, 8, 20,  // 4
+-10, 8, 0,   // 5
+10, 8, 0,    // 6
+20, 8, 20    // 7
+];
+
+indices = [
+0, 5, 4,
+1, 5, 0,
+1, 6, 5,
+2, 6, 1,
+2, 7, 6,
+3, 7, 2
+];
+
+<span class="strong"><strong>// Create VAO
+vao = gl.createVertexArray();
+
+// Bind Vao
+gl.bindVertexArray(vao);
+
+const normals = utils.calculateNormals(vertices, indices);
+
+const verticesBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), 
+   gl.STATIC_DRAW);
+// Configure instructions
+gl.enableVertexAttribArray(program.aVertexPosition);
+gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, 
+   false, 0, 0);
+
+const normalsBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), 
+   gl.STATIC_DRAW);
+// Configure instructions
+gl.enableVertexAttribArray(program.aVertexNormal);
+gl.vertexAttribPointer(program.aVertexNormal, 3, gl.FLOAT, false, 
+   0, 0);
+
+indicesBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), 
+   gl.STATIC_DRAW)</strong></span><span class="strong"><strong>;</strong></span>
+
+// Clean
+gl.bindVertexArray(null);
+gl.bindBuffer(gl.ARRAY_BUFFER, null);
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+}</pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">To calculate the normals, we use the <code class="literal">calculateNormals(vertices, indices)</code> helper function. You can find this method in the <code class="literal">common/js/utils.js</code> file.</li><li style="list-style-type: disc"><code class="literal">initLights</code>: We covered this function already and know how to do that.</li><li style="list-style-type: disc">There’s only one minor but important change to make inside the <code class="literal">draw</code> function. We need to make sure that the VBOs are bound before we use <code class="literal">drawElements</code>. The code to do that looks like this:</li></ul></div><pre class="programlisting">function draw() {
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+mat4.perspective(projectionMatrix, 45, gl.canvas.width / 
+   gl.canvas.height, 0.1, 10000);
+mat4.identity(modelViewMatrix);
+mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -40]);
+
+gl.uniformMatrix4fv(program.uModelViewMatrix, false, 
+   modelViewMatrix);
+gl.uniformMatrix4fv(program.uProjectionMatrix, false, 
+   projectionMatrix);
+
+mat4.copy(normalMatrix, modelViewMatrix);
+mat4.invert(normalMatrix, normalMatrix);
+mat4.transpose(normalMatrix, normalMatrix);
+
+gl.uniformMatrix4fv(program.uNormalMatrix, false, normalMatrix);
+
+try {
+<span class="strong"><strong>// Bind VAO
+gl.bindVertexArray(vao);
+
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+gl.drawElements(gl.TRIANGLES, indices.length, 
+     gl.UNSIGNED_SHORT, 0)</strong></span><span class="strong"><strong>;</strong></span>
+
+// Clean
+gl.bindVertexArray(null);
+gl.bindBuffer(gl.ARRAY_BUFFER, null);
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+}
+catch (error) {
+    console.error(error);
+}
+}</pre><p>In the <span>following</span><a id="id325359794" class="indexterm"></a> section, we will <span>explore</span><a id="id325359802" class="indexterm"></a> the functions that we just described for building and illuminating the wall.</p></div>

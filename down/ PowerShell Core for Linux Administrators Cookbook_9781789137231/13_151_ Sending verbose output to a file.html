@@ -1,0 +1,54 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec148"></a>Sending verbose output to a file</h2></div></div><hr /></div><p>We looked at <span>str</span><span>eams</span> in the <span class="emphasis"><em>Sending output to a file</em></span> recipe in <a class="link" href="#" linkend="ch10">Chapter 10</a>, <span class="emphasis"><em>Handling Files and Directories</em></span>, wherein we redirected errors and informational output to files. However, this <span>was</span><a id="id325885498" class="indexterm"></a> done in steps: we redirected the non-Success output (error, information, and so on) to the Success stream first, and then piped the same to <code class="literal">Out-File</code>. To redirect output between streams, we used the redirection operator, <code class="literal">&gt;&amp;</code>.</p><p>In this recipe, you will write verbose output and directly send the verbose output to a file called <code class="literal">verbose.log</code>, and redirect errors to <code class="literal">error.log</code>. Here is the script that you will work with:</p><pre class="programlisting">function New-LogFile {
+    param (
+        # The path to the log file
+        [Parameter(Mandatory=$false)]
+        [string]
+        $Path = "$HOME/random/LogDir",
+
+        # The name of the log file
+        [Parameter(Mandatory=$false)]
+        [string]
+        $Name = 'MyLog.log'
+    )
+
+    try {
+        New-Item "$Path/$Name" -ItemType File -ErrorAction Stop
+    }
+    catch [System.IO.DirectoryNotFoundException] {
+        New-Item $Path -ItemType Directory -Force
+        New-LogFile
+    }
+    catch {
+        Write-Error $_
+    }
+}
+New-LogFile</pre><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec375"></a>How to do it…</h3></div></div></div><p>The main idea here seems to be the verbose logging of actions. Modify the script to look like the following:</p><pre class="programlisting">function New-LogFile {
+    param (
+        # The path to the log file
+        [Parameter(Mandatory=$false)]
+        [string]
+        $Path = "$HOME/random/LogDir",
+
+        # The name of the log file
+        [Parameter(Mandatory=$false)]
+        [string]
+        $Name = 'MyLog.log'
+    )
+
+    try {
+        Write-Verbose "Creating the file, $Name at $Path."
+        New-Item "$Path/$Name" -ItemType File -ErrorAction Stop
+    }
+    catch [System.IO.DirectoryNotFoundException] {
+        Write-Verbose "System.IO.DirectoryNotFoundException encountered."
+        Write-Verbose "Creating the directory, $Path."
+        New-Item $Path -ItemType Directory -Force
+        Write-Verbose "Calling the function."
+        New-LogFile
+    }
+    catch {
+        Write-Verbose "Catch-all. There was an error."
+        Write-Error $_
+    }
+}
+New-LogFile -Verbose <span class="strong"><strong>4&gt;&gt; verbose.log 2&gt;&gt; error.log</strong></span></pre><p>Run the script and read the files that just got created.</p><p> </p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec376"></a>How it works…</h3></div></div></div><p>This script is simple. We create a function and define its parameters. Next, we clear the contents of the <code class="literal">$Error</code> variable, say, for a clean slate. (This is not always recommended. Clear the error variable only if <span>you</span><a id="id326678984" class="indexterm"></a> know for sure that you do not want the previous errors from the current session.) We then proceed to write some verbose content for every step the function takes by using the <code class="literal">Write-Verbose</code> cmdlet. This content is suppressed by default (<code class="literal">$VerbosePreference</code> is set to <code class="literal">SilentlyContinue</code> by default). We use the <code class="literal">-Verbose</code> common parameter to make the function generate the verbose output.</p><p>As we saw in the <span class="emphasis"><em>Sending output to a file </em></span>recipe, the PowerShell has six streams:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Success</li><li style="list-style-type: disc">Error</li><li style="list-style-type: disc">Warning</li><li style="list-style-type: disc">Verbose</li><li style="list-style-type: disc">Debug</li><li style="list-style-type: disc">Information</li></ul></div><p>In this recipe unlike the<span class="emphasis"><em>Sending output to a file</em></span> recipe in <a class="link" href="#" linkend="ch10">Chapter 10</a>, <span class="emphasis"><em>Handling Files and Directories</em></span>—we directly send the verbose output to a file by redirecting the output of the fourth stream to a file by using a redirection (with append) operator rather than first <span>sending</span><a id="id325898681" class="indexterm"></a> the non-Success output to the Success stream. (The latter is popularly known as <span class="strong"><strong>polluting the Success stream</strong></span>.) At the same line, we also instruct PowerShell to send the output of the second stream—the error stream—to another file.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note80"></a>Note</h3><p>By default, <code class="literal">&gt;&gt;</code> stands for <code class="literal">1&gt;&gt;</code>, or "append Success stream to file". Change the <code class="literal">1</code> to any of the streams you would like to redirect to a file so that you can redirect the output of that stream.</p></div><p>You will notice that the <code class="literal">error.log</code> file is empty. This is because we handled the error (<code class="literal">System.IO.DirectoryNotFoundException</code>) that occurred. Run the script a second time to get a different error – <code class="literal">System.IO.IOException</code> – which is handled by actually writing the error to the Error stream (using <code class="literal">Write-Error</code>). This content will be sent through the Error stream, and will appear in <code class="literal">error.log</code>.</p></div></div>

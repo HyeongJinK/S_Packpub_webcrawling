@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec56"></a>Implementing Real-World RESTful Web Services</h2></div></div><hr /></div><p>Notice that we didn't configure, or use, any <span>databases</span><a id="id325816102" class="indexterm"></a> while implementing the web service using Jersey in the preceding section. Instead, we simply demonstrated how to map a request and return a response back using REST verbs. Real-world web services save the data in a data store and read it from there.</p><p>Let's add a <code class="literal">POST</code> function to create a record in the database and a <code class="literal">GET</code> function to read it. Let's say we want to create an application that allows us to manage identities where we create organizations, groups, users, and so on. To start with, let's create an organization. We will enhance this application in the following chapters.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec54"></a>Defining the layers</h3></div></div></div><p>We will create different layers in the application to <span>process</span><a id="id325813076" class="indexterm"></a> the request and take that request to the database in order to create that entry in it. </p><p>Consider the following diagram:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/e52cc60d-468a-4c60-beeb-15f37c135fa3.png" /></div><p>We have a <span class="strong"><strong>Controller</strong></span> layer that accepts the request, does the validation (if there is any validation logic there) and passes the request to the <span class="strong"><strong>Service</strong></span> layer. The <span class="strong"><strong>Service</strong></span> layer maps the request object to entities and passes the request to the <span class="strong"><strong>Data Access Object</strong></span> (<span class="strong"><strong>DAO)</strong></span> layer. The <span class="strong"><strong>DAO</strong></span> layer separates the business logic from the persistence logic. It has the logic to connect to the database, thus creating this organization record in the table in our example. </p><p>Create a simple Maven web project with Jersey, which we discussed earlier, and other JPA dependencies that we described in <a class="link" href="#" linkend="ch05">Chapter 5</a>, <span class="emphasis"><em>Kotlin with JPA and EJB</em></span>.</p><p>Add different packages, such as <code class="literal">controller</code>, <code class="literal">service</code>, <code class="literal">dao</code>, and so on. Take a look at the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/529d49c8-b2dd-44fb-b382-31ccbd81e05f.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec52"></a>Writing a POST function for a create operation</h4></div></div></div><p>An endpoint, <code class="literal">/organization</code>, is <span>exposed</span><a id="id326435732" class="indexterm"></a> in the <code class="literal">OrganizationController</code> class using the  <code class="literal">@Path</code> annotation as follows:</p><pre class="programlisting">@Path("/organization")
+public class OrganizationController {
+
+}</pre><p>In order to process the request in controller class, the <code class="literal">POST</code> function looks like this:</p><pre class="programlisting">    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    fun createOrganization(organizationRequest: OrganizationRequest)
+            : Response {
+        val response = "Created : ${organizationRequest.orgName}"
+        var orgId = organizationService.createOrganization(organizationRequest)
+        return Response.status(201)
+                .location(URI(orgId))
+                .entity(response).build()
+    }</pre><p>This function accepts <code class="literal">organizationRequest</code> and processes it for validation (if there is any validation logic). The request is then passed to the service layer. After processing the request, the service layer returns <code class="literal">orgId</code>, which gets wrapped around the standard <code class="literal">response</code> object and returned to the client that issued the HTTP request.</p><p>The service class instance is injected through CDI using the <code class="literal">@Inject</code> annotation to the controller like this:</p><pre class="programlisting">@Inject
+private lateinit var organizationService: OrganizaionService</pre><p>The service class implementation for mapping the create <code class="literal">org</code> request to the <code class="literal">org</code> entity looks like this:</p><pre class="programlisting">fun createOrganization(organizationRequest: OrganizationRequest) {
+     var orgId:String = UUID.randomUUID().toString();
+     var organizationEntity:OrganizationEntity =  
+                   OrganizationEntity(orgId)
+     organizationEntity.orgName = organizationRequest.orgName</pre><pre class="programlisting">     organizationEntity.description = organizationRequest.description
+
+     organizationDao.createOrganization(organizationEntity)
+     return orgId
+    }</pre><p>With the <code class="literal">createOrganization()</code> function in the service layer, we create a <code class="literal">UUID</code> and an entity by passing the <code class="literal">UUID</code>. The <code class="literal">UUID</code> then gets mapped to the primary key column of a table (organization table) in a database. We then map the request contents to the entity instance that we created and pass that entity to the <code class="literal">dao</code> layer.</p><p>There are various libraries available for mapping the objects of a desired type. Since we are dealing with simple mapping, we are directly mapping to the entity here.</p><p><code class="literal">organizationDao</code> is injected to the service class as follows:</p><pre class="programlisting">@Inject 
+private lateinit var organizationDao: OrganizationDao</pre><p>The <code class="literal">createOrganization()</code> function in the <code class="literal">dao</code> class looks like this:</p><pre class="programlisting">fun createOrganization(organizationEntity: OrganizationEntity):{
+      entityManager.transaction.begin()
+      entityManager.persist(organizationEntity)
+      entityManager.transaction.commit()
+}</pre><p>The <code class="literal">createOrganization()</code> function <span>accepts</span><a id="id326436355" class="indexterm"></a> the entity (<code class="literal">organizationEntity</code>) and uses the <code class="literal">entityManger</code>that we described in <a class="link" href="#" linkend="ch05">Chapter 5</a>, <span class="emphasis"><em>Kotlin with JPA and EJB</em></span>, to connect to a database and persist that entity. An <code class="literal">org</code> entry will then be created in the <code class="literal">organization</code> table of the database.</p><p>So, we developed a create organization API. Now let's build and deploy this RESTful service on the Tomcat Server.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec53"></a>Invoking the create organization API using cURL</h4></div></div></div><p>Once the service is up <span>and</span><a id="id326436395" class="indexterm"></a> running, we can make a <code class="literal">cURL</code> request to the web service to create the <code class="literal">organization</code> as follows:</p><pre class="programlisting">curl -X POST \
+  http://localhost:8080/organization \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \</pre><pre class="programlisting">  -d '{
+        "orgName": "TestOrg",
+        "description": "this is test org"
+  }'</pre><p>This will return the location header, which is a URI that can be used to refer to the resource later. It will also return a 201 status code, indicating that a new resource has been created, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/ef5c3eca-a8f2-42d2-b897-25a5cb4643ed.png" /></div><p>We can see that entry in the database by querying it directly, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/2f7fb179-1158-4283-abeb-25b899d767d4.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec54"></a>Writing a GET function for a read operation </h4></div></div></div><p>Now let's retrieve the <span>organization</span><a id="id326436456" class="indexterm"></a> using the <code class="literal">GET</code> function. We will start by defining a resource to accept a path parameter, which is <code class="literal">orgId</code> in this example.</p><p> </p><p> </p><p>The <code class="literal">retrieveOrganization()</code>  function in controller can be written to accept a path parameter, which happens to be an <code class="literal">orgId</code> that was returned when the identity was created. The <code class="literal">retrieveOrganization()</code> function returns the <code class="literal">org</code> object that is wrapped in a standard response in the JSON format, as seen in the following code:</p><pre class="programlisting">@Path("/{orgId}")
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+fun retrieveOrganization(@PathParam("orgId") orgId: String): Response {
+var organizationResponse: OrganizationResponse =    
+    organizationService.retrieveOrganization(orgId)
+return Response.status(200)
+            .entity(organizationResponse)
+            .build()
+}</pre><p>The service class function takes <code class="literal">orgId</code> and passes the request to <code class="literal">dao</code> layer, as seen in the following code:</p><pre class="programlisting">fun retrieveOrganization(orgId: String): OrganizationResponse {
+      var organizationEntity: OrganizationEntity =  
+      organizationDao.retrieveOrganization(orgId)
+
+      var organizationResponse: OrganizationResponse =  
+                      OrganizationResponse()
+      organizationResponse.orgId = organizationEntity.orgId
+      organizationResponse.orgName = organizationEntity.orgName
+      organizationResponse.description = organizationEntity.description
+      return organizationResponse
+}</pre><p>Once we get the response from the database after invoking the <code class="literal">retrieveOrganization()</code> function on the <code class="literal">organizationDao</code> instance, we map the entity object to the response class. The response class is similar to a request, but it is used for returning the response from the server side. The <code class="literal">OrganizationResponse</code> class is as follows:</p><pre class="programlisting">class OrganizationResponse {
+    var orgId: String?= null
+    var orgName: String? = null
+    var description: String? = null
+
+    override fun toString(): String {
+        return "Organization [orgId=$orgId, orgName=$orgName,  
+                       description=$description]"
+    }
+}</pre><p> </p><p>The  <code class="literal">retrieveOrganization()</code> function implementation in <code class="literal">dao</code> layer is as follows:</p><pre class="programlisting">fun retrieveOrganization(orgId: String): OrganizationEntity {
+      entityManager.transaction.begin()
+      var organizationEntity: OrganizationEntity =
+      entityManager.find(OrganizationEntity::class.java, orgId)
+      entityManager.transaction.commit()
+      return organizationEntity
+}</pre><p>This uses the  <code class="literal">find()</code> function to <span>retrieve</span><a id="id326436998" class="indexterm"></a> the desired entity given the unique identifier, which is <code class="literal">orgId</code>, and returns the <code class="literal">OrganizationEntity</code> that is being loaded from the database.</p><p>So, we created a get organization API. Now, once again, build and deploy this RESTful service on the Tomcat Server.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec55"></a>Invoking the get organization API using cURL</h4></div></div></div><p>Using the <code class="literal">cURL</code> request to retrieve an <span>organization</span><a id="id326559806" class="indexterm"></a> given its UUID is done as follows:</p><pre class="programlisting">curl -X GET \
+ http://localhost:8080/organization/4c118afd-eccb-4ac7-bcfc-15e47f10770a \
+ -H 'Accept: application/json' \
+ -H 'Content-Type: application/json' \</pre><p>When we invoke the <code class="literal">cURL</code> request, we get the organization that we created, shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/355db332-1f5d-4973-ac0a-9b3dfb28f956.png" /></div><p>Similarly, we can implement the <code class="literal">PUT</code> and <code class="literal">DELETE</code> functions.</p><p> </p><p> </p></div></div></div>

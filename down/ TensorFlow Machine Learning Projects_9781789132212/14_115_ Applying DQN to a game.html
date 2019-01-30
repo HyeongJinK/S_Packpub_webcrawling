@@ -1,0 +1,150 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch14lvl1sec110"></a>Applying DQN to a game</h2></div></div><hr /></div><p>So far, we have randomly <span>picked</span><a id="id325611710" class="indexterm"></a> an action <span><span>and</span></span><a id="id325611702" class="indexterm"></a> applied it to the game. Now, let's apply DQN for selecting actions for playing the PacMan game.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>We define the <code class="literal">q_nn</code> policy function as follows:</li></ol></div><pre class="programlisting">def policy_q_nn(obs, env):
+    # Exploration strategy - Select a random action
+    if np.random.random() &lt; explore_rate:
+        action = env.action_space.sample()
+    # Exploitation strategy - Select the action with the highest q
+    else:
+        action = np.argmax(q_nn.predict(np.array([obs])))
+    return action</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Next, we modify the <code class="literal">episode</code> function to incorporate calculation of <code class="literal">q_values</code> and <code class="literal">train</code> the neural network on the sampled experience buffer. This is shown in the following code:</li></ol></div><pre class="programlisting">def episode(env, policy, r_max=0, t_max=0):
+
+    # create the empty list to contain game memory
+    #memory = deque(maxlen=1000)
+
+    # observe initial state
+    obs = env.reset()
+    state_prev = obs
+    #state_prev = np.ravel(obs) # replaced with keras reshape[-1]
+
+    # initialize the variables
+    episode_reward = 0
+    done = False
+    t = 0
+
+    while not done:
+
+        action = policy(state_prev, env)
+        obs, reward, done, info = env.step(action)
+        state_next = obs
+        #state_next = np.ravel(obs) # replaced with keras reshape[-1]
+
+
+        # add the state_prev, action, reward, state_new, done to memory
+        memory.append([state_prev,action,reward,state_next,done])
+
+
+        # Generate and update the q_values with 
+        # maximum future rewards using bellman function:
+        states = np.array([x[0] for x in memory])
+        states_next = np.array([np.zeros(n_shape) if x[4] else x[3] for x in memory])
+
+        q_values = q_nn.predict(states)
+        q_values_next = q_nn.predict(states_next)
+
+        for i in range(len(memory)):
+            state_prev,action,reward,state_next,done = memory[i]
+            if done:
+                q_values[i,action] = reward
+            else:
+                best_q = np.amax(q_values_next[i])
+                bellman_q = reward + discount_rate * best_q
+                q_values[i,action] = bellman_q
+
+        # train the q_nn with states and q_values, same as updating the q_table
+        q_nn.fit(states,q_values,epochs=1,batch_size=50,verbose=0)
+
+        state_prev = state_next
+
+        episode_reward += reward
+        if r_max &gt; 0 and episode_reward &gt; r_max:
+            break
+        t+=1
+        if t_max &gt; 0 and t == t_max:
+            break
+    return episode_reward</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li><span>Define</span> an <code class="literal">ex</code><code class="literal">periment</code> function that will run for a specific number of episodes; each episode runs until the game is lost, namely when <code class="literal">done</code> is <code class="literal">True</code>. We use <code class="literal">rewards_max</code> to indicate when to break out of the loop as we do not wish to run the experiment forever, as shown in the following code:</li></ol></div><pre class="programlisting"># experiment collect observations and rewards for each episode
+def experiment(env, policy, n_episodes,r_max=0, t_max=0):
+
+    rewards=np.empty(shape=[n_episodes])
+    for i in range(n_episodes):
+        val = episode(env, policy, r_max, t_max)
+        #print('episode:{}, reward {}'.format(i,val))
+        rewards[i]=val
+
+    print('Policy:{}, Min reward:{}, Max reward:{}, Average reward:{}'
+        .format(policy.__name__,
+              np.min(rewards),
+              np.max(rewards),
+              np.mean(rewards)))</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li><span>Create</span> a simple <span>MLP</span> network with the following code:</li></ol></div><pre class="programlisting">from collections import deque 
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+
+# build the Q-Network
+model = Sequential()
+model.add(Flatten(input_shape = n_shape))
+model.add(Dense(512, activation='relu',name='hidden1'))
+model.add(Dense(9, activation='softmax', name='output'))
+model.compile(loss='categorical_crossentropy',optimizer='adam')
+model.summary()
+q_nn <span>= model</span></pre><p>The preceding code generates the following output:</p><pre class="programlisting">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+flatten_3 (Flatten)          (None, 100800)            0         
+_________________________________________________________________
+hidden1 (Dense)              (None, 8)                 806408    
+_________________________________________________________________
+output (Dense)               (None, 9)                 81        
+=================================================================
+Total params: 806,489
+Trainable params: 806,489
+Non-trainable params: 0
+_________________________________________________________________</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li><span>Create</span> an empty list to contain the game memory and define other hyperparameters and run the experiment for one episode, as shown in the following example:</li></ol></div><pre class="programlisting"># Hyperparameters
+
+discount_rate = 0.9
+explore_rate = 0.2
+n_episodes = 1
+
+# create the empty list to contain game memory
+memory = deque(maxlen=1000)
+
+experiment(env, policy_q_nn, n_episodes)</pre><p>The result we get is as follows:</p><pre class="programlisting"><span class="strong"><strong>Policy:policy_q_nn, Min reward:490.0, Max reward:490.0, Average reward:490.0</strong></span></pre><p>That is definitely an improvement in our case, but, in your case, it might be different. In this case, our game has only learned from a limited memory and only from game replay in one episode.</p><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li><span>Now</span>, run it for <code class="literal">100</code> episodes, as shown in the following example:</li></ol></div><pre class="programlisting"># Hyperparameters
+
+discount_rate = 0.9
+explore_rate = 0.2
+n_episodes = 100
+
+# create the empty list to contain game memory
+memory = deque(maxlen=1000)
+
+experiment(env, policy_q_nn, n_episodes)</pre><p>We get the following results:</p><pre class="programlisting"><span class="strong"><strong>Policy:policy_q_nn, Min reward:70.0, Max reward:580.0, Average reward:270.5</strong></span></pre><p>Thus we see that, on average, the results did not improve, although we reached a high max reward. T<span>uning the network architecture, features, and hyperparameters might produce better results.</span> We would encourage you to <span>modify</span><a id="id325611564" class="indexterm"></a> the code. As an example, instead of MLP, <span>you</span> can use the simple one-layer convolutional network, as follows:</p><pre class="programlisting">from collections import deque 
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
+
+# build the CNN Q-Network
+model = Sequential()
+model.add(Conv2D(16, kernel_size=(5, 5), 
+                 strides=(1, 1),
+                 activation='relu',
+                 input_shape=n_shape))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Flatten())
+model.add(Dense(512, activation='relu',name='hidden1'))
+model.add(Dense(9, activation='softmax', name='output'))
+model.compile(loss='categorical_crossentropy',optimizer='adam')
+model.summary()
+q_n<span>n = model
+</span></pre><p>The preceding code displays the <span>network</span><a id="id325617697" class="indexterm"></a> summary as follows:</p><pre class="programlisting"><span class="strong"><strong>_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+conv2d_4 (Conv2D)            (None, 206, 156, 16)      1216      
+_________________________________________________________________
+max_pooling2d_4 (MaxPooling2 (None, 103, 78, 16)       0         
+_________________________________________________________________
+flatten_8 (Flatten)          (None, 128544)            0         
+_________________________________________________________________
+hidden1 (Dense)              (None, 512)               65815040  
+_________________________________________________________________
+output (Dense)               (None, 9)                 4617      
+=================================================================
+Total params: 65,820,873
+Trainable params: 65,820,873
+Non-trainable params: 0</strong></span></pre></div>

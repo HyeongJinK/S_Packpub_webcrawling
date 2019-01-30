@@ -1,0 +1,214 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec42"></a>Using JPA in an application</h2></div></div><hr /></div><p>So far, we have looked at <span>how</span><a id="id326507629" class="indexterm"></a> to create EJBs and CDI-managed beans and how to inject the beans in classes. We then looked at defining entities, defining relations between entities, and mapping entities to the database tables. Let's now combine all of this information to create a simple application where we will create an identity such as a <code class="literal">person</code> object and persist it into the database. Later, we will enhance this module so that it can carry out read, update, and delete operations.</p><p>Let's create a simple JPA project using Maven with the following dependencies:</p><pre class="programlisting">  &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.jetbrains.kotlin&lt;/groupId&gt;
+            &lt;artifactId&gt;kotlin-stdlib&lt;/artifactId&gt;
+            &lt;version&gt;${kotlin.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.jetbrains.kotlin&lt;/groupId&gt;
+            &lt;artifactId&gt;kotlin-test-junit&lt;/artifactId&gt;
+            &lt;version&gt;${kotlin.version}&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.annotation&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.annotation-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.annotation-api}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.ejb&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.ejb-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.ejb-api}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.enterprise&lt;/groupId&gt;
+            &lt;artifactId&gt;cdi-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.enterprise.cdi.api}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate.javax.persistence&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-jpa-2.1-api&lt;/artifactId&gt;
+            &lt;version&gt;${hibernate-jpa}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+            &lt;version&gt;${hibernate-core}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.eclipse.persistence&lt;/groupId&gt;
+            &lt;artifactId&gt;org.eclipse.persistence.jpa&lt;/artifactId&gt;
+            &lt;version&gt;${org.eclipse.persistence.jpa}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;postgresql&lt;/groupId&gt;
+            &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+            &lt;version&gt;${postgresql}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;${junit.version}&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.mockito&lt;/groupId&gt;
+            &lt;artifactId&gt;mockito-core&lt;/artifactId&gt;
+            &lt;version&gt;${mockito-core}&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+  &lt;/dependencies&gt;</pre><p>Create a <code class="literal">beans.xml</code> file under the <code class="literal">resources/META-INF</code> directory with <code class="literal">bean-discovery-mode</code> set to <code class="literal">all</code>, as follows:</p><pre class="programlisting">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+
+&lt;beans xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee 
+       http://xmlns.jcp.org/xml/ns/javaee/beans_1_1.xsd"
+version="1.1" bean-discovery-mode="all"&gt;
+&lt;/beans&gt;</pre><p>Add the <code class="literal">persistence.xml</code> file, which will have the following database configurations:</p><pre class="programlisting">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;persistence version="2.1"
+xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence 
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"&gt;
+    &lt;persistence-unit name="prod"&gt;
+        &lt;provider&gt;org.eclipse.persistence.jpa.PersistenceProvider&lt;/provider&gt;
+        &lt;class&gt;org.rao.kotlin.service.PersonServiceImpl&lt;/class&gt;
+        &lt;class&gt;org.rao.kotlin.entity.Person&lt;/class&gt;
+        &lt;class&gt;org.rao.kotlin.entity.ContactDetails&lt;/class&gt;
+        &lt;class&gt;org.rao.kotlin.entity.Address&lt;/class&gt;
+        &lt;exclude-unlisted-classes/&gt;
+        &lt;properties&gt;
+            &lt;property name="javax.persisteData creatednce.jdbc.driver"
+value="org.postgresql.Driver"/&gt;
+            &lt;property name="javax.persistence.jdbc.url"
+value="jdbc:postgresql://localhost:5432/postgres"/&gt;
+            &lt;property name="javax.persistence.jdbc.user"
+value="postgres"/&gt;
+            &lt;property name="javax.persistence.jdbc.password"
+value="*****"/&gt;
+        &lt;/properties&gt;
+    &lt;/persistence-unit&gt;
+
+&lt;/persistence&gt;
+</pre><p>Now, let's consider the <code class="literal">Person</code> entity that we wrote earlier:</p><pre class="programlisting">@Table(name = "person")
+@Entity
+@NamedQuery(name = FIND_ALL_PERSON, query = "select p from Person p")
+data class Person(val loginId: String) {
+    @Id
+    lateinit var identifier: String
+    lateinit var name: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+    @OneToMany(cascade = arrayOf(CascadeType.ALL), fetch = 
+     FetchType.LAZY)
+    @JoinColumn(name = "PERSON_ID", nullable = false, 
+     referencedColumnName = "identifier")</pre><pre class="programlisting">    lateinit var contact: List&lt;ContactDetails&gt;
+    @Embedded
+    lateinit var address: Address
+}</pre><p>Our aim is to create this <span>person</span><a id="id325816208" class="indexterm"></a> entity and insert it into the database. Let's create specific layers in the project setup. We will create <code class="literal">dao</code>, <code class="literal">service</code>, and <code class="literal">entity</code> packages, as demonstrated in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/44abade2-b596-4f2a-99a1-5fc4331b8f0a.png" /></div><p><code class="literal">dao</code> is used to deal with the database and is responsible for persisting the data. The dao layer talks to the database and is responsible for making the data ready for persistence. The <code class="literal">entity</code> package includes all the required entities in the project.</p><p>First, we will write a unit test case:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>We will create a request in the <code class="literal">setUp()</code> function and mock the response:</li></ol></div><pre class="programlisting">@RunWith(MockitoJUnitRunner::class)
+class PersonTest {
+@Mock
+    private lateinit var personDao: PersonDaoImpl
+private lateinit var createPersonRequest: Person
+private lateinit var createPersonResponse: Person
+
+@Before
+    fun setUp() {
+
+createPersonRequest = Person("myLoginId" + Random().nextInt())
+createPersonRequest.name = "myName"
+val contactDetails = ContactDetails()
+
+        contactDetails.number = "1234567891"
+contactDetails.type = ContactType.WORK
+val contactDetailsList = ArrayList&lt;ContactDetails&gt;()
+        contactDetailsList.add(contactDetails)
+createPersonRequest.contact = contactDetailsList
+
+val address = Address()
+        address.street = "Charles street"
+address.city = "Bengaluru"
+address.state = "Karnataka"
+address.country = "India"
+createPersonRequest.address = address
+
+createPersonResponse = Person("testLoginId")
+createPersonResponse.identifier = UUID.randomUUID().toString()
+
+    }
+
+@Test
+    fun test() {
+        Mockito.`when`(personDao.createPerson(createPersonRequest)).thenReturn(createPersonResponse)
+createPersonRequest.preferredLanguage = PreferredLanguage.EN_US
+val person = personDao.createPerson(createPersonRequest)
+        Assert.assertNotNull(person.identifier)
+    }
+}</pre><p> </p><p> </p><p>In this test case, we create the request object that needs to be persisted and mock the response for the <code class="literal">Person</code> class in the <code class="literal">setUp()</code> function. We also mock <code class="literal">personDao</code> and, using this, we invoke the <code class="literal">createPerson()</code> function by passing the request. We use the <code class="literal">Mockito when</code> clause to return the mock response when the call is made to the <code class="literal">personDao.createPerson()</code> function, and we assert for a non-null value of the identifier in the mock response.</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Let's now implement the <code class="literal">dao</code> class. It has a <code class="literal">createPerson()</code> function. Create an entity manager for the context that we defined in the <code class="literal">persistence.xml</code> file:</li></ol></div><pre class="programlisting">@Stateless
+class PersonDaoImpl : PersonDao {
+    @PersistenceContext(unitName = "prod")
+    private var entityManager: EntityManager = Persistence
+                                                     .createEntityManagerFactory("prod")
+                                                     .createEntityManager()
+
+    override
+    fun createPerson(person: Person): Person {
+        entityManager.transaction.begin()
+        entityManager.persist(person)
+        entityManager.transaction.commit()
+        return person
+    }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Add <code class="literal">PersonServiceImpl</code>, which makes the data ready for persisting. It checks for <code class="literal">PreferredLanguage</code> and adds a unique ID to the person data:</li></ol></div><pre class="programlisting">@Dependent
+class PersonServiceImpl : PersonService {
+    @Inject
+    private lateinit var personDao: PersonDao
+
+    @Inject
+    private lateinit var defaultPreferredLanguage: PreferredLanguage
+
+    override
+    fun createPerson(createPerson: Person): Person {
+        var person = createPerson
+
+        person.preferredLanguage = if (createPerson.preferredLanguage == null)
+            defaultPreferredLanguage
+        else
+            person.preferredLanguage
+        person.identifier = UUID.randomUUID().toString()
+        return personDao.createPerson(person)
+    }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Let's write a <span>class</span><a id="id325927565" class="indexterm"></a> that invokes <code class="literal">createPerson</code> in the service class with the <code class="literal">createPersonRequest</code> function and actually persists the data in the database. This class is a kind of integration test for the code that we have written so far:</li></ol></div><pre class="programlisting">object App {
+    @Inject
+    lateinit var personServiceImpl: PersonServiceImpl
+
+    @JvmStatic
+    fun main(args: Array&lt;String&gt;) {
+
+        val createPersonRequest = Person("myLoginId" + 
+         Random().nextInt())
+        val contactDetails = ContactDetails()
+
+        contactDetails.number = "1234567871"
+        contactDetails.type = ContactType.WORK
+        val contactDetailsList = ArrayList&lt;ContactDetails&gt;()
+        contactDetailsList.add(contactDetails)
+        createPersonRequest.contact = contactDetailsList
+
+        val address = Address()
+        address.street = "Avenue Road"
+        address.city = "Bengaluru"
+        address.state = "Karnataka"
+        address.country = "India"
+
+        createPersonRequest.address = address
+        createPersonRequest.name = "myName"
+        createPersonRequest.preferredLanguage = PreferredLanguage.EN_US
+        val person = 
+         personServiceImpl.createPerson(createPersonRequest)
+        println("Data created " + person.identifier)
+
+    }
+}</pre><p>In this class, we create a request for the data to be created. We create a <code class="literal">createPersonRequest</code> of the <code class="literal">Person</code> type. We instantiate this instance with the <code class="literal">Person()</code> constructor and populate some of this test data to this instance. We invoke the <code class="literal">createPerson()</code> function of the <code class="literal">service</code> class and, in response, it gets the <code class="literal">person</code> entity that is being created in the database.  </p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>We can see that the data is actually persisted in the <code class="literal">person</code> table in the database:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788997270/graphics/71fcb998-59fd-4485-9bbe-6e6b73ba5a30.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>The same <code class="literal">person</code> entry is persisted in the contact table that we mapped using the <code class="literal">OneToMany</code> relationship:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788997270/graphics/54e5e910-09f9-4bac-8497-0b29a4647d60.png" /></div></div>

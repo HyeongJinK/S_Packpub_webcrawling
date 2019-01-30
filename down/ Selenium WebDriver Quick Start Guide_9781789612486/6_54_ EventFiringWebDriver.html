@@ -1,0 +1,118 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec57"></a>EventFiringWebDriver</h2></div></div><hr /></div><p>For understanding <code class="literal">EventFiringWebDriver</code>, we need to <span>understand</span><a id="id325162062" class="indexterm"></a> the concept of listeners.</p><p>Listeners work silently without hampering the flow of the Selenium WebDriver script. Listeners help us find out the result of a particular action before or after the action happens. Take the scenario of clicking on a button. Listeners indicate when the WebDriver instance is about to execute the click of a button. Similarly, listeners also indicates that a button has already been clicked. </p><p>To create such a listener, we need to use an interface called <code class="literal">WebDriverEventListener</code>, which has to be implemented by a concrete class, which becomes our listener. Let's see the process of creating one.</p><p>The following class implements <code class="literal">WebDriverEventListener</code>. Only the methods used in this example are mentioned here:</p><pre class="programlisting">public class EventHandler implements WebDriverEventListener {
+ public void afterChangeValueOf(WebElement elem, WebDriver driver) {
+ System.out.println("afterChangeValueOf has been invoked for "
+ + elem.toString());
+ }
+
+ public void afterClickOn(WebElement elem, WebDriver driver) {
+ System.out.println("afterClickOn has been invoked for " + elem.toString());
+ }
+
+ public void afterFindBy(By elem, WebElement arg1, WebDriver driver) {
+ System.out.println("FindBy has been triggered for " + elem.toString());
+ }
+
+ public void afterNavigateBack(WebDriver driver) {
+ System.out.println("afterNavigateBack has been triggered to go back to "
+ + driver.getCurrentUrl());
+ }
+
+ public void afterNavigateForward(WebDriver driver) {
+ System.out.println("afterNavigateForward has been triggered to go to "
+ + driver.getCurrentUrl());
+ }
+
+ public void afterNavigateTo(String str1, WebDriver driver) {
+ System.out.println("afterNavigateTo has been triggered for " + str1);
+ }
+
+ public void afterScript(String str1, WebDriver driver) {
+ System.out.println("afterScript has been triggered for " + str1);
+ }
+
+ public void beforeChangeValueOf(WebElement elem, WebDriver driver) {
+ System.out.println("beforeChangeValueOf has been triggered for web element");
+ }
+
+ public void beforeClickOn(WebElement elem, WebDriver driver) {
+ System.out.println("Going to click on " + elem.toString());
+ }
+
+ public void beforeNavigateBack(WebDriver driver) {
+ System.out.println("beforeNavigateBack has been triggered to go back to "
+ + driver.getCurrentUrl());
+ }
+
+ public void beforeNavigateForward(WebDriver driver) {
+ System.out.println("About to trigger beforeNavigateForward "
+ + driver.getCurrentUrl());
+ }
+
+ public void beforeNavigateTo(String str1, WebDriver driver) {
+ System.out.println("About to trigger beforeNavigateTo " + str1);
+ }
+
+ public void beforeScript(String str1, WebDriver driver) {
+ System.out.println("About to trigger beforeScript " + str1);
+ }
+
+ public void onException(Throwable throwable1, WebDriver driver) {
+ System.out.println("Exception " + throwable1.getMessage() + " has occurred");
+ }
+
+ public void beforeFindBy(By, WebElement elem, WebDriver driver) {
+ System.out.println("About to find element " + by.toString());
+ }
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>The following code <span>creates</span><a id="id325441752" class="indexterm"></a> a regular WebDriver:</li></ol></div><pre class="programlisting">       RemoteWebDriver driver = new ChromeDriver();</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>The following code creates an <code class="literal">EventFiringWebDriver</code> using the driver instance from <span class="emphasis"><em>Step 1</em></span>:</li></ol></div><pre class="programlisting">      EventFiringWebDriver eventDriver = new 
+      EventFiringWebDriver(driver);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>The following code creates an instance of your <code class="literal">eventHandler</code> class and registers it for events using the register method of the <code class="literal">EventFiringWebDriver</code> instance:</li></ol></div><pre class="programlisting">      EventFiringWebDriver object created above
+      EventHandler handler = new EventHandler();
+      eventDriver.register(handler);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>The following code creates a sample test for <code class="literal">EventFiringWebDriver</code>:</li></ol></div><pre class="programlisting">      public class EventHandlerTest {
+         public static void main(String[] args) throws IOException {
+        System.setProperty(Utilities.getProp(Global_Constants.DRIVER,
+      Global_Constants.CONFIGPATH), 
+      Utilities.getProp(Global_Constants.DRIVERPATH,
+      Global_Constants.CONFIGPATH));
+      Map&lt;String, String&gt; capabilities = new HashMap&lt;String, String&gt;();
+        capabilities.put(Global_Constants.pageLoadStrategy_key,
+                             Global_Constants.pageLoadStrategy_val);
+             ChromeOptions options = new ChromeOptions();
+             //Disable the Password Confirmation box
+             Map&lt;String, Object&gt; prefs = new HashMap&lt;String, Object&gt;();
+             prefs.put("credentials_enable_service", false);
+             prefs.put("profile.password_manager_enabled", false);
+             options.addArguments("disable-extensions");
+             options.addArguments("--start-maximized");
+             options.setExperimentalOption("prefs", prefs);
+             WebDriver driver = new ChromeDriver(options);
+             EventFiringWebDriver eventDriver = new 
+             EventFiringWebDriver(driver);
+             EventHandler handler = new EventHandler();
+             eventDriver.register(handler);
+             eventDriver.get("https://www.google.com");
+             WebElement element = eventDriver.findElement(By.id("lst-    
+             ib"));
+             element.sendKeys("Selenium");
+      }</pre><p>The <span>output</span><a id="id325448846" class="indexterm"></a> from this code is <span>given here:</span></p><div class="mediaobject"><img src="/graphics/9781789612486/graphics/8ac7a5ec-abf2-4e60-9065-66833e5e4c85.png" /></div><p>We will define a few global constants next. These will be defined in an interface called <code class="literal">Global_Constants</code>:</p><pre class="programlisting">public interface Global_Constants {
+ public static final String CONFIGPATH = System.getProperty("user.dir")
+ + "\\src\\test\\testAutomation\\config\\config.properties";
+ public static final String ORPATH = System.getProperty("user.dir")
+ + "\\src\\test\\testAutomation\\Object_Repository\\OR.properties";
+ public static final String DRIVER = "DRIVER";
+ public static final String BROWSER = "BROWSER";
+ public static final String DRIVERPATH = "DRIVERPATH";
+ public static final String pageLoadStrategy_key = "pageLoadStrategy";
+ public static final String pageLoadStrategy_val = "eager";
+}</pre><p>Next, we define our <code class="literal">config.properties</code> file. This will be a collection of key-value pairs:</p><pre class="programlisting"> DRIVER=webdriver.chrome.driver
+ DRIVERPATH=/src/test/testAutomation/resources/chromedriver.exe
+ FRAMEWORKFILEPATH=/src/test/testAutomation/resources/Framework.xls
+ EXECUTIONRESULTSPATH=/src/test/testAutomation/results/Execution_Result
+ s.csv
+ EXTENTREPORTPATH=/src/test/testAutomation/results/Extent_Report.html
+ SCREENSHOTPATH=/src/test/testAutomation/images/
+ CHROMESERVERPATH=/Resources/chromedriver.exe
+ UPDATEFILEPATH=/Resources/update.xls
+ CHECKFLAGPATH=/Resources/CHECK_FLAG.txt
+ CLOSEFLAGPATH=/Resources/CLOSE_FLAG.txt
+ LOGPROPERTIESPATH=/log4j.properties
+ USERACTIONPATH=/Resources/USER_ACTION_SUMMARY.txt
+ BROWSER=chrome</pre></div>

@@ -1,0 +1,18 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec28"></a>Running pods directly</h2></div></div><hr /></div><p>Kubernetes doesn't really intend for <span>users</span><a id="id325750937" class="indexterm"></a> to directly submit and launch pods on the cluster. As we discussed previously, pods are designed to be ephemeral, so are not suitable for running workloads where we want to ensure that execution has completed or where we want to ensure that a process remains up and running.</p><p>Here, we will start from first principles, launching pods, before moving on to use a controller to help us manage them. Bear in mind that this is a learning exercise; you shouldn't submit pods in this way if you need them to run reliably:</p><pre class="programlisting"><span class="strong"><strong>pod.yaml</strong></span>
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-loop
+spec:
+  containers:
+  - name: loop
+    image: alpine
+    command: ["/bin/sh"]
+    args:
+    - -c
+    - while true; do echo "hello world"; sleep 2s; done
+
+</pre><p>This pod launches an infinite loop that prints <code class="literal">hello world</code> every 2 seconds. Start by submitting the pod to the cluster with <code class="literal">kubectl</code>:</p><pre class="programlisting"><span class="strong"><strong>$ kubectl create -f pod.yaml</strong></span>
+<span class="strong"><strong>pod "hello-loop" created</strong></span></pre><p>It might take a few moments for the pod be created while the container runtime downloads the image. While this is happening, you could check on the status of the pod by running <code class="literal">kubectl describe pod/hello-loop</code> or by using the dashboard.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note22"></a>Note</h3><p>The fact that Kubernetes makes it possible to control even the lowest-level abstractions, such as pods, through the API makes it easy to extend Kubernetes with additional functionality using or building add-on tools that can be just as powerful as the built-in controllers.</p></div><p>Once the pod is up and running, you can follow the output with <code class="literal">kubectl logs -f hello-loop</code> and you should see <code class="literal">hello world</code> output every 2 seconds.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip23"></a>Note</h3><p><code class="literal">kubectl logs</code> allows us to display logs from pods that have run on the cluster. If you know the name of the pod you want logs from, you can just pass the name as an argument. But if you are using a controller to launch a pod, you can use the name of a job or deployment in place of the pod name just by prefixing the name with the resource type.
+If you have a label selector for the pod or pods you are interested in, they can be passed with the <code class="literal">-l</code> flag. With the <code class="literal">-c</code> flag, you can target a specific named container in a pod with more than one container; if the pod only has one container, this can be omitted.
+Try running <code class="literal">kubectl</code>. It helps logs to discover some more of the options you can use to view just the logs you are interested in, including limiting them to a particular time period.</p></div></div>

@@ -1,0 +1,11 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec33"></a>Understanding hypothetical aggregates</h2></div></div><hr /></div><p>Hypothetical <span>aggregates</span><a id="id326127430" class="indexterm"></a> are pretty similar to standard ordered sets. However, they help to answer a different kind of question: what would be the result if a value was in the data? As you can see, this is not about values inside the database but about the result if a certain value was actually there.</p><p>The only hypothetical function provided by PostgreSQL is <code class="literal">rank</code>:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT region, </strong></span>
+<span class="strong"><strong>              rank(9000) WITHIN GROUP </strong></span>
+<span class="strong"><strong>                         (ORDER BY production DESC NULLS LAST) </strong></span>
+<span class="strong"><strong>FROM t_oil </strong></span>
+<span class="strong"><strong>GROUP BY ROLLUP (1); </strong></span>
+<span class="strong"><strong>    region     | rank </strong></span>
+<span class="strong"><strong>---------------+------ </strong></span>
+<span class="strong"><strong> Middle East   |  21 </strong></span>
+<span class="strong"><strong> North America |  27 </strong></span>
+<span class="strong"><strong>               |  47 </strong></span>
+<span class="strong"><strong>(3 rows)</strong></span></pre><p>It tells us: if somebody produced, 9,000 barrels per day, it would be ranked the 27th best year in <code class="literal">North America</code> and 21st in the <code class="literal">Middle East</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip30"></a>Note</h3><p>In this example, I used <code class="literal">NULLS LAST</code>. When data is sorted, nulls are usually at the end. However, if the sort order is reversed, nulls should still be at the end of the list. <code class="literal">NULLS LAST</code> ensures exactly that.</p></div><p> </p></div>

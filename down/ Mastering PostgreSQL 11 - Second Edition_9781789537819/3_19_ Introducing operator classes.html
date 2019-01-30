@@ -1,0 +1,117 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec25"></a>Introducing operator classes</h2></div></div><hr /></div><p>So far, the goal was to figure out <span>what</span><a id="id326453726" class="indexterm"></a> to index and to blindly apply an index on this column or on a group of columns. There is one assumption, however, that we have silently accepted to make this work. Up until now, we have worked on the assumption that the order in which the data has to be sorted is a somewhat fixed constant. In reality, this assumption might not hold true. Sure, numbers will always be in the same order, but other kinds of data will most likely not have a predefined, fixed sort order.</p><p>To prove my point, I have compiled a real-world example. Take a look at the following two records:</p><pre class="programlisting"><span class="strong"><strong>1118 09 08 78 
+2345 01 05 77 </strong></span></pre><p>My question now is, are these two rows ordered properly? They might be because one comes before another. However, this is wrong because these two rows do have some hidden semantics. What you see here are two Austrian social security numbers. <code class="literal">09 08 78</code> actually means August 9, 1978, and <code class="literal">01 05 77</code> actually means May 1, 1977. The first four numbers consist of a checksum and some sort of auto-incremented three-digit number. So in reality, 1977 comes before 1978 and we might consider swapping those two lines to achieve the desired sort order.</p><p>The problem is that PostgreSQL has no idea what these two rows actually mean. If a column is marked as text, PostgreSQL will apply the <span>standard</span><a id="id326453632" class="indexterm"></a> rules to sort the text. If the column is marked as a number, PostgreSQL will apply the standard rules to sort numbers. Under no circumstances will it ever use something as odd as I've described. If you think that the facts I outlined previously are the only things to consider when processing those numbers, you are wrong. How many months does a year have? 12? Far from true. In the Austrian social security system, these numbers can hold up to 14 months. Why? Remember, <code class="literal">...</code> three digits are simply an auto-increment value. The trouble is that if an immigrant or a refugee has no valid paperwork and if his birthday is not known, he will be assigned an artificial birthday in the 13th month.</p><p>During the Balkan wars in 1990, Austria offered asylum to over 115,000 refugees. Naturally, this three-digit number was not enough, and a 14th month was added. Now, which standard data type can handle this kind of COBOL-leftover from the early 1970s (that was when the layout of the social security number was introduced)? The answer is, none.</p><p>To handle special-purpose fields in a sane way, PostgreSQL offers operator classes:</p><pre class="programlisting"><span class="strong"><strong>test=# \h CREATE OPERATOR CLASS
+Command: CREATE OPERATOR CLASS 
+Description: define a new operator class 
+Syntax: 
+CREATE OPERATOR CLASS name [ DEFAULT ] FOR TYPE data_type 
+  USING index_method [ FAMILY family_name ] AS 
+  { OPERATOR strategy_number operator_name [ ( op_type, op_type ) ] 
+    [ FOR SEARCH | FOR ORDER BY sort_family_name ] 
+   | FUNCTION support_number [ ( op_type [ , op_type ] ) ] 
+     function_name ( argument_type [, ...] ) 
+   | STORAGE storage_type 
+  } [, ... ] 
+</strong></span></pre><p>An <code class="literal">operator</code> class will tell an index how to behave. Let's take a look at a standard binary tree. It can perform five operations:</p><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /><col /></colgroup><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Strategy</strong></span></p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Operator</strong></span></p></td><td style="border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Description</strong></span></p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>1</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">&lt;</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Less than</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>2</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">&lt;=</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Less than or equal to</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>3</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">=</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Equal to</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>4</p></td><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><code class="literal">&gt;=</code></p></td><td style="border-bottom: 0.5pt solid ; "><p>Greater than or equal to</p></td></tr><tr><td style="border-right: 0.5pt solid ; "><p>5</p></td><td style="border-right: 0.5pt solid ; "><p><code class="literal">&gt;</code></p></td><td style=""><p>Greater than</p></td></tr></tbody></table></div><p> </p><p>The standard operator classes support the <span>standard</span><a id="id325565433" class="indexterm"></a> data types and standard operators we have used throughout this book. If you want to handle social security numbers, it is necessary to come up with your own operators capable of providing you with the logic you need. Those custom operators can then be used to form an <code class="literal">operator</code> class, which is nothing more than a strategy passed to the index to configure how it should behave.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec30"></a>Hacking up an operator class for a btree</h3></div></div></div><p>To give you a practical example of <span>what</span><a id="id325664397" class="indexterm"></a> an <code class="literal">operator</code> class looks like, I have hacked up some code to handle social security numbers. To keep it simple, I have paid no <span>attention</span><a id="id325664410" class="indexterm"></a> to details such as checksum.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec10"></a>Creating new operators</h4></div></div></div><p>The first thing that has to be done is <span>come</span><a id="id325664425" class="indexterm"></a> up with the desired operators. Note that five operators are needed. There is one operator for each strategy. A strategy of an index is really like a plugin that allows you to put in your own code.</p><p>Before getting started, I have compiled some test data:</p><pre class="programlisting"><span class="strong"><strong>CREATE TABLE t_sva (sva text); 
+
+INSERT INTO t_sva VALUES ('1118090878');  
+INSERT INTO t_sva VALUES ('2345010477');</strong></span></pre><p>Now that the test data is there, it is time to create an operator. For this purpose, PostgreSQL offers the <code class="literal">CREATE OPERATOR</code> command:</p><pre class="programlisting"><span class="strong"><strong>test=# \h CREATE OPERATOR  
+Command: CREATE OPERATOR  
+Description: define a new operator  
+Syntax: 
+CREATE OPERATOR name ( 
+    PROCEDURE = function_name 
+    [, LEFTARG = left_type ] [, RIGHTARG = right_type ] 
+    [, COMMUTATOR = com_op ] [, NEGATOR = neg_op ] 
+    [, RESTRICT = res_proc ] [, JOIN = join_proc ] 
+    [, HASHES ] [, MERGES ] 
+)
+</strong></span></pre><p>Basically, the concept is as follows: <code class="literal">operator</code> calls a function, which gets one or two parameters, one for the left argument and one for the right argument of  <code class="literal">operator</code>.</p><p>As you can see, an operator is nothing <span>more</span><a id="id325854956" class="indexterm"></a> than a function call. So, consequently, it is necessary to implement the logic needed into those functions hidden by the operators. In order to fix the sort order, I have written a function called <code class="literal">normalize_si</code>:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION normalize_si(text) RETURNS text AS $$ </strong></span>
+<span class="strong"><strong>        BEGIN </strong></span>
+<span class="strong"><strong>        RETURN substring($1, 9, 2) || </strong></span>
+<span class="strong"><strong>               substring($1, 7, 2) ||</strong></span>
+<span class="strong"><strong>               substring($1, 5, 2) ||</strong></span>
+<span class="strong"><strong>               substring($1, 1, 4); </strong></span>
+<span class="strong"><strong>        END; $$ </strong></span>
+<span class="strong"><strong>LANGUAGE 'plpgsql' IMMUTABLE;</strong></span></pre><p> </p><p> </p><p>Calling the function will return the following result:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT normalize_si('1118090878'); 
+ normalize_si 
+--------------</strong></span><span class="strong"><strong> 7808091118 (1 row) </strong></span></pre><p>As you can see, all we did is swap some digits. It is now possible to just use the normal string sort order. In the next step, this function can already be used to compare social security numbers directly.</p><p>The first function needed is the less than function, which is needed by the first strategy:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION si_lt(text, text) RETURNS boolean AS $$ </strong></span>
+<span class="strong"><strong>        BEGIN </strong></span>
+<span class="strong"><strong>        RETURN normalize_si($1) &lt; normalize_si($2); </strong></span>
+<span class="strong"><strong>        END; </strong></span>
+<span class="strong"><strong>$$ LANGUAGE 'plpgsql' IMMUTABLE;</strong></span></pre><p>There are two important things to note here:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The function must not be written in SQL. It only works in a procedural or in a compiled language. The reason for that is SQL functions can be inline under some circumstances and this would cripple the entire endeavor.</li><li style="list-style-type: disc">The second issue is that you should stick to the naming convention used in this chapter—it is widely accepted by the community. Less than functions should be <code class="literal">called _lt</code>, less or equal to functions should be <code class="literal">called _le</code>, and so on.</li></ul></div><p>Given this knowledge, the next functions needed by our future operators can be defined:</p><pre class="programlisting"><span class="strong"><strong>-- lower equals 
+CREATE OR REPLACE FUNCTION si_le(text, text)  
+  RETURNS boolean AS  
+$$  
+  BEGIN 
+    RETURN normalize_si($1) &lt;= normalize_si($2);  
+  END; 
+$$  
+LANGUAGE 'plpgsql' IMMUTABLE; 
+ 
+-- greater equal 
+CREATE OR REPLACE FUNCTION si_ge(text, text)  
+  RETURNS boolean AS  
+$$  
+BEGIN 
+  RETURN normalize_si($1) &gt;= normalize_si($2);  
+END; 
+$$  
+LANGUAGE 'plpgsql' IMMUTABLE; 
+ 
+-- greater 
+CREATE OR REPLACE FUNCTION si_gt(text, text)  
+  RETURNS boolean AS  
+$$  
+BEGIN 
+  RETURN normalize_si($1) &gt; normalize_si($2);  
+END; 
+$$  
+LANGUAGE 'plpgsql' IMMUTABLE;</strong></span></pre><p>So far, four functions have been defined. A fifth function for the equals operator is not necessary. We can simply take the existing operator because equals do not <span>depend</span><a id="id326300513" class="indexterm"></a> on sort order anyway.</p><p>Now that all functions are in place, it is time to define these operators:</p><pre class="programlisting"><span class="strong"><strong>-- define operators </strong></span>
+<span class="strong"><strong>CREATE OPERATOR &lt;# ( PROCEDURE=si_lt, </strong></span>
+<span class="strong"><strong>                     LEFTARG=text, </strong></span>
+<span class="strong"><strong>                     RIGHTARG=text); </strong></span></pre><p>The design of the operator is actually very simple. The operator needs a name (in my case  <code class="literal">&lt;#</code>), a procedure, which is supposed to be called, as well as the datatype of the left and the right argument. When the operator is called, the left argument will be the first parameter of <code class="literal">si_lt</code> and the right argument will be the second argument.</p><p>The remaining three operators follow the same principle:</p><pre class="programlisting"><span class="strong"><strong>CREATE OPERATOR &lt;=# ( PROCEDURE=si_le, </strong></span>
+<span class="strong"><strong>                      LEFTARG=text, </strong></span>
+<span class="strong"><strong>                      RIGHTARG=text);</strong></span>
+
+<span class="strong"><strong>CREATE OPERATOR &gt;=# ( PROCEDURE=si_ge, </strong></span>
+<span class="strong"><strong>                      LEFTARG=text, </strong></span>
+<span class="strong"><strong>                      RIGHTARG=text);</strong></span>
+
+<span class="strong"><strong>CREATE OPERATOR &gt;# ( PROCEDURE=si_gt, </strong></span>
+<span class="strong"><strong>                     LEFTARG=text, </strong></span>
+<span class="strong"><strong>                     RIGHTARG=text);</strong></span></pre><p>Depending on the type of index you are using, a couple of support functions are needed. In the case of standard btrees, there is only one support function needed, which is used to speed things up internally:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION si_same(text, text) RETURNS int AS $$</strong></span>
+<span class="strong"><strong>        BEGIN </strong></span>
+<span class="strong"><strong>                IF normalize_si($1) &lt; normalize_si($2) </strong></span>
+<span class="strong"><strong>                THEN </strong></span>
+<span class="strong"><strong>                        RETURN -1; </strong></span>
+<span class="strong"><strong>                ELSIF normalize_si($1) &gt; normalize_si($2) </strong></span>
+<span class="strong"><strong>                THEN </strong></span>
+<span class="strong"><strong>                        RETURN +1; </strong></span>
+<span class="strong"><strong>                ELSE </strong></span>
+<span class="strong"><strong>                        RETURN 0; </strong></span>
+<span class="strong"><strong>                END IF; </strong></span>
+<span class="strong"><strong>        END; </strong></span>
+<span class="strong"><strong>$$ LANGUAGE 'plpgsql' IMMUTABLE;</strong></span></pre><p>The <code class="literal">si_same</code> function will either return <code class="literal">-1</code> if the first parameter is smaller, <code class="literal">0</code> if both parameters are equal, and <code class="literal">1</code> if the first parameter is greater. Internally, the <code class="literal"> _same</code> function is the workhorse, so you should make sure that your code is optimized.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec11"></a>Creating operator classes</h4></div></div></div><p>Finally, all components are in <span>place</span><a id="id325607765" class="indexterm"></a> and it is  possible to create the operator class needed by the index:</p><pre class="programlisting"><span class="strong"><strong>CREATE OPERATOR CLASS sva_special_ops </strong></span>
+<span class="strong"><strong>FOR TYPE text USING btree </strong></span>
+<span class="strong"><strong>AS </strong></span>
+<span class="strong"><strong>   OPERATOR 1 &lt;# , </strong></span>
+<span class="strong"><strong>   OPERATOR 2 &lt;=# , </strong></span>
+<span class="strong"><strong>   OPERATOR 3 = , </strong></span>
+<span class="strong"><strong>   OPERATOR 4 &gt;=# , </strong></span>
+<span class="strong"><strong>   OPERATOR 5 &gt;# , </strong></span>
+
+<span class="strong"><strong>   FUNCTION 1 si_same(text, text);</strong></span></pre><p>The <code class="literal">CREATE OPERATOR CLASS</code> command connects strategies and operators  <code class="literal">OPERATOR 1</code>.</p><p><code class="literal">&lt;#</code> means that strategy <code class="literal">1</code> will use the <code class="literal">&lt;#</code> operator. Finally, the <code class="literal">the _same</code> function is connected with the <code class="literal">operator</code> class.</p><p>Note that the operator class has a name and that it has been explicitly defined to work with btrees. The operator class can already be used during index creation:</p><pre class="programlisting"><span class="strong"><strong>CREATE INDEX idx_special ON t_sva (sva sva_special_ops);</strong></span></pre><p>Creating an index works in a slightly different way than previously: <code class="literal">sva sva_special_ops</code> means that the <code class="literal">sva</code> column is indexed using the <code class="literal">sva_special_ops</code> operator class. If <code class="literal">sva_special_ops</code> is not explicitly used, then PostgreSQL will not go for our special sort order but decide on the default operator class.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec12"></a>Testing custom operator classes</h4></div></div></div><p>In our example, the test data <span>consists</span><a id="id325627158" class="indexterm"></a> of just two rows. Therefore, PostgreSQL will never use an index because the table is just too small to justify the overhead of even <span>opening</span><a id="id325627166" class="indexterm"></a> the index. To be able to still test without having to load too much data, you can advise the optimizer to make sequential scans more expensive.</p><p>Making operations more <span>expensive</span><a id="id325627177" class="indexterm"></a> can be done in your <span>session</span><a id="id325627186" class="indexterm"></a> using the following instruction:</p><pre class="programlisting"><span class="strong"><strong>SET enable_seqscan TO off;</strong></span></pre><p>The index works as expected:</p><pre class="programlisting"><span class="strong"><strong>test=# explain SELECT * FROM t_sva WHERE sva = '0000112273';  
+                            QUERY PLAN 
+------------------------------------------------------------------ 
+ Index Only Scan using idx_special on t_sva 
+   (cost=0.13..8.14 rows=1 width=32) 
+   Index Cond: (sva = '0000112273'::text) 
+(2 rows)
+
+test=# SELECT * FROM t_sva;
+    sva
+------------
+ 2345010477
+ 1118090878
+(2 rows)
+</strong></span></pre></div></div></div>

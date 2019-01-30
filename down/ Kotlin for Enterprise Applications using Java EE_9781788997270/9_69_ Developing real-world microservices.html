@@ -1,0 +1,247 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec68"></a>Developing real-world microservices</h2></div></div><hr /></div><p>In previous chapters, we illustrated the <span class="strong"><strong>JSON Web Token</strong></span> (<span class="strong"><strong>JWT</strong></span>) and used that for a resource API authentication. If you remember, we wrote all of the code for this in a single module (though we used a different package) and <span>violated</span><a id="id325601669" class="indexterm"></a> the <span class="strong"><strong>single responsibility principle</strong></span> (<span class="strong"><strong>SRP</strong></span>). Needless to say, it was a monolith service. We were then able to familiarize ourselves with the problems <span>encountered</span><a id="id325442829" class="indexterm"></a> with the monolith. Let's split this <span>monolith</span><a id="id325442827" class="indexterm"></a> into small microservices, as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/f2135d30-f091-402a-9142-2b441787d9b7.png" /></div><p>We will create two modules in a Maven project and these modules represent the microservices—one authentication service and one identity service. The authentication service will have the APIs for JWT, and identity service APIs are used to create identities, such as a person or an organization. All the APIs of the identity service require a valid JWT token obtained using the authentication service. </p><p>So let's start by creating a Maven project. The Maven project that we created looks like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/490d5ae8-a25d-4245-8cce-9e657f876cfa.png" /></div><p>As we can see, this project has a parent module called <span class="strong"><strong>MicroServices</strong></span> and two child modules—an <span class="strong"><strong>AuthenticationService</strong></span> and an <span class="strong"><strong>IdentityService</strong></span>.</p><p>All authentication- and authorization-related APIs go into the <span>authentication</span><a id="id326586140" class="indexterm"></a> service, while the identity APIs go into the identity service. Consequently, the API that issues a JWT is part of an authentication service and we will add an API to validate the JWT in the same module. Note that earlier we used the code directly to validate the JWT from the filter of the service. Now we provide an API so that the other services can consume it as a REST API.</p><p>For demonstration purposes, we create two APIs in the <span class="strong"><strong>Authentication Service</strong></span>—the <code class="literal">/authorize/jwt/token</code> API to issue a jwt token, and the <code class="literal">/authorize/jwt/verify-token</code> API to verify the validity of the issued token:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/796985be-6f32-4ac8-94d0-e7afde058a72.png" /></div><p>In the <span class="strong"><strong>Identity Service</strong></span>, we will create the CRUD operations for organizations and person identities, and we will protect these APIs with jwt APIs. This means we will use the <code class="literal">/authorize/jwt/verify-token</code> API of the <span>authentication</span><a id="id325851144" class="indexterm"></a> service from the identity service. <span class="strong"><strong>Identity Service</strong></span> is represented in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/5b0b1bbe-d089-415d-a59e-6a78e5abecb5.png" /></div><p>We will look into the details of these services in the next section and write the test cases for them.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec66"></a>Developing the microservices</h3></div></div></div><p>Let's write some code to <span>implement</span><a id="id325851176" class="indexterm"></a> the APIs and see how the services can talk to each other over the REST. Then, we will learn how we can use Kotlin to develop these services and understand how easy it is to implement an API and to write a test case again using Kotlin. Importantly, we will look at the exception-handling code in Kotlin and how to handle exceptions for the APIs that we are going to implement.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec59"></a>Developing the authentication service</h4></div></div></div><p>As previously mentioned, the <span>authentication</span><a id="id325851191" class="indexterm"></a> service will have two APIs—one for issuing a JWT token following authentication of the user, and another to check the validity of the issued JWT token.</p><p>First, let's add the following dependencies to the authentication service:</p><pre class="programlisting">        &lt;dependency&gt;
+            &lt;groupId&gt;org.jetbrains.kotlin&lt;/groupId&gt;
+            &lt;artifactId&gt;kotlin-stdlib-jdk8&lt;/artifactId&gt;
+            &lt;version&gt;${kotlin.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.jetbrains.kotlin&lt;/groupId&gt;
+            &lt;artifactId&gt;kotlin-test&lt;/artifactId&gt;
+            &lt;version&gt;${kotlin.version}&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+            &lt;artifactId&gt;jersey-server&lt;/artifactId&gt;
+            &lt;version&gt;${jersey-server}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+            &lt;artifactId&gt;jersey-json&lt;/artifactId&gt;
+            &lt;version&gt;${jersey-json}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+            &lt;artifactId&gt;jersey-client&lt;/artifactId&gt;
+            &lt;version&gt;${jersey-client}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.servlet&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.servlet-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.servlet-api}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.annotation&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.annotation-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.annotation-api}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.enterprise&lt;/groupId&gt;
+            &lt;artifactId&gt;cdi-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.enterprise.cdi.api}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.glassfish.soteria&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.security.enterprise&lt;/artifactId&gt;
+            &lt;version&gt;${org.glassfish.soteria}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.glassfish&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.security.auth.message&lt;/artifactId&gt;
+            &lt;version&gt;${javax.security.auth.message}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+            &lt;artifactId&gt;jjwt&lt;/artifactId&gt;
+            &lt;version&gt;${jjwt}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.auth0&lt;/groupId&gt;
+            &lt;artifactId&gt;java-jwt&lt;/artifactId&gt;
+            &lt;version&gt;${java-jwt}&lt;/version&gt;
+        &lt;/dependency&gt;   </pre><p>Then, let's add the following <span>packages</span><a id="id325853769" class="indexterm"></a> to the <span class="strong"><strong>AuthenticationService</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/c642412f-545d-4883-a815-82420aef1630.png" /></div><p>The <code class="literal">store</code> package is for the custom identity store that we explained earlier and this will be used for authentication. The <code class="literal">jwt</code> package will have the code construct for issuing and verifying the JWT. The authentication mechanism classes, which are used to interact with the data store, go into the <code class="literal">auth</code> package, while the controller will have the APIs that are exposed over the REST.  </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec60"></a>Implementing the /authorize/jwt/token API </h4></div></div></div><p>Let's write a <span>skeleton</span><a id="id325853810" class="indexterm"></a> of the controller class:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Create an <code class="literal">AuthenticationController</code> class. The <code class="literal">@Path</code> annotation is used in the   <code class="literal">AuthenticationController</code> class. <code class="literal">@Path</code> is from the jersey library, and this annotation maps the URI with <code class="literal">/authorize</code> to this class.</li><li>Inject <code class="literal">CustomAuthMechanism</code> and <code class="literal">HttpMessageContext</code>, which will be used with <code class="literal">AuthMechanism</code> to authenticate the user's credentials.</li><li>Create a function called  <code class="literal">issueJwt()</code> with the <code class="literal">@Path</code> annotation. This maps the URI with <code class="literal">/authorize/jwt/token</code> to the <code class="literal">issueJwt()</code> function:</li></ol></div><pre class="programlisting">@Path("/authorize")
+class AuthenticationController {
+
+    @Inject
+    private lateinit var customAuthMechanism: CustomAuthMechanism
+
+    private val httpMessageContextImpl: HttpMessageContextImpl = 
+           HttpMessageContextImpl(CallBackHandlerImpl(), MessageInfoImpl(), Subject())
+
+    @POST
+    @Path("/jwt/token")
+    @Produces(MediaType.APPLICATION_JSON)
+    fun issueJwt(@Context httpServletRequest: HttpServletRequest,
+                  @Context httpServletResponse: HttpServletResponse): Response {
+    }</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>The <code class="literal">issueJwt()</code> function takes <code class="literal">httpServletRequest</code> and <code class="literal">httpServletResponse</code> as parameters. Let's add code to validate the user's credentials coming in via the request and to create a <code class="literal">jwt</code> token. The <code class="literal">issueJwt()</code> implementation looks as follows:</li></ol></div><pre class="programlisting">fun issueJwt(@Context httpServletRequest: HttpServletRequest,
+                 @Context httpServletResponse: HttpServletResponse): Response {
+        val isValid = customAuthMechanism.validateRequest(httpServletRequest, httpServletResponse,
+                httpMessageContextImpl)
+        if (isValid == AuthenticationStatus.SUCCESS) {
+            var jwt: String = createJwt("1234", "localhost", "subject", 900000L)
+            var resBody: JSONObject = JSONObject("{\"JWT\":$jwt}")
+            return Response.status(Response.Status.OK).entity(resBody).build()
+        } else {
+            return Response.status(Response.Status.UNAUTHORIZED).entity("invalid credentials").build()
+        }
+    }</pre><p>Following a successful authentication, the <code class="literal">createJwt()</code> function will be invoked, creating the <code class="literal">jwt</code> token. Note that the expiry time is set to 900000L, which is equivalent to 15 minutes. The code for the <code class="literal">createJwt()</code> and <code class="literal">validateRequest()</code> functions is the same as we discussed in <a class="link" href="#" linkend="ch08">Chapter 9</a>, <span class="emphasis"><em>Securing JAVA EE Applications with Kotlin</em></span>. The <code class="literal">jwt</code> token will be wrapped around the <code class="literal">JSONObject</code> and a response with status code <code class="literal">200</code> will be returned. If the passed <span>credentials</span><a id="id325887933" class="indexterm"></a> are invalid, a response with status code <code class="literal">401</code> will be returned.</p><p>Let's verify this behavior with the following <code class="literal">curl</code> command:</p><pre class="programlisting">curl -X POST \
+  http://localhost:8080/authentication-service/authorize/jwt/token \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'UserId: testUser' \
+  -H 'Password: ************'</pre><p>This gives the following output:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/17c1d326-cc59-4092-ae60-fd15c13efbbc.png" /></div><p>The <code class="literal">/authorize/jwt/token</code> API responds with the JWT token.</p><p>Let's invoke the API with invalid <span>credentials</span><a id="id325887974" class="indexterm"></a>. This will give us the <code class="literal">401</code> status code:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/08da9b5b-4d1b-43b1-9ff2-8130d6ba058f.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec61"></a>Implementing the /authorize/jwt/verify-token API </h4></div></div></div><p>Similar to the <code class="literal">issueToken()</code> function, we create a function called <code class="literal">verifyToken()</code> with the <code class="literal">@Path</code> annotation in the <code class="literal">AuthenticationController</code> class. This <span>maps</span><a id="id325888013" class="indexterm"></a> the URI with <code class="literal">/authorize/jwt/verify-token</code> to the <code class="literal">verifyToken()</code> function:</p><pre class="programlisting">@POST
+@Path("/jwt/verify-token")
+@Produces(MediaType.APPLICATION_JSON)
+fun verifyToken(@Context httpServletRequest: HttpServletRequest,
+              @Context httpServletResponse: HttpServletResponse): Response {
+
+var header: String = httpServletRequest.getHeader("Authorization")
+var token: String = extractJwtToken(header);
+
+val expiresIn:Long = verifyJwt(token)
+return Response.status(200).entity(JSONObject("{\"token\":\"active\"," +
+"\"expiresInSeconds\":$expiresIn }")).build()
+}</pre><p>The <code class="literal">verifyToken()</code> function takes servlet request and response objects. We extract the <code class="literal">Authorization</code> header from the request and verify the validity of the token using the <code class="literal">verifyJwt()</code> function. <code class="literal">verifyJwt()</code> will have the logic to check the token's validity.</p><p>Let's <span>invoke</span><a id="id325899281" class="indexterm"></a> the <code class="literal">/authorize/jwt/verify-token</code> API using cURL:</p><pre class="programlisting">curl -X POST \
+  http://localhost:8080/authentication-service/authorize/jwt/verify-token \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer {{jwt}}' </pre><p>This gives the following output:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/2b0fa9fd-9961-49a9-a5a6-c26ade3f2b76.png" /></div><p>We implemented two APIs, one for issuing a JWT token, and another to <span>verify</span>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec62"></a>Developing the identity service</h4></div></div></div><p>As we mentioned earlier, we will <span>implement</span><a id="id325899323" class="indexterm"></a> CRUD operations for the organization and person entities, and we will explain one flow of these operations here.</p><p>We will add the following mentioned dependencies to the identity service:</p><pre class="programlisting">        &lt;dependency&gt;
+            &lt;groupId&gt;org.jetbrains.kotlin&lt;/groupId&gt;
+            &lt;artifactId&gt;kotlin-stdlib-jdk8&lt;/artifactId&gt;
+            &lt;version&gt;${kotlin.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+            &lt;artifactId&gt;jersey-server&lt;/artifactId&gt;
+            &lt;version&gt;${jersey-server}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+            &lt;artifactId&gt;jersey-json&lt;/artifactId&gt;
+            &lt;version&gt;${jersey-json}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+            &lt;artifactId&gt;jersey-client&lt;/artifactId&gt;
+            &lt;version&gt;${jersey-client}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.servlet&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.servlet-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.servlet-api}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.enterprise&lt;/groupId&gt;
+            &lt;artifactId&gt;cdi-api&lt;/artifactId&gt;
+            &lt;version&gt;${cdi-api}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate.javax.persistence&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-jpa-2.1-api&lt;/artifactId&gt;
+            &lt;version&gt;${hibernate-jpa}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+            &lt;version&gt;${hibernate-core}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.persistence&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.persistence-api&lt;/artifactId&gt;
+            &lt;version&gt;${javax.persistence-api}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-entitymanager&lt;/artifactId&gt;
+            &lt;version&gt;${hibernate-entitymanager}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;postgresql&lt;/groupId&gt;
+            &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+            &lt;version&gt;${postgresql}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+            &lt;artifactId&gt;jjwt&lt;/artifactId&gt;
+            &lt;version&gt;${jjwt}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.auth0&lt;/groupId&gt;
+            &lt;artifactId&gt;java-jwt&lt;/artifactId&gt;
+            &lt;version&gt;${java-jwt}&lt;/version&gt;
+        &lt;/dependency&gt;</pre><p>We will add the following <span>packages</span><a id="id325902961" class="indexterm"></a> to the identity service:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/ce3f1bd0-78d5-4492-9dde-b4b0c98d0665.png" /></div><p>The <code class="literal">exception</code> package will have the classes for handling the exceptions in the module, while the <code class="literal">response</code> package will have general response classes, <code class="literal">util</code> for some constants and utility functions, and the <code class="literal">organization</code> and <code class="literal">person</code> packages will hold all the classes related to the operations of these entities.</p><p>These <code class="literal">organization</code> and <code class="literal">person</code> <span>packages</span><a id="id325903008" class="indexterm"></a> include other sub-packages, shown as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/cd63c004-847d-44e9-9d31-9b5c2c039f8d.png" /></div><p>The <code class="literal">controller</code> package is for the classes that expose APIs over the REST. The <code class="literal">service</code> package holds service classes that connect the <code class="literal">controller</code> and <code class="literal">dao</code> classes and executes mapping of types that the <code class="literal">controller</code> and <code class="literal">dao</code> implementations can understand. The <code class="literal">model</code> package holds the request and response classes that are used at the API boundary, while the <code class="literal">entity</code> package includes the classes for mapping the entities to the table in the database. These are used by the dao layer. The <code class="literal">dao</code> package will have the classes that interact with the database and we use JPA entity manager for this. Note that this layered structure is mvc-based and repeated for the <code class="literal">organization</code> and <code class="literal">person</code> entities for the separation of concerns.</p><p>The <code class="literal">filter</code> package is common to these entities and will have logic to intercept the request to validate the JWT that is passed in the request header. It performs the validation by invoking the <code class="literal">/authorize/jwt/validate-token</code> API of the authentication service as a REST call.</p><p>Let's look at the create <span>organization</span><a id="id325903283" class="indexterm"></a> flow. This will give an understanding of the flow of control around these classes in different packages.</p><p>The controller code appears as follows:</p><pre class="programlisting">@Path("/identity/organization")
+class OrganizationController {
+    @Inject
+    private lateinit var serviceImpl: OrganizationServiceImpl
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    fun createOrganization(organization: Organization): Response {
+        try {
+            var orgId: String = serviceImpl.createOrganization(organization)
+            var response: GenericResponse = GenericResponse()
+            response.responseMessage = Constants.IDENTITY_CREATED
+            return Response.status(Response.Status.CREATED)
+                           .header("location", orgId)
+                           .entity(response).build()
+        } catch (e: IdentityAlreadyExistsException) {
+            return sendErrorResponse(e.message!!, Response.Status.CONFLICT.statusCode)
+        } catch (e: IdentityException) {
+            return sendErrorResponse(Constants.INTERNAL_SERVER_ERROR_MSG, Response.Status
+                    .INTERNAL_SERVER_ERROR.statusCode)
+        }
+    }</pre><p>We inject the service class instance, <code class="literal">serviceImpl</code>, via the <code class="literal">@Inject</code> annotation, and we have the <code class="literal">@Path</code> annotation for mapping the request to this function and the class. Creating an organization is a post call, and the <code class="literal">createOrganization()</code> function takes the organization request that needs to be created. The <code class="literal">jersey</code> maps the request body to the organization parameter declared in the function. With this request, we pass the control to the service layer. The service layer returns <code class="literal">orgId</code> if it is created successfully, and this <code class="literal">orgId</code> will be included in the location header of the response object. A status code of <code class="literal">201</code> is then returned from the controller, indicating that the requested entity was created successfully in the system.</p><p>If the requested <span>organization</span><a id="id325906472" class="indexterm"></a> is already present, we will get <code class="literal">IdentityAlreadyExistsException</code> from the dao layer, this exception will be caught in our controller and sends a <code class="literal">409</code> conflict status code as response. In case of any other exception, we will send the error response. The <code class="literal">OrganizationServiceImpl</code> class implements the contract defined by the <code class="literal">OrganizationService</code> interface. The interface has declared the <code class="literal">createOrganization()</code> function and the implementing class provides the function definition. This is demonstrated by means of the following code:</p><pre class="programlisting">class OrganizationServiceImpl : OrganizationService {
+    @Inject
+    private lateinit var organizationDao: OrganizationDaoImpl
+
+   override fun createOrganization(organizationRequest: Organization): String {
+        var organizationEntity: OrganizationEntity = OrganizationEntity(UUID.randomUUID().toString())
+        mapOrganizationToOrganizationEntity(organizationRequest,organizationEntity)
+
+        var entity: OrganizationEntity = organizationDao.createOrganization(organizationEntity)
+        return entity.orgId
+    }
+}</pre><p>The service class maps the request to the <code class="literal">entity</code> object and passes the control to the dao layer that is requesting to create the entity. From the service layer, an <code class="literal">orgId</code> is returned as a response if the organization is created.</p><p>The dao layer code looks as follows:</p><pre class="programlisting">class OrganizationDaoImpl : OrganizationDao {
+
+    private var entityManagerFactory = Persistence.createEntityManagerFactory("local")
+    private var entityManager = entityManagerFactory.createEntityManager()
+
+ override fun createOrganization(organizationEntity: OrganizationEntity): OrganizationEntity {
+        try {
+            entityManager.transaction.begin()
+
+            entityManager.persist(organizationEntity)
+            entityManager.transaction.commit()
+            return organizationEntity
+        } catch (exception: Exception) {
+            if (exception is PersistenceException) {
+                throw IdentityAlreadyExistsException(Constants.IDENTITY_ALREADY_EXIST)
+            } else {
+                throw IdentityException(exception.message!!)
+            }
+        }
+    }</pre><p>We will load <code class="literal">EntityManagerFactory</code> from the persistence unit defined in <code class="literal">persistence.xml</code>. We have defined the <code class="literal">postgresql</code> configuration in the XML file, which we explained in <a class="link" href="#" linkend="ch05">Chapter 5</a>, <span class="emphasis"><em>Kotlin with JPA and EJB</em></span>.</p><p>Then we will create <code class="literal">entityManager</code> out of the <code class="literal">EntityManagerFactory</code> instance. We use <code class="literal">entityManager</code> to interact with the database tables. The <code class="literal">createOrganization()</code> function takes the organization entity. Using <code class="literal">entityManager</code>, a transaction will be started and the entity will be persisted. When the <span>transaction</span><a id="id325906557" class="indexterm"></a> is committed, an entry will be made in the organization table.</p><p>If the entity is already present, we will get <code class="literal">PersistenceException</code>, which we wrap into <code class="literal">IdentityAlreadyExistsException</code>. In case of any other exceptions, that will be wrapped inside <code class="literal">IdentityException</code>, which is handled by the controller layer.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note46"></a>Note</h3><p>The other CRUD operations follow the same MVC model and the complete implementation is available in the code repository.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch09lvl4sec27"></a>The flow diagram</h5></div></div></div><p>As depicted in the <span>following</span><a id="id325965370" class="indexterm"></a> flow diagram, the first user gets a token and then invokes the <code class="literal">/identity</code> APIs. The filter intercepts the request, takes the token passed in the request header, and validates it against the <code class="literal">/authorize/jwt/verify-token</code> API. If the token is valid and has not expired, it passes the control to the controller. Based on the request URI and the request method, the request is mapped to create, update, get, or delete functions defined in the <span class="strong"><strong>Controller</strong></span>, and the <span class="strong"><strong>Client</strong></span> request will be fulfilled by the <span class="strong"><strong>Server</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/04bd7715-d837-4041-a0e9-0e3ebb0e93da.png" /></div></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec67"></a>Exception handling</h3></div></div></div><p>We have <span>already</span><a id="id325997500" class="indexterm"></a> seen how the dao layer throws the exception, and how the controller layer handles that exception and returns a proper error message to the requesting client.
+Let's quickly see the details of the exception-handling code.</p><p>We can create our own exception class, which we can use in our business cases as appropriate.</p><p>To create an exception class, we need to extend either the <code class="literal">Exception</code> or <code class="literal">Throwable</code> class, shown as follows:</p><pre class="programlisting">class IdentityNotFoundException(message: String) : Exception(message) {
+
+}</pre><p>Alternatively, we can use the following code:</p><pre class="programlisting">class IdentityNotFoundException(message: String) : Throwable(message) {
+
+}</pre><p>As shown in the preceding code, the custom <span>exception</span><a id="id325997536" class="indexterm"></a> class has to be inherited from either the <code class="literal">Throwable</code> or <code class="literal">Exception</code> class, and invoke its parent class constructor. To invoke the parent class constructor in Java, we can use the <code class="literal">super</code> or <code class="literal">this</code> keyword. In Kotlin, these keywords do not exist.</p><p>An exception type can be created without a constructor or an error message, as follows:</p><pre class="programlisting">class IdentityException() :Throwable() {
+
+}</pre><p>An exception can be thrown using the <code class="literal">throw</code> keyword and an error message:</p><pre class="programlisting"> throw IdentityNotFoundException("Requested Identity not found")</pre><p>The code can handle the exception using the <code class="literal">try...catch</code> block:</p><pre class="programlisting">  try {
+         //…
+      } catch (e: IdentityNotFoundException) {
+         //…
+      }</pre><p>We can also provide the <code class="literal">finally</code> block for closing the resource of any that we have opened in the <code class="literal">try</code> block, as follows:</p><pre class="programlisting">  try {
+         //…
+      } catch (e: IdentityNotFoundException) {
+          //…
+      }finally {
+          //…
+      }</pre></div></div>

@@ -20,7 +20,11 @@ db.all('SELECT isbn FROM book where publicationDate = ""', function(err, rows) {
             
             stmt.run(publicationDate, category, description, isbn);
             p++;
-            console.log(p*100/rows.length+"%")
+            //console.log(p*100/rows.length+"%")
+            var percent = (p*100/rows.length).toFixed(2);
+            process.stdout.cursorTo(0);
+            process.stdout.clearLine(1);
+            process.stdout.write(percent + '%');
             stmt.finalize();
         }); 
     })

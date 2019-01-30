@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch15lvl1sec106"></a>Implementing a workout app</h2></div></div><hr /></div><p>In addition to measuring temporary individual metrics, you can track complete workouts with HealthKit. Workouts can contain data like the number of calories burned during the workout, the workout duration, the number of strokes that were made during a swim, and more. The most convenient way to track workouts is by adding a watchOS version of your app that uses all of the sensors in the Apple Watch to track a workout. Since this book focuses on iOS development, you won't learn how to track workouts using an Apple Watch app. Instead, you will implement a workout app that only uses the iPhone to track a running workout.</p><p>In the code bundle for this chapter, you will find a <span>project</span><a id="id325333112" class="indexterm"></a> called <code class="literal">Trekker</code>. This app is a <span>straightforward</span><a id="id325333130" class="indexterm"></a> run-tracking app, where users can tap a button to start tracking a workout. Their GPS location is tracked, and then entered into HealthKit when the workout is complete. The user's route will also be stored in HealthKit by implementing the <code class="literal">HKWorkoutRouteBuilder</code> class. This class takes GPS locations as they come in from a location manager and associates them with a workout.</p><p>The starter project for Trekker has already been set up with the appropriate <span>permissions</span><a id="id325333145" class="indexterm"></a> to begin implementing the HealthKit workout tracking immediately. The majority of your work should go on the <code class="literal">HealthKitHelper</code> class. This class is very similar to the <code class="literal">LocationHelper</code> that you worked on in <a class="link" href="#" linkend="ch13">Chapter 13</a>, <span class="emphasis"><em>Improving Apps With Location Services</em></span>.</p><p>If you examine the <code class="literal">toggleWorkout()</code> method in <code class="literal">ViewController.swift</code>, you can already see how the app is supposed to work. If the health kit helper has all the required <span>permissions</span><a id="id325369910" class="indexterm"></a> and no workout is running, the HealthKit helper is asked to start a workout. At the same time, the location helper will begin tracking the user's location. One part that is still missing from this method is passing the locations received by the location helper on to the HealthKit helper.</p><p>When you associate locations with a workout route, it's important that the location data is as accurate as possible. So, before adding the location, you must make sure that the accuracy is good enough to use in a workout route. Add the following implementation for the <code class="literal">locationHelper.beginTrackingLocation(_:)</code> call:</p><pre class="programlisting">locationHelper.beginTrackingLocation { [weak self] location in
+  if location.horizontalAccuracy &lt; 30 &amp;&amp; location.verticalAccuracy &lt; 30 {
+    self?.healthKitHelper.appendWorkoutData(location)
+    self?.tableView.reloadData()
+  }
+}</pre><p>When a location is added to the HealthKit helper, the table view is also reloaded so the user can see the tracked location data appear as it comes in.</p><p>With all the calls to the HealthKit helper in place, it's time to implement the missing methods to make sure the workout was tracked correctly.</p><p>There are four methods in <code class="literal">HealthKitHelper.swift</code> that need to be implemented to track the user's run and associate the relevant location data with it. The first step is to ask the user for permission to read and write their workout and workout route data. You need to ask for both of these permissions since you will store the workout and workout route data separately. Add the following implementation for <code class="literal">requestPermissions()</code> to ask for the correct permissions:</p><pre class="programlisting">func requestPermissions() {
+  guard isHealthKitAvailable
+    else { return }
+
+  let objectTypes: Set&lt;HKSampleType&gt; = [HKObjectType.workoutType(), HKSeriesType.workoutRoute()]
+  healthKitStore.requestAuthorization(toShare: objectTypes, read: objectTypes) { success, error in
+    if let error = error {
+      print(error.localizedDescription)
+    }
+  }
+}</pre><p>If HealthKit is available on the current device, the user is prompted for access to workouts and workout routes. The next step is to implement <code class="literal">startWorkout()</code>. Add the following implementation to <code class="literal">HealthKitHelper</code>:</p><pre class="programlisting">func startWorkout() {
+  workoutBuilder = HKWorkoutRouteBuilder(healthStore: healthKitStore, device: nil)
+  workoutStartDate = Date()
+}</pre><p>The preceding code creates a new instance of <code class="literal">HKWorkoutRouteBuilder</code> and associates it with the existing health store. You can optionally provide information about the device that is providing the route data. After creating the route builder, the current date is stored as the start date of the workout.</p><p>After creating an instance of <code class="literal">HKWorkoutRouteBuilder</code>, you can add new location data to it as the workout progresses. This location data is automatically attached to the route builder so it can eventually be connected to a workout and stored in HealthKit. Add the following implementation for <code class="literal">appendWorkoutData(_:)</code> to add new location data to the builder:</p><pre class="programlisting">func appendWorkoutData(_ location: CLLocation) {
+  workoutBuilder?.insertRouteData([location]) { success, error in
+    if let error = error {
+      print(error.localizedDescription)
+    } else {
+      print("Location data added to route")
+    }
+  }
+}</pre><p>The preceding code calls <code class="literal">insertRouteData(_:completion:)</code> to add new data to the builder. Since this operation is performed asynchronously, this method takes a completion callback. In this case, the result isn't very relevant, so the result is only printed to the console.</p><p>There is one more step left to wrap up the workout tracker. When <code class="literal">endWorkout()</code> is called, an instance of <code class="literal">HKWorkout</code> should be created and stored to HealthKit. After saving the workout, the route should be associated with this workout and saved to HealthKit. Calling <code class="literal">finishRoute(with:metadata:completion:)</code> on the route builder will associate it with the workout and store it in HealthKit.</p><p>Add the following <span>implementation</span><a id="id325602508" class="indexterm"></a> for <code class="literal">endWorkout()</code> to the <code class="literal">HealthKitHelper</code> class:</p><pre class="programlisting">func endWorkout() {
+  guard let builder = workoutBuilder, let startDate = workoutStartDate
+    else { return }
+
+  let workout = HKWorkout(activityType: .running, start: startDate, end: Date())
+
+  healthKitStore.save(workout) { success, error in
+    builder.finishRoute(with: workout, metadata: [ : ]) { route, error in
+      if let error = error {
+        print(error.localizedDescription)
+      } else {
+        print("route saved: \(route.debugDescription)")
+      }
+    }
+  }
+}</pre><p>This final method implementation wraps up the implementation of your custom workout tracker. Go ahead, launch your app and have a short walk outside to see your walk being logged right into your health app.</p><p> </p></div>

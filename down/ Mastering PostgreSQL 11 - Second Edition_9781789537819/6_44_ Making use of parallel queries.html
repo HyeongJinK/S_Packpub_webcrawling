@@ -1,0 +1,85 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec47"></a>Making use of parallel queries</h2></div></div><hr /></div><p>Starting with version 9.6 PostgreSQL supports parallel queries. The support for parallelism has been improved gradually over time and version 11 has <span>added</span><a id="id325869930" class="indexterm"></a> even more functionality to this important feature. In this section, we will take a look at how parallelism works and what can be done to speed up things.</p><p>Before digging into the details it is necessary to create some sample data as shown in the following section:</p><pre class="programlisting"><span class="strong"><strong>test=# </strong></span><span class="strong"><strong>CREATE TABLE t_parallel AS </strong></span>
+<span class="strong"><strong> SELECT * FROM generate_series(1, 25000000) AS id;</strong></span>
+<span class="strong"><strong>SELECT 25000000</strong></span></pre><p>After loading the initial data, we can run our first parallel query. A simple count will show, what a parallel query looks like in general:</p><pre class="programlisting"><span class="strong"><strong>test=# explain SELECT count(*) FROM t_parallel;</strong></span>
+<span class="strong"><strong>                                 QUERY PLAN </strong></span>
+<span class="strong"><strong>------------------------------------------------------------------------------------</strong></span>
+<span class="strong"><strong> Finalize Aggregate (cost=258537.40..258537.41 rows=1 width=8)</strong></span>
+<span class="strong"><strong> -&gt; Gather (cost=258537.19..258537.40 rows=2 width=8)</strong></span>
+<span class="strong"><strong>    Workers Planned: 2</strong></span>
+<span class="strong"><strong>    -&gt; Partial Aggregate (cost=257537.19..257537.20 rows=1 width=8)</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><pre class="programlisting"><span class="strong"><strong>       -&gt; Parallel Seq Scan on t_parallel (cost=0.00..228153.75 rows=11753375 width=0)</strong></span>
+<span class="strong"><strong>(5 rows)</strong></span></pre><p>Let us take a detailed look at the execution plan of the query. First PostgreSQL performs a  parallel sequential scan. This imples that PostgreSQL will use more than 1 CPU to process the table (block by block) and it will create partial aggregates. The job of the gather node is to collect the data and to pass it on to do the final aggregation. The gather node is therefore the end of parallelism. It is important to mention that parallelism is (currently) never nested. There can never be a gather node inside a gather node. In my example PostgreSQL has decided on two worker processes. Why is that?</p><p>Let us consider the following variable:</p><pre class="programlisting"><span class="strong"><strong>test=# SHOW max_parallel_workers_per_gather;</strong></span>
+<span class="strong"><strong> max_parallel_workers_per_gather </strong></span>
+<span class="strong"><strong>---------------------------------</strong></span>
+<span class="strong"><strong> 2</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p><code class="literal">max_parallel_workers_per_gather</code> limits the <span>number</span><a id="id325872023" class="indexterm"></a> of worker processes allowed below gather node to two. The important thing is: if a table is small, it will never use parallelism. The size of a table has to be at least 8 MB as defined by the following config setting:</p><pre class="programlisting"><span class="strong"><strong>test=# SHOW min_parallel_table_scan_size;</strong></span>
+<span class="strong"><strong> min_parallel_table_scan_size </strong></span>
+<span class="strong"><strong>------------------------------</strong></span>
+<span class="strong"><strong> 8MB</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p>The rule for parallelism now is: The size of the table has to triple in order for PostgreSQL to add one more worker process. In other words: To get four additional workers you need at least 81 times as much data. That makes sense because of the size of your database goes up 100 times, the storage system is usually not 100 times faster. The number of useful cores is therefore somewhat limited.</p><p>However, our table is fairly large:</p><pre class="programlisting"><span class="strong"><strong>test=# \d+</strong></span>
+<span class="strong"><strong> List of relations</strong></span>
+<span class="strong"><strong> Schema | Name        | Type  | Owner | Size   | Description </strong></span>
+<span class="strong"><strong>--------+-------------+-------+-------+--------+-------------</strong></span>
+<span class="strong"><strong> public | t_parallel  | table | hs    | 864 MB | </strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>In my example <code class="literal">max_parallel_workers_per_gather</code> limits the number of cores. If we change the setting, PostgreSQL will decide on more cores:</p><pre class="programlisting"><span class="strong"><strong>test=# SET max_parallel_workers_per_gather TO 10;</strong></span>
+<span class="strong"><strong>SET</strong></span>
+<span class="strong"><strong>test=# explain SELECT count(*) FROM t_parallel;</strong></span>
+<span class="strong"><strong>                                   QUERY PLAN </strong></span>
+<span class="strong"><strong>------------------------------------------------------------------------------------</strong></span>
+<span class="strong"><strong> Finalize Aggregate (cost=174120.82..174120.83 rows=1 width=8)</strong></span>
+<span class="strong"><strong>  -&gt; Gather (cost=174120.30..174120.81 rows=5 width=8)</strong></span>
+<span class="strong"><strong>     Workers Planned: 5</strong></span>
+<span class="strong"><strong>     -&gt; Partial Aggregate (cost=173120.30..173120.31 rows=1 width=8)</strong></span>
+<span class="strong"><strong>     -&gt; Parallel Seq Scan on t_parallel (cost=0.00..160620.24 rows=5000024 width=0)</strong></span>
+<span class="strong"><strong>(5 rows)</strong></span></pre><p>In this case we get 5 workers just (as expected).</p><p>However, there are cases in which you want the <span>number</span><a id="id326254790" class="indexterm"></a> of cores used for a certain table is a lot higher. Just imagine a 200 GB database, 1 TB or RAM and only a single user. This user could use up all CPUs without harming anybody else. <code class="literal">ALTER TABLE</code> can be used to overrule what we have just discussed:</p><pre class="programlisting"><span class="strong"><strong>test=# ALTER TABLE t_parallel SET (parallel_workers = 9);</strong></span>
+<span class="strong"><strong>ALTER TABLE</strong></span></pre><p>If you want to overrule the x3 rule to determine the number of desired CPUs, you can use <code class="literal">ALTER TABLE</code> to hardware the number of CPUs explicitly. Note, <code class="literal">max_parallel_workers_per_gather</code> will still be effective and serve as the upper limit.</p><p>If you look at the plan, you will see that number of cores will actually be considered:</p><pre class="programlisting">
+<span class="strong"><strong>test=# explain SELECT count(*) FROM t_parallel;</strong></span>
+<span class="strong"><strong>                                   QUERY PLAN </strong></span>
+<span class="strong"><strong>------------------------------------------------------------------------------------</strong></span>
+<span class="strong"><strong> Finalize Aggregate (cost=146343.32..146343.33 rows=1 width=8)</strong></span>
+<span class="strong"><strong>   -&gt; Gather (cost=146342.39..146343.30 rows=9 width=8)</strong></span>
+<span class="strong"><strong>      Workers Planned: 9</strong></span>
+<span class="strong"><strong>      -&gt; Partial Aggregate (cost=145342.39..145342.40 rows=1 width=8)</strong></span>
+<span class="strong"><strong>      -&gt; Parallel Seq Scan on t_parallel (cost=0.00..138397.91 rows=2777791 width=0)</strong></span>
+<span class="strong"><strong>(5 rows)</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>However, that does not mean that those cores are actually used as well:</p><pre class="programlisting"><span class="strong"><strong>test=# explain analyze SELECT count(*) FROM t_parallel;</strong></span>
+<span class="strong"><strong>                                 QUERY PLAN </strong></span>
+<span class="strong"><strong>-------------------------------------------------------------------------------------</strong></span>
+<span class="strong"><strong> Finalize Aggregate (cost=146343.32..146343.33 rows=1 width=8) </strong></span>
+<span class="strong"><strong>                    (actual time=1209.441..1209.441 rows=1 loops=1)</strong></span>
+<span class="strong"><strong>    -&gt; Gather (cost=146342.39..146343.30 rows=9 width=8) </strong></span>
+<span class="strong"><strong>              (actual time=1209.432..1209.772 rows=8 loops=1)</strong></span>
+<span class="strong"><strong>       Workers Planned: 9</strong></span>
+<span class="strong"><strong>       Workers Launched: 7</strong></span>
+<span class="strong"><strong>       -&gt; Partial Aggregate (cost=145342.39..145342.40 rows=1 width=8) </strong></span>
+<span class="strong"><strong>                            (actual time=1200.437..1200.438 rows=1 loops=8)</strong></span>
+<span class="strong"><strong>          -&gt; Parallel Seq Scan on t_parallel (cost=0.00..138397.91 ...) </strong></span>
+<span class="strong"><strong>                            (actual time=0.038..817.430 rows=3125000 loops=8)</strong></span>
+<span class="strong"><strong> Planning Time: 0.091 ms</strong></span>
+<span class="strong"><strong> Execution Time: 1209.827 ms</strong></span>
+<span class="strong"><strong>(8 rows)</strong></span></pre><p>As you can see only seven cores were launch—despite the fact that nine processes were planned. What is the reason? In this example two more <span>variables</span><a id="id326255141" class="indexterm"></a> come into play:</p><pre class="programlisting"><span class="strong"><strong>test=# SHOW max_worker_processes;</strong></span>
+<span class="strong"><strong> max_worker_processes </strong></span>
+<span class="strong"><strong>----------------------</strong></span>
+<span class="strong"><strong> 8</strong></span>
+<span class="strong"><strong>(1 row)</strong></span>
+
+<span class="strong"><strong>test=# SHOW max_parallel_workers;</strong></span>
+<span class="strong"><strong> max_parallel_workers </strong></span>
+<span class="strong"><strong>----------------------</strong></span>
+<span class="strong"><strong> 8</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p>The first process tells PostgreSQL, how many worker processes are generally available. <code class="literal">max_parallel_workers</code> says, how many workers are available for parallel queries. Why are there two parameters? Background processes are not only used by the parallel query infrastructure—they can also be used for other purposes and therefore developers have decided to use two parameters. </p><p>In <span>general</span><a id="id326255340" class="indexterm"></a> we at Cybertec (<a class="ulink" href="https://www.cybertec-postgresql.com" target="_blank">https://www.cybertec-postgresql.com</a>) tend to set <code class="literal">max_worker_processes</code> to the number of CPUs in the server. It seems that using <span>more</span><a id="id326299998" class="indexterm"></a> is usually not beneficial.</p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec74"></a>What PostgreSQL is able to do in parallel?</h3></div></div></div><p>As mentioned already in this section the <span>support</span><a id="id326300018" class="indexterm"></a> for parallelism has been gradually improved since PostgreSQL 9.6. In every version new stuff is added. </p><p>The following <span>operations</span><a id="id326300473" class="indexterm"></a> can be done in parallel:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Parallel sequential scans</li><li style="list-style-type: disc">Parallel index scans (btrees only)</li><li style="list-style-type: disc">Parallel bitmap heapscans</li><li style="list-style-type: disc">Parallel joins (all types of joins)</li><li style="list-style-type: disc">Parallel indexing</li></ul></div><p>In PostgreSQL 11 the support for parallel index creation has been added to PostgreSQL. Normal sort operations are not fully parallel yet—so far only parallel btree creation can be done in parallel. To control the amount of parallelism, the following parameter applies:</p><pre class="programlisting"><span class="strong"><strong>test=# SHOW max_parallel_maintenance_workers;</strong></span>
+<span class="strong"><strong> max_parallel_maintenance_workers </strong></span>
+<span class="strong"><strong>----------------------------------</strong></span>
+<span class="strong"><strong> 2</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p>The rules for parallelism are basically the same as for normal operations.</p><p>If you want to speed you index creation, consider checking out one of my blog posts about index creation and performance: <a class="ulink" href="https://www.cybertec-postgresql.com/en/postgresql-parallel-create-index-for-better-performance/" target="_blank">https://www.cybertec-postgresql.com/en/postgresql-parallel-create-index-for-better-performance/</a></p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec75"></a>Parallelism in practice</h3></div></div></div><p>After introducing you to the basics of parallelism, we have to check, what it means in the real world. Let us take a look at the following query.</p><pre class="programlisting"><span class="strong"><strong>test=# explain SELECT * FROM t_parallel;</strong></span>
+<span class="strong"><strong>                           QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------------</strong></span>
+<span class="strong"><strong> Seq Scan on t_parallel (cost=0.00..360621.20 rows=25000120 width=4)</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>Why does PostgreSQL not use a parallel query? The table is sufficiently large, worker PostgreSQL are available so why doesn't it use a parallel query? The answer is: interprocess communication is really expensive. If PostgreSQL has to ship rows between processes, a query can actually be slower than in single process mode. The optimizer uses cost parameters to punish interprocess communication. </p><pre class="programlisting"><span class="strong"><strong>#parallel_tuple_cost = 0.1</strong></span></pre><p>Every time a tuple is moved between processes, 0.1 points will be added to the calculation. To see, how PostgreSQL would run a parallel queries in case it is forced to, I have included the following example:</p><pre class="programlisting"><span class="strong"><strong>test=# SET force_parallel_mode TO on;</strong></span>
+<span class="strong"><strong>SET</strong></span>
+<span class="strong"><strong>test=# explain SELECT * FROM t_parallel;</strong></span>
+<span class="strong"><strong>                                  QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------------------</strong></span>
+<span class="strong"><strong> Gather (cost=1000.00..2861633.20 rows=25000120 width=4)</strong></span>
+<span class="strong"><strong>    Workers Planned: 1</strong></span>
+<span class="strong"><strong>    Single Copy: true</strong></span>
+<span class="strong"><strong>    -&gt; Seq Scan on t_parallel (cost=0.00..360621.20 rows=25000120 width=4)</strong></span>
+<span class="strong"><strong>(4 rows)</strong></span></pre><p>As you can see the costs are higher than in single core mode. In the real world this is an important issue because many people are wondering why PostgreSQL is going for single core. </p><p>In a real example it is also important to see that more cores does not automatically lead to more speed. To find the perfect number of cores it requires a delicate balancing act.</p></div></div>

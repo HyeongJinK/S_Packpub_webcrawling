@@ -25,7 +25,11 @@ function image_replace() {
                     
                     stmt.run(content, isbn, contentIndex); 
                     p++;               
-                    console.log(p/rows.length*100+"%")
+                    //console.log(p/rows.length*100+"%")
+                    var percent = (p*100/rows.length).toFixed(2);
+                    process.stdout.cursorTo(0);
+                    process.stdout.clearLine(1);
+                    process.stdout.write(percent + '%');
                     stmt.finalize();
                 }); 
             })

@@ -1,0 +1,154 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec35"></a>Writing your own aggregates</h2></div></div><hr /></div><p>In this book, you can learn <span>most</span><a id="id326127485" class="indexterm"></a> of the on-board functions provided by PostgreSQL. However, what SQL provides might not be enough for you. The good news is that it is possible to add your own aggregates to the database engine. In this section, you will learn how that can be done.</p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec53"></a>Creating simple aggregates</h3></div></div></div><p>For the purpose of this example, the <span>goal</span><a id="id326127500" class="indexterm"></a> is to solve a very simple problem. If a customer takes a taxi, they usually have to pay for getting in the taxi—for example, €2.50. Then, let us assume that for each kilometer, the customer has to pay €2.20. The question now is, what is the total price of a trip?</p><p>Of course, this example is simple enough to solve without a custom aggregate; however, let's see how it works. First, some test data is created:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE TABLE t_taxi (trip_id int, km numeric); </strong></span>
+<span class="strong"><strong>CREATE TABLE</strong></span>
+<span class="strong"><strong>test=# INSERT INTO t_taxi  
+  VALUES (1, 4.0), (1, 3.2), (1, 4.5), (2, 1.9), (2, 4.5);</strong></span>
+<span class="strong"><strong>INSERT 0 5</strong></span></pre><p>To create aggregates, PostgreSQL offers the <code class="literal">CREATE AGGREGATE</code> command. The syntax of this command has become so powerful and long over time that it does not make sense anymore to include the output of it here in this book. Instead, I recommend going to the <span>PostgreSQL</span><a id="id326575909" class="indexterm"></a> documentation, which can be found at <a class="ulink" href="https://www.postgresql.org/docs/devel/static/sql-createaggregate.html" target="_blank"><span>h</span><span>t</span><span>t</span><span>p</span><span>s</span><span>://</span><span>w</span><span>w</span><span>w</span><span>.</span><span>p</span><span>o</span><span>s</span><span>t</span><span>g</span><span>r</span><span>e</span><span>s</span><span>q</span><span>l</span><span>.</span><span>o</span><span>r</span><span>g</span><span>/</span><span>d</span><span>o</span><span>c</span><span>s</span><span>/</span><span>d</span>evel<span>/</span><span>s</span><span>t</span><span>a</span><span>t</span><span>i</span><span>c</span><span>/</span><span>s</span><span>q</span><span>l</span><span>-</span><span>c</span><span>r</span><span>e</span><span>a</span><span>t</span><span>e</span><span>a</span><span>g</span><span>g</span><span>r</span><span>e</span><span>g</span><span>a</span><span>t</span><span>e</span><span>.</span><span>h</span><span>t</span><span>m</span><span>l</span></a>.</p><p>The first thing needed when writing an aggregate is a function, which is called for every line. It will take an intermediate value and data taken from the line processed. Here is an example:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE FUNCTION taxi_per_line (numeric, numeric) 
+RETURNS numeric AS 
+$$  
+  BEGIN 
+    RAISE NOTICE 'intermediate: %, per row:  %', $1, $2;  
+    RETURN $1 + $2*2.2; 
+  END; 
+$$  
+LANGUAGE 'plpgsql';</strong></span>
+<span class="strong"><strong>CREATE FUNCTION</strong></span></pre><p>Now, it is already possible to create a simple aggregate:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE AGGREGATE taxi_price (numeric)  
+( 
+   INITCOND = 2.5, 
+   SFUNC = taxi_per_line,  
+   STYPE = numeric 
+);</strong></span>
+<span class="strong"><strong>CREATE AGGREGATE</strong></span></pre><p>As stated, every trip starts at €2.50 for getting in the taxi, which is defined by <code class="literal">INITCOND</code> (the <code class="literal">init</code> condition). It represents the starting value for each group. Then a function is called for each line in the group. In my example, this function is <code class="literal">taxi_per_line</code> and has already been defined. As you can see, it needs two parameters. The first parameter is an intermediate value. Those additional parameters are the parameters passed to the function by the user.</p><p>The following statement shows what data is passed, when and how:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT trip_id, taxi_price(km) FROM t_taxi GROUP  BY 1;</strong></span>
+<span class="strong"><strong>NOTICE:  intermediate: 2.5, per row:  4.0 
+NOTICE:  intermediate: 11.30, per row:  3.2 
+NOTICE:  intermediate: 18.34, per row:  4.5 
+NOTICE:  intermediate: 2.5, per row:  1.9 
+NOTICE:  intermediate: 6.68, per row:  4.5  
+trip_id  | taxi_price 
+---------+------------ 
+       1 |     28.24 
+       2 |     16.58 </strong></span>
+<span class="strong"><strong>(2 rows)</strong></span></pre><p>The system starts with trip one and €2.50 (the <code class="literal">init</code> condition). Then 4 kilometers are added. Overall, the price is now <span class="emphasis"><em>2.50 + 4 x 2.2</em></span>. Then, the next line is added, which will add <span class="emphasis"><em>3.2 x 2.2</em></span>, and so on. The first trip therefore costs €28.24.</p><p>Then the next trip starts. Again, there is a fresh <code class="literal">init</code> condition and PostgreSQL will call one function per line.</p><p>In PostgreSQL, an aggregate can automatically be used as a windowing function too. No additional steps are needed—you can use the aggregate directly:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT *, taxi_price(km) OVER (PARTITION BY trip_id ORDER BY km)  
+   FROM  t_taxi;</strong></span>
+<span class="strong"><strong>NOTICE:  intermediate: 2.5,  per row:  3.2 
+NOTICE:  intermediate: 9.54,  per row:  4.0 
+NOTICE:  intermediate: 18.34, per row:  4.5 
+NOTICE:  intermediate: 2.5,  per row:  1.9 
+NOTICE:  intermediate: 6.68,  per row:  4.5 
+ trip_id | km  | taxi_price 
+---------+-----+------------ 
+ 1       | 3.2 |       9.54</strong></span>
+<span class="strong"><strong> 1       | 4.0 |      18.34</strong></span>
+<span class="strong"><strong> 1       | 4.5 |      28.24</strong></span></pre><pre class="programlisting"><span class="strong"><strong> 2       | 1.9 |       6.68</strong></span>
+<span class="strong"><strong> 2       | 4.5 |      16.58</strong></span>
+
+<span class="strong"><strong>(5 rows)</strong></span></pre><p>What the query does is to give us the price up to a given point in the trip.</p><p>The aggregate we have defined will call one <span>function</span><a id="id326280870" class="indexterm"></a> per line. However, how would users be able to calculate an average? Without adding a <code class="literal">FINALFUNC</code> function, calculations like that are not possible. To demonstrate how <code class="literal">FINALFUNC</code> works, we must extend our example. Suppose the customer wants to give the taxi driver a 10% tip as soon as they leave the taxi. That 10% has to be added at the end, as soon as the total price is known. That is the point at which <code class="literal">FINALFUNC</code> kicks in. Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>test=# DROP AGGREGATE taxi_price(numeric);</strong></span>
+<span class="strong"><strong>DROP AGGREGATE</strong></span></pre><p>First of all, the old aggregate is dropped. Then, <code class="literal">FINALFUNC</code> is defined. It will get the intermediate result as a parameter and do its magic:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE FUNCTION taxi_final (numeric)  
+              RETURNS numeric AS 
+$$ 
+   SELECT $1 * 1.1; 
+$$ 
+LANGUAGE sql IMMUTABLE;</strong></span>
+
+<span class="strong"><strong>CREATE FUNCTION</strong></span></pre><p>The calculation is pretty simple, in this case—as stated previously, 10% is added to the final sum.</p><p>Once the function has been deployed, it is already possible to recreate the aggregate:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE AGGREGATE taxi_price (numeric)  
+( 
+   INITCOND = 2.5, 
+   SFUNC  = taxi_per_line,  
+   STYPE  = numeric,  
+   FINALFUNC = taxi_final 
+);</strong></span>
+<span class="strong"><strong>CREATE AGGREGATE</strong></span></pre><p>And finally, the price will simply be a bit higher than before:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT trip_id, taxi_price(km) FROM t_taxi GROUP BY 1;</strong></span>
+<span class="strong"><strong>NOTICE:  intermediate: 2.5, per row: 4.0 
+... 
+ trip_id | taxi_price 
+---------+------------ 
+       1 |    31.064 
+       2 |    18.238  
+(2 rows)</strong></span></pre><p>PostgreSQL takes care of all the grouping and so on automatically.</p><p>For simple calculations, simple datatypes can be <span>used</span><a id="id326300471" class="indexterm"></a> for the intermediate result. However, not all operations can be done by just passing simple numbers and text around. Fortunately, PostgreSQL allows the use of composite data types, which can be used as intermediate results.</p><p>Imagine you want to calculate an average of some data, maybe a time series. An intermediate result might look as follows:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE TYPE my_intermediate AS (c int4, s numeric);</strong></span>
+<span class="strong"><strong>CREATE TYPE</strong></span></pre><p>Feel free to compose any arbitrary type that serves your purpose. Just pass it as the first parameter and add data as additional parameters as needed.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec54"></a>Adding support for parallel queries</h3></div></div></div><p>What you have just <span>seen</span><a id="id326300502" class="indexterm"></a> is a simple aggregate, which has no support for parallel queries and all that. To solve those challenges, the next couple of examples are all about improvements and speedups.</p><p>When creating an aggregate, you can optionally define the following things:</p><pre class="programlisting"><span class="strong"><strong><span>[ ,</span> PARALLEL = { SAFE  | RESTRICTED | UNSAFE } ]</strong></span></pre><p>By default, an aggregate does not support parallel queries. For performance reasons, it does make sense, however, to explicitly state what the aggregate is capable of:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">UNSAFE</code>: In this mode, no parallel queries are allowed</li><li style="list-style-type: disc"><code class="literal">RESTRICTED</code>: In this mode, the aggregate can be executed in parallel mode, but the execution is restricted to the parallel group leader</li><li style="list-style-type: disc"><code class="literal">SAFE</code>: In this mode, it provides full support for parallel queries</li></ul></div><p>If you mark a function as <code class="literal">SAFE</code>, you have to keep in mind that the function must not have side-effects. An execution order must not have an impact on the result of the query. Only then, should PostgreSQL be allowed to execute operations in parallel. Examples of functions without side-effects would be <span class="emphasis"><em>sin(x)</em></span> and <span class="emphasis"><em>length(s)</em></span>. The <code class="literal">IMMUTABLE</code> functions are good candidate for this, since they're guaranteed to return the same result given the same inputs. The <code class="literal">STABLE</code> function can work if certain restrictions apply.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec55"></a>Improving efficiency</h3></div></div></div><p>The aggregates defined so far can already <span>achieve</span><a id="id326435364" class="indexterm"></a> quite a lot. However, if you are using sliding windows, the number of function calls will simply explode. Here is what happens:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT taxi_price(x::numeric) 
+                   OVER (ROWS BETWEEN 0 FOLLOWING AND 3 FOLLOWING)  
+FROM generate_series(1, 5) AS x;</strong></span>
+<span class="strong"><strong>NOTICE:  intermediate: 2.5,  per row:  1 
+NOTICE:  intermediate: 4.7,  per row:  2 
+NOTICE:  intermediate: 9.1,  per row:  3 
+NOTICE:  intermediate: 15.7,  per row:  4 
+NOTICE:  intermediate: 2.5,  per row:  2 
+NOTICE:  intermediate: 6.9,  per row:  3 
+NOTICE:  intermediate: 13.5,  per row:  4 
+NOTICE:  intermediate: 22.3,  per row:  5 
+...</strong></span></pre><p>For every line, PostgreSQL will process the full window. If the sliding window is large, efficiency will reduce. To fix that, our aggregates can be extended. Before that the old aggregate can be dropped:</p><pre class="programlisting"><span class="strong"><strong>DROP AGGREGATE taxi_price(numeric); </strong></span></pre><p>Basically, two functions are needed. The <code class="literal">msfunc</code> function will add the next row in the window to the intermediate result:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION taxi_msfunc(numeric, numeric)  
+   RETURNS numeric AS 
+$$ 
+   BEGIN 
+         RAISE  NOTICE 'taxi_msfunc called with % and %', $1, $2;  
+         RETURN $1 + $2; 
+   END; 
+$$ LANGUAGE 'plpgsql' STRICT; </strong></span></pre><p>The <code class="literal">minvfunc</code> function will remove the value falling out of the window from the intermediate result:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION taxi_minvfunc(numeric, numeric) RETURNS numeric AS 
+$$ 
+BEGIN 
+   RAISE  NOTICE 'taxi_minvfunc called with % and %', $1, $2;  
+   RETURN $1 - $2; 
+END; 
+$$  
+LANGUAGE 'plpgsql' STRICT; </strong></span></pre><p>In this example, all we do is add and subtract. In a more sophisticated example, the calculation can be arbitrarily complex.</p><p>The next statement shows how the aggregate can be recreated:</p><pre class="programlisting"><span class="strong"><strong>CREATE AGGREGATE taxi_price (numeric)  
+( 
+   INITCOND = 0,  
+   STYPE  = numeric, 
+   SFUNC  = taxi_per_line,  
+   MSFUNC = taxi_msfunc,  
+   MINVFUNC = taxi_minvfunc,  
+   MSTYPE = numeric 
+);</strong></span></pre><p>Let us run the same query again now:</p><pre class="programlisting"><span class="strong"><strong>test#  SELECT taxi_price(x::numeric) 
+                   OVER  (ROWS  BETWEEN 0 FOLLOWING AND 3 FOLLOWING)  
+FROM     generate_series(1, 5) AS x;</strong></span>
+<span class="strong"><strong>NOTICE:  taxi_msfunc called with 1 and 2 
+NOTICE:  taxi_msfunc called with 3 and 3 
+NOTICE:  taxi_msfunc called with 6 and 4 
+NOTICE:  taxi_minfunc called with 10 and 1 
+NOTICE:  taxi_msfunc called with 9 and 5 
+NOTICE:  taxi_minfunc called with 14 and 2 
+NOTICE:  taxi_minfunc called with 12 and 3 
+NOTICE:  taxi_minfunc called with 9 and 4</strong></span></pre><p>The number of <span>function</span><a id="id326436139" class="indexterm"></a> calls has decreased dramatically. Only a fixed handful of calls per row have to be performed. There is no longer any need to calculate the same frame all over again.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec56"></a>Writing hypothetical aggregates</h3></div></div></div><p>Writing aggregates is not hard and can be highly <span>beneficial</span><a id="id326436154" class="indexterm"></a> for performing more complex operations. In this section, the plan is to write a hypothetical aggregate, which has already been discussed in this chapter.</p><p>Implementing hypothetical aggregates is not too <span>different</span><a id="id326436166" class="indexterm"></a> from writing normal aggregates. The really hard part is to figure out when to actually use one. To make this section as easy to understand as possible, I have decided to include a trivial example: given a specific order, what would the result be if we added <code class="literal">abc</code> to the end of the string?</p><p>Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>CREATE AGGREGATE name  ( [ [ argmode ] [ argname ] arg_data_type [ , ... ] ]  
+   ORDER  BY [ argmode ] [ argname ] arg_data_type  
+   [ , ...])  
+( 
+ 
+   SFUNC  = sfunc, 
+   STYPE  = state_data_type 
+   [ , SSPACE = state_data_size ] [ , FINALFUNC = ffunc  ] 
+   [ , FINALFUNC_EXTRA ] 
+   [ , INITCOND = initial_condition ] 
+   [ , PARALLEL = { SAFE  | RESTRICTED | UNSAFE } ] [ , HYPOTHETICAL ] 
+)</strong></span></pre><p>Two functions will be needed. The <code class="literal">sfunc</code> function will be called for every line:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION hypo_sfunc(text, text)  
+   RETURNS text  AS 
+$$  
+   BEGIN 
+         RAISE  NOTICE 'hypo_sfunc called with  % and %', $1, $2;  
+         RETURN $1 || $2; 
+   END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p> </p><p> </p><p>Two parameters will be passed to the procedure. The logic is the same as previously. Just as we did earlier, a final function call can be defined:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION hypo_final(text, text,  text)  
+   RETURNS text  AS 
+$$  
+   BEGIN 
+         RAISE  NOTICE 'hypo_final called with  %, %, and %', 
+ 
+               $1, $2, $3;  
+         RETURN $1 || $2; 
+   END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p>Once those functions are in place, the hypothetical aggregate can already be created:</p><pre class="programlisting"><span class="strong"><strong>CREATE AGGREGATE whatif(text ORDER  BY text)   
+(   
+   INITCOND = 'START', 
+   STYPE  = text, 
+   SFUNC  = hypo_sfunc,  
+   FINALFUNC = hypo_final,  
+   FINALFUNC_EXTRA = true,  
+   HYPOTHETICAL 
+);</strong></span></pre><p>Note that the aggregate has been marked as hypothetical so that PostgreSQL will know what kind of aggregate it actually is.</p><p>After the aggregate has been created, it is possible to run it:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT whatif('abc'::text) WITHIN GROUP (ORDER BY id::text)  
+       FROM     generate_series(1, 3) AS id; 
+NOTICE:  hypo_sfunc called with  START  and 1 
+NOTICE:  hypo_sfunc called with  START1 and 2 
+NOTICE:  hypo_sfunc called with  START12 and 3 
+NOTICE:  hypo_final called with  START123, abc,  and &lt;NULL&gt; 
+whatif 
+-------------  
+ START123abc 
+(1 row)</strong></span></pre><p>The key to understanding all those <span>aggregates</span><a id="id326657624" class="indexterm"></a> is really to fully see when each kind of function is called and how the overall machinery works.</p></div></div>

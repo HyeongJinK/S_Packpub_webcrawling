@@ -1,0 +1,52 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec60"></a>Block explorer file explanation</h2></div></div><hr /></div><p>In this section, we're simply <span>going</span><a id="id325268059" class="indexterm"></a> to walk through the <code class="literal">index.html</code> file that we created in the previous section. We'll do this to gain a better understanding of what is going on. So, let's get started.</p><p>Inside the <code class="literal">index.html</code> file, we have all of the HTML and JavaScript code to give the necessary functionality to the block explorer. This code also allows us to hit the API, and lastly, we just have some CSS and styles, which make everything look nice in the browser.</p><p>The code begins by importing a couple of libraries, such as <code class="literal">angular.js</code>, to hit the API, along with jQuery, Bootstrap, and some Bootstrap styles to make everything functional and aesthetically pleasing:</p><pre class="programlisting">&lt;head&gt;
+  &lt;title&gt;Block Explorer&lt;/title&gt;
+  &lt;script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"&gt;&lt;/script&gt;
+  &lt;script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"&gt;&lt;/script&gt;
+  &lt;script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"&gt;&lt;/script&gt;
+  &lt;link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"&gt;
+&lt;/head&gt;</pre><p>Next, we have the body of the HTML model, which consists of the block explorer title:</p><pre class="programlisting">&lt;body ng-app="BlockExplorer"&gt;
+  &lt;div class="container" ng-controller="MainController"&gt;
+    &lt;div class="row"&gt;
+      &lt;div class="col-md-8 offset-md-2"&gt;
+<span class="strong"><strong> &lt;h1 id="page-title"&gt;Block Explorer&lt;/h1&gt;</strong></span>
+      &lt;/div&gt;
+    &lt;/div</pre><p>Then, we have a text input form: </p><pre class="programlisting">&lt;div class="row"&gt;
+      &lt;div class="col-md-6 offset-md-3"&gt;
+        &lt;form ng-submit="search(searchValue)"&gt;
+          &lt;div class="form-group"&gt;
+<span class="strong"><strong>&lt;input type="text" class="form-control" ng-model="searchValue"&gt;</strong></span>
+          &lt;/div&gt;</pre><p>Next, we have a <code class="literal">select</code> input with three <span>options</span><a id="id325458938" class="indexterm"></a> in it: <code class="literal">Block Hash</code>, <code class="literal">Transaction ID</code>, and <code class="literal">Address</code>:</p><pre class="programlisting">&lt;div class="form-group"&gt;
+        &lt;select class="form-control" ng-model="searchType"&gt;
+                &lt;option value="block"&gt;Block Hash&lt;/option&gt;
+                &lt;option value="transaction"&gt;Transaction ID&lt;/option&gt;
+                &lt;option value="address"&gt;Address&lt;/option&gt;
+        &lt;/select&gt;
+&lt;/div&gt;</pre><p>To use this page, let's enter either a <strong class="userinput"><code>Block Hash</code></strong>, <strong class="userinput"><code>Transaction ID</code></strong>, or <strong class="userinput"><code>Address</code></strong> into the text field, and then select which one we're looking for from the drop-down menu, as seen in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781789618822/graphics/adf2031a-b761-4775-b278-3bca309c3232.png" /></div><p>Lastly, in the HTML code, we just have some tables that will display all of our data for us once we have some data from the blockchain.</p><p>Furthermore, we also have some JavaScript code in our <code class="literal">index.html</code> file. In this JavaScript code, we use Angular to make the calls to our API:</p><pre class="programlisting"> window.app = angular.module('BlockExplorer', []);
+ app.controller('MainController', function($scope, $http) {
+          $scope.block = null;
+          $scope.transaction = null;
+          $scope.addressData = null;
+          $scope.initialSearchMade = false;</pre><p>Then we have a method where we hit the <code class="literal">/block/:blockHash</code> endpoint whenever we select the <strong class="userinput"><code>Block Hash</code></strong> option:</p><pre class="programlisting">$scope.fetchBlock = function(blockHash) {
+        $http.get(`/block/${blockHash}`)
+        .then(response =&gt; {
+          $scope.block = response.data.block;
+          $scope.transaction = null;
+          $scope.addressData = null;
+        });
+      };</pre><p> </p><p> </p><p>Similarly, we have the method for the <code class="literal">/transaction/:transactionId</code> endpoint: </p><pre class="programlisting">$scope.fetchTransaction = function(transactionId) {
+        $http.get(`/transaction/${transactionId}`)
+        .then(response =&gt; {
+          $scope.transaction = response.data.transaction;
+          $scope.block = null;
+          $scope.addressData = null;
+        }); 
+      };</pre><p>We also have the method for the <code class="literal">/address/:address</code> endpoint: </p><pre class="programlisting">$scope.fetchAddressData = function(address) {
+        $http.get(`/address/${address}`)
+        .then(response =&gt; {
+          $scope.addressData = response.data.addressData;
+          if (!$scope.addressData.addressTransactions.length) $scope
+            .addressData = null;
+          $scope.block = null;
+          $scope.transaction = null;
+        }); 
+      };</pre><p>Throughout the rest of this JavaScript, we just have a little bit more functionality and then we have the CSS styles towards the end of the code. Consequently, this <span>code</span><a id="id325698430" class="indexterm"></a> is contained in the <code class="literal">index.html</code> file. If you want to dig a little bit deeper into this to gain a clearer understanding, feel free to do so. You can also customize it however you would like to. </p><p>Then you press <strong class="userinput"><code>S</code></strong><strong class="userinput"><code>earch</code></strong>, and if the specified data exists in the blockchain, a table will be displayed that will show all of that data. If the data doesn't exist on our blockchain, you will get the result that no data was found. This is how the block explorer frontend will work.</p><p>At this point, we have built an entire block explorer frontend, and we have the backend of the block explorer—the three endpoints that we just created—in order to search through the entire blockchain. </p><p>In the next section, we're going to test the block explorer to make sure that it works perfectly.</p></div>

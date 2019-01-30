@@ -1,0 +1,189 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec81"></a>Combining CloudKit and Core Data</h2></div></div><hr /></div><p>When you implement <span>CloudKit</span><a id="id325333116" class="indexterm"></a> in your app, it is always highly recommended to have a local cache of all CloudKit data. The previous section showed you how to fetch changes from the CloudKit database and how to process them. You also saw a very basic sample of how to send data to CloudKit. In this section, you will implement some helper methods on the <code class="literal">Movie</code> and <code class="literal">FamilyMember</code> classes. You will also add some extra properties to the Core Data models to facilitate CloudKit, and finally, you will implement the importing and exporting of CloudKit data.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec65"></a>Preparing the Core Data models for CloudKit</h3></div></div></div><p>You might have noticed the <span>following</span><a id="id325333246" class="indexterm"></a> line in the code for creating a new <code class="literal">CKRecord</code> that was shown in the <span>previous</span> section:</p><pre class="programlisting">let recordId = CKRecord.ID(recordName: UUID().uuidString, zoneID: defaultZoneId)</pre><p>The <code class="literal">recordName</code> that is set on <code class="literal">CKRecord.ID</code> is the unique identifier that <span>CloudKit</span><a id="id325333276" class="indexterm"></a> uses to store records. When you want to import data from CloudKit, you can use <code class="literal">recordName</code> to check whether you have already saved a record in your local database. In addition to this unique identifier, CloudKit itself stores metadata about records. You saw this metadata when you added a new record type in the CloudKit dashboard and all these new properties that you didn't add yourself showed up.</p><p>Apart from the unique identifier, none of the metadata is very relevant to use in the <span class="strong"><strong>MustC</strong></span> app, so adding all fields to the Core Data model would be a waste. Luckily, <code class="literal">CKRecord</code> has a convenient method that allows you to encode all of the automatically-added metadata into a <code class="literal">Data</code> object that you can easily store in Core Data. This means that you'll need to add two new properties to both the <code class="literal">FamilyMember</code> and <code class="literal">Movie</code> models:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">recordName</code> (<code class="literal">String</code>)</li><li style="list-style-type: disc"><code class="literal">cloudKitData</code> (<code class="literal">Data</code>)</li></ul></div><p>Go ahead and add these two properties to your models in the Core Data model editor.</p><p>After adding the <code class="literal">recordName</code> and <code class="literal">cloudKitData</code> attributes, you should add a couple of helpers to your models. Create a new file in the Models folder and name it <code class="literal">FamilyMember.swift</code>. Add the following extension to this file:</p><pre class="programlisting">extension FamilyMember {
+  // 1
+  func recordIDForZone(_ zone: CKRecordZone.ID) -&gt; CKRecord.ID {
+    return CKRecord.ID(recordName: self.recordName!, zoneID: zone)
+  }
+
+  // 2
+  func recordForZone(_ zone: CKRecordZone.ID) -&gt; CKRecord {
+    let record: CKRecord
+
+    // 3
+    if let data = cloudKitData, let coder = try? NSKeyedUnarchiver(forReadingFrom: data) {
+      coder.requiresSecureCoding = true
+      record = CKRecord(coder: coder)!
+    } else {
+      record = CKRecord(recordType: "FamilyMember", recordID: recordIDForZone(zone))
+    }
+
+    record["name"] = name!
+
+    // 4
+    if let movies = self.movies as? Set&lt;Movie&gt; {
+      let references: [CKRecord.Reference] = movies.map { movie in
+        let movieRecord = movie.recordForZone(zone)
+        return CKRecord.Reference(record: movieRecord, action: .none)
+      }
+
+      record["movies"] = references
+    }
+
+    return record
+  }
+
+  // 5
+  static func find(byIdentifier recordName: String, in moc: NSManagedObjectContext) -&gt; FamilyMember? {
+    let predicate = NSPredicate(format: "recordName == %@", recordName)
+    let request: NSFetchRequest&lt;FamilyMember&gt; = FamilyMember.fetchRequest()
+    request.predicate = predicate
+
+    guard let result = try? moc.fetch(request)
+      else { return nil }
+
+    return result.first
+  }
+}</pre><p>A lot is going on in this snippet, so let's go over it step by step:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>The first comment highlights a convenient helper method that creates a record ID. This helper method receives an existing zone ID and uses the new <code class="literal">recordName</code> property that you just added in the Core Data model editor.</li><li>This method is used to convert the <code class="literal">FamilyMember</code> model into a <code class="literal">CKRecord</code> instance. This method will be used when you send data to CloudKit.</li><li><code class="literal">CKRecord</code> objects can be created in different ways. One way is through the <code class="literal">CKRecord(recordType:recordID:)</code> initializer. You can also use an instance of <code class="literal">NSCoder</code> to create a <code class="literal">CKRecord</code> with the <code class="literal">CKRecord(coder:)</code> initializer. An <code class="literal">NSCoder</code> can convert objects into data and vice versa. So, in this case, a special version of <code class="literal">NSCoder</code>, called <code class="literal">NSKeyedUnarchiver</code>, is used to convert the metadata that is stored as <code class="literal">Data</code> in Core Data back into a <code class="literal">CKRecord</code> instance. If the Core Data object has just been added, it won't have any <span>CloudKit</span><a id="id325618077" class="indexterm"></a> metadata yet, so a new <code class="literal">CKRecord</code> instance should be created.</li><li>To make sure all movies for the family member are sent to CloudKit, it is required to loop over each movie and create a <code class="literal">CKRecord.Reference</code> to the object. This list of references is then assigned to the movie record.</li><li>To import CloudKit objects, the code must be able to look up existing movie records using the record's <code class="literal">recordName</code>. This method is used to look up family <span>members</span><a id="id325618101" class="indexterm"></a> by their record name.</li></ol></div><p>The <code class="literal">Movie</code> object should receive similar helper methods to the ones you just added to <code class="literal">FamilyMember</code>. Add the following methods to the extension in <code class="literal">Movie.swift</code>:</p><pre class="programlisting">func recordIDForZone(_ zone: CKRecordZone.ID) -&gt; CKRecord.ID {
+  return CKRecord.ID(recordName: self.recordName!, zoneID: zone)
+}
+
+func recordForZone(_ zone: CKRecordZone.ID) -&gt; CKRecord {
+  let record: CKRecord
+
+  if let data = cloudKitData, let coder = try? NSKeyedUnarchiver(forReadingFrom: data) {
+    coder.requiresSecureCoding = true
+    record = CKRecord(coder: coder)!
+  } else {
+    record = CKRecord(recordType: "Movie", recordID: recordIDForZone(zone))
+  }
+
+  record["title"] = title!
+  record["rating"] = popularity
+  record["remoteId"] = remoteId
+
+  return record
+}
+
+static func find(byIdentifier recordName: String, in moc: NSManagedObjectContext) -&gt; Movie? {
+  let predicate = NSPredicate(format: "recordName == %@", recordName)
+  let request: NSFetchRequest&lt;Movie&gt; = Movie.fetchRequest()
+  request.predicate = predicate
+
+  guard let result = try? moc.fetch(request)
+    else { return nil }
+
+  return result.first
+}
+
+static func find(byIdentifiers recordNames: [String], in moc: NSManagedObjectContext) -&gt; [Movie] {
+  let predicate = NSPredicate(format: "ANY recordName IN %@", recordNames)
+  let request: NSFetchRequest&lt;Movie&gt; = Movie.fetchRequest()
+  request.predicate = predicate
+
+  guard let result = try? moc.fetch(request)
+    else { return [] }
+
+  return result
+}</pre><p>The code in the preceding snippet should speak for itself. One interesting addition is the <code class="literal">find(byIdentifiers:)</code> method. Instead of taking just a single record name, this method takes a list of record names. When you import family members from CloudKit, a single family member could have multiple movies in their favorites. Instead of fetching each movie individually, this method allows you to retrieve all matching movies at once.</p><p>Your Core Data models are now fully compatible with CloudKit, and you're ready to write the code that will import the data from the CloudKit servers and add them to your local Core Data database.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec66"></a>Importing CloudKit data</h3></div></div></div><p>You have already written most of the code to retrieve changed records from the <span>CloudKit</span><a id="id325333185" class="indexterm"></a> database. The next step is to implement the code that takes the <code class="literal">CKRecord</code> instances that you receive from CloudKit and convert them into the correct Core Data models. Before you implement the import methods, update <code class="literal">fetchRecordZoneChangesCompletionBlock</code> in <code class="literal">fetchZoneChangesInZones(_:_:)</code> on <code class="literal">CloudStore</code> as follows:</p><pre class="programlisting">let backgroundContext = persistentContainer.newBackgroundContext()
+
+operation.fetchRecordZoneChangesCompletionBlock = { [weak self] error in
+  for record in changedMovies {
+    self?.importMovie(withRecord: record, withContext: backgroundContext)
+  }
+
+  for record in changedFamilyMembers {
+    self?.importFamilyMember(withRecord: record, withContext: backgroundContext)
+  }
+
+  completionHandler(error)
+}</pre><p>The preceding snippet uses <code class="literal">persistentContainer</code> to obtain a background managed object context. This type of managed object context runs off the main thread, making it ideal for operations that could take a while. Since you can't ever be sure about the amount of data that <span>CloudKit</span><a id="id325333216" class="indexterm"></a> sends your way, it's a good idea to perform all import work on a background managed object context. When using background contexts, it's important that you pay extra attention to the Core Data objects you're working with. You should always make sure to create and use Core Data objects on a single thread. You can't create an object in one managed object context and then save it in the other. If you do accidentally mix up threads, you could end up with some very difficult-to-debug crashes.</p><p>Inside of the completion block, two new methods are called: one that imports movies and one that imports family members. The reason they are called in this order is to make sure all movies are imported first and the family members second. This ensures that all the family member's favorite movies exist in the database so they can be associated with the family member immediately.</p><p>Add the following extension to <code class="literal">CloudStore.swift</code> to implement the importers:</p><pre class="programlisting">extension CloudStore {
+  func importMovie(withRecord record: CKRecord, withContext moc: NSManagedObjectContext) {
+    moc.persist {
+      let identifier = record.recordID.recordName
+      let movie = Movie.find(byIdentifier: identifier, in: moc) ?? Movie(context: moc)
+      movie.title = record["title"] ?? "unkown-title"
+      movie.remoteId = record["remoteId"] ?? 0
+      movie.popularity = record["rating"] ?? 0.0
+      movie.cloudKitData = record.encodedSystemFields
+      movie.recordName = identifier
+    }
+  }
+
+  func importFamilyMember(withRecord record: CKRecord, withContext moc: NSManagedObjectContext) {
+    moc.persist {
+      let identifier = record.recordID.recordName
+      let familyMember = FamilyMember.find(byIdentifier: identifier, in: moc) ?? FamilyMember(context: moc)
+      familyMember.name = record["name"] ?? "unkown-name"
+      familyMember.cloudKitData = record.encodedSystemFields
+      familyMember.recordName = identifier
+
+      if let movieReferences = record["movies"] as? [CKRecord.Reference] {
+        let movieIds = movieReferences.map { reference in
+          return reference.recordID.recordName
+        }
+
+        familyMember.movies = NSSet(array: Movie.find(byIdentifiers: movieIds, in: moc))
+      }
+    }
+  }
+}</pre><p>The first method in this extension imports movie objects. If you look at this method carefully, you'll find that it's relatively straightforward. The record's unique identifier is used to look up a movie in Core Data. If no movie could be found, a new one is created. All the following steps extract data from <code class="literal">CKRecord</code> and apply it to the <code class="literal">Movie</code> instance. Since the all code is wrapped in a <code class="literal">moc.persist</code> closure, the new movie will be saved immediately.</p><p>The method to import family members is slightly more complex. The basics are the same as they are for the movie import. However, the family member importer has to extract the references to movie records and then map the references to record names. These record names are then used to look up all movies in the list of favorites for this family member, and then assigns this list to the family member.</p><p>Try deleting and reinstalling the app now. You should <span>automatically</span><a id="id325581163" class="indexterm"></a> see the list of family members appear.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip37"></a>Note</h3><p>Does the list of family members only appear for you if you start the app for the second time? Your <code class="literal">viewContext</code> might be misconfigured. Make sure that you set <code class="literal">container.viewContext.automaticallyMergesChangesFromParent</code> to <code class="literal">true</code> in the lazy variable that creates the persistent container in <code class="literal">AppDelegate</code>.</p></div><p>Just one more step until you have a complete CloudKit-enabled application that sends Core Data models to CloudKit.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec67"></a>Sending Core Data models to CloudKit</h3></div></div></div><p>To send <span>Core</span><a id="id325581200" class="indexterm"></a> Data models to CloudKit, you must <span>convert</span><a id="id325581208" class="indexterm"></a> them to <code class="literal">CKRecord</code> instances. So far, you've learned how to create an instance of <code class="literal">CKRecord</code> and you even implemented a helper method on the <code class="literal">Movie</code> and <code class="literal">FamilyMember</code> objects. Take another look at <code class="literal">recordForZone(_:)</code> on both objects to make sure you understand how the models are converted to records. When you convert Core Data objects to CloudKit models, it's important that you properly use the CloudKit metadata. If you attempt to store an existing object with the correct record name, but you omit the metadata, CloudKit won't be able to save your object because it can't accurately compare the version that it currently has stored and the new version you are trying to send it.</p><p>Before you update the <code class="literal">storeFamilyMember(_:_)</code> method, update the <code class="literal">saveMovie(withName:)</code> method in <code class="literal">MoviesViewController</code> so family members get stored when you add a new family member or when you update one by assigning it a new movie. Update the method as follows:</p><pre class="programlisting">func saveMovie(withName name: String) {
+  // ...
+
+    let helper = MovieDBHelper()
+    helper.fetchRating(forMovie: name) { remoteId, rating in
+      guard let rating = rating,
+        let remoteId = remoteId
+        else { return }
+
+      moc.persist {
+        movie.popularity = rating
+        movie.remoteId = Int64(remoteId)
+
+        self.cloudStore.storeFamilyMember(familyMember) { _ in
+          // no action
+        }
+      }
+  // ...
+}</pre><p>The only thing that has changed in this method is that the family member is now stored after the movie's popularity rating is fetched. The next and final step is to implement the new version of <code class="literal">storeFamilyMember(_:_)</code>, as follows:</p><pre class="programlisting">func storeFamilyMember(_ familyMember: FamilyMember, _ completionHandler: @escaping (Error?) -&gt; Void) {
+  // 1
+  guard let movies = familyMember.movies as? Set&lt;Movie&gt; else {
+    completionHandler(nil)
+    return
+  }
+
+  let defaultZoneId = CKRecordZone.ID(zoneName: "moviesZone", ownerName: CKCurrentUserDefaultName)
+
+  // 2
+  var recordsToSave = movies.map { movie in
+    movie.recordForZone(defaultZoneId)
+  }
+  recordsToSave.append(familyMember.recordForZone(defaultZoneId))
+
+  let operation = CKModifyRecordsOperation(recordsToSave: recordsToSave, recordIDsToDelete: nil)
+
+  operation.modifyRecordsCompletionBlock = { records, recordIds, error in
+
+    guard let records = records, error == nil else {
+      completionHandler(error)
+      return
+    }
+
+    // 3
+    for record in records {
+      if record.recordType == "FamilyMember" {
+        familyMember.managedObjectContext?.persist {
+          familyMember.cloudKitData = record.encodedSystemFields
+        }
+      } else if record.recordType == "Movie",
+        let movie = movies.first(where: { $0.recordName == record.recordID.recordName }) {
+
+        familyMember.managedObjectContext?.persist {
+          movie.cloudKitData = record.encodedSystemFields
+        }
+      }
+    }
+
+    completionHandler(error)
+  }
+
+  privateDatabase.add(operation)
+}</pre><p>Even though the preceding method is quite long, it should be relatively straightforward; there are some parts that are worth taking a closer look at:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Because the <code class="literal">movies</code> property on <code class="literal">FamilyMember</code> is an <code class="literal">NSSet</code>, it needs to be converted to a <code class="literal">Set&lt;Movie&gt;</code> so the movies can be looped over. This conversion should never fail, so if it does, something is wrong and it makes no sense to continue saving the family member to CloudKit.</li><li>Extract all movie records from the family member to obtain a list of records that should be saved. The family member itself is then also added to this list, so it's also saved to CloudKit.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Once the save <span>operation</span><a id="id325580644" class="indexterm"></a> is created, and all records are saved, the <span>CloudKit</span><a id="id325580652" class="indexterm"></a> metadata is added to their corresponding Core Data objects, and the objects are then saved. Note that the managed object context is obtained by calling <code class="literal">familyMember.managedObjectContext</code>. Doing this ensures that the family member and its movies are updated in the correct managed object context.</li></ol></div><p>If you run your app now, you should be able to import records from CloudKit automatically. When you add records to CloudKit while the app is running, it will automatically update the user interface. And when you add new family members and movies to the Core Data database, they are automatically saved to CloudKit.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip38"></a>Note</h3><p>If you want to test your app on multiple devices at once, you can use different simulators that are signed in to the same iCloud account. When you add a family member on one simulator, it will automatically appear on all other simulators that have the same iCloud user.</p></div></div></div>

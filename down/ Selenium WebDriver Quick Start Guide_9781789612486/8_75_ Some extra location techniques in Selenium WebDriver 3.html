@@ -1,0 +1,71 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec76"></a>Some extra location techniques in Selenium WebDriver 3</h2></div></div><hr /></div><p>It's about time to discuss the other <span>location</span><a id="id325161515" class="indexterm"></a> techniques in Selenium WebDriver 3</p><p>The ones that we will be discussing are:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">ByIdOrName</code>: This locator can be used with <code class="literal">WebElements</code> that have both an <code class="literal">id</code> and <code class="literal">name</code></li><li style="list-style-type: disc"><code class="literal">ByChained</code>: This locator can be used to find <code class="literal">WebElements</code> using a series of other location techniques</li><li style="list-style-type: disc"><code class="literal">ByAll</code>: This locator finds all <code class="literal">WebElements</code> that match any of the locators in sequence </li></ul></div><p>The best way to explain these is by giving an example for each. For this, we will be creating a custom web page in HTML:</p><pre class="programlisting">&lt;html&gt;
+  &lt;body&gt;
+    &lt;p&gt;
+        First Name: 
+        &lt;input type=text id=fid/&gt;
+    &lt;/p&gt;
+    &lt;p&gt;
+        Last Name: 
+        &lt;input type=text name=lname/&gt;
+    &lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre><p>It's time to see the <code class="literal">ByIdOrName</code> locator.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec70"></a>Understanding ByIdOrName</h3></div></div></div><p>The way <code class="literal">ByIdOrName</code> works is that the ID takes precedence. If a particular element is not found with the ID that is specified, the search is made based on a name. If the <span>element</span><a id="id325162076" class="indexterm"></a> is not found after the second search, it throws a <code class="literal">NoSuchElementException</code>.</p><p>Let's have a look at the code to handle this.</p><p>The following code uses an implicit wait of <code class="literal">30</code> seconds for each element on the page. First, it searches based on the ID and then on the name. Notice that we have to invoke the constructor in order to use this locator:</p><pre class="programlisting">public class ByIdOrNameDemo {
+
+  public static void main(String[] args) {
+    System.setProperty("webdriver.chrome.driver",
+ System.getProperty("user.dir")
+            + "\\src\\main\\resources\\chromedriver.exe");
+
+    WebDriver driver = new ChromeDriver();
+    driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+    driver.get("C:\\Users\\Bhagyashree\\Desktop\\Documents\\myHTML.html");
+    driver.findElement(new ByIdOrName("fid")).sendKeys("FirstTest");
+    driver.findElement(new ByIdOrName("lname")).sendKeys("LastTest");
+  }
+}</pre><p>Next we will have a look at <code class="literal">ByAll</code>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec71"></a>ByAll locator</h3></div></div></div><p>We have introduced an address text area that has a class, ID, and name defined and we will <span>zero in on this e</span>lement using the <span>series</span><a id="id325441751" class="indexterm"></a> of locators</p><p>The following code uses the <code class="literal">ByAll</code> constructor, which takes in a variable number of locators as arguments:</p><pre class="programlisting">  public static void main(String[] args) {
+    System.setProperty("webdriver.chrome.driver",
+ System.getProperty("user.dir")
+ + "\\src\\main\\resources\\chromedriver.exe");
+    WebDriver driver = new ChromeDriver();
+    driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+    driver.get("C:\\Users\\Bhagyashree\\Desktop\\Documents\\myHTML.html");
+    driver.findElement(
+        new ByAll(By.className("tarea"), By.id("tid"), By.name("tname")))
+        .sendKeys("FirstTest");
+
+  }
+}</pre><p>It's the turn of the <code class="literal">ByChained</code> locator.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec72"></a>ByChained Locator</h3></div></div></div><p>With this locator, DOM traversal <span>becomes</span><a id="id325448851" class="indexterm"></a> extremely simple. <code class="literal">ByChained</code> traverses from the first locator in the variable argument list and continues until the last element locator in the list. </p><p>We have introduced one more test textbox, which is inside a span, and the span is inside a div. Let's see the final structure of the HTML document.</p><p>The following HTML code shows the structure of the sample page:</p><pre class="programlisting">&lt;html&gt;
+  &lt;body&gt;
+    &lt;p&gt;
+    First Name: 
+    &lt;input type=text id=fid/&gt;
+
+    &lt;/p&gt;
+    &lt;p&gt;
+    Last Name: 
+    &lt;input type=text name=lname/&gt;
+    &lt;/p&gt;
+    &lt;p&gt;
+    Address:
+    &lt;input type=textarea class="tarea" id="tid" name="tname"/&gt;
+    &lt;/p&gt;
+    &lt;div class="div1"&gt;
+      &lt;span id="spn1"&gt;
+          Test: 
+        &lt;input type=text name=testname/&gt; 
+      &lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre><p>The following code walks through a chain of <span>locators</span><a id="id325448942" class="indexterm"></a> starting from the parent <code class="literal">div</code>, taking the <code class="literal">span</code> next, right into the final test textbox:</p><pre class="programlisting">public class ByChainedDemo {
+ public static void main(String[] args) {
+ System.setProperty("webdriver.chrome.driver",
+ System.getProperty("user.dir")
+ + "\\src\\main\\resources\\chromedriver.exe");
+ WebDriver driver = new ChromeDriver();
+ driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+ driver.get("C:\\Users\\Bhagyashree\\Desktop\\Documents\\myHTML.html");
+ driver.findElement(
+ new ByChained(By.className("div1"), By.id("spn1"), By
+ .name("testname"))).sendKeys("FirstTest");
+ }
+}</pre><p>With this, we complete the three additional locator mechanisms.</p><p>We have explored Selenium 3 <span>throughout</span><a id="id325448966" class="indexterm"></a> this book. It's time to see what Selenium has in store for us in the future.</p></div></div>

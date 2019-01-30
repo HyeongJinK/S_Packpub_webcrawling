@@ -1,0 +1,58 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec53"></a>Adding protocols for clarity</h2></div></div><hr /></div><p>You already know that protocols can be used to <span>improve</span><a id="id325333114" class="indexterm"></a> code by removing complex inheritance hierarchies. You also know how powerful the Protocol-Oriented paradigm is when it is when it comes to checking for protocol conformance instead of checking whether a particular object is of a certain type. Let's see how you can improve and future-proof the <span class="strong"><strong>Hello-Contacts</strong></span> application by adding some protocols.</p><p>You will define two protocols for now: one that specifies the requirements for any object that claims to be able to add a special animation to a view, and one that defines what it means to be able to be displayed as a contact.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec32"></a>Defining the ViewEffectAnimatorType protocol</h3></div></div></div><p>The first protocol you will define is called <code class="literal">ViewEffectAnimatorType</code>. This protocol should be applied to any object that implements the required behaviors to animate a view. This <span>protocol</span><a id="id325333139" class="indexterm"></a> does not necessarily give you a direct advantage, but there are a few considerations that make this a very useful protocol.</p><p>A protocol is not only used to check whether an object can do something. It can also formalize a certain API that you came up with. In this case, <code class="literal">BounceAnimationHelper</code> needed certain initializers. It also needs to hold on to an animator, and it has a <code class="literal">startAnimation</code> method. These traits are not specific to the bounce animation and might be relevant for several other animation effects.</p><p>Adding a protocol to this helper makes sure that any other helpers that conform to the same protocol have the same interface. This helps you, the developer, make sense of what you should minimally implement for your new animation helper. It also makes adding new effects or swapping one effect for another effect very easy and straightforward.</p><p>Another advantage is that the <code class="literal">startAnimation</code> method can be moved to a protocol extension. Its implementation is simple and straightforward, and you typically won't need to customize it, so it's a great candidate to provide a default implementation for. Create a new Swift file named <code class="literal">ViewEffectAnimatorType</code>, and add it to a new folder called <code class="literal">Protocols</code>. Now add the following implementation for the protocol:</p><pre class="programlisting">import UIKit   
+
+typealias ViewEffectAnimatorComplete = (UIViewAnimatingPosition) -&gt; Void   
+
+protocol ViewEffectAnimatorType {   
+
+  var animator: UIViewPropertyAnimator { get }   
+
+  init(targetView: UIView, onComplete: @escaping ViewEffectAnimatorComplete)   
+  init(targetView: UIView, onComplete: @escaping ViewEffectAnimatorComplete, duration: TimeInterval)   
+
+  func startAnimation()   
+}   
+
+extension ViewEffectAnimatorType {   
+  func startAnimation() {   
+    animator.startAnimation()   
+  }   
+} </pre><p>This protocol defines all of the requirements for an animation helper. Note that a globally-available <code class="literal">typealias</code> named <code class="literal">ViewEffectAnimatorComplete</code> has been defined. This means that you can replace the type declaration for <code class="literal">onBounceComplete</code> in <code class="literal">ViewController</code>, so it is called <code class="literal">ViewEffectAnimatorComplete</code> instead of <code class="literal">BounceAnimationHelper.BounceAnimationComplete</code>. This enables you to use the same completion-handler type across the app, which enhances code consistency. To use this protocol, update the initializers for <code class="literal">BounceAnimationHelper</code> to use the new <code class="literal">typealias</code> and remove the old one. Also, remove the <code class="literal">startAnimation</code> method, and finally, add <code class="literal">ViewEffectAnimatorType</code> to the <code class="literal">BounceAnimationHelper</code> definition, as shown in the following code:</p><pre class="programlisting">struct BounceAnimationHelper: ViewEffectAnimatorType</pre><p>By conforming <code class="literal">BounceAnimationHelper</code> to <code class="literal">ViewEffectAnimatorType</code>, it uses the <span>protocol</span><a id="id325369898" class="indexterm"></a> extension's default implementation for <code class="literal">startAnimation</code>, and you have a predictable, formalized interface for <code class="literal">BounceAnimationHelper</code> and any future effects that you may wish to add to the app. Let's add a protocol to our contact object as well.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec33"></a>Defining a contact-displayable protocol</h3></div></div></div><p>Many apps display lists of contents that are almost the same, but not quite. Imagine <span>displaying</span> a list of contacts: a placeholder for a contact that can be tapped to add a new contact and other cells that could suggest people you may know. Each of these three cells in the collection view could look the same, yet the underlying models can be very different.</p><p>A certain sense of unity among these three models can be achieved with a simple <span>protocol</span><a id="id325571677" class="indexterm"></a> that defines what it means to be displayed in a certain way. It's a perfect example of a situation where you're more interested in an object's capabilities than its concrete type. To determine what it means to be displayed in the contact overview, you should look inside <code class="literal">ViewController.swift</code>. The following code is used to configure a cell in the contact-overview page:</p><pre class="programlisting">let contact = contacts[indexPath.row]
+
+cell.nameLabel.text = "\(contact.givenName) \(contact.familyName)"
+contact.fetchImageIfNeeded { image in
+  cell.contactImage.image = image
+}</pre><p>From this code, you can extract four things a contact-displayable item should contain:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">A <code class="literal">givenName</code> property</li><li style="list-style-type: disc">A <code class="literal">familyName</code> property</li><li style="list-style-type: disc">A <code class="literal">fetchImageIfNeeded</code> method</li><li style="list-style-type: disc">A <code class="literal">contactImage</code> property</li></ul></div><p>Since <code class="literal">givenName</code> and <code class="literal">familyName</code> are specific to a real person, it's wise to combine the two in a new property: <code class="literal">displayName</code>. This provides some more flexibility regarding what kinds of objects can conform to this protocol without having to resort to crazy tricks. Create a new Swift file named <code class="literal">ContactDisplayable</code> and add it to the <code class="literal">Protocols</code> folder. Add the following implementation:</p><pre class="programlisting">import UIKit   
+
+protocol ContactDisplayable {
+  var displayName: String { get }
+  var image: UIImage? { get set }
+
+  func fetchImageIfNeeded()
+  func fetchImageIfNeeded(completion: @escaping ((UIImage?) -&gt; Void))
+}</pre><p>Now add the following computed property to <code class="literal">Contact</code> and make sure that you add conformance to <code class="literal">ContactDisplayable</code> in the <code class="literal">Contact</code> class's definition:</p><pre class="programlisting">var displayName: String {   
+   return "\(givenName) \(familyName)"   
+} </pre><p>You may have noticed that the <span>protocol</span><a id="id325602503" class="indexterm"></a> contains two <code class="literal">fetchImageIfNeeded()</code> declarations, one with the completion closure and one without. Unfortunately, you can't provide default parameters for function arguments in protocols, so to keep code changes to a minimum, you must specify both versions of <code class="literal">fetchImageIfNeeded()</code>. Update <code class="literal">Contact</code> by adding <code class="literal">fetchImageIfNeeded()</code> without arguments, as follows:</p><pre class="programlisting">func fetchImageIfNeeded() {
+  fetchImageIfNeeded(completion: { _ in })
+}</pre><p>Also, update the signature for <code class="literal">fetchImageIfNeeded(completion:)</code> by removing its default completion closure:</p><pre class="programlisting">func fetchImageIfNeeded(completion: @escaping ((UIImage?) -&gt; Void)) {
+  // existing implementation
+}</pre><p>Next, update the declaration for the contacts array in <code class="literal">ViewController.swift</code> to look as follows (this will allow you to add any object that can be displayed as a contact to the array):</p><pre class="programlisting">var contacts = [ContactDisplayable]()</pre><p>The next change you need to make in <code class="literal">ViewController</code> is in <code class="literal">prepare(for:sender:)</code>. Because the contacts are now <code class="literal">ContactDisplayable</code> instead of <code class="literal">Contact</code>, you can't assign them to the detail view controller right away. Update the implementation as follows to typecast the <code class="literal">ContactDisplayable</code> item to <code class="literal">Contact</code> so it can be set on the detail view controller:</p><pre class="programlisting">override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+  if let contactDetailVC = segue.destination as? ContactDetailViewController,
+    segue.identifier == "detailViewSegue",
+    let selectedIndex = collectionView.indexPathsForSelectedItems?.first,
+    let contact = contacts[selectedIndex.row] as? Contact {
+      contactDetailVC.contact = contact
+  }
+}</pre><p>You're almost done. Just a few more <span>changes</span><a id="id325606032" class="indexterm"></a> to make sure that the project compiles again. The issues you see right now are all related to the change from a class to a struct and to the addition of the <code class="literal">ContactDisplayable</code> protocol. In <code class="literal">ViewController.swift</code>, update the <code class="literal">collectionView(_:cellForItemAt:)</code> method to look as follows:</p><pre class="programlisting">func collectionView(_ collectionView: UICollectionView,
+                    cellForItemAt indexPath: IndexPath) -&gt; UICollectionViewCell {
+  let cell = collectionView.dequeueReusableCell(withReuseIdentifier:
+    "ContactCollectionViewCell", for: indexPath) as! ContactCollectionViewCell
+
+  let contact = contacts[indexPath.row]
+  // 1
+  cell.nameLabel.text = "\(contact.displayName)"
+  contact.fetchImageIfNeeded { image in
+    cell.contactImage.image = image
+  }
+
+  return cell
+}</pre><p>Lastly, make sure to update the following line in <code class="literal">previewingContext(_:viewControllerForLocation:)</code>:</p><pre class="programlisting">viewController.contact = contact as? Contact</pre></div></div>

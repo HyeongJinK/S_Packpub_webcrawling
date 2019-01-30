@@ -1,0 +1,39 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec97"></a>Queues in Azure Queue Storage</h2></div></div><hr /></div><p>Azure Storage—besides being a service for <span>storing</span><a id="id325115440" class="indexterm"></a> many different kinds of data—can be used also as a queue. Queue Storage is another capability that allows you to quickly develop a solution that requires a simple queue solution, and additionally is able to store in a queue millions of messages without affecting performance. In this section, you will see how to develop applications using Queue Storage and what is important when using this feature. Additionally, I assume that you already have a storage account. If not, take a look at the <span class="strong"><strong>Storing data with Azure Storage Tables </strong></span>section, where I described the process of creating an account.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec116"></a>Queue Storage features</h3></div></div></div><p>In general, Queue <span>Storage</span><a id="id325115431" class="indexterm"></a> has two use cases:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Processing messages asynchronously</li><li style="list-style-type: disc">Exchanging communications between different services (Azure Functions, legacy Web roles/Worker roles)</li></ul></div><p>It is a very simple queue solution, which can store and process messages in any format that are limited to 64 KB. The retention time of a message is seven days—after that, it is lost. The capacity of a queue is basically equal to the capacity of your storage account. In general, you should not worry that you will run out of available space. Queue Storage shares many addition features, such as virtual networks, SAS tokens, and many more, with other Azure Storage capabilities. Therefore, we will not reintroduce them in this section.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec117"></a>Developing an application using Queue Storage</h3></div></div></div><p>For the purpose of presenting <span>Queue</span><a id="id325115406" class="indexterm"></a> Storage, I created two applications:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Producer </li><li style="list-style-type: disc">Consumer</li></ul></div><p>Producer will create and push messages, which will then be consumed by Consumer. Here you can find the code of the <code class="literal">Producer</code><span class="strong"><strong> </strong></span>app:</p><pre class="programlisting">using System;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Queue;
+
+namespace QueueStorage.Producer
+{
+    internal class Program
+    {
+        private static void Main()
+        {
+            var storageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
+            var queueClient = storageAccount.CreateCloudQueueClient();
+            var queue = queueClient.GetQueueReference("orders");
+
+            queue.CreateIfNotExists();
+
+            var message = new CloudQueueMessage($"New order ID: {Guid.NewGuid()}");
+            queue.AddMessage(message);
+        }
+    }
+}</pre><p>And, of course the <code class="literal">Consumer</code> app:</p><pre class="programlisting">using System;
+using Microsoft.WindowsAzure.Storage;
+
+namespace QueueStorage.Consumer
+{
+    internal class Program
+    {
+        private static void Main()
+        {
+            var storageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
+            var queueClient = storageAccount.CreateCloudQueueClient();
+            var queue = queueClient.GetQueueReference("orders");
+
+            var message = queue.GetMessage();
+            Console.WriteLine(message.AsString);
+            Console.ReadLine();
+        }
+    }
+}</pre><p>When you publish a message to a queue, you can retrieve it at any time—as mentioned previously, you have seven days to fetch it from a queue. Here you can find how a message looks like when stored in a queue:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/82140d75-7189-4579-ba73-2c377dc25bb2.png" /></div></div></div>

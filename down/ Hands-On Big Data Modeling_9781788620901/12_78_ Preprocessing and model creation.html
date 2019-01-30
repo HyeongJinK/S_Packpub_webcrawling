@@ -1,0 +1,48 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec75"></a>Preprocessing and model creation</h2></div></div><hr /></div><p><span>One of the</span> frequently <span>asked</span><a id="id325804939" class="indexterm"></a> questions is, "Is it really important to scale the data?" or "When should we scale the data?" To be honest, there is no one-size-fits-all answer to this question. It really depends on the type of data you are working with and the algorithms being applied to it. An <span>algorithm</span><a id="id325804934" class="indexterm"></a> such as <span class="strong"><strong>Support Vector Machine</strong></span> (<span class="strong"><strong>SVM</strong></span>) converges very fast on normalized data. Another good reason to normalize the data is when the model is very sensitive to the magnitude and the units of two or different features are different. Here we are considering two important features: timestamp and price. And we are interested in finding how price changes over time. </p><p>The next step in our process is to preprocess the dataframe we created: </p><pre class="programlisting">#pre-processing
+scale=preprocessing.scale(price)</pre><p>And then let's plot the scaled price:</p><pre class="programlisting">plt.plot(scale)
+scale</pre><p> </p><p>The output should look like this:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/035865b8-a872-408e-8800-7d397a82297a.png" /></div><p>Figure 12.4: Preprocessing price data</p><p>We can get a small sample of the data and plot it to see the variations:</p><pre class="programlisting">scale
+df=DataFrame(scale)
+sample=df[0:100000]
+sample
+plt.plot(sample)</pre><p>The output graph should look like the following:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/511b68e1-a223-4b36-a908-1fd417e6b76c.png" /></div><p>Figure 12.5: Sample preprocessing price data</p><p></p><p><span>A forecast is a good baseline forecast for a time series with a linearly-increasing trend. The persistence forecast is where the observation from the prior time step, <code class="literal">(t-1)</code>, is used to predict the observation at the current time step, <code class="literal">(t)</code>. We can implement this by using the last observation from the training data and history collected by walk-forward validation, and then applying that to predict the current time step. We can achieve that by using the following code snippet. Try to understand why are we doing this step before you jump to the next section:</span></p><pre class="programlisting">X=sample.values
+X
+train, test = X[0:-10000], X[-10000:]
+train
+test</pre><p>This should output the <code class="literal">test</code> data as the following:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/1b5a8c2e-b246-427d-b5ee-2e479a3d7608.png" /></div><p>Figure 12.6: Sample test data as the output of the preceding snippet</p><p>In the sample of the first 100,000 observations, we set the first <span>90,000</span> observations to be the training data and the last 10,000 to be the test data. After the training and predicting, we get the one-step-ahead forecast as the following plot, along with the original dataset:</p><pre class="programlisting"># walk-forward validation
+history = [x for x in train]
+predictions = list()
+for i in range(len(test)):
+ # make prediction
+ predictions.append(history[-1])
+ # observation
+ history.append(test[i])
+# report performance
+rmse = math.sqrt(mean_squared_error(test, predictions))
+print('RMSE: %.3f' % rmse)
+# line plot of observed vs predicted
+pyplot.plot(test)
+pyplot.plot(predictions)
+pyplot.show()
+rmse</pre><p>The output of the preceding snippet should look like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/dbd4ff63-28e6-438e-893c-b7f307a64e07.png" /></div><p>Figure 12.7: Output of the preceding snippet</p><p>It is important to note that the <span class="strong"><strong>Root Mean-Squared Error </strong></span>(<span class="strong"><strong>RMSE</strong></span>) is zero in this case. So, the <span>prediction</span><a id="id325591989" class="indexterm"></a> was very accurate. </p><p>For a sample size of 50,000, we set the first 40,000 <span>observations</span><a id="id325808149" class="indexterm"></a> to be the training data and the last 10,000 to be the test data. After the training and predicting, we get the one-step-ahead forecast as the following plot, along with the original dataset:</p><pre class="programlisting">#a smaller sample of 50000
+sample2=sample[0:50000]
+X2=sample2.values
+X2
+train2, test2 = X2[0:-10000], X2[-10000:]
+train2
+test2
+# walk-forward validation
+history2 = [x for x in train2]
+predictions2 = list()
+for i in range(len(test2)):
+ # make prediction2
+ predictions2.append(history2[-1])
+ # observation
+ history2.append(test2[i])
+# report performance
+rmse2 = math.sqrt(mean_squared_error(test2, predictions2))
+print('RMSE: %.5f' % rmse2)
+# line plot of observed vs predicted
+pyplot.plot(test2)
+pyplot.plot(predictions2)
+pyplot.show()
+rmse2</pre><p>The output of the preceding snippet should look like this:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/211a0056-1380-42dc-afbc-8dac7dae4982.png" /></div><p>Figure 12.8: Model generated with a subset of the samples of 50,000 datasets</p><p>It has a root mean-squared error of 0.00006, which is a pretty good fit. </p><p> </p></div>

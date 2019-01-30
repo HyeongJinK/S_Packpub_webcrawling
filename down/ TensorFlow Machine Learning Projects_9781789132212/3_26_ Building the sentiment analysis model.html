@@ -1,0 +1,68 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec32"></a>Building the sentiment analysis model</h2></div></div><hr /></div><p>In this section, we will learn how to build a <span>sentiment</span><a id="id325607374" class="indexterm"></a> analysis model from scratch using Keras. To perform sentiment analysis, we will use sentiment analysis data from the University of Michigan that is available at <a class="ulink" href="https://www.kaggle.com/c/si650winter11/data" target="_blank">https://www.kaggle.com/c/si650winter11/data</a>. This dataset contains 7,086 movie reviews with labels. Label <code class="literal">1</code> denotes a positive sentiment, while <code class="literal">0</code> denotes a negative sentiment. In the repository, the dataset is stored in the file named <code class="literal">sentiment.txt</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec23"></a>Pre-processing data</h3></div></div></div><p>Once you have installed the <span>requisite</span><a id="id326193989" class="indexterm"></a> packages (can be found in a <code class="literal">requirements.txt</code> file with the code) to run this project and read the data, the next step is to preprocess the data:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>The first step is to get the tokens/word list from the reviews. Remove any punctuation and make sure that all of the tokens are in lowercase:</li></ol></div><pre class="programlisting">def get_processed_tokens(text):
+'''
+Gets Token List from a Review
+'''
+filtered_text = re.sub(r'[^a-zA-Z0-9\s]', '', text) #Removing Punctuations
+filtered_text = filtered_text.split()
+filtered_text = [token.lower() for token in filtered_text]
+return filtered_text</pre><p>For example, if we have an input <code class="literal">This is a GREAT movie!!!!</code>, our output should be <code class="literal">this is a great movie</code>.</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Create a<code class="literal">token_idx</code>dictionary<span class="emphasis"><em> </em></span>that maps tokens to integers to create embeddings.Note that the number of unique tokens (words) present in a dictionary can be very large, so we must filter out the ones that occur less than the threshold (the default value for this is <code class="literal">5</code> in the code) in the training set. This is because it is difficult to learn any <span>relationship</span><a id="id325611689" class="indexterm"></a> between movie sentiment and words that don't occur much in the dataset:</li></ol></div><pre class="programlisting">def tokenize_text(data_text, min_frequency =5):
+    '''
+    Tokenizes the reviews in the dataset. Filters non frequent tokens
+    '''
+    review_tokens = [get_processed_tokens(review) for review in   
+                     data_text] # Tokenize the sentences
+    token_list = [token for review in review_tokens for token in review]         
+    #Convert to single list
+    token_freq_dict = {token:token_list.count(token) for token in     
+    set(token_list)} # Get the frequency count of tokens
+    most_freq_tokens = [tokens for tokens in token_freq_dict if 
+    token_freq_dict[tokens] &gt;= min_frequency]
+    idx = range(len(most_freq_tokens))
+    token_idx = dict(zip(most_freq_tokens, idx))
+    return token_idx,len(most_freq_tokens)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Map each review in the dataset to a sequence of integers (based on the <code class="literal">token_idx</code><span class="emphasis"><em> </em></span>dictionary we created in the last step). However, before doing that, find the review with the largest number of tokens:</li></ol></div><pre class="programlisting">def get_max(data):
+    '''
+    Get max length of the token
+    '''
+    tokens_per_review = [len(txt.split()) for txt in data]
+    return max(tokens_per_review)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>To create the sequences that will be fed into the model to learn the embeddings, we must create a fixed-length sequence of <code class="literal">(max_tokens)</code> for each review in the dataset. We pre-pad the sequences with zeros if they are less than the maximum length to ensure that all of the sequences are of the same length. Pre-padding a sequence is preferred over post <span>padding</span><a id="id325614945" class="indexterm"></a> as it helps to achieve a more accurate result:</li></ol></div><pre class="programlisting">
+def create_sequences(data_text,token_idx,max_tokens):
+    '''
+    Create sequences appropriate for GRU input
+    Input: reviews data, token dict, max_tokens
+    Output: padded_sequences of shape (len(data_text), max_tokens)
+    '''
+    review_tokens = [get_processed_tokens(review) for review in  
+                   data_text] # Tokenize the sentences 
+    #Covert the tokens to their indexes 
+    review_token_idx = map( lambda review: [token_idx[k] for k in review 
+                           if k in token_idx.keys() ], review_tokens)
+    padded_sequences = pad_sequences(review_token_idx,maxlen=max_tokens)
+    return np.array(padded_sequences)</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec24"></a>Building the model</h3></div></div></div><p>This model will consist of an <span>embedding</span><a id="id325614965" class="indexterm"></a> layer, followed by three layers of GRU and a fully connected layer with sigmoid activation. For the optimization and accuracy metric, we will use an <code class="literal">Adam</code> optimizer and <code class="literal">binary_crossentropy</code>, respectively:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>The model is defined using the following parameters:</li></ol></div><pre class="programlisting">def define_model(num_tokens,max_tokens):
+    '''
+    Defines the model definition based on input parameters
+    '''
+    model = Sequential()
+    model.add(Embedding(input_dim=num_tokens,
+                    output_dim=EMBEDDING_SIZE,
+                    input_length=max_tokens,
+                    name='layer_embedding'))
+
+    model.add(GRU(units=16, name = "gru_1",return_sequences=True))
+    model.add(GRU(units=8, name = "gru_2",return_sequences=True))
+    model.add(GRU(units=4, name= "gru_3"))
+    model.add(Dense(1, activation='sigmoid',name="dense_1"))
+    optimizer = Adam(lr=1e-3)
+    model.compile(loss='binary_crossentropy',
+                  optimizer=optimizer,
+                  metrics=['accuracy'])
+    print model.summary()
+    return model</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Train the model with the following parameters:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Epochs = 15</li><li style="list-style-type: disc">Validation split = 0.05</li><li style="list-style-type: disc">Batch size = 32</li><li style="list-style-type: disc">Embedding Size = 8</li></ul></div></li></ol></div><pre class="programlisting">def train_model(model,input_sequences,y_train):
+    '''
+    Train the model based on input parameters
+    '''
+
+    model.fit(input_sequences, y_train,
+          validation_split=VAL_SPLIT, epochs=EPOCHS, 
+          batch_size=BATCH_SIZE)
+    return model</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Test the model trained on a few random review sentences to verify its performance:</li></ol></div><div class="informaltable"><table style="border-collapse: collapse;border-top: 0.5pt solid ; border-bottom: 0.5pt solid ; "><colgroup><col /><col /></colgroup><tbody><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Text</strong></span></p></td><td style="border-bottom: 0.5pt solid ; "><p><span class="strong"><strong>Predicted Score</strong></span></p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Awesome movie</p></td><td style="border-bottom: 0.5pt solid ; "><p>0.9957</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>Terrible Movie</p></td><td style="border-bottom: 0.5pt solid ; "><p>0.0023</p></td></tr><tr><td style="border-right: 0.5pt solid ; border-bottom: 0.5pt solid ; "><p>That movie really sucks </p></td><td style="border-bottom: 0.5pt solid ; "><p>0.0021</p></td></tr><tr><td style="border-right: 0.5pt solid ; "><p>I like that movie </p></td><td style=""><p>0.9469</p></td></tr></tbody></table></div><p> </p><p>The predicted score is close to 1 for positive sentences and close to 0 for negative ones. This validates our random checks on the performance of our model.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note25"></a>Note</h3><p>Note that the actual scores might vary a little if you train your model on different hardware types. </p></div></div></div>

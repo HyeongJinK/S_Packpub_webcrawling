@@ -1,0 +1,25 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec144"></a>Using conditional breakpoints</h2></div></div><hr /></div><p>As we write more and more scripts, the <span>need</span><a id="id325892148" class="indexterm"></a> to debug our scripts reduces. When we get there, we tend to learn which parts of the scripts may require debugging, and debug only those parts based on specific situations. This is something that conditional breakpoints can help with.</p><p>Create a conditional breakpoint for when the number of elements in the <code class="literal">$Name</code> array is less than two, given the following script:</p><pre class="programlisting">function Set-Name {
+    $Name = @()
+    $Name = Read-Host "Enter first name"
+    $Name += Read-Host "Enter middle name (press Enter for blank)"
+    $Name += Read-Host "Enter surname"
+
+    $Count = $Name.Count
+    $Converter = (Get-Culture).TextInfo
+
+    switch ($Count) {
+        2 { 
+            "$($Converter.ToTitleCase($Name[1])), $($Converter.ToTitleCase($Name[0]))"
+        }
+        3 {
+            "$($Converter.ToTitleCase($Name[2])), $($Converter.ToTitleCase($Name[0])) $($Converter.ToTitleCase($Name[1]))"
+        }
+        Default {
+            Write-Host "Invalid input."
+        }
+    }
+}
+Set-Name</pre><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec366"></a>How to do it…</h3></div></div></div><p>First, we will create a script block that contains the conditional statement. We will then use this script block with the <code class="literal">Set-PsBreakpoint</code> cmdlet.</p><p>Here is the script block:</p><pre class="programlisting">PS&gt; $Condition = { if ($Count -lt 2) { break } }</pre><p>Next, place a breakpoint when the specified condition is satisfied. First, remove any existing breakpoints:</p><pre class="programlisting"><span class="strong"><strong>PS&gt; Get-PSBreakpoint | Remove-PsBreakpoint</strong></span>
+<span class="strong"><strong>PS&gt; Set-PSBreakpoint ./ch13/05-Set-Name.ps1 9 -Action $Condition</strong></span>
+<span class="strong"><strong>PS&gt; # Verbose version: Set-PSBreakpoint -Script ./ch13/05-Set-Name.ps1 -Line 9 -Action $Condition</strong></span>
+<span class="strong"><strong>PS&gt; ./ch13/05-Set-Name.ps1</strong></span></pre><p>When you hit the condition (which you will, in this case), you will enter debug mode, wherein you can start your debugging process.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec367"></a>How it works…</h3></div></div></div><p>First things first: we assign a script block to the <code class="literal">$Condition</code> variable. You tell PowerShell that the value of the variable is of the script block type by enclosing the entire condition in curly braces.</p><p>Next, we proceed with setting the breakpoint in the same way as in the previous recipe, <span class="emphasis"><em>Using breakpoints</em></span>, except we add the <code class="literal">Action</code> parameter. This action parameter contains the condition. The breakpoint is activated only if the condition is met. To verify this, change the assignment operator on line 3 to <code class="literal">+=</code> from <code class="literal">=</code>, remove the breakpoint, and use the same conditional breakpoint. This time, your script will simply execute without hitting the <code class="literal">break</code>.</p></div></div>

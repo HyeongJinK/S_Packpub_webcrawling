@@ -1,0 +1,63 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec27"></a>Achieving better answers with fuzzy searching</h2></div></div><hr /></div><p>Performing precise searching is not the only <span>thing</span><a id="id325869464" class="indexterm"></a> expected by users these days. Modern websites have educated users in a way that they always expect a result, regardless of the user input. If you search on Google, there will always be an answer even if the user input is wrong, full of typos, or simply pointless. People expect good results regardless of the input data.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec37"></a>Taking advantage of pg_trgm</h3></div></div></div><p>To do fuzzy <span>searching</span><a id="id325869445" class="indexterm"></a> with PostgreSQL, you <span>can</span><a id="id325869436" class="indexterm"></a> add the <code class="literal">pg_trgm</code> extension. To activate the extension, just run the following instruction:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE EXTENSION pg_trgm;  
+CREATE EXTENSION</strong></span></pre><p>The <code class="literal">pg_trgm</code> extension is pretty powerful, and to show what it is capable of, I have compiled some sample data consisting of 2,354 names of villages and cities here in Austria, Europe.</p><p>Our sample data can be stored in a simple table:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE TABLE t_location (name text); 
+CREATE TABLE</strong></span></pre><p>My company website has all the <span>data</span><a id="id325868923" class="indexterm"></a> and PostgreSQL <span>enables</span><a id="id325868915" class="indexterm"></a> you to load the data directly:</p><pre class="programlisting"><span class="strong"><strong>test=# COPY t_location FROM PROGRAM 
+         'curl https://www.cybertec-postgresql.com/secret/orte.txt';  
+COPY 2354</strong></span></pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip25"></a>Note</h3><p>The <code class="literal">curl</code> (a command-line tool to fetch data) has to be installed. If you don't have this tool, download the file normally and import it from your local filesystem.</p></div><p>Once the data has been loaded, it is possible to check out the content of the table:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT * FROM t_location LIMIT 4; 
+              name 
+--------------------------------  
+ Eisenstadt 
+ Rust 
+ Breitenbrunn am Neusiedler See 
+ Donnerskirchen 
+(4 rows)</strong></span></pre><p>If German is not your mother tongue, it will be impossible to spell the names of those locations without severe mistakes.</p><p> <code class="literal">pg_trgm</code> provides us with a distance operator that computes the distance between two strings:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT 'abcde' &lt;-&gt; 'abdeacb'; 
+ ?column? 
+---------- 
+ 0.833333 
+(1 row) </strong></span></pre><p>The distance is a number between zero and 1. The lower the number, the more similar the two strings are.</p><p>How does this work? Trigrams take a string and dissects it into sequences of three characters each:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT show_trgm('abcdef'); 
+              show_trgm 
+------------------------------------- 
+ {" a"," ab",abc,bcd,cde,def,"ef "} 
+(1 row)
+</strong></span></pre><p>These sequences will then be used to come up with the <span>distance</span><a id="id325634083" class="indexterm"></a> you have just seen. Of course, the distance operator can be used inside a <span>query</span><a id="id325643095" class="indexterm"></a> to find the closest match:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT *
+FROM t_location 
+ORDER BY name &lt;-&gt; 'Kramertneusiedel' 
+LIMIT 3; 
+      name 
+----------------- 
+ Gramatneusiedl 
+ Klein-Neusiedl 
+ Potzneusiedl 
+(3 rows)
+</strong></span></pre><p><code class="literal">Gramatneusiedl</code> is pretty close to <code class="literal">Kramertneusiedel</code>. It sounds similar and using a <code class="literal">K</code> instead of a <code class="literal">G</code> is a pretty common mistake. On Google, you will sometimes see <strong class="userinput"><code>Did you mean</code></strong>. It is quite likely that Google is using n-grams here to do that.</p><p>In PostgreSQL, it is possible to use <code class="literal">GiST</code> to index on text using trigrams:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE INDEX idx_trgm ON t_location 
+      USING GiST(name GiST_trgm_ops);  
+CREATE INDEX</strong></span></pre><p><code class="literal">pg_trgm</code> provides us with the <code class="literal">GiST_trgm_ops</code> operator class <span>designed</span><a id="id325643146" class="indexterm"></a> to do <span>similarity</span><a id="id325643157" class="indexterm"></a> searches. The following listing shows that the index is used as expected:</p><pre class="programlisting"><span class="strong"><strong>test=# explain SELECT * 
+ FROM t_location 
+ ORDER BY name &lt;-&gt; 'Kramertneusiedel' 
+ LIMIT 5; 
+                              QUERY PLAN 
+----------------------------------------------------------------- 
+ Limit (cost=0.14..0.58 rows=5 width=17) 
+   -&gt; Index Scan using idx_trgm on t_location 
+         (cost=0.14..207.22 rows=2354 width=17) 
+         Order By: (name &lt;-&gt; 'Kramertneusiedel'::text) 
+(3 rows) </strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec38"></a>Speeding up LIKE queries</h3></div></div></div><p><code class="literal">LIKE</code> queries definitely cause some of the <span>worst</span><a id="id325664412" class="indexterm"></a> performance <span>problems</span><a id="id325664421" class="indexterm"></a> faced by people around the globe these days. In most database systems, <code class="literal">LIKE</code> is pretty slow and requires a sequential scan. In addition to that, end users quickly figure out that a fuzzy search will, in many cases, return better results than precise queries. A single type of <code class="literal">LIKE</code> query on a large table can, therefore, often cripple the performance of an entire database server if it is called often enough.</p><p>Fortunately, PostgreSQL offers a solution to the problem and the solution happens to be installed already:</p><pre class="programlisting"><span class="strong"><strong>test=# explain SELECT * FROM t_location WHERE name LIKE '%neusi%'; 
+                               QUERY PLAN 
+----------------------------------------------------------------- 
+ Bitmap Heap Scan on t_location 
+   (cost=4.33..19.05 rows=24 width=13) 
+   Recheck Cond: (name ~~ '%neusi%'::text) 
+   -&gt; Bitmap Index Scan on idx_trgm (cost=0.00..4.32 rows=24 width=0) 
+         Index Cond: (name ~~ '%neusi%'::text) 
+(4 rows) 
+</strong></span></pre><p>The trigram index deployed in the previous section is also suitable to speed up <code class="literal">LIKE</code>. Note that the <code class="literal">%</code> symbols can be used at any point in the search string. This is a major advantage over standard btrees, which just happen to speed up wildcards at the end of the query.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec39"></a>Handling regular expressions</h3></div></div></div><p>However, this is still not everything. Trigram <span>indexes</span><a id="id325854949" class="indexterm"></a> are even <span>capable</span><a id="id325854957" class="indexterm"></a> of speeding up simple regular expressions. The following example shows how this can be done:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT * FROM t_location WHERE name ~ '[A-C].*neu.*';
+</strong></span><span class="strong"><strong>     name      </strong></span>
+<span class="strong"><strong>-------------- </strong></span>
+<span class="strong"><strong> Bruckneudorf </strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><pre class="programlisting"><span class="strong"><strong>test=# explain SELECT * FROM t_location WHERE name ~ '[A-C].*neu.*'; 
+                             QUERY PLAN 
+----------------------------------------------------------------- 
+ Index Scan using idx_trgm on t_location (cost=0.14..8.16 
+   rows=1 width=13) 
+   Index Cond: (name ~ '[A-C].*neu.*'::text) 
+(2 rows)
+</strong></span></pre><p>PostgreSQL will inspect the regular expression and use the index to answer the question.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip26"></a>Note</h3><p>Internally, PostgreSQL can transform the regular expression into a graph and traverse the index accordingly.</p></div><p> </p></div></div>

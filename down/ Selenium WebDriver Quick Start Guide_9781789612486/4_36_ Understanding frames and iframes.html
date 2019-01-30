@@ -1,0 +1,42 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec41"></a>Understanding frames and iframes</h2></div></div><hr /></div><p>Frames are HTML pages that are used inside the main HTML tags. A frame is an HTML tag written as <code class="literal">&lt;frame&gt;</code>. It is used to divide the web page into various sections. It specifies each frame within the <code class="literal">&lt;frameset&gt;</code> tag. Iframes or Inline frames is written as <code class="literal">&lt;iframe&gt;</code>and this is also <span>another</span><a id="id325162085" class="indexterm"></a> tag in HTML, but it is used to embed some other document into the <span>current</span><a id="id325162936" class="indexterm"></a> HTML document. The method to handle frames and iframes in Selenium is the same. We will only see how to handle frames here.</p><p>Refer to the <code class="literal">FramesDemo.html</code> given in the following code:</p><pre class="programlisting">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;frameset cols="25%,50%,*"&gt;
+
+ &lt;frame name="frame1" src="C:\Frame1.html"&gt;
+ &lt;frame name="frame2" src="C:\Frame2.html"&gt;
+ &lt;frame name="frame3" src="C:\Frame3.html"&gt;
+&lt;/frameset&gt;
+&lt;/html&gt;</pre><p>The code for <code class="literal">Frame1.html</code> is given in the following code:</p><pre class="programlisting">&lt;!DOCTYPE html&gt; 
+&lt;html&gt; 
+ &lt;body&gt; 
+ &lt;h1&gt;Frame 1&lt;/h1&gt; 
+ &lt;p&gt;Contents of Frame 1&lt;/p&gt; 
+ &lt;p&gt;&lt;input type="radio" id="radio1"/&gt;&lt;/p&gt; 
+ &lt;/body&gt; 
+&lt;/html&gt;</pre><p>The code for <code class="literal">Frame2.html</code> is given in the following code:</p><pre class="programlisting">&lt;!DOCTYPE html&gt; 
+&lt;html&gt; 
+ &lt;body&gt; 
+ &lt;h1&gt;Frame 2&lt;/h1&gt; 
+ &lt;p&gt;Contents of Frame 2&lt;/p&gt; 
+ &lt;p&gt;&lt;input type="text" id="input1"/&gt;&lt;/p&gt; 
+ &lt;/body&gt; 
+&lt;/html&gt;
+
+</pre><p>The code for <code class="literal">Frame3.html</code> is <span>given</span><a id="id325441776" class="indexterm"></a> in the <span>following</span><a id="id325441782" class="indexterm"></a> code:</p><pre class="programlisting">&lt;!DOCTYPE html&gt; 
+&lt;html&gt; 
+ &lt;body&gt; 
+ &lt;h1&gt;Frame 3&lt;/h1&gt; 
+ &lt;p&gt;Contents of Frame 3&lt;/p&gt; 
+ &lt;p&gt;&lt;input type="checkbox" id="chk1"/&gt;&lt;/p&gt; 
+ &lt;/body&gt; 
+&lt;/html&gt;</pre><p>The following is the code to handle elements in three frames:</p><pre class="programlisting">WebDriver driver = new ChromeDriver();
+driver.navigate().to("C:\\FramesDemo.html");
+ driver.switchTo().frame(0);
+ System.out.println(driver.findElement(By.tagName("body")).getText());
+ driver.findElement(By.id("radio1")).click();
+ driver.switchTo().defaultContent();
+ driver.switchTo().frame("frame2");
+ driver.findElement(By.id("input1")).sendKeys("input box");
+ driver.switchTo().defaultContent();
+ driver.switchTo().frame("frame3");
+ driver.findElement(By.id("chk1")).click();</pre><p>In the preceding code, it can be seen that to click each of the web elements, we have to issue a command: <code class="literal">driver.switchTo.Frame(int)</code> or <code class="literal">driver.switchTo.Frame(String)</code>.</p><p>We have taken the examples of integer and string parameters. We pass the index as the integer parameter or the name of the frame as the string parameter. Whenever we issue this command, control goes to that particular frame and we can only access web elements inside that frame.</p><p>If there are nested frames inside a particular frame, the first navigation has to be to the container or parent frame followed by navigation to the child frame. If there are parallel frame hierarchies, as in the preceding example, one has to issue <code class="literal">driver.switchTo.defaultContent()</code> to get to the outermost frame if the control is currently in one particular frame and a web <span>element</span><a id="id325444752" class="indexterm"></a> in another <span>parallel</span><a id="id325444758" class="indexterm"></a> frame has to be clicked. If <code class="literal">driver.switchTo.defaultContent()</code> is not issued before accessing a parallel frame hierarchy, then <span>a <code class="literal">NoSuchFrameException</code></span>, <span>provided the control is in another frame at that moment. This exception is primarily thrown when a frame doe</span>s not exist.</p></div>

@@ -1,0 +1,606 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec51"></a>Understanding various stored procedure languages</h2></div></div><hr /></div><p>As already stated previously in this chapter, PostgreSQL <span>gives</span><a id="id325854956" class="indexterm"></a> you the power to write functions and stored procedures in various languages. The following options are available and shipped along with the PostgreSQL core:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">SQL</li><li style="list-style-type: disc">PL/pgSQL</li><li style="list-style-type: disc">PL/Perl and PL/PerlU</li><li style="list-style-type: disc">PL/Python</li><li style="list-style-type: disc">PL/Tcl and PL/TclU</li></ul></div><p>SQL is the obvious choice to write functions and should be used whenever possible, as it gives the most freedom to the optimizer. However, if you want to write slightly more complex code, PL/pgSQL might be the language of your choice.</p><p>PL/pgSQL offers flow control and a lot more. In this chapter, some of the more advanced and less known features of PL/pgSQL will be shown but do keep in mind that this chapter is not meant to be a complete tutorial on PL/pgSQL.</p><p>The core contains code to run server side functions in Perl. Basically, the logic is the same here. Code will be passed as a string and executed by Perl. Remember that PostgreSQL does not speak Perl; it merely has the code to pass things on to the external programming language.</p><p>Maybe you have noticed that Perl and TCL are available in two flavors: "trusted" (PL/Perl and PL/TCL) and "untrusted" (PL/PerlU and PL/TCLU). The difference between a trusted and an untrusted language is actually an important one. In PostgreSQL, a language is loaded directly into the database connection. Therefore, the language is able to do quite a lot of nasty stuff. To get rid of security problems, the concept of trusted languages has been invented. The idea is that a trusted language is <span>restricted</span><a id="id325664428" class="indexterm"></a> to the very core of the language. It is not possible to do the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Include libraries</li><li style="list-style-type: disc">Open network sockets</li><li style="list-style-type: disc">Perform system calls of any kind, which would include opening files, and so on</li></ul></div><p> </p><p>Perl offers something called taint mode, which is used to implement this feature in PostgreSQL. Perl will automatically restrict itself to trusted mode and error out if a security violation is about to happen. In untrusted mode, everything is possible, and therefore, only the superuser is allowed to run untrusted code.</p><p>If you want to run trusted as well as untrusted code, you have to activate both languages, <code class="literal">plperl</code> and <code class="literal">plperlu</code> ( <code class="literal">pltcl</code> and <code class="literal">pltclu</code> respectively).</p><p>Python is currently only available as an untrusted language; therefore, administrators have to be very careful when it comes to security in general, as a function running in untrusted mode can bypass all security mechanisms enforced by PostgreSQL. Just keep in mind that Python is running as part of your database connection and is in no way responsible for security.</p><p>Let's get started with the most awaited topic of this chapter.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec80"></a>Introducing PL/pgSQL</h3></div></div></div><p>In this section, you will be <span>introduced</span><a id="id325664394" class="indexterm"></a> to some of the <span>more</span><a id="id325565392" class="indexterm"></a> advanced features of PL/pgSQL, which are important for writing proper and highly efficient code.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note55"></a>Note</h3><p>Note that this is not a beginner's introduction to programming or PL/pgSQL in general.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec55"></a>Handling quoting</h4></div></div></div><p>One of the most <span>important</span><a id="id325565412" class="indexterm"></a> things in database <span>programming</span><a id="id325565420" class="indexterm"></a> is quoting. If you are not using proper quoting, you will surely get into trouble with SQL injection and open unacceptable security holes.</p><p>What is SQL injection? Let's consider the following example:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION broken(text) RETURNS void AS 
+$$  
+DECLARE 
+  v_sql text; 
+BEGIN 
+  v_sql := 'SELECT schemaname 
+            FROM pg_tables 
+            WHERE tablename = ''' || $1 || ''''; 
+  RAISE NOTICE 'v_sql: %', v_sql; 
+  RETURN; 
+END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p>In this example, the SQL code is simply pasted together without ever worrying about security. All that we are doing here is using the <code class="literal">||</code> operator to concatenate strings. This works fine if people run normal queries. Consider the following example showing some broken code:</p><pre class="programlisting"><span class="strong"><strong>SELECT broken('t_test'); </strong></span></pre><p>However, we have to be prepared for people who try to exploit your systems. Consider the following example:</p><pre class="programlisting"><span class="strong"><strong>SELECT broken('''; DROP  TABLE  t_test; ');</strong></span></pre><p>Running the function with this parameter will show a problem. The next listing shows classical SQL injection:</p><pre class="programlisting"><span class="strong"><strong>NOTICE: v_sql: SELECT schemaname FROM  pg_tables 
+WHERE tablename = ''; DROP TABLE t_test; ' 
+CONTEXT: PL/pgSQL function broken(text) line  6 at RAISE 
+ broken 
+-------- 
+(1 row)</strong></span></pre><p>Dropping a table when you just want to do a lookup is not a desirable thing to do. It is definitely not acceptable to make the security of your application depend on the parameters passed to your statements.</p><p>To avoid SQL injection, PostgreSQL offers various functions; these should be used at all times to ensure that your security stays intact:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT quote_literal(E'o''reilly'), quote_ident(E'o''reilly'); 
+ quote_literal  | quote_ident 
+----------------+------------- 
+ 'o''reilly'    | "o'reilly" (1 row)</strong></span></pre><p>The <code class="literal">quote_literal</code> function will escape a string in such a way that nothing bad can happen anymore. It will add all the quotes around the <span>string</span><a id="id325648497" class="indexterm"></a> and escape <span>problematic</span><a id="id325648508" class="indexterm"></a> characters inside the string. Therefore, there is no longer any need to start and end the string manually.</p><p> </p><p>The second function shown here is <code class="literal">quote_ident</code>. It can be used to quote object names properly. Note that double quotes are used, which is exactly what is needed to handle table names. The next example shows, how to use complex names :</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE TABLE "Some  stupid name" ("ID" int);  
+CREATE TABLE 
+test=# \d "Some stupid name" Table "public.Some stupid name" 
+ Column  |  Type   | Modifiers 
+---------+---------+-----------  
+ ID      | integer |</strong></span></pre><p>Normally, all table names in PostgreSQL are lowercase. However, if double quotes are used, object names can contain capitalized letters. In general, it is not a good idea to use this kind of trickery, as you would have to use double quotes all the time, which can be a bit inconvenient.</p><p>After a basic introduction to quoting, it is important to take a look at how <code class="literal">NULL</code> values are handled. The next listing shows, how null is treated by the quote_literal function:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT quote_literal(NULL); 
+quote_literal 
+--------------- 
+ 
+(1 row)</strong></span></pre><p>If you call the <code class="literal">quote_literal</code> function on a <code class="literal">NULL</code> value, it will simply return <code class="literal">NULL</code>. There is no need to take care of quoting, in this case.</p><p>PostgreSQL provides even more functions to explicitly take care of a <code class="literal">NULL</code> value:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT quote_nullable(123), quote_nullable(NULL); 
+ quote_nullable  | quote_nullable 
+-----------------+---------------- 
+ '123'           | NULL (1 row)</strong></span></pre><p>It is not only possible to quote strings and <span>object</span><a id="id326221749" class="indexterm"></a> names, but to also use PL/pgSQL onboard to format and prepare entire queries. The beauty here is that you can use the <span>format</span><a id="id326479310" class="indexterm"></a> function to add parameters to a statement. Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION simple_format() RETURNS text AS 
+$$ 
+DECLARE 
+  v_string text; 
+  v_result text; 
+BEGIN 
+  v_string := format('SELECT schemaname|| '' .'' || tablename 
+                      FROM pg_tables 
+                      WHERE %I = $1 
+                        AND %I = $2', 'schemaname', 'tablename'); 
+  EXECUTE v_string USING 'public', 't_test' INTO v_result; 
+  RAISE NOTICE 'result: %', v_result; 
+  RETURN v_string; 
+END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p>The names of the fields are passed to the format function. Finally, the <code class="literal">USING</code> clause of the <code class="literal">EXECUTE</code> statement is there to add the parameters to the query, which is then executed. Again, the beauty here is that no SQL injection can happen.</p><p>Here is what happens when the simple_format function is called:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT simple_format (); 
+NOTICE: result: public .t_test 
+                simple_format                 
+--------------------------------------------- 
+ SELECT schemaname|| ' .' || tablename      + 
+                       FROM pg_tables       + 
+                       WHERE schemaname = $1+ 
+                         AND tablename = $2 
+(1 row)</strong></span></pre><p>As you can see, the debug message correctly displays the table, including the schema, and correctly returns the query.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec56"></a>Managing scopes</h4></div></div></div><p>After dealing with quoting and <span>basic</span><a id="id326635378" class="indexterm"></a> security (the SQL injection) in general, we shall focus on another important topic: scopes.</p><p>Just like most popular programming languages, PL/pgSQL uses variables depending on their context. Variables are defined in the <code class="literal">DECLARE</code> statement of a function. However, PL/pgSQL allows you to nest a <code class="literal">DECLARE</code> statement:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION scope_test () RETURNS int AS 
+$$ 
+DECLARE 
+  i int := 0; 
+BEGIN 
+  RAISE NOTICE 'i1: %', i; 
+  DECLARE 
+    i int; 
+    BEGIN 
+      RAISE NOTICE 'i2: %', i; 
+    END; 
+  RETURN i; 
+END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p>In the <code class="literal">DECLARE</code> statement, a variable <code class="literal">i</code> is defined and a value is assigned to it. Then, <code class="literal">i</code> is displayed. The output will, of course, be <code class="literal">0</code>. Then, a second <code class="literal">DECLARE</code> statement starts. It contains an additional incarnation of <code class="literal">i</code>, which is not assigned a value. Therefore, the value will be <code class="literal">NULL</code>. Note that PostgreSQL will now display the inner <code class="literal">i</code>. Here is what happens:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT scope_test(); 
+NOTICE:  i1: 0 
+NOTICE:  i2: &lt;NULL&gt; 
+ scope_test  
+------------ 
+  0 
+(1 row)</strong></span></pre><p>As expected, the debug messages will show <code class="literal">0</code> and <code class="literal">NULL</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip56"></a>Note</h3><p>PostgreSQL allows you to use all kinds of tricks. However, it is strongly recommended to keep your code simple and easy to read.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec57"></a>Understanding advanced error handling</h4></div></div></div><p>For programming languages, in every program, and in every module, error handling is an <span>important</span><a id="id325631792" class="indexterm"></a> thing. Everything is expected to go wrong once in a while, and therefore it is vital and of key importance to handle errors properly and professionally. In PL/pgSQL, you can use <code class="literal">EXCEPTION</code> blocks to handle errors. The idea is that if the <code class="literal">BEGIN</code> block does something wrong, the <code class="literal">EXCEPTION</code> block will take care of it and handle the problem correctly. Just like many other languages, such as Java, you can react on different types of errors and catch them separately.</p><p>In the following example, the code might run into a division by zero problem. The goal is to catch this error and react accordingly:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION error_test1(int, int) RETURNS int AS 
+$$ 
+BEGIN 
+  RAISE  NOTICE 'debug message: % / %', $1, $2;  
+  BEGIN 
+    RETURN $1 / $2;  
+  EXCEPTION 
+    WHEN division_by_zero THEN 
+      RAISE NOTICE 'division by zero  detected: %', sqlerrm; 
+    WHEN others THEN 
+      RAISE NOTICE 'some other error: %', sqlerrm; 
+  END; 
+  RAISE  NOTICE 'all errors handled';  
+  RETURN 0; 
+END; 
+$$ LANGUAGE 'plpgsql'; </strong></span></pre><p>The <code class="literal">BEGIN</code> block can clearly throw an error because there can be a division by zero. However, the <code class="literal">EXCEPTION</code> block catches the error we are looking at and also takes care of all other potential problems that can unexpectedly pop up.</p><p>Technically, this is more or less the same as a <code class="literal">savepoint</code>, and therefore the error does not cause the entire transaction to fail completely. Only the block causing the error will be subject to a mini rollback.</p><p>By inspecting the <code class="literal">sqlerrm</code> variable, you can also have direct access to the error message itself. Let's run the code:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT error_test1(9, 0); 
+NOTICE:  debug message: 9 / 0 
+NOTICE:  division by zero  detected: division by zero 
+NOTICE:  all errors handled 
+ error_test1  
+------------- 
+      0 
+(1 row) </strong></span></pre><p>PostgreSQL catches the exception and shows the message in the <code class="literal">EXCEPTION</code> block. It is kind enough to show us the line that is the error. This makes it a whole lot easier to debug and fix the code if it is broken.</p><p>In some cases, it also makes sense to raise <span>your</span><a id="id325641616" class="indexterm"></a> own exception. As one might expect, this is quite easy to do:</p><pre class="programlisting"><span class="strong"><strong>RAISE unique_violation 
+USING MESSAGE = 'Duplicate user  ID: ' || user_id;</strong></span></pre><p>Apart from this, PostgreSQL offers many predefined error code and exceptions. The following page contains a complete list of these error messages: <a class="ulink" href="https://www.postgresql.org/docs/10/static/errcodes-appendix.html" target="_blank"><span>h</span><span>t</span><span>t</span><span>p</span><span>s</span><span>://</span><span>w</span><span>w</span><span>w</span><span>.</span><span>p</span><span>o</span><span>s</span><span>t</span><span>g</span><span>r</span><span>e</span><span>s</span><span>q</span><span>l</span><span>.</span><span>o</span><span>r</span><span>g</span><span>/</span><span>d</span><span>o</span><span>c</span><span>s</span><span>/</span><span>10</span><span>/s</span><span>t</span><span>a</span><span>t</span><span>i</span><span>c</span><span>/</span><span>e</span><span>r</span><span>r</span><span>c</span><span>o</span><span>d</span><span>e</span><span>s</span><span>-</span><span>a</span><span>p</span><span>p</span><span>e</span><span>n</span><span>d</span><span>i</span><span>x</span><span>.</span><span>h</span><span>t</span><span>m</span><span>l</span></a>.</p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec58"></a>Making use of GET DIAGNOSTICS</h4></div></div></div><p>Many people who have used Oracle in the past might be familiar <span>with</span><a id="id326373254" class="indexterm"></a> the <code class="literal">GET DIAGNOSTICS</code> clause. The idea behind the <code class="literal">GET DIAGNOSTICS</code> clause is to <span>allow</span><a id="id326373269" class="indexterm"></a> users to see what is going on in the system. While the syntax might appear a bit strange to people who are used to modern code, it is still a valuable tool that can make your applications better.</p><p>From my point of view, there are two main tasks that the <code class="literal">GET DIAGNOSTICS</code> clause can be used for:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Inspecting the row count</li><li style="list-style-type: disc">Fetching context information and getting a backtrace</li></ul></div><p>Inspecting the row count is definitely something you will need during everyday programming. Extracting context information will be useful if you want to debug applications.</p><p>The following example shows how the <code class="literal">GET DIAGNOSTICS</code> clause can be used inside your code:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION get_diag() RETURNS int AS 
+$$ 
+DECLARE 
+  rc  int; 
+  _sqlstate text; 
+  _message text; 
+  _context text; 
+BEGIN 
+  EXECUTE 'SELECT * FROM generate_series(1, 10)'; 
+  GET DIAGNOSTICS rc = ROW_COUNT; 
+  RAISE NOTICE 'row count: %', rc; 
+  SELECT rc / 0;  
+EXCEPTION 
+  WHEN OTHERS THEN 
+    GET STACKED DIAGNOSTICS 
+    _sqlstate = returned_sqlstate, 
+    _message = message_text, 
+    _context = pg_exception_context;  
+    RAISE NOTICE 'sqlstate: %, message: %, context: [%]', 
+                 _sqlstate, 
+                 _message, 
+                 replace( _context, E'n', ' &lt;- ' ); 
+  RETURN rc; 
+END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>The first thing after declaring those <span>variables</span><a id="id326472887" class="indexterm"></a> is to execute a SQL statement and ask the <code class="literal">GET DIAGNOSTICS</code> clause for a row count, which is then displayed in a <span>debug</span><a id="id326472899" class="indexterm"></a> message. Then, the function forces PL/pgSQL to error out. Once this happens, we shall use the <code class="literal">GET DIAGNOSTICS</code> clause to extract information from the server to display it.</p><p>Here is what happens when we call the get_diag function:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT get_diag();  
+NOTICE:  row count: 10 
+CONTEXT:   PL/pgSQL function get_diag() line  12 at RAISE  
+NOTICE:  sqlstate: 22012, 
+message: division by zero, 
+context: [SQL  statement "SELECT rc / 0" 
+&lt;- PL/pgSQL function get_diag() line  14 at 
+SQL statement] 
+CONTEXT:  PL/pgSQL function get_diag() line  22 at RAISE
+</strong></span><span class="strong"><strong> get_diag 
+---------- 
+ 10 
+(1 row)</strong></span></pre><p>As you can see, the <code class="literal">GET DIAGNOSTICS</code> clause gives us quite detailed information about the activities in the system.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec59"></a>Using cursors to fetch data in chunks</h4></div></div></div><p>If you execute SQL, the database will calculate the <span>result</span><a id="id326472934" class="indexterm"></a> and send it to your application. Once the entire result set has been sent to the client, the application can continue to do its job. The problem is just this: what happens if the result set is so large that it does not fit into the memory anymore? What if the database returns 10 billion rows? The client application usually cannot handle so much data at once, and actually, it shouldn't. The solution to the problem is a cursor. The idea behind a cursor is that data is generated only when it is needed (when <code class="literal">FETCH</code> is called). Therefore, the application can already start to consume data while it is actually being generated by the database. On top of that, the memory required to perform an operation is a lot lower.</p><p> </p><p>When it comes to PL/pgSQL, cursors also play a major role. Whenever you loop over a result set, PostgreSQL will automatically use a cursor internally. The advantage is that the memory consumption of your applications will be reduced dramatically and there is hardly a chance of ever running out of memory due to processing large amounts of data. There are various ways to use cursors. Here is the most simplistic example of a cursor inside a function:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION c(int) 
+  RETURNS setof text AS 
+$$ 
+DECLARE 
+  v_rec record; 
+BEGIN 
+  FOR v_rec IN SELECT tablename 
+               FROM pg_tables 
+               LIMIT $1 
+  LOOP 
+    RETURN NEXT v_rec.tablename; 
+  END LOOP; 
+  RETURN; 
+END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p>This code is interesting for two reasons. First of all, it is a <span class="strong"><strong>Set Returning Fu</strong></span><span class="strong"><strong>nction</strong></span> (<span class="strong"><strong>SR</strong></span><span class="strong"><strong>F</strong></span>). It produces an entire column and not just a single row. The way to achieve this is to use the set of variables instead of just the datatype. The <code class="literal">RETURN NEXT</code> clause will build up the result set until we <span>have</span><a id="id326473218" class="indexterm"></a> reached the end. The <code class="literal">RETURN</code> clause will tell PostgreSQL that we want to leave the function and that the result is done.</p><p>The second important issue is that looping over the cursor will automatically create an internal cursor. In other words, there is no need to be afraid that you could potentially run out of memory. PostgreSQL will optimize the query in a way that it tries to produce the first 10% of the data (defined by the <code class="literal">cursor_tuple_fraction</code> variable) as fast as possible. Here is what the query will return:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT * FROM c(3); 
+ c 
+--------------  
+ t_test  
+ pg_statistic  
+ pg_type 
+(3 rows)</strong></span></pre><p>In this example, there will simply be a list of <span>random</span><a id="id326473241" class="indexterm"></a> tables. If the result differs on your side, this is somewhat expected.</p><p>What you have just seen is, in my opinion, the most frequent and most common way to use implicit cursors in PL/pgSQL. The following example shows an older mechanism that many people from Oracle might know:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION d(int) 
+  RETURNS setof text AS 
+$$ 
+DECLARE 
+  v_cur refcursor; 
+  v_data text; 
+BEGIN 
+  OPEN v_cur FOR 
+    SELECT tablename 
+    FROM pg_tables 
+    LIMIT $1; 
+  WHILE true LOOP 
+    FETCH v_cur INTO v_data; 
+    IF FOUND THEN 
+      RETURN NEXT v_data; 
+    ELSE 
+      RETURN; 
+    END IF; 
+  END LOOP; 
+END; 
+$$ LANGUAGE 'plpgsql'; </strong></span></pre><p>In this example, the cursor is explicitly declared and opened. Inside, the loop data is then explicitly fetched and returned to the caller. Basically, the query does exactly the same thing. It is merely a matter of taste which syntax developers actually prefer.</p><p>Do you still have the feeling that you don't know enough about cursors yet? There is more; here is a third option to do exactly the same thing:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION e(int) 
+  RETURNS setof text AS 
+$$ 
+DECLARE 
+  v_cur CURSOR (param1 int) FOR 
+          SELECT tablename 
+          FROM pg_tables 
+          LIMIT param1; 
+  v_data text; 
+BEGIN 
+  OPEN v_cur ($1); 
+  WHILE true LOOP 
+    FETCH v_cur INTO v_data; 
+    IF FOUND THEN 
+      RETURN NEXT v_data; 
+    ELSE 
+      RETURN; 
+    END IF; 
+  END LOOP; 
+END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p>In this case, the cursor is fed with an integer parameter, which comes directly from the function call (<code class="literal">$1</code>).</p><p>Sometimes, a cursor is not used up by the stored procedure itself but returned for later use. In this case, you can return a simple use <code class="literal">refcursor</code> as the return value:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION cursor_test(c refcursor) 
+  RETURNS refcursor AS 
+$$ 
+BEGIN 
+  OPEN c FOR SELECT * 
+             FROM generate_series(1, 10) AS id;
+</strong></span><span class="strong"><strong>  RETURN c; 
+END; 
+$$ LANGUAGE plpgsql;</strong></span></pre><p>The logic here is quite simple. The name of the cursor is passed to the function. Then, the cursor is opened and returned. The beauty here is that the query behind the cursor can be created on the fly and compiled dynamically.</p><p>The application can fetch from the cursor just like from any other application. Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>test=# BEGIN; 
+BEGIN 
+test=# SELECT cursor_test('mytest'); 
+ cursor_test 
+-------------  
+ mytest 
+(1 row) 
+ test=# FETCH NEXT FROM mytest; 
+ id 
+---- 
+ 1 
+(1 row) 
+test=# FETCH NEXT FROM mytest;
+ id 
+---- 
+ 2 
+(1 row)</strong></span></pre><p>Note that it works only when a transaction block is used.</p><p>In this section, we have learned that <span>cursors</span><a id="id326473578" class="indexterm"></a> will only produce data as it is consumed. This holds true for most queries. However, there is a catch to this example; whenever an SRF is used, the entire result has to be materialized. It is not created on the fly, but instead, at once. The reason is that SQL must be able to rescan a relation, which is easily possible in the case of a normal table. However, for functions, the situation is different. Therefore, an SRF is always calculated and materialized, making the cursor in this example totally useless. In other words, we need to be careful while writing functions. In some cases, danger is hidden in the nifty details.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec60"></a>Utilizing composite types</h4></div></div></div><p>In most other database systems, stored procedures are <span>only</span><a id="id326473594" class="indexterm"></a> used with primitive data types, such as integers, numerics, varchar, and so on. However, PostgreSQL is very different. We can use all data types available to us. This includes primitive, composite, and custom types of data. There are simply no restrictions as far as data types are concerned. To unleash the full power of PostgreSQL, composite types are highly important and are often used by extensions that are found on the internet.</p><p>The following example shows how a composite type can be passed to a function and how it can be used internally. Finally, the composite type will be returned again:</p><pre class="programlisting"><span class="strong"><strong>CREATE TYPE my_cool_type AS (s text, t text); 
+ 
+CREATE FUNCTION f(my_cool_type) 
+  RETURNS my_cool_type AS 
+$$ 
+DECLARE 
+    v_row my_cool_type; 
+BEGIN 
+  RAISE NOTICE 'schema: (%) / table: (%)' 
+             , $1.s, $1.t; 
+  SELECT schemaname, tablename 
+  INTO v_row 
+  FROM pg_tables 
+  WHERE tablename = trim($1.t) 
+        AND schemaname = trim($1.s) 
+  LIMIT 1; 
+  RETURN v_row; 
+END; 
+$$ LANGUAGE 'plpgsql';</strong></span></pre><p>The main issue here is that you can simply use <code class="literal">$1.field_name</code> to access the composite type. Returning the composite type is not difficult either. You just have to assemble the composite type variable on the fly and return it, just like any other data type. You can even use arrays or even more complex structures easily.</p><p>The following listing shows what PostgreSQL will return:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT (f).s, (f).t 
+  FROM f ('("public", "t_test")'::my_cool_type); 
+NOTICE:  schema: (public) / table: ( t_test) 
+   s    |   t     
+--------+-------- 
+ public | t_test 
+(1 row)</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec61"></a>Writing triggers in PL/pgSQL</h4></div></div></div><p>Server-side code is especially popular if you <span>want</span><a id="id326473632" class="indexterm"></a> to react to certain events happening in the database. A trigger allows you to call a function if an <code class="literal">INSERT</code>, <code class="literal">UPDATE</code>, <code class="literal">DELETE</code>, or <code class="literal">TRUNCATE</code> clause happens on a table. The function called by the trigger can then modify the data changed in your table or simply perform some necessary operation.</p><p>In PostgreSQL, triggers have become more powerful over the years and now provide a rich set of features:</p><pre class="programlisting"><span class="strong"><strong>test=# \h CREATE TRIGGER</strong></span>
+<span class="strong"><strong>Command: CREATE TRIGGER</strong></span>
+<span class="strong"><strong>Description: define a new trigger</strong></span>
+<span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>CREATE [ CONSTRAINT ] TRIGGER name { BEFORE | AFTER | INSTEAD OF } { event [ OR ... ] }</strong></span>
+<span class="strong"><strong>    ON table_name</strong></span>
+<span class="strong"><strong>    [ FROM referenced_table_name ]</strong></span>
+<span class="strong"><strong>    [ NOT DEFERRABLE | [ DEFERRABLE ] [ INITIALLY IMMEDIATE | INITIALLY DEFERRED ] ]</strong></span>
+<span class="strong"><strong>    [ REFERENCING { { OLD | NEW } TABLE [ AS ] transition_relation_name } [ ... ] ]</strong></span>
+<span class="strong"><strong>    [ FOR [ EACH ] { ROW | STATEMENT } ]</strong></span>
+<span class="strong"><strong>    [ WHEN ( condition ) ]</strong></span>
+<span class="strong"><strong>    EXECUTE PROCEDURE function_name ( arguments )</strong></span>
+
+<span class="strong"><strong>where event can be one of:</strong></span>
+
+<span class="strong"><strong>    INSERT</strong></span>
+<span class="strong"><strong>    UPDATE [ OF column_name [, ... ] ]</strong></span>
+<span class="strong"><strong>    DELETE</strong></span>
+<span class="strong"><strong>    TRUNCATE</strong></span></pre><p>The first thing to observe is that a trigger is always fired for a table or a view and calls a function. It has a name and can happen before or after an event. The beauty of PostgreSQL is that you can have an umpteen number of triggers on a single table. While this does not come as a surprise to hardcore PostgreSQL users, I want to point out that this is not possible in many expensive commercial database engines that are still in use around the world.</p><p>If there is more than one trigger on the same table, the following rule was introduced many years ago in PostgreSQL 7.3: triggers are fired in alphabetical order. First, all those BEFORE triggers happen in alphabetical order. Then, PostgreSQL performs the row operation the trigger has been fired for and continues executing after the triggers in alphabetical order. In other words, the <span>execution</span><a id="id326575590" class="indexterm"></a> order of triggers is absolutely deterministic and the number of triggers is basically unlimited.</p><p>Triggers can modify data before or after the actual modification has happened. In general, this is a good way to verify data and to error out if some custom restrictions are violated. The following example shows a trigger that is fired in the <code class="literal">INSERT</code> clause and which changes data added to the table:</p><pre class="programlisting"><span class="strong"><strong>CREATE TABLE t_sensor ( </strong></span>
+<span class="strong"><strong>        id serial, </strong></span>
+<span class="strong"><strong>        ts timestamp, </strong></span>
+<span class="strong"><strong>        temperature numeric </strong></span>
+<span class="strong"><strong>);</strong></span></pre><p>Our table just stores a couple of values. The goal now is to call a function as soon as a row is inserted:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION trig_func() </strong></span>
+<span class="strong"><strong>RETURNS trigger AS </strong></span>
+<span class="strong"><strong>$$ </strong></span>
+<span class="strong"><strong>        BEGIN </strong></span>
+<span class="strong"><strong>                IF NEW.temperature &lt; -273 </strong></span>
+<span class="strong"><strong>                THEN </strong></span>
+<span class="strong"><strong>                        NEW.temperature := 0; </strong></span>
+<span class="strong"><strong>                END IF; </strong></span>
+
+<span class="strong"><strong>                RETURN NEW; </strong></span>
+<span class="strong"><strong>        END; </strong></span>
+<span class="strong"><strong>$$ LANGUAGE 'plpgsql';</strong></span></pre><p>As stated previously, the trigger will always call a function, which allows you to nicely abstract code. The important thing here is that the trigger function has to return a trigger. To access the row you are about to insert, you can access the <code class="literal">NEW</code> variable.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip57"></a>Note</h3><p><code class="literal">INSERT</code> and <code class="literal">UPDATE</code> triggers always provide a <code class="literal">NEW</code> variable. <code class="literal">UPDATE</code> and <code class="literal">DELETE</code> will offer a variable called <code class="literal">OLD</code>. Those variables contain the row you are about to modify.</p></div><p>In my example, the code checks whether the temperature is too low. If it is, the value is not okay; it is dynamically adjusted. To ensure that the modified row can be used, <code class="literal">NEW</code> is simply returned. If there is a second trigger called after this one, the next function call will already see the modified row.</p><p>In the next step, the trigger can be created by using the CREATE TRIGGER command:</p><pre class="programlisting"><span class="strong"><strong>CREATE TRIGGER sensor_trig  
+  BEFORE INSERT ON t_sensor  
+  FOR EACH  ROW 
+  EXECUTE PROCEDURE trig_func(); </strong></span></pre><p>Here is what the trigger will do:</p><pre class="programlisting"><span class="strong"><strong>test=# INSERT INTO t_sensor (ts,  temperature)  
+  VALUES ('2017-05-04 14:43', -300) RETURNING *; 
+ id  |   ts                | temperature 
+-----+---------------------+------------- 
+ 1   | 2017-05-04 14:43:00 |   0 
+(1 row) 
+ 
+INSERT 0 1</strong></span></pre><p>As you can see, the value has been adjusted correctly. The content of the table shows <code class="literal">0</code> for the temperature.</p><p>If you are using triggers, you <span>should</span><a id="id326635268" class="indexterm"></a> be aware of the fact that a trigger knows a lot about itself. It can access a couple of variables that allow you to write more sophisticated code and to achieve better abstraction.</p><p>Let's drop the trigger first:</p><pre class="programlisting"><span class="strong"><strong>test=# DROP TRIGGER sensor_trig ON t_sensor;  
+DROP TRIGGER </strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>Then, a new function can be added:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION trig_demo() 
+  RETURNS trigger AS 
+$$ 
+BEGIN 
+  RAISE NOTICE 'TG_NAME: %', TG_NAME; 
+  RAISE NOTICE 'TG_RELNAME: %', TG_RELNAME; 
+  RAISE NOTICE 'TG_TABLE_SCHEMA: %', TG_TABLE_SCHEMA; 
+  RAISE NOTICE 'TG_TABLE_NAME: %', TG_TABLE_NAME; 
+  RAISE NOTICE 'TG_WHEN: %', TG_WHEN; 
+  RAISE NOTICE 'TG_LEVEL: %', TG_LEVEL; 
+  RAISE NOTICE 'TG_OP: %', TG_OP; 
+  RAISE NOTICE 'TG_NARGS: %', TG_NARGS; 
+-- RAISE  NOTICE 'TG_ARGV: %', TG_NAME; 
+  RETURN NEW; 
+END; 
+$$ LANGUAGE 'plpgsql'; 
+
+CREATE TRIGGER sensor_trig
+    BEFORE INSERT ON t_sensor
+    FOR EACH ROW
+    EXECUTE PROCEDURE trig_demo();
+</strong></span></pre><p>All the variables used here are predefined and are <span>available</span><a id="id326635308" class="indexterm"></a> by default. All our code does is display them so that we can see the content:</p><pre class="programlisting"><span class="strong"><strong>test=# INSERT INTO t_sensor (ts, temperature)</strong></span>
+<span class="strong"><strong>              VALUES ('2017-05-04 14:43', -300) RETURNING *;</strong></span>
+
+<span class="strong"><strong>NOTICE: TG_NAME: demo_trigger</strong></span>
+<span class="strong"><strong>NOTICE: TG_RELNAME: t_sensor</strong></span>
+<span class="strong"><strong>NOTICE: TG_TABLE_SCHEMA: public</strong></span>
+<span class="strong"><strong>NOTICE: TG_TABLE_NAME: t_sensor</strong></span>
+<span class="strong"><strong>NOTICE: TG_WHEN: BEFORE</strong></span>
+<span class="strong"><strong>NOTICE: TG_LEVEL: ROW</strong></span>
+<span class="strong"><strong>NOTICE: TG_OP: INSERT</strong></span>
+<span class="strong"><strong>NOTICE: TG_NARGS: 0</strong></span>
+
+<span class="strong"><strong> id  | ts                  | temperature</strong></span>
+<span class="strong"><strong>-----+---------------------+-------------</strong></span>
+<span class="strong"><strong> 2   | 2017-05-04 14:43:00 | -300</strong></span>
+<span class="strong"><strong>(1 row)</strong></span>
+<span class="strong"><strong>
+INSERT 0 1</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>What we see here is that the trigger knows its name, the table it has been fired for, and a lot more. To apply similar actions on various tables, these variables help avoid duplicate code by just writing a single function. This can then be used for all the tables that we are interested in.</p><p>So far, we have seen simple row-level triggers, which are fired once per statement. However, with the introduction of PostgreSQL 10.0, there are a couple of new features. Statement-level triggers have been around for a while already. However, it was not possible to access the data changed by the trigger. This has been fixed in PostgreSQL 10.0 and it is  now possible to make use of transition tables, which contain all the changes made.</p><p>The following listing contains a complete <span>example</span><a id="id326642709" class="indexterm"></a> showing how a transition table can be used:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION transition_trigger()  
+  RETURNS TRIGGER AS $$ 
+    DECLARE 
+  v_record  record; 
+    BEGIN 
+        IF  (TG_OP = 'INSERT') THEN 
+    RAISE NOTICE 'new data: '; 
+    FOR v_record IN SELECT * FROM new_table 
+    LOOP 
+      RAISE NOTICE '%', v_record; 
+    END LOOP; 
+        ELSE  
+    RAISE NOTICE 'old data: '; 
+    FOR v_record IN SELECT * FROM old_table 
+    LOOP 
+      RAISE NOTICE '%', v_record; 
+    END LOOP; 
+        END IF; 
+        RETURN NULL; -- result is ignored since this is an AFTER trigger 
+    END; 
+$$ LANGUAGE plpgsql; 
+ 
+CREATE TRIGGER transition_test_trigger_ins 
+    AFTER INSERT ON t_sensor 
+    REFERENCING NEW TABLE AS new_table 
+    FOR EACH STATEMENT EXECUTE PROCEDURE transition_trigger(); 
+ 
+CREATE TRIGGER transition_test_trigger_del 
+    AFTER DELETE ON t_sensor 
+    REFERENCING OLD TABLE AS old_table 
+    FOR EACH STATEMENT EXECUTE PROCEDURE transition_trigger();</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>In this case, we need two trigger definitions because we cannot just squeeze everything into just one definition. Inside the trigger function, the transition table is easy to use: it can be accessed just like a normal table.</p><p>Let's test the code of the trigger by inserting some data:</p><pre class="programlisting"><span class="strong"><strong>INSERT INTO t_sensor  
+  SELECT   *, now(), random() * 20  
+  FROM   generate_series(1, 5); 
+ 
+DELETE FROM t_sensor; </strong></span></pre><p>In my example, the code will <span>simply</span><a id="id326643003" class="indexterm"></a> issue a <code class="literal">NOTICE</code> for each entry in the transition table:</p><pre class="programlisting"><span class="strong"><strong>NOTICE: new data:</strong></span>
+<span class="strong"><strong>NOTICE: (1,"2017-10-04 15:47:14.129151",10.4552665632218)</strong></span>
+<span class="strong"><strong>NOTICE: (2,"2017-10-04 15:47:14.129151",12.8670312650502)</strong></span>
+<span class="strong"><strong>NOTICE: (3,"2017-10-04 15:47:14.129151",14.3934494629502)</strong></span>
+<span class="strong"><strong>NOTICE: (4,"2017-10-04 15:47:14.129151",4.35718866065145)</strong></span>
+<span class="strong"><strong>NOTICE: (5,"2017-10-04 15:47:14.129151",10.9121138229966)</strong></span>
+<span class="strong"><strong>INSERT 0 5</strong></span>
+<span class="strong"><strong>
+NOTICE: old data:</strong></span>
+<span class="strong"><strong>NOTICE: (1,"2017-10-04 15:47:14.129151",10.4552665632218)</strong></span>
+<span class="strong"><strong>NOTICE: (2,"2017-10-04 15:47:14.129151",12.8670312650502)</strong></span>
+<span class="strong"><strong>NOTICE: (3,"2017-10-04 15:47:14.129151",14.3934494629502)</strong></span>
+<span class="strong"><strong>NOTICE: (4,"2017-10-04 15:47:14.129151",4.35718866065145)</strong></span>
+<span class="strong"><strong>NOTICE: (5,"2017-10-04 15:47:14.129151",10.9121138229966)</strong></span>
+<span class="strong"><strong>DELETE 5</strong></span></pre><p>Keep in mind that it is not necessarily a good idea to use transition tables for billions of rows. PostgreSQL really is scalable but at some point it is necessary to see that there are performance implications as well.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec81"></a>Writing stored procedures in PL/pgSQL</h3></div></div></div><p>Let's now move on to <span>understanding</span><a id="id326643086" class="indexterm"></a> how to write procedures. In this section, you will learn to write real stored procedures, which were introduced in PostgreSQL 11. To create a <span>procedure</span><a id="id326643095" class="indexterm"></a> you have to use <code class="literal">CREATE PROCEDURE</code>. The syntax of this command is remarkable similar to <code class="literal">CREATE FUNCTION</code>. There are just minor differences:</p><pre class="programlisting"><span class="strong"><strong>test=# \h CREATE PROCEDURE</strong></span>
+<span class="strong"><strong>Command: CREATE PROCEDURE</strong></span>
+<span class="strong"><strong>Description: define a new procedure</strong></span>
+<span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>CREATE [ OR REPLACE ] PROCEDURE</strong></span>
+<span class="strong"><strong> name ( [ [ argmode ] [ argname ] argtype [ { DEFAULT | = } default_expr ] [, ...] ] )</strong></span>
+<span class="strong"><strong> { LANGUAGE lang_name</strong></span>
+<span class="strong"><strong> | TRANSFORM { FOR TYPE type_name } [, ... ]</strong></span>
+<span class="strong"><strong> | [ EXTERNAL ] SECURITY INVOKER | [ EXTERNAL ] SECURITY DEFINER</strong></span>
+<span class="strong"><strong> | SET configuration_parameter { TO value | = value | FROM CURRENT }</strong></span>
+<span class="strong"><strong> | AS 'definition'</strong></span>
+<span class="strong"><strong> | AS 'obj_file', 'link_symbol'</strong></span>
+<span class="strong"><strong> } ...</strong></span></pre><p>The following example shows a stored procedure, which runs two transactions. The first transaction will commit and therefore create two tables. The second procedure will rollback:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE PROCEDURE test_proc()
+       LANGUAGE plpgsql
+AS $$
+  BEGIN
+    CREATE TABLE a (aid int);
+    CREATE TABLE b (bid int);
+    COMMIT;
+    CREATE TABLE c (cid int);
+    ROLLBACK;
+  END;
+$$;
+CREATE PROCEDURE</strong></span></pre><p>As observed, a procedure is able to do explicit transaction handling. The idea behind a procedure is to be able to run batch jobs and other operations, which are hard to do in a function. </p><p>To run the procedure, you have to use <code class="literal">CALL</code>, as shown in the following example:</p><pre class="programlisting"><span class="strong"><strong>test=# CALL test_proc();
+CALL</strong></span></pre><p>The first two tables where committed. The third table has not been created because of the rollback inside the procedure.</p><pre class="programlisting"><span class="strong"><strong>test=# \d
+List of relations
+ Schema | Name | Type  | Owner
+--------+------+-------+-------
+ public | a    | table | hs
+ public | b    | table | hs
+
+(2 rows)</strong></span></pre><p> </p><p> </p><p>Procedures are one of the most important features introduced in PostgreSQL 11 and will make a significant contribution the efficiency of software development. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec82"></a>Introducing PL/Perl</h3></div></div></div><p>There is a lot more to say about PL/pgSQL. However, not everything can be covered in one book, it is time to move on to the next procedural language. PL/Perl has been adopted by many people as the ideal language to do string crunching. As you might know, Perl is famous for its string manipulation capabilities and is therefore still fairly <span>popular</span><a id="id326003182" class="indexterm"></a> after all these years.</p><p>To enable PL/Perl, you have two choices:</p><pre class="programlisting"><span class="strong"><strong>test=# create extension plperl; 
+CREATE EXTENSION 
+
+test=# create extension plperlu; 
+CREATE EXTENSION </strong></span></pre><p>You can deploy trusted or untrusted Perl. If you want both, you have to enable both languages.</p><p>To show you how PL/Perl works, I have implemented a function that simply parses an email address and returns <code class="literal">true</code> or <code class="literal">false</code>. Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE OR REPLACE FUNCTION verify_email(text)  
+RETURNS boolean AS 
+$$ 
+if   ($_[0] =~ /^[a-z0-9.]+@[a-z0-9.-]+$/) 
+{ 
+  return true; 
+} 
+return false; 
+$$ LANGUAGE 'plperl'; CREATE FUNCTION</strong></span></pre><p>A text parameter is passed to the function. Inside the function, all those input parameters can be accessed using <code class="literal">$_</code>. In this example, the <span>regular</span><a id="id326003223" class="indexterm"></a> expression is <span>executed</span><a id="id326003232" class="indexterm"></a> and the function is returned.</p><p>The function can be called just like any other procedure written in any other language:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT verify_email('hs@cybertec.at'); 
+ verify_email
+-------------- 
+  t 
+(1 row) 
+ 
+test=# SELECT verify_email('totally wrong');
+</strong></span><span class="strong"><strong> verify_email 
+--------------
+  f 
+(1 row)</strong></span></pre><p>Keep in mind that you cannot load packages and so on if you are inside a trusted function. For example, if you want to use the <code class="literal">w</code> command to find words, Perl will internally load <code class="literal">utf8.pm</code>, which, of course, is not allowed.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec62"></a>Using PL/Perl for datatype abstraction</h4></div></div></div><p>As stated already in this chapter, functions in PostgreSQL are pretty <span>universal</span><a id="id326642928" class="indexterm"></a> and can be used in many different contexts. If you want to use functions to improve data quality, you can use a <code class="literal">CREATE DOMAIN</code> clause:</p><pre class="programlisting"><span class="strong"><strong>test=# \h CREATE DOMAIN</strong></span>
+<span class="strong"><strong>Command: CREATE DOMAIN</strong></span>
+<span class="strong"><strong>Description: define a new domain</strong></span>
+<span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>CREATE DOMAIN name [ AS ] data_type</strong></span>
+<span class="strong"><strong>    [ COLLATE collation ]</strong></span>
+<span class="strong"><strong>    [ DEFAULT expression ]</strong></span>
+<span class="strong"><strong>    [ constraint [ ... ] ]</strong></span>
+
+<span class="strong"><strong>where constraint is:</strong></span>
+
+<span class="strong"><strong>[ CONSTRAINT constraint_name ]</strong></span>
+<span class="strong"><strong>{ NOT NULL | NULL | CHECK (expression) }</strong></span></pre><p>In this example, the PL/Perl function will be used to create a domain called <code class="literal">email</code>, which in turn can be used as a data type.</p><p>The following listing shows how the domain can be created:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE DOMAIN email AS text 
+       CHECK (verify_email(VALUE) = true);  
+CREATE DOMAIN </strong></span></pre><p>As mentioned previously, the domain functions just like a normal data type:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE TABLE t_email (id serial, data  email);  
+CREATE TABLE</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>The Perl function ensures that nothing violating our checks can be inserted into the database, as the following example demonstrates successfully:</p><pre class="programlisting"><span class="strong"><strong>test=# INSERT INTO t_email (data) 
+       VALUES ('somewhere@example.com'); 
+INSERT 0 1 
+test=# INSERT INTO  t_email (data) 
+       VALUES ('somewhere_wrong_example.com');  
+ERROR:  value  for domain email  violates check     constraint "email_check"</strong></span></pre><p>Perl might be a good option to do string crunching but, as always, you have to decide whether you want this code in the database directly or not.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec63"></a>Deciding between PL/Perl and PL/PerlU</h4></div></div></div><p>So far, the Perl code has not opened any security-related <span>problems</span><a id="id326020827" class="indexterm"></a> because all we did was regular expressions. The question here would be, what if somebody tries to do something nasty inside the Perl function? As stated already, PL/Perl will simply error out:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE OR REPLACE FUNCTION test_security()  
+RETURNS boolean AS 
+$$ 
+use strict; 
+my $fp = open("/etc/password", "r"); 
+ 
+return false; 
+$$ LANGUAGE 'plperl'; 
+ERROR:  'open' trapped by operation mask  at line   
+CONTEXT:  compilation of PL/Perl function "test_security" </strong></span></pre><p>PL/Perl will complain as soon as you try to create the function. An error will be displayed instantly.</p><p>If you really want to run untrusted code in Perl, you have to use PL/PerlU:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE OR REPLACE FUNCTION first_line()  
+RETURNS text AS 
+$$ 
+open(my $fh, '&lt;:encoding(UTF-8)', "/etc/passwd") 
+  or elog(NOTICE, "Could not open  file  '$filename' $!"); 
+ 
+my $row  = &lt;$fh&gt;; 
+close($fh); 
+ 
+return $row; 
+$$ LANGUAGE 'plperlu';  
+CREATE FUNCTION</strong></span></pre><p>The procedure stays the same. It returns a string. However, it is allowed to do everything. The only difference is that the function is marked as <code class="literal">plperlu</code>.</p><p>The result is somewhat unsurprising:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT first_line(); 
+ first_line 
+---------------------------------  
+ root:x:0:0:root:/root:/bin/bash+ 
+ 
+(1 row)</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec64"></a>Making use of the SPI interface</h4></div></div></div><p>Once in a while, your Perl procedure has to do <span>database</span><a id="id326020874" class="indexterm"></a> work. Remember, the function is part of the database connection. Therefore, it is pointless to actually create a database connection. To talk to the database, the PostgreSQL server infrastructure provides the SPI interface, which is a <code class="literal">C</code> interface to talk to database internals. All procedural languages that help you to run server-side code use this interface to expose functionality to you. PL/Perl does the same, and in this section, you will learn how to use the Perl wrapper around the SPI interface.</p><p>The most important thing you might want to do is simply run SQL and retrieve the number of rows fetched. The <code class="literal">spi_exec_query</code> function is here to do exactly that. The first parameter passed to the function is the query. The second parameter has the number of rows you actually want to retrieve. For simplicity reasons, I decided to fetch all of them. The following listing has an example:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE OR REPLACE FUNCTION spi_sample(int)  
+RETURNS void  AS 
+$$ 
+my $rv = spi_exec_query(" SELECT * 
+  FROM  generate_series(1, $_[0])", $_[0] 
+);  
+elog(NOTICE, "rows  fetched: " . $rv-&gt;{processed});  
+elog(NOTICE, "status: " . $rv-&gt;{status}); 
+ 
+return; 
+$$ LANGUAGE 'plperl';</strong></span></pre><p> </p><p>SPI will execute the query and display the number of rows. The important thing here is that all stored procedure languages provide a means to send log messages. In the case of PL/Perl, this function is called <code class="literal">elog</code> and takes two parameters. The first one defines the importance of the message (<code class="literal">INFO</code>, <code class="literal">NOTICE</code>, <code class="literal">WARNING</code>, <code class="literal">ERROR</code>, and so on) and the second parameter contains the actual message.</p><p>The following message shows what the query returns:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT spi_sample(9);
+NOTICE:  rows  fetched: 9 
+NOTICE:  status: SPI_OK_SELECT 
+ spi_sample 
+------------ 
+ 
+(1 row)</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec65"></a>Using SPI for set returning functions</h4></div></div></div><p>In many cases, you don't just want to execute some SQL and forget about it. In most cases, a procedure will loop over the result and do something with it. The following example will show how you can loop over the output of a query. On top of that, I decided to beef up the example a bit and make the function return a composite data type. Working with composite types in Perl is very easy <span>because</span><a id="id326020936" class="indexterm"></a> you can simply stuff the data into a hash and return it.</p><p>The <code class="literal">return_next</code> function will gradually build up the result set until the function is terminated with a simple return statement.</p><p>The example in this listing generates a table consisting of random values:</p><pre class="programlisting"><span class="strong"><strong>CREATE TYPE random_type AS  (a float8, b float8); 
+ 
+CREATE OR REPLACE FUNCTION spi_srf_perl(int) 
+  RETURNS setof random_type AS 
+$$ 
+my $rv = spi_query("SELECT random() AS a, 
+                           random() AS b 
+                      FROM generate_series(1, $_[0])"); 
+while (defined (my $row = spi_fetchrow($rv))) 
+{ 
+  elog(NOTICE, "data: " . 
+       $row-&gt;{a} . " / " . $row-&gt;{b}); 
+  return_next({a =&gt; $row-&gt;{a}, 
+               b =&gt; $row-&gt;{b}}); 
+}</strong></span></pre><pre class="programlisting"><span class="strong"><strong>return; 
+$$ LANGUAGE 'plperl';</strong></span>
+
+<span class="strong"><strong>CREATE FUNCTION</strong></span></pre><p> </p><p> </p><p>First, the <code class="literal">spi_query</code> function is executed and a loop using the <code class="literal">spi_fetchrow</code> function is started. Inside the loop, the composite type will be assembled and stuffed into the result set.</p><p>As expected, the function will return a set of random values:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT * FROM  spi_srf_perl(3); 
+NOTICE:  data:  0.154673356097192 / 0.278830723837018 
+CONTEXT:  PL/Perl function "spi_srf_perl" 
+NOTICE:  data:  0.615888888947666 / 0.632620786316693 
+CONTEXT:  PL/Perl function "spi_srf_perl" 
+NOTICE:  data:  0.910436692181975 / 0.753427186980844 
+CONTEXT:  PL/Perl function "spi_srf_perl"  
+ a_col              |   b_col 
+--------------------+------------------- 
+ 0.154673356097192  | 0.278830723837018 
+ 0.615888888947666  | 0.632620786316693 
+ 0.910436692181975  | 0.753427186980844
+(3 rows)</strong></span></pre><p>Keep in mind that set returning functions have to be materialized so that the entire result set will be stored in-memory.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec66"></a>Escaping in PL/Perl and support functions</h4></div></div></div><p>So far, we <span>have</span><a id="id326141017" class="indexterm"></a> only used integers, so <span>SQL</span><a id="id326141026" class="indexterm"></a> injection or special table names were not an issue. Basically, the following functions are available:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">quote_literal</code>: This returns a <span>string</span><a id="id326141043" class="indexterm"></a> quote as string literal</li><li style="list-style-type: disc"><code class="literal">quote_nullable</code>: This <span>quotes</span><a id="id326141056" class="indexterm"></a> a string</li><li style="list-style-type: disc"><code class="literal">quote_ident</code>: This <span>quotes</span><a id="id326141068" class="indexterm"></a> SQL identifiers (object names and so on)</li><li style="list-style-type: disc"><code class="literal">decode_bytea</code>: This decodes a <span>PostgreSQL</span><a id="id326141081" class="indexterm"></a> byte array field</li><li style="list-style-type: disc"><code class="literal">encode_bytea</code>: This <span>encodes</span><a id="id326141094" class="indexterm"></a> data and turns it into a byte array</li><li style="list-style-type: disc"><code class="literal">encode_literal_array</code>: This <span>encodes</span><a id="id326213812" class="indexterm"></a> an array of literals</li><li style="list-style-type: disc"><code class="literal">encode_typed_literal</code>: This converts a Perl <span>variable</span><a id="id326213825" class="indexterm"></a> to the value of the data type passed as a second argument and returns a string representation of this value
+</li><li style="list-style-type: disc"><code class="literal">encode_array_constructor</code>: This returns the <span>contents</span><a id="id326213837" class="indexterm"></a> of the referenced array as a string in array constructor format</li><li style="list-style-type: disc"><code class="literal">looks_like_number</code>: This returns <code class="literal">true</code> if a <span>string</span><a id="id326213853" class="indexterm"></a> looks such as a number</li><li style="list-style-type: disc"><code class="literal">is_array_ref</code>: This returns <code class="literal">true</code> if something is an <span>array</span><a id="id326213869" class="indexterm"></a> reference</li></ul></div><p>These functions are always available and can be called directly without having to include any library.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec67"></a>Sharing data across function calls</h4></div></div></div><p>Sometimes, it is necessary to <span>share</span><a id="id326213888" class="indexterm"></a> data across calls. The infrastructure has the means to actually do that. In Perl, a hash can be used to store whatever data is needed. Look at the following example: </p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION perl_shared(text) RETURNS int AS 
+$$ 
+if ( !defined $_SHARED{$_[0]} ) 
+{ 
+  $_SHARED{$_[0]} = 0; 
+} 
+else 
+{ 
+  $_SHARED{$_[0]}++; 
+} 
+return $_SHARED{$_[0]}; 
+$$ LANGUAGE 'plperl';</strong></span></pre><p>The <code class="literal">$_SHARED</code> variable will be initialized with <code class="literal">0</code> as soon as we figure out that the key passed to the function is not there yet. For every other call, <code class="literal">1</code> is added to the counter, leaving us with the following output:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT perl_shared('some_key') FROM  generate_series(1, 3); 
+ perl_shared 
+------------- 
+         0 
+         1 
+         2 
+(3 rows)</strong></span></pre><p>In case of a more complex statement, the developer usually does not know in which order the functions will be called. It is important to keep that in mind. In most cases, you cannot rely on an execution order.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec68"></a>Writing triggers in Perl</h4></div></div></div><p>Every stored procedure language shipped with the core of <span>PostgreSQL</span><a id="id326213929" class="indexterm"></a> allows you to write triggers in that language. The same, of course, applies to Perl. As the length of this chapter is limited, I have decided not to include an example of a trigger written in Perl, but instead point you to the official <span>PostgreSQL</span><a id="id326213938" class="indexterm"></a> documentation: <a class="ulink" href="https://www.postgresql.org/docs/10/static/plperl-triggers.html" target="_blank"><span>h</span><span>t</span><span>t</span><span>p</span><span>s</span><span>://</span><span>w</span><span>w</span><span>w</span><span>.</span><span>p</span><span>o</span><span>s</span><span>t</span><span>g</span><span>r</span><span>e</span><span>s</span><span>q</span><span>l</span><span>.</span><span>o</span><span>r</span><span>g</span><span>/</span><span>d</span><span>o</span><span>c</span><span>s</span><span>/</span><span>10/s</span><span>t</span><span>a</span><span>t</span><span>i</span><span>c</span><span>/</span><span>p</span><span>l</span><span>p</span><span>e</span><span>r</span><span>l</span><span>-</span><span>t</span><span>r</span><span>i</span><span>g</span><span>g</span><span>e</span><span>r</span><span>s</span><span>.</span><span>h</span><span>t</span><span>m</span><span>l</span></a>.</p><p>Basically, writing a trigger in Perl does not differ from writing one in PL/pgSQL. All predefined variables are in place, and as far as return values are concerned, the rules apply in every stored procedure language.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec83"></a>Introducing PL/Python</h3></div></div></div><p>If you don't happen to be a Perl expert, PL/Python <span>might</span><a id="id326214492" class="indexterm"></a> be the <span>right</span><a id="id326214501" class="indexterm"></a> thing for you. Python has been part of the PostgreSQL infrastructure for a long time and is therefore a solid, well- tested implementation.</p><p>When it comes to PL/Python, there is one thing you have to keep in mind: PL/Python is <span>only</span><a id="id326214512" class="indexterm"></a> available as an untrusted language. From a security point of view, it is important to keep that in mind at all times.</p><p>To enable PL/Python, you can run the <span>following</span><a id="id326214523" class="indexterm"></a> line from your command line. test is the name of the database you want to use with PL/Python:</p><pre class="programlisting"><span class="strong"><strong>createlang plpythonu test</strong></span></pre><p>Once the language is enabled, it is possible to write code.</p><p>Alternatively, you can use a <code class="literal">CREATE LANGUAGE</code> clause, of course. Also keep in mind that in order to use server-side languages, PostgreSQL packages containing those languages are needed (<code class="literal">postgresql-plpython-$(VERSIONNUMBER)</code> and so on).</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec69"></a>Writing simple PL/Python code</h4></div></div></div><p>In this section, you will learn to write <span>simple</span><a id="id326214556" class="indexterm"></a> Python procedures. The example discussed here is quite simple: if you are visiting a client by car in Austria, you can deduct 42 euro cents per kilometer as expenses in order to reduce your income tax. So, what the function does is to take the number of kilometers and return the amount of money we can deduct from our tax bill. Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION calculate_deduction(km float)  
+  RETURNS numeric AS 
+$$ 
+if   km &lt;= 0: 
+  elog(ERROR, 'invalid number of kilometers') 
+else: 
+</strong></span>
+<span class="strong"><strong>   return km * 0.42 </strong></span>
+
+<span class="strong"><strong>$$ LANGUAGE 'plpythonu'; </strong></span></pre><p>The function ensures that only positive values are accepted. Finally, the result is calculated and returned. As you can see, the way a Python function is passed to PostgreSQL does not really differ from Perl or PL/pgSQL.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec70"></a>Using the SPI interface</h4></div></div></div><p>As with all procedural languages, PL/Python <span>gives</span><a id="id326214588" class="indexterm"></a> you access to the SPI interface. The following example shows how numbers can be added up:</p><pre class="programlisting"><span class="strong"><strong>CREATE FUNCTION add_numbers(rows_desired integer)  
+  RETURNS integer AS 
+$$ 
+mysum  = 0 
+ 
+cursor = plpy.cursor("SELECT * FROM 
+  generate_series(1, %d) AS id" % (rows_desired)) 
+ 
+while  True: 
+  rows  = cursor.fetch(rows_desired) 
+  if not rows: 
+    break 
+ 
+  for row in rows: 
+    mysum  += row['id'] 
+return mysum 
+$$ LANGUAGE 'plpythonu';</strong></span></pre><p>When you try this example out, make sure that the call to the cursor is actually a single line. Python is all about indentation, so it does make a difference if your code consists of one or two lines.</p><p>Once the cursor has been created, we can loop over it and add up those numbers. The columns inside those rows can easily be referenced using column names.</p><p>Calling the function will return the desired result:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT add_numbers(10); 
+ add_numbers 
+------------- 
+          55 
+(1 row)</strong></span></pre><p>If you want to inspect the result set of an SQL statement, PL/Python offers various functions to retrieve more information from the result. Again, those functions are wrappers around what SPI offers on the C level.</p><p>The following function inspects a result more closely:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION result_diag(rows_desired integer)  
+  RETURNS integer AS 
+$$ 
+rv = plpy.execute("SELECT * 
+  FROM  generate_series(1, %d) AS id" % (rows_desired)) 
+plpy.notice(rv.nrows())  
+plpy.notice(rv.status())  
+plpy.notice(rv.colnames())  
+plpy.notice(rv.coltypes())  
+plpy.notice(rv.coltypmods())  
+plpy.notice(rv.  str   ()) 
+ 
+return 0 
+$$ LANGUAGE 'plpythonu';</strong></span></pre><p>The <code class="literal">nrows()</code> function will display the number of rows. The <code class="literal">status()</code> function tells us whether everything worked out fine. The <code class="literal">colnames()</code> function returns a list of columns. The <code class="literal">coltypes()</code> function returns the object IDs of the data types in the result set. <code class="literal">23</code> is the <span>internal</span><a id="id326642405" class="indexterm"></a> number of integers as shown in the next listing:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT typname FROM pg_type WHERE oid = 23; 
+ typname 
+---------  
+  int4 
+(1 row)</strong></span></pre><p>Then comes <code class="literal">typmod</code>. Consider something like <code class="literal">varchar(20)</code>: the configuration part of the type is what <code class="literal">typmod</code> is all about.</p><p>Finally, there is a function to return the entire thing as a string for debugging purposes. Calling the function will return the following result:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT result_diag(3);  
+NOTICE:  3 
+NOTICE:  5 
+NOTICE:  ['id']  
+NOTICE:  [23]  
+NOTICE:  [-1] 
+NOTICE:  &lt;PLyResult status=5 nrows=3 rows=[{'id': 1}, 
+    {'id': 2}, {'id': 3}]&gt; 
+result_diag 
+------------- 
+        0 
+(1 row)</strong></span></pre><p>There are many more functions in the SPI interface that can help you to execute SQL.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch07lvl3sec71"></a>Handling errors</h4></div></div></div><p>Once in a while, you might <span>have</span><a id="id326642450" class="indexterm"></a> to catch an error. Of course, this is also possible in Python. The following example shows how this works:</p><pre class="programlisting"><span class="strong"><strong>CREATE OR REPLACE FUNCTION trial_error()  
+  RETURNS text  AS 
+$$ 
+try: 
+  rv = plpy.execute("SELECT surely_a_syntax_error") 
+except plpy.SPIError: 
+  return "we caught the error" else: 
+else: 
+  return "all fine" 
+$$ LANGUAGE 'plpythonu';</strong></span></pre><p>You can use a normal <code class="literal">try</code>/<code class="literal">except</code> block and access <code class="literal">plpy</code> to treat the error you want to catch. The function can then return normally without destroying your transaction, as follows:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT trial_error(); 
+ trial_error 
+---------------------  
+ we caught the error 
+(1 row)</strong></span></pre><p>Remember, PL/Python has full access to the internals of PostgreSQL. Therefore, it can also expose all kinds of errors to your procedure. Here is an example:</p><pre class="programlisting"><span class="strong"><strong>except spiexceptions.DivisionByZero: 
+  return "found a division by zero"  
+except spiexceptions.UniqueViolation:  
+  return "found a unique violation" 
+except plpy.SPIError, e: 
+  return "other error, SQLSTATE %s" % e.sqlstate</strong></span></pre><p>Catching errors in Python is really easy and can help prevent your functions from failing.</p></div></div></div>

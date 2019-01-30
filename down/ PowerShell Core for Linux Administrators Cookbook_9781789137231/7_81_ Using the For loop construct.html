@@ -1,0 +1,30 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec84"></a>Using the For loop construct</h2></div></div><hr /></div><p>The <code class="literal">Foreach</code> loop and the <code class="literal">For</code> loop are <span>different</span><a id="id325892270" class="indexterm"></a> in that the latter uses an index to perform operations. We need a variable to control the flow, whose values form a range. Let's re-implement the same solution that we used in the <span class="emphasis"><em>Writing a more complex loop on a predefined array</em></span> recipe, but with a <code class="literal">For</code> loop construct instead.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec223"></a>How to do it…</h3></div></div></div><p>The assumptions that are made are the same as those in the <span class="emphasis"><em>Writing a more complex loop on a predefined array</em></span> recipe. Follow these steps to get started:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open a new file and paste the following content into it:</li></ol></div><pre class="programlisting">$Guests = Import-Csv './ch07/05-Write-GuestSeatDetails.csv'
+
+<span class="strong"><strong>for ($CurrentGuest = 0; $CurrentGuest -lt $Guests.Length; $CurrentGuest++) {</strong></span><span class="strong"><strong>$Guest = $Guests[$CurrentGuest]</strong></span>
+
+    $RowIdentifier = [byte][char](($Guest.Seat -split '-')[0].ToUpper())
+    
+    $RowNumber = ($RowIdentifier - 64).ToString()
+    
+    switch -Regex ($RowNumber) {
+        '1(1|2|3)$' { $RowNumber += 'th'; break }
+        '.?1$'      { $RowNumber += 'st'; break }
+        '.?2$'      { $RowNumber += 'nd'; break }
+        '.?3$'      { $RowNumber += 'rd'; break }
+        Default     { $RowNumber += 'th'; break }
+    }
+
+    $SeatNumber = ($Guest.Seat -split "-")[1]
+    
+    if ($SeatNumber -gt 20) {
+        $Side = 'right'
+    }
+    else {
+        $Side = 'left'
+    }
+
+    Start-Sleep -Seconds 1
+    Write-Host "Welcome, $($Guest.Name)! " -NoNewline # Subexpression `$Guest.Name` to be computed first.
+    Start-Sleep -Seconds 1
+    Write-Host "Your seat is in the $RowNumber row, to the $Side the aisle."
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Run the script.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec224"></a>How it works…</h3></div></div></div><p>Some of you might be pointing out that the <code class="literal">foreach</code> construct was <span>simpler</span><a id="id325885501" class="indexterm"></a> than the <code class="literal">for</code> construct in this case, and you would be right. In my stint as an administrator, I may have used the <code class="literal">for</code> construct fewer than 10 times over the last three years, compared to the hundreds of times I used <code class="literal">foreach</code>. The <code class="literal">For</code> construct has its own uses; use with a predefined array is one of the less-efficient ones.</p><p>Regardless, <code class="literal">for</code> works as long as the object is an array. <code class="literal">$CurrentGuest</code> is the index we use, which ranges from 0 through the total elements in <code class="literal">$Guests</code>—1. The loop starts with the index being initialized at 0 in this case, and after every iteration of the script block, the index is incremented (<code class="literal">$CurrentGuest++</code>).</p><p>One operation where <code class="literal">for</code> would be more efficient than <code class="literal">foreach</code> is if every alternate guest had to be greeted (rude, I know). In that case, the third part of the definition of <code class="literal">for</code> would have been <code class="literal">$CurrentGuest += 2</code>.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note57"></a>Note</h3><p><code class="literal">$CurrentGuest + 2</code> instead of <code class="literal">$CurrentGuest += 2</code> would make this loop infinite, since the value of <code class="literal">$CurrentGuest</code> would not be changed at all.</p></div><p> </p></div></div>

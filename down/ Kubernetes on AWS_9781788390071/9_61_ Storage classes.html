@@ -1,0 +1,38 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec61"></a>Storage classes</h2></div></div><hr /></div><p>On AWS, there are several different <span>types</span><a id="id325162570" class="indexterm"></a> of volume available that offer different price and performance characteristics.</p><p>In order to provide a simple way to choose the volume type (and some other settings) when we provision a volume, we create a <code class="literal">StorageClass</code> object that we can then refer to by name when we create <code class="literal">PersistentVolumeClaim</code>.</p><p>Storage classes are created in the same way as any other Kubernetes objects, by submitting manifests to the API using <code class="literal">kubectl</code>:</p><pre class="programlisting">kind: StorageClass 
+apiVersion: storage.k8s.io/v1 
+metadata: 
+  name: general-purpose 
+  annotations: 
+    "storageclass.kubernetes.io/is-default-class": "true" 
+provisioner: kubernetes.io/aws-ebs 
+parameters: 
+  type: gp2 </pre><p>This manifest creates a storage class called <code class="literal">general-purpose</code> that creates volumes with the <code class="literal">gp2</code> volume type. If you remember our discussion about EBS volume types in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Planning for Production</em></span>, this SSD-backed volume type is suitable for most general-purpose applications offering a good balance of performance and price.</p><p>You will also notice the <code class="literal">storageclass.kubernetes.io/is-default-class</code> annotation that makes <code class="literal">StorageClass</code> the default one to be used by any <code class="literal">PersistentVolumeClaim</code> that doesn't specify a storage class. You should only apply this annotation to a single <code class="literal">StorageClass</code>.</p><p>The <code class="literal">parameter</code> field accepts several different options.</p><p>The most important parameter field is <code class="literal">type</code>, that allows us to choose one of <code class="literal">gp2</code> (the default), <code class="literal">io1</code> (provisioned IOPS), <code class="literal">sc1</code> (cold storage), or <code class="literal">st1</code> (throughput optimized).</p><p>If you choose to use the <code class="literal">io1</code> type, you should also use the <code class="literal">iopsPerGB</code> parameter to specify the number of IOPS that will be provisioned for each GB of disk storage requested. The maximum IOPS/GB ratio supported by <code class="literal">io1</code> EBS volumes is 50:1.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip72"></a>Note</h3><p>Bear in mind that the cost of provisioned IOPS makes the cost of <code class="literal">io1</code> volumes much higher than the equivalent general-purpose volumes. An <code class="literal">io1</code> volume with IOPS provisioned to provide similar throughput to a <code class="literal">gp2</code> volume of the same size can be three times more expensive. So, you should only use <code class="literal">io1</code> volumes where you require performance in excess of that provided by <code class="literal">gp2</code> volumes. One trick that can optimize costs is to use <code class="literal">gp2</code> volumes larger than your application requires to provide extra IO credits.</p></div><p>You could, for example, create several different classes using the <code class="literal">io1</code> type to be used by applications with different performance requirements:</p><pre class="programlisting">kind: StorageClass 
+apiVersion: storage.k8s.io/v1 
+metadata: 
+  name: high-iops-ssd 
+provisioner: kubernetes.io/aws-ebs 
+parameters: 
+  type: io1 
+  iopsPerGB: "50" 
+---
+ kind: StorageClass 
+apiVersion: storage.k8s.io/v1 
+metadata: 
+  name: medium-iops-ssd 
+provisioner: kubernetes.io/aws-ebs 
+parameters: 
+  type: io1 
+  iopsPerGB: "25" </pre><p>Note that Kubernetes expects a string value for the <code class="literal">iopsPerGb</code> field, so you will need to quote this value.</p><p>If you are using an application that is optimized to make sequential reads and writes to the filesystem, then you might benefit from using the <code class="literal">st1</code> volume type, which uses optimized magnetic storage to provide high throughput reads and writes. It is not recommended to use this storage for general-purpose use, as the performance when making random access reads or writes will be poor:</p><pre class="programlisting">kind: StorageClass 
+apiVersion: storage.k8s.io/v1 
+metadata: 
+  name: throughput 
+provisioner: kubernetes.io/aws-ebs 
+parameters: 
+  type: st1 </pre><p>The <code class="literal">sc1</code> volume type offers the very <span>lowest</span><a id="id325751198" class="indexterm"></a> cost storage available as an EBS volume and is intended for infrequently accessed data. Like <code class="literal">st1</code> volumes, <code class="literal">sc1</code> is optimized for sequential reads and writes, so will perform poorly on workloads with random reads and writes:</p><pre class="programlisting">kind: StorageClass 
+apiVersion: storage.k8s.io/v1 
+metadata: 
+  name: cold-storage 
+provisioner: kubernetes.io/aws-ebs 
+parameters: 
+  type: sc1 </pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip73"></a>Note</h3><p>It is a good idea to decide up front the different storage classes you want to make available in your cluster, and then provide documentation about when each class should be used to users of your cluster.
+You should think about submitting a list of storage classes to your cluster as part of your provisioning process, as there are no storage classes created by default when you provision an EKS cluster.</p></div></div>

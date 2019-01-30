@@ -1,0 +1,19 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec23"></a>Building the API foundation</h2></div></div><hr /></div><p>We are going to continue building <span>our</span><a id="id325462128" class="indexterm"></a> blockchain API in this section, and then we're going to build the following three endpoints in our API to start with:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The first endpoint is <code class="literal">/blockchain</code>, which allows us to fetch our entire blockchain so that we can look at the data that's inside of it.</li><li style="list-style-type: disc">The second endpoint is <code class="literal">/transaction</code>, which allows us to create a new transaction.</li><li style="list-style-type: disc">The third endpoint is <code class="literal">/mine</code>, which will allow us to mine a new block by using the <code class="literal">proofOfWork</code> method that we made in the last chapter. This is going to be a pretty powerful endpoint, and it will be fun to build.</li></ul></div><p>This is basically going to be the foundation of our blockchain API. In the <code class="literal">dev/networkNode.js</code> file, let's define these endpoints as follows: </p><pre class="programlisting">const express = require('express');
+const app = express();
+
+app.get('/blockchain', function (req, res) {
+
+});
+
+app.post('/transaction', function(req, res) {
+
+});
+
+app.get('/mine', function(req, res) {
+
+});
+
+app,listen(3000);</pre><p>Now, one more thing that we want to do is <span>make</span><a id="id325462185" class="indexterm"></a> some modifications to the <code class="literal">listen</code>method: </p><pre class="programlisting">app,listen(3000, function(){
+    console.log('listening on port 3000...'); 
+
+});</pre><p>We have added another parameter to this method, which is a function. Inside of this function, we are simply going to print out the <code class="literal">Listening on port 3000</code> string. The reason that we do this is just so that when our port is actually running, we will see this text. Let's go to our terminal and run our <code class="literal">api.js</code> file again:</p><div class="mediaobject"><img src="/graphics/9781789618822/graphics/7d779747-1070-4b30-b0ca-07638562dac7.png" /></div><p>As you can see, the preceding screenshot shows us that we are listening to port <code class="literal">3000</code>. Whenever we see this text, we know that our servers are running.</p></div>

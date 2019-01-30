@@ -1,0 +1,107 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec83"></a>Implementing the builder pattern</h2></div></div><hr /></div><p>The Builder pattern is a <span>creational</span><a id="id326166585" class="indexterm"></a> pattern whose goal is to simplify object construction. Instead of having complex constructors that take a large number of parameters, this pattern provides ways to create objects with different states of representation. It gives flexibility while instantiating a class. It provides builder functions to construct the object step by step, and the object will be returned in the final step.</p><p>Consider a class that represents a person. We will have to create person objects with different combinations of characteristics. Say, for example, person with <code class="literal">firstName</code>, <code class="literal">lastName</code>, <code class="literal">age</code>, <code class="literal">contactNumber</code>, <code class="literal">loginId</code>, and <code class="literal">address</code>. The class looks as follows:</p><pre class="programlisting">class Person {
+var firstName: String? = null
+    var lastName: String? = null
+    var middleName: String? = null
+    var loginId: String? = null
+    var age: Int? = null
+    var contactNumber: String? = null
+    var address: String? = null
+
+    constructor(firstName: String?, lastName: String?, middleName: String?, loginId: String?, age: Int?,  
+              contactNumber: String?, address: String?) {
+this.firstName = firstName
+this.lastName = lastName
+this.middleName = middleName
+this.loginId = loginId
+this.age = age
+this.contactNumber = contactNumber
+this.address = address
+    }
+}</pre><p>To create an instance of the <code class="literal">Person</code> type, let's say, we provide a complex constructor that takes all of these parameters. If we want to create a person object, we have to invoke the constructor by passing all the fields, as shown here:</p><pre class="programlisting">object Test {
+    @JvmStatic
+    fun main(args: Array&lt;String&gt;) {
+      val person = Person("Jane", "", "", "jane@test.org", 21, "4561298421", "10, Charles ", "Street,NY")
+    }
+}</pre><p>The problem with this approach is that the list of parameters supplied to create an object is long, and chances are we may pass the parameters in the wrong order if the parameters are of same type. This is slightly confusing. Also, sometimes all of the information may not be required or not available to create a <code class="literal">Person</code> object.</p><p>One way to solve this problem is to have multiple constructors, such as one that takes <code class="literal">firstName</code>, <code class="literal">lastName</code>, and then if needed another one that takes <code class="literal">firstName</code>, <code class="literal">lastName</code>, <code class="literal">loginId</code>. There could be yet another one that takes the first three arguments and age, and finally one constructor that takes all of the parameters. The problem with this approach is that the class ends up in having multiple constructors. As the parameter list grows, for every possible combination the number of constructors will also increase:</p><pre class="programlisting">constructor(firstName: String?) {
+this.firstName = firstName
+}
+
+constructor(firstName: String?, lastName: String?) {
+this.firstName = firstName
+this.lastName = lastName
+}
+
+constructor(firstName: String?, lastName: String?, middleName: String?) {
+this.firstName = firstName
+this.lastName = lastName
+this.middleName = middleName
+}
+
+constructor(firstName: String?, lastName: String?, loginId: String?, contactNumber: String?) {
+this.firstName = firstName
+this.lastName = lastName
+this.loginId = loginId
+this.contactNumber = contactNumber
+}
+constructor(firstName: String?, lastName: String?, middleName: String?, loginId: String?, age: Int?,   
+         contactNumber: String?, address: String?) {
+this.firstName = firstName
+this.lastName = lastName
+this.middleName = middleName
+this.loginId = loginId
+this.age = age
+this.contactNumber = contactNumber
+this.address = address
+}</pre><p>The Builder pattern is a better <span>alternative</span><a id="id325816215" class="indexterm"></a> to solve this problem. The Builder pattern moves the construction of complex objects out of the constructor and provides flexibility in creating objects. Classes that use the builder pattern scale better, and it improves readability.</p><p>The Builder pattern consists of three components: <span class="strong"><strong>Product, Director, </strong></span>and a <span class="strong"><strong>Builder</strong></span>, as shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/c1645e53-7ff1-4688-a629-eb8a4624c885.png" /></div><p><span class="strong"><strong>Product</strong></span> is a complex structure that needs to be constructed. In our case, the <code class="literal">Person</code> class is the product. A <span class="strong"><strong>Director</strong></span> is a class that creates objects using the builder class. The <code class="literal">Test</code> class is the director in our case. Now we need to create a builder class that is used to build the components of the complex <code class="literal">Person</code> object.</p><p> </p><p> </p><p>The builder class looks as follows:</p><pre class="programlisting">class PersonBuilder:Builder {
+var firstName: String? = null
+    var lastName: String? = null
+    var middleName: String? = null
+    var loginId: String? = null
+    var age: Int? = null
+    var contactNumber: String? = null
+    var address: String? = null
+
+    fun withFirstName(firstName: String): PersonBuilder {
+this.firstName = firstName
+return this
+}
+
+fun withLastName(lastName: String): PersonBuilder {
+this.lastName = lastName
+return this
+}
+
+fun withMiddleName(middleName: String): PersonBuilder {
+this.middleName = middleName
+return this
+}
+
+fun withLoginId(loginId: String): PersonBuilder {
+this.loginId = loginId
+return this
+}
+
+fun withAge(age: Int): PersonBuilder {
+this.age = age
+return this
+}
+
+fun withContactNumber(contactNumber: String): PersonBuilder {
+this.contactNumber = contactNumber
+return this
+}
+
+fun withAddress(address: String): PersonBuilder {
+this.address = address
+return this
+}
+
+fun build(): Person {
+return Person(firstName, lastName, middleName, loginId, age, contactNumber, address)
+    }
+}</pre><p>In the <code class="literal">Test</code> class that <span>creates</span><a id="id325813050" class="indexterm"></a> the <code class="literal">Person</code> object, we now have the flexibility to use these builder functions than the constructor that take all the parameters.</p><p>Let's rewrite the code in the <code class="literal">Test</code> class:</p><pre class="programlisting">var person = PersonBuilder()
+        .withFirstName("Jane")
+        .withLoginId("jane@test.org")
+        .withContactNumber("4561298421")
+        .build();
+</pre><p>We implemented the builder pattern for our <code class="literal">Person</code> class, which gives flexibility to the classes creating the <code class="literal">Person</code> object to create it with the different argument list. Thus, we simplified the creation of a complex object with the Builder pattern.</p></div>

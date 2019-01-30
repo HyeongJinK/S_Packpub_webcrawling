@@ -1,0 +1,275 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec39"></a>Modeling JPA entities</h2></div></div><hr /></div><p>Previously, we learned how to <span>define</span><a id="id326223995" class="indexterm"></a> the basic unit of persistence—an entity, using a Kotlin data class. Let's now look at how we can define and map relations to the domain entities using JPA.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec41"></a>Mapping entities</h3></div></div></div><p>We can establish a mapping <span>between</span><a id="id326223980" class="indexterm"></a> the entities using JPA's <code class="literal">@OneToOne</code>, <code class="literal">@OneToMany</code>, <code class="literal">@ManyToOne</code>, and <code class="literal">@ManyToMany</code> annotations.</p><p>Let's consider <code class="literal">PersonEntity</code>:</p><pre class="programlisting">@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+    var preferredLanguage: PreferredLanguage? = null
+}</pre><p>Here, <code class="literal">preferredLanguage</code> is an enum, so it can be included with the <code class="literal">@Enumerated</code> annotation within the entity:</p><pre class="programlisting">@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+}</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip27"></a>Note</h3><p>By default, the value of an enum type is an implicit ordinal mapping that is resolved by the order in which the enum types are declared. This means that when we use an enum type, the ordinal value is used to represent it and the integer value of the enum type will be included in the database.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec33"></a>OneToMany mapping</h4></div></div></div><p>Now, let's modify the <code class="literal">Person</code> entity to add <span>other</span><a id="id326223303" class="indexterm"></a> entities to it. Let's say that <code class="literal">Person</code> has a list of contacts, which is explained in the following code:</p><pre class="programlisting">@Table
+@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+    lateinit var contact: List&lt;ContactDetails&gt;
+
+}</pre><p><code class="literal">ContactDetails</code> is another type here:</p><pre class="programlisting">class ContactDetails {
+    private lateinit var id: UUID
+    lateinit var number: String
+
+    private var type: ContactType? = null
+}</pre><p>Let's say <code class="literal">ContactDetails</code> has a <code class="literal">ContactType</code>, which is an enum type. A contact type might be, for example, <code class="literal">WORK</code>, <code class="literal">MOBILE</code>, or <code class="literal">HOME</code>:</p><pre class="programlisting">enum class ContactType(val contactType: String) {
+    WORK("work"), MOBILE("mobile"), HOME("home")
+}</pre><p>The <code class="literal">Person</code> type instance can now have multiple contact details. This has to be mapped to the database, which means that <code class="literal">ContactDetails</code> is also an entity and therefore has to be annotated with <code class="literal">@Entity</code>:</p><pre class="programlisting">@Entity
+class ContactDetails {
+    @Id
+    private lateinit var id: UUID
+    private lateinit var number: String
+
+    @Enumerated(EnumType.STRING)
+    private var type: ContactType? = null
+}</pre><p>Let's now say that the <code class="literal">Person</code> entity also has an <code class="literal">Address</code>:</p><pre class="programlisting">class Address {
+    lateinit var street: String
+    lateinit var city: String
+    lateinit var state: String
+    lateinit var country: String
+}</pre><p>Now, the <code class="literal">Person</code> entity class appears as follows:</p><pre class="programlisting">class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+    lateinit var contact: List&lt;ContactDetails&gt;
+    lateinit var address: Address
+
+}</pre><p>The interesting thing here is that <code class="literal">Address</code> is not identifiable, as we have not marked it with the <code class="literal">@Entity</code> annotation. <code class="literal">ContactType</code>, on the other hand, is identifiable; it maps to the <code class="literal">contact_type</code> table and it has to have an ID. We are also going to map the enum as a string and then map all the values in our domain. Let's take a look at how we can do this.</p><p>The  <code class="literal">Person</code> class includes a list of contacts that maps to a table called <code class="literal">contacts</code> in the database. Since we have two tables in our database, <code class="literal">person</code> and <code class="literal">contacts</code>, they have to be joined with a link.</p><p>We need to specify the JPA annotation <code class="literal">@OneToMany</code> to bind these two entities. Consider the following code:</p><pre class="programlisting">@Entity
+ class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+    @OneToMany
+    lateinit var contact: List&lt;ContactDetails&gt;
+    lateinit var address: Address
+}</pre><p>The reason that we choose the <code class="literal">@OneToMany</code> annotation is <span>that</span><a id="id325816196" class="indexterm"></a> we have one person entity that can have multiple contact details. </p><p>JPA models these entities to the appropriate tables in the database.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec34"></a>Cascading</h4></div></div></div><p>Since we have a one-to-many <span>relationship</span><a id="id325816214" class="indexterm"></a> here, this means that we can have one column in our <code class="literal">contacts</code> table that refers to a unique entry in the <code class="literal">person</code> table. Furthermore, we can specify how these entities can be bound. For example, we can perform cascading, as shown in the following code:</p><pre class="programlisting">@Table(name = "person")
+@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)</pre><pre class="programlisting">    var preferredLanguage: PreferredLanguage? = null
+
+    @OneToMany(cascade = arrayOf(CascadeType.ALL))
+    lateinit var contact: List&lt;ContactDetails&gt;
+
+    lateinit var address: Address
+}</pre><p>Cascading on the <code class="literal">Person</code> entity specifies that whenever we perform any operation on the <code class="literal">Person</code> entity, that operation passes down to all other entities that are bound to it. For example, if we save, update, or delete the <code class="literal">Person</code> entity, these operations are cascaded down to the <code class="literal">ContactDetails</code> entity.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec35"></a>Fetching strategy</h4></div></div></div><p>We can also specify the fetching <span>strategies</span><a id="id325819057" class="indexterm"></a> of the data using the fetch type attribute. For example, we can specify that we always want to fetch the <code class="literal">ContactDetails</code> <span class="emphasis"><em>eagerly</em></span> when loading the <code class="literal">Person</code> entity. Consider the following code:</p><pre class="programlisting">@Table(name = "person")
+@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+    @OneToMany(cascade = arrayOf(CascadeType.ALL), fetch = 
+     FetchType.EAGER)
+    lateinit var contact: List&lt;ContactDetails&gt;
+    lateinit var address: Address
+
+}</pre><p>Since we have to execute a joint operation, we can also load the data <span class="emphasis"><em>lazily</em></span> when the <code class="literal">LAZY</code> fetch type is specified:</p><pre class="programlisting">@Table(name = "person")
+@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+    @OneToMany(cascade = arrayOf(CascadeType.ALL), fetch = 
+     FetchType.LAZY)
+    lateinit var contact: List&lt;ContactDetails&gt;
+    lateinit var address: Address
+
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec36"></a>Naming a join column</h4></div></div></div><p>Since we bind a <code class="literal">Contact</code>  entity to a <code class="literal">Person</code>, we can <span>choose</span><a id="id326166594" class="indexterm"></a> to give a name to the joining column. The name that we specify here will be the foreign key reference in the target entity, which is the <code class="literal">contacts</code> table:</p><pre class="programlisting">@Table(name = "person")
+@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+    @OneToMany(cascade = arrayOf(CascadeType.ALL), fetch = 
+     FetchType.LAZY)
+    @JoinColumn(name = "PERSON_ID")
+    lateinit var contact: List&lt;ContactDetails&gt;
+    lateinit var address: Address
+}</pre><p>As the <code class="literal">ContactDetails</code> entity always refers to the <code class="literal">Person</code> entity with the <code class="literal">PERSON_ID</code> as foreign key, we can mark it as non-nullable:</p><pre class="programlisting">@JoinColumn(name = "PERSON_ID", nullable = false)
+lateinit var contact: List&lt;ContactDetails&gt;</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec37"></a>ManyToOne mapping</h4></div></div></div><p>It is also possible to back <span>reference</span><a id="id326223192" class="indexterm"></a> from the <code class="literal">ContactDetails</code> entity to the <code class="literal">Person</code> entity using the <code class="literal">@ManyToOne</code> annotation:</p><pre class="programlisting">@Table(name = "contacts")
+@Entity
+class ContactDetails {
+    @Id
+    private lateinit var id: Integer
+    lateinit var number: String
+
+    @Enumerated(EnumType.STRING)
+    private var type: ContactType? = null
+
+    @ManyToOne(cascade = arrayOf(CascadeType.ALL), fetch = 
+     FetchType.LAZY)
+    lateinit var person: Person
+}</pre><p>In the preceding code snippets, we have illustrated an example of the <code class="literal">OneToMany</code> and <code class="literal">ManyToOne</code> annotations. Similarly, we can use the <code class="literal">OneToOne</code>and <code class="literal">ManyToMany</code> annotations.</p><p>A relationship between two classes can be one of the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Bidirectional</strong></span>: Both classes hold a reference to the other</li><li style="list-style-type: disc"><span class="strong"><strong>Unidirectional</strong></span>: Only one class stores the reference of the other</li></ul></div><p>Let's now move on to talk about binding <code class="literal">Address</code> to a <code class="literal">Person</code> entity. <code class="literal">Address</code> is not an entity; it is just a model object. If it were an entity, we could specify the relationship as we did for the <code class="literal">ContactDetails</code> entity, binding <code class="literal">Address</code> and <code class="literal">Person</code>. Instead, we will use the <code class="literal">@Embedded</code> annotation:</p><pre class="programlisting">@Table(name = "person")
+@Entity
+class Person : Identity() {
+    @Id
+    lateinit var identifier: UUID
+    lateinit var name: PersonName
+    lateinit var loginId: String
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+</pre><pre class="programlisting">    @OneToMany(cascade = arrayOf(CascadeType.ALL), fetch = 
+            FetchType.LAZY)
+    @JoinColumn(name = "PERSON_ID", nullable = false)
+    lateinit var contact: List&lt;ContactDetails&gt;
+    @Embedded
+    lateinit var address: Address
+}</pre><p>We need to mark the <code class="literal">Address</code> class with the <code class="literal">@Embeddable</code> annotation, which is shown in the following code:</p><pre class="programlisting">@Embeddable
+class Address {
+    lateinit var street: String
+    lateinit var city: String
+    lateinit var state: String
+    lateinit var country: String
+}</pre><p>This means that no separate table is created for <code class="literal">Address</code> as it is not an entity. All the properties of <code class="literal">Address</code> will be inserted into the <code class="literal">person</code> table.</p><p>All the fields defined in the class are mapped to the columns of a table in the database. To make JPA not persist a field, we can annotate it with the <code class="literal">@Transient</code> annotation.</p><p>For example, consider the following code:</p><pre class="programlisting">@Table(name = "person")
+@Entity
+data class Person(val loginId: String) : Identity() {
+    @Id
+    lateinit var identifier: UUID
+
+    @Transient 
+    late init var lastName: String 
+
+    @Enumerated(EnumType.STRING)
+    var preferredLanguage: PreferredLanguage? = null
+
+    @Embedded
+    lateinit var address: Address 
+}</pre><p>In this case, the <code class="literal">lastName</code> field is not <span>mapped</span><a id="id325857634" class="indexterm"></a> to a column in a <code class="literal">person</code> table.</p><p>In this section, we have discussed how to use the <code class="literal">@Entity</code> annotation for the entities of our domain. We specified the <code class="literal">@Embedded</code> annotation for model-type objects and we established the mapping between the entities and the data classes.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec42"></a>Data sources</h3></div></div></div><p>We get data for processing <span>from</span><a id="id325857661" class="indexterm"></a> the data sources. We also persist data into data sources. Let's take a look at how we can configure and use data sources in our application server. We'll look at how we can use the default data source and how we can customize and configure it using persistence contexts and persistence units.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec38"></a>Persistence units</h4></div></div></div><p>Persistence units are used to define <span>different</span><a id="id325857676" class="indexterm"></a> data sources and actions that will be applied to the data source when the application starts up.</p><p>Let's create a persistence unit in our persistence XML file:</p><pre class="programlisting">&lt;persistence xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd" version="2.0"&gt;
+
+    &lt;persistence-unit name="local" transaction-type="RESOURCE_LOCAL"&gt;
+        &lt;properties&gt;
+           &lt;property name ="javax.persistence.schema-generation.database.action" value="drop-and-create"/&gt;
+        &lt;/properties&gt;
+    &lt;/persistence-unit&gt;
+&lt;/persistence&gt;</pre><p>Here, we have just specified one persistence unit in our persistence XML file that we named <code class="literal">local</code>.</p><p>The persistence unit uses the <code class="literal">javax.persistence.schema-generation.database.action</code> property. When the application server starts up, it drops and creates the database schema for the databases, depending on the JPA mapping.</p><p>We can specify the data source. If we don't, the default data source will be used. </p><p>To specify the data source, we use <code class="literal">jta-data-source</code>, as shown in the following code:</p><pre class="programlisting">&lt;persistence xmlns="http://java.sun.com/xml/ns/persistence"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://java.sun.com/xml/ns/persistence    
+             http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+version="2.0"&gt;
+
+    &lt;persistence-unit name="local" transaction-type="JTA"&gt;
+        &lt;jta-data-source&gt;jdbc/local_datasource&lt;/jta-data-source&gt;
+        &lt;properties&gt;
+            &lt;property name="javax.persistence.schema-
+             generation.database.action"
+value="drop-and-create"/&gt;
+        &lt;/properties&gt;
+    &lt;/persistence-unit&gt;
+&lt;/persistence&gt;</pre><p>Here, we specified a data source that is itself configured on the application server. We could choose not to configure the URLs and credentials in the persistence XML file because we could do that in the application server and point to the data source specified. This is sufficient if we have one database in our application.</p><p>If we would like to specify several databases, we could have another persistence unit in the XML file:</p><pre class="programlisting">    &lt;persistence xmlns="http://java.sun.com/xml/ns/persistence"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://java.sun.com/xml/ns/persistence 
+             http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+version="2.0"&gt;
+
+    &lt;persistence-unit name="local" transaction-type="JTA"&gt;
+        &lt;jta-data-source&gt;jdbc/local_datasource&lt;/jta-data-source&gt;
+    &lt;/persistence-unit&gt;
+
+    &lt;persistence-unit name="integration" transaction-type="JTA"&gt;
+        &lt;jta-data-source&gt;jdbc/int_datasource&lt;/jta-data-source&gt;
+    &lt;/persistence-unit&gt;
+
+    &lt;persistence-unit name="production" transaction-type="JTA"&gt;
+        &lt;jta-data-source&gt;jdbc/prod_datasource&lt;/jta-data-source&gt;
+    &lt;/persistence-unit&gt;
+&lt;/persistence&gt;
+</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec39"></a>Persistence context</h4></div></div></div><p>When we have multiple <span>persistence</span><a id="id325872035" class="indexterm"></a> units defined in the <code class="literal">persistence.xml</code> file, we need to inject the appropriate one to <code class="literal">EntityManager</code> using the <code class="literal">@PersistenceContext</code> annotation. We can point to a specific persistence unit using the <code class="literal">PersistenceContext</code> entity's <code class="literal">unitName</code> attribute.</p><p>Using <code class="literal">@PersistenceContext</code> on <code class="literal">EntityManager</code>, let's point to the integration unit:</p><pre class="programlisting">@Stateless
+class App {
+    @Inject
+    private lateinit var identityCreator: IdentityCreator
+    @PersistenceContext(unitName = "integration")
+    private lateinit var entityManager: EntityManager
+
+    fun createIdentity(inputData: InputData): Person {
+        val person = identityCreator.createPerson(inputData)
+        entityManager.persist(person)
+        return person
+    }
+
+    fun findAllPerson(): List&lt;Identity&gt; {
+        return 
+         entityManager.createNamedQuery(Queries.FIND_ALL_PERSON,
+                Person::class.java).resultList
+    }
+}</pre><p>Using <code class="literal">unitName = "integration"</code>, we point to a persistence unit in the <code class="literal">integration</code> environment. We can point to different persistence units as follows:</p><pre class="programlisting">@Stateless
+class App {
+    @Inject
+    private lateinit var identityCreator: IdentityCreator
+    @PersistenceContext(unitName = "production")
+    private lateinit var entityManager: EntityManager
+
+    fun createIdentity(inputData: InputData): Person {
+        val person = identityCreator.createPerson(inputData)
+        entityManager.persist(person)
+        return person
+    }
+
+    fun findAllPerson(): List&lt;Identity&gt; {
+        return 
+         entityManager.createNamedQuery(Queries.FIND_ALL_PERSON,
+                Person::class.java).resultList
+    }
+}</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note28"></a>Note</h3><p>When we have only one database, we don't actually have to configure the persistence unit for entity manager injection. In this case, the default persistence unit defined in the <code class="literal">persistence.xml</code> file will be used. This is shown in the following code snippet:</p></div><pre class="programlisting">&lt;persistence xmlns="http://java.sun.com/xml/ns/persistence"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://java.sun.com/xml/ns/persistence 
+             http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+version="2.0"&gt;
+
+    &lt;persistence-unit name="local" transaction-type="JTA"&gt;
+        &lt;jta-data-source&gt;jdbc/local_datasource&lt;/jta-data-source&gt;
+        &lt;properties&gt;
+            &lt;property name="javax.persistence.schema-
+             generation.database.action" value="drop-and-create"/&gt;
+        &lt;/properties&gt;
+    &lt;/persistence-unit&gt;
+&lt;/persistence&gt;</pre><p>On the other hand, our application server has to be <span>configured</span><a id="id325888109" class="indexterm"></a> with the connection details for the specific data source. </p><p>In this section, we have learned how to configure our application to use the persistence context and the persistence units of the specific data sources.</p></div></div></div>

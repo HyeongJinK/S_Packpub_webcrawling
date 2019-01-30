@@ -1,0 +1,39 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec45"></a>Indexing in Azure Search</h2></div></div><hr /></div><p>An index is one of the most important constructs in Azure Search. We defined it as a <span>table</span><a id="id325117142" class="indexterm"></a> that contains all imported documents with searchable data defined in it. At the beginning of this chapter, you learned how to create it and add or edit fields. In this section, you will learn a bit more about modifying it as an index is not a fixed being that cannot be altered and adjusted to your needs.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec43"></a>Importing more data</h3></div></div></div><p>There is always a need <span>to</span><a id="id325115445" class="indexterm"></a> push more data to your index—your application grows, the storage of your documents becomes bigger and bigger, especially if you are creating a document repository, and you would like to be able to find what you are searching for even in the most recent documents. In fact, there are two options to add data to your index:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The push model</li><li style="list-style-type: disc">The pull model</li></ul></div><p>We will cover both of them in the following sections.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec35"></a>Push model</h4></div></div></div><p>The push model is the <span>best</span><a id="id325115431" class="indexterm"></a> solution for <span>applications</span><a id="id325115418" class="indexterm"></a> that have low-latency requirements. As opposed to the pull model, for this model, your document will be indexed immediately after pushing it using a RESTful API.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note77"></a>Note</h3><p>Currently, there is no other option to use a push model besides using a RESTful API or .NET SDK to perform an operation. In the pull model, it is also possible to get data using Azure Portal.</p></div><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>Here, you can find an example request for pushing a document:</p><pre class="programlisting">POST /indexes/realestate-us-sample/docs/index?api-version=2016-09-01 HTTP/1.1
+Host: [service name].search.windows.net
+api-key: [api key]
+Content-Type: application/json
+Cache-Control: no-cache
+
+{ 
+  "value": [ 
+    { 
+      "listingId": "12344234",
+      "@search.action": "upload", 
+      "price": 250.0, 
+      "description": "The very apartment in Warsaw", 
+      "city": "Warsaw", 
+      "tags": ["pool", "view", "wifi", "gym"], 
+      "beds": 4, 
+      "location": { "type": "Point", "coordinates": [52.237049, 21.017532] } 
+    } 
+  ] 
+}  </pre><p>If everything is correct, you should be able to see a successful result:</p><pre class="programlisting">{
+    "@odata.context": "https://handsonazuresearch.search.windows.net/indexes('realestate-us-sample')/$metadata#Collection(Microsoft.Azure.Search.V2016_09_01.IndexResult)",
+    "value": [
+        {
+            "key": "12344234",
+            "status": true,
+            "errorMessage": null,
+            "statusCode": 201
+        }
+    ]
+}</pre><p>Now, I would like to check whether my document is already indexed and available:</p><pre class="programlisting">POST /indexes/realestate-us-sample/docs/search?api-version=2016-09-01 HTTP/1.1
+Host: [service name].search.windows.net
+api-key: [api key]
+Content-Type: application/json
+Cache-Control: no-cache
+
+{ 
+    "search": "Warsaw", 
+    "searchFields": "city"
+} </pre><p>The result should be a document that contains all of the fields we passed in the push request.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch05lvl3sec36"></a>Pull model</h4></div></div></div><p>A pull model is a <span>bit</span><a id="id325120016" class="indexterm"></a> different than a push <span>model</span><a id="id325120022" class="indexterm"></a> as it uses indexers to actually fetch the data. When using it, you are configuring both a data source and how frequently data should be pulled. As opposed to the push model, it can be configured and accessed when using Azure Portal.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip78"></a>Note</h3><p>Please note one important difference between push and pull—when using push, you are able to use any data source you want. When using the pull model you are limited to Blob Storage, Table Storage, CosmosDB, and SQL Database (both on Azure and VMs).</p></div><p>Here, you can find an indexer configuration for pulling data when using Table Storage as a source:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/f0eba76e-2d23-4e12-8afa-2a1fe9d1eb76.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note79"></a>Note</h3><p>Please remember that you cannot configure a pull policy when using sample data.</p></div><p>What is more, you can access an indexer configuration and current status by clickingonthe<strong class="userinput"><code>Indexers</code></strong> button on the <strong class="userinput"><code>Overview</code></strong> blade:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/d844bfca-8ea1-4bbc-8486-fad55b3df7b9.png" /></div></div></div></div>

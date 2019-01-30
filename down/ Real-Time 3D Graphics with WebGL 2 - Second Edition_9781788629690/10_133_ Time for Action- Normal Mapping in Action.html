@@ -1,0 +1,38 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec135"></a>Time for Action: Normal Mapping in Action</h2></div></div><hr /></div><p>Let's cover an <span>example</span><a id="id325358845" class="indexterm"></a> showcasing normal mapping in action:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch10_03_normal-map.html</code> file in a browser:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/9e0fbfe5-b006-4359-ae06-aa1f62da60b9.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Rotate the cube to see the effect that the normal map has on the lit cube. Keep in mind that the profile of the cube has not changed. Let's examine how this effect is achieved.</li><li>First, we need to add a new attribute to our vertex buffers. There are three vectors needed to calculate the tangent space coordinates for lighting: the <span class="strong"><strong>normal</strong></span>, the <span class="strong"><strong>tangent</strong></span>,<span class="strong"><strong> </strong></span>and the <span class="strong"><strong>bitangent</strong></span>:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/7f5d5459-aaae-4885-a3fd-66e52bd0025f.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>We have already covered normals, so let's investigate the other two vectors. The tangent represents the <span class="emphasis"><em>up</em></span> (positive <code class="literal">y</code>) vector for the texture relative to the polygon surface. The bitangent represents the <span class="emphasis"><em>left</em></span> (positive <code class="literal">x</code>) vector for the texture relative to the polygon surface.</li><li>We only need to provide two of the three vectors as vertex attributes. Traditionally, the normal and tangent suffice, as the third vector is calculated as the cross-product of the other two in the vertex shader.</li><li>It is common for 3D modeling packages to generate tangents for you. However, if they aren't provided, they can be calculated from the vertex positions and texture coordinates, similar to calculating vertex normals:</li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note93"></a>Note</h3><p><span class="strong"><strong><strong class="userinput"><code>Tangent Generation Algorithm</code></strong></strong></span>
+We won't cover this algorithm here, but for reference, it has been implemented in <code class="literal">common/js/utils.js</code> as <code class="literal">calculateTangents</code> and used in <code class="literal">scene.add</code>.</p></div><pre class="programlisting">const tangentBufferObject = gl.createBuffer();
+
+gl.bindBuffer(gl.ARRAY_BUFFER, tangentBufferObject);
+
+gl.bufferData(
+  gl.ARRAY_BUFFER,
+new Float32Array(utils.calculateTangents(
+    object.vertices,
+object.textureCoords,
+object.indices
+  )),
+gl.STATIC_DRAW
+);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>In the vertex shader, at the top of <code class="literal">ch10_03_normal-map.html</code>, the tangent needs to be transformed by the Normal matrix. The two transformed vectors can be used to calculate the third:</li></ol></div><pre class="programlisting">// Transformed normal position
+vec3 normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+vec3 tangent = vec3(uNormalMatrix * vec4(aVertexTangent, 1.0));
+vec3 bitangent = cross(normal, tangent);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>The three vectors can then be used to create a matrix that transforms vectors into tangent space:</li></ol></div><pre class="programlisting">mat3 tbnMatrix = mat3(
+  tangent.x, bitangent.x, normal.x,
+  tangent.y, bitangent.y, normal.y,
+  tangent.z, bitangent.z, normal.z
+);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Unlike before, where we applied lighting in the vertex shader, the bulk of the lighting calculations needs to happen in the fragment shader so that we can incorporate normals from the texture. That being said, we do transform the light direction into tangent space in the vertex shader before passing it to the fragment shader as a varying:</li></ol></div><pre class="programlisting">// Light direction, from light position to vertex
+vec3 lightDirection = uLightPosition - vertex.xyz;
+
+vTangentEyeDir = eyeDirection * tbnMatrix;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>In the fragment shader, we start by extracting the tangent space normal from the normal map texture. Since texture texels don't store negative values, the normal components must be encoded to map from a <code class="literal">[-1, 1]</code> to a <code class="literal">[0, 1]</code> range. Therefore, they must be <span class="emphasis"><em>unpacked</em></span> into the correct range before being used in the shader. The algorithm to perform this operation can be easily expressed in ESSL:</li></ol></div><pre class="programlisting">// Unpack tangent-space normal from texture
+vec3 normal = normalize(2.0 * (texture(uNormalSampler, vTextureCoords).rgb - 0.5));</pre><p> </p><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>Lighting is calculated <span>nearly</span><a id="id325647192" class="indexterm"></a> the same as the vertex-lit model, which is done by using the texture normal and tangent space light direction:</li></ol></div><pre class="programlisting">// Normalize the light direction and determine how much light is hitting this point
+vec3 lightDirection = normalize(vTangentLightDir);
+float lambertTerm = max(dot(normal, lightDirection), 0.20);
+
+// Calculate Specular level
+vec3 eyeDirection = normalize(vTangentEyeDir);
+vec3 reflectDir = reflect(-lightDirection, normal);
+float Is = pow(clamp(dot(reflectDir, eyeDirection), 0.0, 1.0), 8.0);
+
+// Combine lighting and material colors
+vec4 Ia = uLightAmbient * uMaterialAmbient;
+vec4 Id = uLightDiffuse * uMaterialDiffuse * texture(uSampler, vTextureCoords) * lambertTerm;
+
+fragColor = Ia + Id + Is;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="12" type="1"><li>To help accentuate the normal mapping effect, the code sample also includes the calculation of a specular term.</li></ol></div><p><span class="emphasis"><em><span class="strong"><strong>What just happened?</strong></span></em></span></p><p>We've seen how we can use normal information that's been encoded into a texture to add a new level of complexity to our lit models without additional geometry.</p></div>

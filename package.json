@@ -4,6 +4,11 @@
     "scripts": {
         "start" : "node app-new.js"
         ,"one" : "node app-sync.1.js"
+        ,"dbsave": "node file_list_db.js"
+        ,"dbsave2": "node image.js"
+        ,"dbsave3" : "node date.js"
+        ,"dbsave4" : "node content_imageLink_replace.js"
+
     },
     "dependencies": {
         "cheerio": "^1.0.0-rc.2",

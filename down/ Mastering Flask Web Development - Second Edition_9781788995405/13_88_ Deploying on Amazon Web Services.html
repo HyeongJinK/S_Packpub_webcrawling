@@ -1,0 +1,75 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec84"></a>Deploying on Amazon Web Services</h2></div></div><hr /></div><p><span class="strong"><strong>Amazon Web Services</strong></span> (<span class="strong"><strong>AWS</strong></span>) is a collection of services <span>maintained</span><a id="id325463845" class="indexterm"></a> by Amazon, and built on top of the same infrastructure that runs A<span>mazon.com</span>. To deploy our Flask code, we will be using Amazon Elastic Beanstalk in this section, while the <span>database</span><a id="id325463857" class="indexterm"></a> will be hosted on Amazon's <span class="strong"><strong>Relational Database Service</strong></span> (<span class="strong"><strong>RDS</strong></span>), and our <span>messaging</span><a id="id325463872" class="indexterm"></a> queue for Celery will be hosted on Amazon's <span class="strong"><strong>Simple Queue Service</strong></span> (<span class="strong"><strong>SQS</strong></span>).</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec85"></a>Using Flask on Amazon Elastic Beanstalk</h3></div></div></div><p>Elastic Beanstalk is a platform for web <span>applications</span><a id="id325738633" class="indexterm"></a> that offers many powerful features for developers, so they don't have to worry about maintaining servers. For example, your Elastic Beanstalk application will automatically scale by utilizing more and more servers as the number of people using your app at once grows. For <span>Python</span><a id="id325738642" class="indexterm"></a> apps, Elastic Beanstalk uses Apache, in combination with <code class="literal">mod_wsgi</code>, to connect to WSGI applications—if your deployment is simple with mid-to-low load, there is no extra configuration needed.</p><p> </p><p> </p><p>Before we begin, you will need an <span>Amazon.com</span> account to log in to the console. Next, you need to install <span class="strong"><strong>awscli</strong></span> and configure it with your credentials—you must generate an AWS access key and secret: <span>go to the AWS console, choose IAM service, choose your user, then choose the <strong class="userinput"><code>Security Credentials</code></strong> tab, and click on the <strong class="userinput"><code>Create access key</code></strong>.</span> Next, we need to install awsebcli to manage Elastic Beanstalk from the CLI:</p><pre class="programlisting"><span class="strong"><strong>$ pip install awsebcli --upgrade --user</strong></span></pre><p>Next, from the root directory of our project, we are going to configure the CLI and create a new Elastic Beanstalk application:</p><pre class="programlisting"><span class="strong"><strong>$ eb init
+
+</strong></span>Enter Application Name
+(default is "Chapter-13"):<span class="strong"><strong> myblog
+</strong></span>Application myblog has been created.
+
+It appears you are using Python. Is this correct?
+(Y/n):<span class="strong"><strong> Y
+
+</strong></span>Select a platform version.
+1) Python 3.6
+2) Python 3.4
+3) Python 3.4 (Preconfigured - Docker)
+4) Python 2.7
+5) Python
+(default is 1):<span class="strong"><strong> 1
+</strong></span>Cannot setup CodeCommit because there is no Source Control setup, continuing with initialization
+Do you want to set up SSH for your instances?
+(Y/n):<span class="strong"><strong> Y
+
+</strong></span>Select a keypair.
+1) aws-sshkey
+2) [ Create new KeyPair ]
+(default is 1):<span class="strong"><strong> 1
+</strong></span></pre><p>Elastic Beanstalk looks for a file named <code class="literal">application.py</code> in your project directory, and it expects to find a WSGI application, named <code class="literal">application</code>, in that file:</p><pre class="programlisting">import os
+from webapp import create_app
+from webapp.cli import register
+
+env = os.environ.get('WEBAPP_ENV', 'dev')
+<span class="strong"><strong>application</strong></span> = create_app('config.%sConfig' % env.capitalize())
+register(application)</pre><p> </p><p>Next, we are going to create a development environment. Each Elastic Beanstalk application can contain one or many environments. But as things currently stand, our application will fail—we need to tell Elastic Beanstalk how to install Flask-YouTube on Python's virtual environment and initialize the database. To do this, we need to extend the default setup.</p><p>In the root directory, we need a directory named <code class="literal">.ebextensions</code>. This is where we create a lot of extra configuration and setup scripts. In <code class="literal">.ebextensions</code>, we create two shell scripts that will run in the post-deploy phase. So, in the <code class="literal">.ebextensions/10_post_deploy.config</code> file, add the following code:</p><pre class="programlisting">files:
+   "/opt/elasticbeanstalk/hooks/appdeploy/post/01_install_flask_youtube.sh":
+        mode: "000755"
+        owner: root
+        group: root
+        content: |
+            #!/usr/bin/env bash
+
+            cd /opt/python/current/app
+            . /opt/python/current/env
+            source /opt/python/run/venv/bin/activate
+            sh install_flask_youtube.sh
+
+    "/opt/elasticbeanstalk/hooks/appdeploy/post/02_migrate_database.sh":
+        mode: "000755"
+        owner: root
+        group: root
+        content: |
+            #!/usr/bin/env bash
+...</pre><p>Using YAML notation here, we tell Elastic Beanstalk to create two shell scripts to install Flask-YouTube and create or migrate the database. The location of these files is special—<code class="literal">/opt/elasticbeanstalk/hooks/appdeploy/post</code> is where we can drop scripts to be executed after deploying. These scripts are executed in alphabetic order. Also, take note of the following locations:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">/opt/python/current/app</code>: This is the deploy location of the application.</li><li style="list-style-type: disc"><code class="literal">/opt/python/current/env</code>: This is a file containing defined environment variables on Elastic Beanstalk.</li><li style="list-style-type: disc"><code class="literal">/opt/python/run/venv</code>: This is python's <code class="literal">virtualenv</code>, and is where Elastic Beanstalk installed all our defined dependencies.</li></ul></div><p> </p><p> </p><p>Now, for our environment creation, run the following commands:</p><pre class="programlisting"><span class="strong"><strong>$ eb create myblog-dev
+$ # Setup this environment variable
+$ eb setenv WEBAPP_ENV=Dev</strong></span></pre><p>Finally, after the environment has finished provisioning the infrastructure and deployment, we can check out our application using the following command:</p><pre class="programlisting"><span class="strong"><strong>$ eb open</strong></span></pre><p>To deploy new versions of our application, we just have to run this command:</p><pre class="programlisting"><span class="strong"><strong>$ eb deploy</strong></span></pre><p>Note that our <span>development</span><a id="id325531973" class="indexterm"></a> environment uses SQLite, so the database is on a <span>file</span><a id="id325531981" class="indexterm"></a> on the web server itself. On each deployment or instance recreation, this database is recreated.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec86"></a>Using Amazon RDS</h3></div></div></div><p><span class="strong"><strong>Amazon RDS</strong></span> is a database-hosting <span>platform</span><a id="id325535277" class="indexterm"></a> in the cloud that automatically manages several things, such as recovery on node failure, scheduled backups, and master/slave setups.</p><p>To use RDS, go to the <strong class="userinput"><code>Services</code></strong> tab on the AWS console and click on <strong class="userinput"><code>Relational Database Service</code></strong>. </p><p>Now, create and configure a new database—make sure that on the <strong class="userinput"><code>Publicly accessible </code></strong>option, you choose <strong class="userinput"><code>No</code></strong>. Choose the same VPC as the instances, and register your admin credentials carefully. Now, wait a few minutes for the instance creation. After that, choose your instance, go to the details configuration, and find the field for the <span class="strong"><strong>endpoint</strong></span>—it should look something like <code class="literal">myblog.c7pdwgffmbqdm.eu-central-1.rds.amazonaws.com</code>. Our production configuration uses system environment variables to set up the database URI, so we have to configure Elastic Beanstalk to set the <code class="literal">DB_URI</code> environment variable.</p><p>To use these environment variables, we need to change our blog's <code class="literal">config.py</code> file to use the actual OS environment variables, as follows:</p><pre class="programlisting">class ProdConfig(Config):
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+SQLALCHEMY_DATABASE_URI = os.environ.get('DB_URI', '')
+
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', '')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_BROKER_URL', '')
+
+    CACHE_TYPE = 'redis'
+CACHE_REDIS_HOST = os.environ.get('REDIS_HOST', '')
+    CACHE_REDIS_PORT = '6379'
+CACHE_REDIS_PASSWORD = ''
+CACHE_REDIS_DB = '0'</pre><p>Make sure your instances can connect to the database. If you chose the security group default options and RDS creation, then the wizard will have created a security group for you (the default name is '<code class="literal">rds-launch-wizard</code>'). On EC2, edit this security group and open port 3306 to your instances' <span>VPC CIDR</span>.</p><p>In <code class="literal">.ebextensions</code>, take a look at the <code class="literal">01_env.config</code>—this is where we set our environment variables:</p><pre class="programlisting">option_settings:
+  aws:elasticbeanstalk:application:environment:
+    WEBAPP_ENV: Prod
+    DB_URI: mysql://admin:password@myblog.c4pdwhkmbyqm.eu-central-1.rds.amazonaws.com:3306/myblog
+    CELERY_BROKER_URL: sqs://sqs.us-east-1.amazonaws.com/arn:aws:sqs:eu-central-1:633393569065:myblog-sqs/myblog-sqs</pre><p>Finally, let's create the production environment with the following command:</p><pre class="programlisting"><span class="strong"><strong>$ eb create myblog-prod
+</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec87"></a>Using Celery with Amazon SQS</h3></div></div></div><p>In order to use Celery on AWS, we <span>need</span><a id="id325535363" class="indexterm"></a> to have our Elastic Beanstalk instance run our Celery worker in the background, as well as set up an SQS messaging queue. For Celery to support SQS, it needs to install a helper library from <code class="literal">pip</code>. Once more, verify that our <code class="literal">requirements.txt</code> file contains the <span class="strong"><strong>boto3</strong></span> package. Elastic <span>Beanstalk</span><a id="id325535382" class="indexterm"></a> will look at this file and create a virtual environment from it.</p><p> </p><p>Setting up a new messaging queue on SQS is very easy. Go to the <strong class="userinput"><code>Services</code></strong> tab and click on <strong class="userinput"><code>Simple Queue Service</code></strong> in the applications tab, then click on <span class="strong"><strong><strong class="userinput"><code>Create New Queue</code></strong></strong></span><strong class="userinput"><code>.</code></strong> After a very short configuration screen, you should see a screen much like the following:</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/8ff3dc1f-6c2a-4f6a-b3c3-5cf75cffd903.png" /></div><p>Next, we have to give our instances access to the newly created SQS. The easiest way to do this is editing the Elastic Beanstalk default instance profile (this is not recommended, however—you should create a separate instance profile and associate all your instances with it using <code class="literal">.ebextensions</code> option settings). The default IAM instance profile is named <a class="ulink" href="https://console.aws.amazon.com/iam/home#/roles/aws-elasticbeanstalk-ec2-role" target="_blank">aws-elasticbeanstalk-ec2-role</a>. Go to IAM service, then roles, then choose the <a class="ulink" href="https://console.aws.amazon.com/iam/home#/roles/aws-elasticbeanstalk-ec2-role" target="_blank">aws-elasticbeanstalk-ec2-role</a> role. Next, click on <strong class="userinput"><code>Add inline policy</code></strong> and follow the wizard to give access to the newly created SQS.</p><p>Now we have to change our <code class="literal">CELERY_BROKER_URL</code> to the new URL, which takes the following format:</p><pre class="programlisting"><span class="strong"><strong>$ eb setenv CELERY_BROKER_URL=sqs://sqs.us-east-1.amazonaws.com/arn:aws:sqs:us-east-1:&lt;AWS_ACCOUNT_ID&gt;:myblog-sqs/myblog-sqs</strong></span></pre><p>Change the <code class="literal">AWS_ACCOUNT_ID</code> value to your AWS account ID.</p><p>Finally, we need to tell Elastic Beanstalk to run a Celery worker in the background. Once more, we can do this in <code class="literal">.ebextensions</code>. Create a file named <code class="literal">11_celery_start.config</code>, and insert the following code into it:</p><pre class="programlisting">commands:
+    celery_start:
+        command: |
+              #!/usr/bin/env bash
+              cd /opt/python/current/app
+              . /opt/python/current/env
+              source /opt/python/run/venv/bin/activate
+              celery multi start worker1 -A celery_runner</pre><p>Note that this kind of Celery worker deployment lives on the web server (which is not recommended), and will also scale along with the web servers in line with demand. A better option would be to explore the worker feature from Elastic Beanstalk, but this would imply a complete rework of the feature, and we'd suffer from subsequent vendor lock-in.</p></div></div>

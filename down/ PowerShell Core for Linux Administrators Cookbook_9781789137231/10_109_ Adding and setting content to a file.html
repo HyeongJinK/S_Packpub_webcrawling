@@ -1,0 +1,45 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec109"></a>Adding and setting content to a file</h2></div></div><hr /></div><p>Redirecting output or sending output to a <span>file</span><a id="id325953357" class="indexterm"></a> is a simple process. PowerShell also allows us to add, remove, or replace content in the files using the other three <code class="literal">Content</code> cmdlets (<code class="literal">Get-Command *content</code> or <code class="literal">Get-Command -Noun Content</code>). So, here is the <span>scenario</span><a id="id325953335" class="indexterm"></a> for the recipe.</p><p>You sent some text to the <code class="literal">message.txt</code> file, in the last recipe. Change the text to <code class="literal">Successfully sent the contents of ~/random/dir-03 and appending the list to file-list.txt</code>. Then, add the date to the <code class="literal">message.txt</code> and <code class="literal">file-list.txt</code> files. Finally, empty the <code class="literal">error.txt</code> file.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec287"></a>Getting ready</h3></div></div></div><p>The files this recipe uses were created in the previous recipe. If you do not have the files, either create three files with those names and add content to them manually, or follow the <span class="emphasis"><em>How to do it…</em></span> section of the previous recipe, <span class="emphasis"><em>Sending output to a file</em></span>, to generate the files.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec288"></a>How to do it…</h3></div></div></div><p>This is another simple recipe. The concept, though, is a very important one when dealing with files. Let's look at solving the situation we are presented with.</p><p>Here is the script that would address the problem in question:</p><pre class="programlisting">#region Copy files to a backup directory before proceeding:
+New-Item $HOME/random/backup/ -it Directory -f
+# Verbose version New-Item -Path $HOME/random/backup -ItemType Directory -Force # -Force to avoid errors in case when the directory already exists
+Copy-Item $HOME/random/message.txt, $HOME/random/file-list.txt, $HOME/random/error.txt $HOME/random/backup/
+# Verbose version: Copy-Item -Path $HOME/random/message.txt, $HOME/random/file-list.txt, $HOME/random/error.txt -Destination $HOME/random/backup/
+
+#endregion
+
+#region Commence operations
+
+Set-Content $HOME/random/message.txt "Successfully sent the contents of ~/random/dir-03 and appending the list to file-list.txt"
+# Verbose version: Set-Content -Path $HOME/random/message.txt -Value  "Successfully sent the contents of ~/random/dir-03 and appending the list to file-list.txt"
+
+Add-Content $HOME/random/message.txt, $HOME/random/file-list.txt (Get-Date)
+# Verbose version: Add-Content -Path $HOME/random/message.txt, $HOME/random/file-list.txt -Value (Get-Date)
+
+Clear-Content $HOME/random/error.txt
+# Verbose version: Clear-Content -Path $HOME/random/error.txt
+
+#endregion
+
+"Here are the contents before and after the modifications:"
+
+"Message (before):"
+Get-Content $HOME/random/backup/message.txt
+
+"Message (now):"
+Get-Content $HOME/random/message.txt
+
+Read-Host "Press ENTER to continue"
+# Verbose version Read-Host -Prompt "Press ENTER to continue"
+
+"File list (before):"
+Get-Content $HOME/random/backup/file-list.txt
+
+"File list (now):"
+Get-Content $HOME/random/file-list.txt
+
+Read-Host "Press ENTER to continue"
+
+"Error (before):"
+Get-Content $HOME/random/backup/error.txt
+
+"Error (now):"
+Get-Content $HOME/random/error.txt</pre><p>If you like, open the files in your favorite code editor or use <code class="literal">cat</code> to see how the files have been modified. You can even use the <code class="literal">diff</code> command in Linux or use the <code class="literal">Compare-Object</code> PowerShell cmdlet to compare the contents of the backed-up and the current files.</p><p>Here is a snapshot of the outputs at different stages. The following screenshot shows the details about the contents of <code class="literal">message.txt</code>:</p><div class="mediaobject"><img src="/graphics/9781789137231/graphics/dd324d8f-bdeb-4580-a896-7d73069c6a70.png" /></div><p>The contents of <code class="literal">file-list.txt</code> are shown in the following screenshot. Note the date on the last line of both the files:</p><div class="mediaobject"><img src="/graphics/9781789137231/graphics/9a2783ec-4d6b-493d-bfa3-feccfb5b14c7.png" /></div><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec289"></a>How it works…</h3></div></div></div><p>You would have seen the use of <code class="literal">#region</code> and <code class="literal">#endregion</code> here for the first time in this book. This construct is used to enable code folding in code editors, as well as to be simple logical boundaries to visually help readers understand the script. They are by no means necessary.</p><p>The first region in the script merely backs up the three files in <span>order</span><a id="id325892145" class="indexterm"></a> to restore them if need be, given that using variables for this seems a little too volatile.</p><p>The three cmdlets we use in this recipe are <code class="literal">Set-Content</code>, <code class="literal">Add-Content</code>, and <code class="literal">Clear-Content</code>. The <code class="literal">Set-Content</code> cmdlet replaces the contents in a file (or files, with the paths separated by commas; the <code class="literal">Path</code> parameter in all the three cmdlets accepts a string array as input).</p><p>The <code class="literal">Add-Content</code> cmdlet adds the specified <code class="literal">Value</code> to the end of the existing file(s), acting similar to <code class="literal">Out-File</code> with <code class="literal">Append</code> or the <code class="literal">&gt;&gt;</code> operator. The <code class="literal">Clear-Content</code> cmdlet empties the file(s).</p></div></div>

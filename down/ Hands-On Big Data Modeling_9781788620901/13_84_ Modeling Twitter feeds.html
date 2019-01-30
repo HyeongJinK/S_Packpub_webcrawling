@@ -1,0 +1,80 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch13lvl1sec80"></a>Modeling Twitter feeds</h2></div></div><hr /></div><p>Now, the first exercise is to generate the word-cloud <span>model</span><a id="id325591972" class="indexterm"></a> from the data based on the frequency of the words used. To do so, we need to work only with the <code class="literal">Tweet_Text</code> column, so we extract into a separate variable and change the data structure of the text to a string:</p><pre class="programlisting">df=tweet['Tweet_Text']
+#change the text to str
+text=str(df)</pre><p>Now we can generate the word cloud easily using the <code class="literal">WordCloud</code> Python library. We have used that before in <a class="link" href="#" linkend="ch07">Chapter 7</a>, <span class="emphasis"><em>Modeling with Unstructured Data</em></span>, so preliminary preprocessing steps have been escaped <span>here:</span></p><pre class="programlisting">wordcloud = WordCloud(background_color="white",width=1000, height=860, margin=2).generate(text)
+import matplotlib.pyplot as plt
+plt.imshow(wordcloud)
+rcParams['figure.figsize'] = 20, 10
+plt.axis("off")
+plt.show()</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>The snippet should generate a word cloud similar to the one given as follows:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/9f568a97-e7d8-4a2b-9655-0c853a31f499.png" /></div><p>Figure 13.2: Word cloud generated from Twitter text feed based on the frequency of words used in the tweet</p><p>It is possible to save the generated file directly into the file. It can be done as follows:</p><pre class="programlisting">wordcloud.to_file('wordcloud.png')</pre><p>The snippet should save the generated graph <span>model</span><a id="id326198201" class="indexterm"></a> to a file named <code class="literal">wordcloud.png</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec93"></a>The frequency of the tweets</h3></div></div></div><p>Let's assume we need to know how <span>often</span><a id="id326199318" class="indexterm"></a> the user tweets. This can be extracted and plotted to see the statistics. Assuming the file is still saved into <code class="literal">tweet</code> variable, let's have a look at the following code:</p><pre class="programlisting">data = tweet
+time = data['Time']
+tweets = data['Tweet_Text']
+hashTag = data['Hashtags']
+Retweets = data['Retweets']</pre><p> </p><p> </p><p> </p><p> </p><p>Now, copying all the values into <code class="literal">data</code>, let's extract <code class="literal">time</code>, <code class="literal">tweets</code>, <code class="literal">hashTag</code>, and <code class="literal">Retweets</code>:</p><pre class="programlisting">#How often Trump tweets during a single day
+hour_an = data.copy()
+hour_an['Time'] = pd.to_datetime(data['Time'], yearfirst=True)
+hour_an['Time'] = hour_an['Time'].dt.hour
+hour_an = pd.DataFrame(hour_an.groupby(['Time']).size().sort_values(ascending=True).rename('Tweets'))
+hour_an</pre><p>The snippet should output how often President Trump tweets in a single day:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/0a24d4eb-6fa9-4d7a-9562-ff9bf36516b4.png" /></div><p>Figure 13.3: How often President Trump tweets in a single day</p><p></p><p>We can plot the result in the <span>pie</span><a id="id326474806" class="indexterm"></a> chart. We can draw a pie chart as follows:</p><pre class="programlisting">fig, ax = plt.subplots(figsize=(10, 10))
+shap = hour_an
+labels = hour_an.index.values
+ax.pie(shap, labels=labels, shadow=False)
+plt.title('Tweets in certain hours of the day')
+plt.show()</pre><p>The preceding snippet should generate a pie chart:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/a30c2f68-9c77-4965-b3fc-c49c8dfc0721.png" /></div><p>Figure 13.4: Pie chart of the frequency of tweets done by Trump in a day</p><p></p><p>We can, of course, generate other statistics from the tweet data. Feel free to play around to get more statistics from the dataset. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch13lvl2sec94"></a>Sentiment analysis</h3></div></div></div><p>In this section, we are going to perform <span>sentiment</span><a id="id326474843" class="indexterm"></a> analysis on the tweets made by Trump. Here, we are going to use a Python library called <code class="literal">TextBlob</code>. As claimed by the TextBlob website, this is a very simplified text-processing library. Let's understand the package with a simple example.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec48"></a>Installing TextBlob</h4></div></div></div><p>The first <span>step</span> is to install the <span>library</span><a id="id325855655" class="indexterm"></a> into the notebook environment. Assuming you are using Anaconda for running the notebook, you can use <code class="literal">conda</code> to install <code class="literal">TextBlob</code> (<a class="ulink" href="https://anaconda.org/conda-forge/textblob" target="_blank">https://anaconda.org/conda-forge/textblob</a>). <span>Assuming</span> you have <code class="literal">conda</code> installed, the <span>command</span><a id="id325855683" class="indexterm"></a> to install <code class="literal">TextBlob</code> is:</p><pre class="programlisting"><span class="strong"><strong>$ conda install -c conda-forge textblob</strong></span></pre><p>This should install the required package into your Anaconda environment. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip9"></a>Note</h3><p>More often, when running the example snippet from this book, you will come across situations where one or more packages are missing in your system or Anaconda installation. You can install the missing <span>libraries</span> using the instructions found at <a class="ulink" href="https://conda.io/docs/user-guide/tasks/manage-pkgs.html#installing-packages" target="_blank">https://conda.io/docs/user-guide/tasks/manage-pkgs.html#installing-packages</a>. </p></div><p>Once you have the <code class="literal">TextBlob</code> library installed, let's import it into our notebook:</p><pre class="programlisting">from textblob import TextBlob</pre><p>And let's perform some simple text-processing on a paragraph:</p><pre class="programlisting">text = TextBlob("Twitter is one of the most important social media used in today's world. It provides the platform to share people's opinions, facts and information regarding person, place, animals or things. These tweets are used by several private, governmental and non-governmental organizations to mine different types of information including business intelligence.")</pre><p>We store the text in a variable. Now we can generate a lot of simple text-processing parameters.</p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec49"></a>Parts of speech</h4></div></div></div><p>Let's say we need to tag the <span>paragraph</span><a id="id325871670" class="indexterm"></a> with parts of speech. We can do that with simple function tags:</p><pre class="programlisting">text.tags</pre><p>It should generate the following output:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/fd17271e-681f-4380-a026-091cf028c3a1.png" /></div><p>Figure 13.5: Texts with tagged parts of speech</p><p></p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec50"></a>Noun-phrase extraction</h4></div></div></div><p>Say we need to extract <code class="literal">noun</code> phrases from the <span>preceding</span><a id="id325875223" class="indexterm"></a> text. This can be done easily with the simple function provided by the package:</p><pre class="programlisting">noun = text.noun_phrases
+noun</pre><p>The output of the preceding code should be something like the one given as follows: </p><pre class="programlisting">WordList(['twitter', 'important social media', "'s world", "people 's opinions", 'non-governmental organizations', 'different types', 'business intelligence'])</pre><p>This processing can be very useful when we are interested in people, places, animals, or things. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec51"></a>Tokenization</h4></div></div></div><p>We can take the text and <span>tokenize</span><a id="id325875252" class="indexterm"></a> it as per our requirements. The first step is to generate different sentences from a text. This can be done easily using this library:</p><pre class="programlisting">text.sentences</pre><p>It should list the set of output, such as the following:</p><pre class="programlisting">[Sentence("Twitter is one of the most important social media used in today's world."),
+ Sentence("It provides the platform to share people's opinions, facts and information regarding person, place, animals or things."),
+ Sentence("These tweets are used by several private, governmental and non-governmental organizations to mine different types of information including business intelligence.")]</pre><p>Not only that, we can list out words <span>from</span> any text:</p><pre class="programlisting">text.words</pre><p>Run the preceding snippet and study the output you get from that. Say you want to see the frequency of any particular word. You can do the following:</p><pre class="programlisting">text.word_counts['twitter']
+1</pre><p> </p><p> </p><p> </p><p> </p><p>It should display the frequency of the words in the text. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch13lvl3sec52"></a>Bag of words</h4></div></div></div><p><span>Sometimes, if we want to use text in Machine Learning algorithms, we’ll have to convert them into a numerical representation. We know that computers are very good at handling numbers.<span> </span>We convert text into a numerical representation called a <span class="strong"><strong>feature vector</strong></span>. A vector can be as simple as a list of numbers.<span> </span>The bag-of-words model is one of the feature-extraction algorithms for text. We can use this package to generate a bag of words</span>. </p><p>For that, we need to use sklearn from Python:</p><pre class="programlisting">from sklearn.feature_extraction.text import CountVectorizer</pre><p>We are going to use <code class="literal">CountVectorizer</code> to create the bag of words:</p><pre class="programlisting">corpus = []
+len(text.sentences)
+for sentence in text.sentences:
+corpus.append(str(sentence))
+
+vectorizer = CountVectorizer()
+print( vectorizer.fit_transform(corpus).todense() )
+print( vectorizer.vocabulary_ )</pre><p>The output of the preceding <span>snippet</span><a id="id325883435" class="indexterm"></a> should look something like this:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/789e0a91-e57a-475d-b15b-100194d2cba2.png" /></div><p>Figure 13.6: Bag of words using the CountVectorize function</p><p></p><p>Now let <code class="literal">TextBlob</code> perform sentiment analysis:</p><pre class="programlisting">test=TextBlob(text)
+test.sentiment</pre><p>It should output the sentiment text as follows:</p><pre class="programlisting">Sentiment(polarity=0.20195668693009117, subjectivity=0.5995670995670995)</pre><p>There are two attributes for sentiment:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <span class="strong"><strong>polarity score</strong></span> is a float within the range [-1.0, 1.0]</li><li style="list-style-type: disc">The <span class="strong"><strong>subjectivity</strong></span> is a float within the range [0.0, 1.0], where 0.0 is very objective and 1.0 is very <span>subjective:</span></li></ul></div><pre class="programlisting">test.sentiment.polarity
+out[8]:0.20195668693009117</pre><p>Let's write a loop to get a sentiment from every tweet:</p><pre class="programlisting">#now we want to get the polarity plot:
+storage=[]
+for i in range(len(df)):
+ x=str(df[i])
+ y=TextBlob(x)
+ z=y.sentiment.polarity
+ storage.append(z)</pre><p> </p><p>Now let's convert <code class="literal">storage</code> to <code class="literal">DataFrame</code> and plot it:</p><pre class="programlisting">#create new dataframe of the change
+change=DataFrame({'trend':storage})
+
+rcParams['figure.figsize'] = 20, 10
+
+#plot the trend of the sentiments (polarity plot)
+change.plot.line()</pre><p> </p><p> </p><p> </p><p> </p><p>The output should look like the <span>following</span><a id="id325886514" class="indexterm"></a> screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/923dd502-453e-4ad4-a623-480a0e751579.png" /></div><p>Figure 13.7: Polarity trend plot of the tweets</p><p>Let's obtain the subjectivity plot:</p><pre class="programlisting">storage2=[]
+for i in range(len(df)):
+ x2=str(df[i])
+ y2=TextBlob(x2)
+ z2=y2.sentiment.subjectivity
+ storage2.append(z2)</pre><p>And now plot it:</p><pre class="programlisting">#create new dataframe of the change
+change2=DataFrame({'trend2':storage2})
+rcParams['figure.figsize'] = 20, 10
+#plot the trend of the sentiments (polarity plot)
+change2.plot.line()</pre><p> </p><p> </p><p> </p><p> </p><p>The output should look like the <span>following</span><a id="id325892946" class="indexterm"></a> screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/65d99191-f307-4215-9aa8-75a2061ad8f5.png" /></div><p>Figure 13.8: Subjectivity plot of the tweets</p><p>To zoom in, we want to see a clear trend within the first 500 tweets.</p><p>First is the polarity trend:</p><pre class="programlisting">#now we want to get the polarity plot:
+storage=[]
+for i in range(500):
+ x=str(df[i])
+ y=TextBlob(x)
+ z=y.sentiment.polarity
+ storage.append(z)
+
+#create new dataframe of the change
+change=DataFrame({'trend':storage})
+rcParams['figure.figsize'] = 20, 10
+#plot the trend of the sentiments (polarity plot)
+change.plot.line()</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>The output should look like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/7659ed58-ece0-42a0-b930-2ad48b040ab5.png" /></div><p>Figure 13.9: Polarity trends plot of first 500 tweets only</p><p>And we can also see the subjectivity trends:</p><pre class="programlisting">##now we want to get the subjectivity plot:
+storage2=[]
+for i in range(500):
+ x2=str(df[i])
+ y2=TextBlob(x2)
+ z2=y2.sentiment.subjectivity
+ storage2.append(z2)
+#create new dataframe of the change
+change2=DataFrame({'trend2':storage2})
+rcParams['figure.figsize'] = 20, 10
+
+#plot the trend of the sentiments (polarity plot)
+change2.plot.line()</pre><p> </p><p> </p><p> </p><p> </p><p>The output of the plot should look like the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/779f2853-7941-4457-8bb4-4322638f311d.png" /></div><p>Figure 13.10: Subjectivity trends of first 500 tweets</p><p>There are several other possibilities for analyzing Twitter data to generate statistics from them. It's being widely used in the modern market. The main purpose of this exercise is to help you get started. Feel free to take it from here and extract other statistics.</p></div></div></div>

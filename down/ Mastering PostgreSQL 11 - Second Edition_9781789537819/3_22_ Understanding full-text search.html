@@ -1,0 +1,91 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec28"></a>Understanding full-text search</h2></div></div><hr /></div><p>If you are looking up names or for <span>simple</span><a id="id326514731" class="indexterm"></a> strings, you are usually querying the entire content of a field. In <span class="strong"><strong>Full-Text-Search</strong></span> (<span class="strong"><strong>FTS</strong></span>), this is different. The purpose of the full-text search is to look for words or groups of words, which can be found in a text. Therefore, FTS is more of a contains operation, as you are basically never looking for an exact string.</p><p>In PostgreSQL, FTS can be done using GIN indexes. The idea is to dissect a text, extract valuable <code class="literal">lexemes (= "preprocessed tokens of words")</code>, and index those elements rather than the underlying text. To make your search even more successful, those words are pre-processed.</p><p>Here is an example:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT to_tsvector('english', 'A car, I want a car. I would not even mind having many cars');
+                          to_tsvector 
+--------------------------------------------------------------- 
+ 'car':2,6,14 'even':10 'mani':13 'mind':11 'want':4 'would':8 
+(1 row)
+</strong></span></pre><p>The example shows a simple sentence. The <code class="literal">to_tsvector</code> function will take the string, apply English rules, and perform a stemming process. Based on the configuration (<code class="literal">english</code>), PostgreSQL will parse the string, throw away stop words, and stem individual words. For example, car and cars will be transformed to the car. Note that this is not about finding the word stem. In the case of <code class="literal">many</code>, PostgreSQL will simply transform the string to <code class="literal">mani</code> by applying standard rules working <span>nicely</span><a id="id326453944" class="indexterm"></a> with the English language.</p><p>Note that the output of the <code class="literal">to_tsvector</code> function is highly language dependent. If you tell PostgreSQL to treat the string as <code class="literal">dutch</code>, the result will be totally different:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT to_tsvector('dutch', 'A car, I want a car. I would not even mind having many cars'); 
+</strong></span><span class="strong"><strong>                         to_tsvector </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------- </strong></span>
+<span class="strong"><strong> 'a':1,5 'car':2,6,14 'even':10 'having':12 'i':3,7 'many':13 </strong></span>
+<span class="strong"><strong>   'mind':11 'not':9 'would':8 </strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p>To figure out which configurations are supported, consider running the following query:</p><pre class="programlisting"><span class="strong"><strong>SELECT cfgname FROM pg_ts_config;</strong></span></pre><p> </p><p> </p><p> </p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec40"></a>Comparing strings</h3></div></div></div><p>After taking a brief look at the <span>stemming</span><a id="id325634090" class="indexterm"></a> process, it is time to figure out how a stemmed text can be compared to a user query. The <span>following</span><a id="id325634099" class="indexterm"></a> code snippet checks for the word <code class="literal">wanted</code>:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT to_tsvector('english', 'A car, I want a car. I would not even mind having many cars') @@ to_tsquery('english', 'wanted'); 
+ ?column? 
+---------- 
+ t 
+(1 row)
+</strong></span></pre><p>Note that <code class="literal">wanted</code> does not actually show up in the original text. Still, PostgreSQL will return <code class="literal">true</code>. The reason is that <code class="literal">want</code> and <code class="literal">wanted</code> are both transformed to the same lexeme, so the result is true. Practically, this makes a lot of sense. Imagine you are looking for a car on Google. If you find pages selling cars, this is totally fine. Finding common lexemes is, therefore, an intelligent idea.</p><p>Sometimes, people are not <span>only</span><a id="id325634134" class="indexterm"></a> looking for a <span>single</span><a id="id325634142" class="indexterm"></a> word, but want to find a set of words. With <code class="literal">to_tsquery</code>, this is possible, as shown in the next example:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT to_tsvector('english', 'A car, I want a car. I would not even mind having many cars') @@ to_tsquery('english', 'wanted &amp; bmw'); 
+?column? 
+----------
+ f 
+(1 row)</strong></span></pre><p>In this case, <code class="literal">false</code> is returned because <code class="literal">bmw</code> cannot be found in our input string. In the <code class="literal">to_tsquery</code> function, <code class="literal">&amp;</code> means <code class="literal">and</code> and <code class="literal">|</code> means <code class="literal">or</code>. It is therefore easily possible to build complex search strings.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec41"></a>Defining GIN indexes</h3></div></div></div><p>If you want to apply text search to a <span>column</span><a id="id326299998" class="indexterm"></a> or a <span>group</span><a id="id326300007" class="indexterm"></a> of columns, there are basically two choices:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Create a functional index using GIN</li><li style="list-style-type: disc">Add a column containing ready-to-use <code class="literal">tsvectors</code> and a trigger to keep them in sync</li></ul></div><p> </p><p>In this section, both options will be outlined. To show how things work, I have created some sample data:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE TABLE t_fts AS SELECT comment 
+ FROM pg_available_extensions;
+SELECT 43</strong></span></pre><p>Indexing the column directly with a functional index is definitely a slower but more space-efficient way to get things done:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE INDEX idx_fts_func ON t_fts 
+        USING gin(to_tsvector('english', comment)); 
+CREATE INDEX</strong></span></pre><p>Deploying an index on the function is easy, but it can lead to some overhead. Adding a materialized column needs more space, but will lead to a better runtime behavior:</p><pre class="programlisting"><span class="strong"><strong>test=# ALTER TABLE t_fts ADD COLUMN ts tsvector; 
+ALTER TABLE</strong></span></pre><p>The only trouble is, how do you keep this column in sync? The answer is by using a trigger:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE TRIGGER tsvectorupdate </strong></span>
+<span class="strong"><strong> BEFORE INSERT OR UPDATE ON t_fts </strong></span>
+<span class="strong"><strong> FOR EACH ROW </strong></span>
+<span class="strong"><strong> EXECUTE PROCEDURE </strong></span>
+<span class="strong"><strong> tsvector_update_trigger(somename, 'pg_catalog.english', 'comment');</strong></span></pre><p>Fortunately, PostgreSQL already <span>provides</span><a id="id326374067" class="indexterm"></a> a <code class="literal">C</code> function that can be used by a trigger to sync the <code class="literal">tsvector</code> column. Just pass a name, the desired language, as well as a couple of columns to the function, and you are already done. The <code class="literal">trigger</code> function will take care of all that is needed. Note that a trigger will always operate within the same transaction as the statement <span>making</span><a id="id326453734" class="indexterm"></a> the modification. Therefore, there is no risk of being inconsistent.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec42"></a>Debugging your search</h3></div></div></div><p>Sometimes, it is not quite <span>clear</span><a id="id326453750" class="indexterm"></a> why a query <span>matches</span><a id="id326453758" class="indexterm"></a> a given search string. To debug your query, PostgreSQL offers the <code class="literal">ts_debug</code> function. From a user's point of view, it can be used just like <code class="literal">to_tsvector</code>. It reveals a lot about the inner workings of the FTS infrastructure:</p><pre class="programlisting"><span class="strong"><strong>test=# \x 
+Expanded display is on. 
+
+test=# SELECT * FROM ts_debug('english', 'go to www.postgresql-support.de'); 
+-[ RECORD 1 ]+---------------------------- 
+alias        | asciiword 
+description  | Word, all ASCII 
+token        | go 
+dictionaries | {english_stem} 
+dictionary   | english_stem 
+lexemes      | {go} 
+-[ RECORD 2 ]+---------------------------- 
+alias        | blank 
+description  | Space symbols 
+token        | 
+dictionaries | {} 
+dictionary   | 
+lexemes      | 
+-[ RECORD 3 ]+---------------------------- 
+alias        | asciiword 
+description  | Word, all ASCII 
+token        | to 
+dictionaries | {english_stem} 
+dictionary   | english_stem 
+lexemes      | {} 
+-[ RECORD 4 ]+---------------------------- 
+alias        | blank 
+description  | Space symbols 
+token        | 
+dictionaries | {} 
+dictionary   |  
+lexemes      | 
+-[ RECORD 5 ]+---------------------------- 
+alias        | host 
+description  | Host 
+token        | www.postgresql-support.de 
+dictionaries | {simple} 
+dictionary   | simple 
+lexemes      | {www.postgresql-support.de}</strong></span></pre><p><code class="literal">ts_debug</code> will list every token found and display information about the token. You will see which token the parser found, the dictionary used, as well as the type of object. In my example, blanks, words, and hosts have been found. You might also see numbers, email addresses, and a lot more. Depending on the type of string, PostgreSQL will handle things differently. For example, it makes absolutely no sense to stem hostnames and email addresses.</p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec43"></a>Gathering word statistics</h3></div></div></div><p>Full-text search can <span>handle</span><a id="id326514745" class="indexterm"></a> a lot of data. To give end <span>users</span><a id="id326514754" class="indexterm"></a> more insights into their texts, PostgreSQL offers the <code class="literal">pg_stat</code> function, which returns a list of words:</p><pre class="programlisting"><span class="strong"><strong>SELECT * FROM  ts_stat('SELECT to_tsvector(''english'', comment) 
+         FROM  pg_available_extensions') 
+         ORDER BY 2 DESC 
+         LIMIT 3; 
+ word     | ndoc | nentry 
+----------+------+-------- 
+function  | 10   | 10  
+data      | 10   | 10 
+type      | 7    | 7 
+(3 rows)</strong></span></pre><p>The <code class="literal">word</code> column contains the stemmed word; <code class="literal">ndoc</code> tells us about the number of documents a certain word occurs in. <code class="literal">nentry</code> indicates how often a word was found altogether.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec44"></a>Taking advantage of exclusion operators</h3></div></div></div><p>So far, indexes have been used to <span>speed</span><a id="id326519640" class="indexterm"></a> things up and to <span>ensure</span><a id="id326519649" class="indexterm"></a> uniqueness. However, a couple of years ago, somebody came up with the idea of using indexes for even more. As you have seen in this chapter, GiST supports operations such as intersects, overlaps, contains, and a lot more. So, why not use those operations to manage data integrity?</p><p>Here is an example:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE EXTENSION btree_gist;</strong></span>
+<span class="strong"><strong>test=# CREATE TABLE t_reservation ( </strong></span>
+<span class="strong"><strong>        room int, </strong></span>
+<span class="strong"><strong>        from_to tsrange, </strong></span>
+<span class="strong"><strong>        EXCLUDE USING GiST (room with =, </strong></span>
+<span class="strong"><strong>                            from_to with &amp;&amp;) </strong></span>
+<span class="strong"><strong>); </strong></span>
+<span class="strong"><strong>CREATE TABLE</strong></span></pre><p>The <code class="literal">EXCLUDE USING GiST</code> clause defines additional constraints. If you are selling rooms, you might want to allow different rooms to be booked at the same time. However, you don't want to sell the same room twice during the same period. What the <code class="literal">EXCLUDE</code> clause says in my example is this: if a room is booked twice at the same time, an error should pop up (the data in <code class="literal">from_to</code> with must not overlap (<code class="literal">&amp;&amp;</code>) if it is related to the same room).</p><p>The following two rows will not violate the constraints:</p><pre class="programlisting"><span class="strong"><strong>test=# INSERT INTO t_reservation 
+          VALUES (10, '["2017-01-01", "2017-03-03"]');</strong></span>
+<span class="strong"><strong>INSERT 0 1 
+test=# INSERT INTO t_reservation 
+          VALUES (13, '["2017-01-01", "2017-03-03"]'); 
+INSERT 0 1</strong></span></pre><p>However, the next <code class="literal">INSERT</code> will cause a violation because the data overlaps:</p><pre class="programlisting"><span class="strong"><strong>test=# INSERT INTO t_reservation 
+           VALUES (13, '["2017-02-02", "2017-08-14"]');</strong></span>
+<span class="strong"><strong>ERROR:  conflicting key value violates exclusion constraint "t_reservation_room_from_to_excl" 
+DETAIL:  Key (room, from_to)=(13, ["2017-02-02 00:00:00","2017-08-14 00:00:00"]) conflicts with existing key (room, from_to)=(13, ["2017-01-01 00:00:00","2017-03-03 00:00:00"]).</strong></span></pre><p>The use of exclusion operators is very <span>useful</span><a id="id325608283" class="indexterm"></a> and can <span>provide</span><a id="id325608292" class="indexterm"></a> you with highly advanced means to handle integrity.</p></div></div>

@@ -1,0 +1,128 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec70"></a>DataProviders in TestNG</h2></div></div><hr /></div><p>DataProviders in TestNG are used <span>when</span><a id="id325161515" class="indexterm"></a> we need to iterate over objects. These can be objects created from Java that include complex objects, objects from a <span>property</span><a id="id325161525" class="indexterm"></a> file or database, or simple string objects. Whenever a <code class="literal">dataProvider</code> attribute is specified in a <code class="literal">@Test</code> annotation, and a method with the annotation <code class="literal">@DataProvider</code> exists, the data from this method is passed into the <code class="literal">@Test</code> annotated method as a two-dimensional object array.</p><p>Let's look at a small example, which is enhanced from our earlier example, where we extracted data into a list of HashMaps. Here we go a step further and read the list of <span>HashMaps</span> in a two-dimensional object array. The following code demonstrates this concept. The code has been split into different sections for readability.</p><p>The following code fragment shows all the declarations for this program:</p><pre class="programlisting">static Object[][] objectArray = {};
+  static Object[][] noRecords = {};
+  private static String tempParam;
+  static Map&lt;String, String&gt; tempMap = new HashMap&lt;String, String&gt;();
+  static List&lt;HashMap&gt; tempList = new ArrayList&lt;HashMap&gt;();
+  private static List&lt;HashMap&gt; input_data;
+  private static String browserName;
+  static IActionKeyword actKeyword;
+  private static Object actionKeyword;
+  private static Object inputData;
+  private static Object testcaseID;
+  static ICommand command;
+  static BrowserInvoker invoker;
+  private static WebDriver driver;
+
+</pre><p>The following code shows the <code class="literal">@Test</code> method with the <code class="literal">@Parameters</code> annotation for supplying the browser name and the <code class="literal">@AfterTest</code> method:</p><pre class="programlisting">@Test()
+  @Parameters("browserName")
+  public static void fetchValues(String param) {
+    tempParam = param;
+  }
+
+  @AfterTest
+  public static void quitBrowser() {
+driver.quit();
+  }
+</pre><p>The following code <span>fragment</span><a id="id325162930" class="indexterm"></a> shows the <code class="literal">@Test</code> method with the <code class="literal">dependsOnMethods</code> annotation and the data provider, <code class="literal">Data1</code>. This method has been made to <span>depend</span><a id="id325437572" class="indexterm"></a> on the <code class="literal">fetchValues</code> method using the <code class="literal">dependsOnMethods</code> attribute:</p><pre class="programlisting">@Test(dataProvider = "Data1", dependsOnMethods = "fetchValues")
+  public void getValues(String testCaseID, String teststepID,
+      String action, String data, String keyword) {
+    System.out.println("First Extract: " + testCaseID + ": " + 
+     teststepID + ": " + action + ": " + data + ": " + keyword);
+    List&lt;String&gt; browsers = new ArrayList&lt;String&gt;();
+
+    browsers.add(tempParam);
+    String timestamp = new SimpleDateFormat("yyyyMMMddHHmmss")
+        .format(new java.util.Date());
+
+    System.out.println("Starting " + browserName + timestamp);
+    actionKeyword = keyword;
+    inputData = data;
+    testcaseID = testCaseID;
+    System.out.println("Action Keyword: " + testCaseID);
+    System.out.println("Action Data: " + data);
+
+    switch (keyword) {
+    case "openbrowser":
+      try {
+    actKeyword = new OpenBrowser();
+    } catch (IOException e) {
+    throw new IOException();
+    } catch (FilloException e) {
+    throw new FilloException("Error in query");
+    }
+      command = new NewBrowser(actKeyword);
+      invoker = new BrowserInvoker(command);
+      driver = invoker.open(browsers);
+      break;
+    case "navigate":
+      try {
+   actKeyword = new OpenURL();
+   } catch (IOException e) {
+   throw new IOException();
+   } catch (FilloException e) {
+   throw new IOException();
+   }
+      command = new OpenURLCommand(actKeyword);
+      NavigatorInvoker invoker1 = new NavigatorInvoker(command);
+    driver = invoker1.navigate(driver, data);
+      break;
+    }
+  }
+
+</pre><p>The following code shows the actual <code class="literal">DataProvider</code> method annotated with the <code class="literal">@DataProvider</code> annotation. This annotation is <span>identified</span><a id="id325441773" class="indexterm"></a> with the name <code class="literal">Data</code>, which can be <span>referenced</span><a id="id325441785" class="indexterm"></a> in the <code class="literal">@Test <span>annotation</span></code>:</p><pre class="programlisting">@DataProvider(name = "Data1")
+ public static Object[][] exec() {
+ String timestamp = new SimpleDateFormat("yyyyMMMddHHmmss")
+ .format(new java.util.Date());
+ System.out.println("Starting " + tempParam + timestamp);
+ Connection conn = null;
+ Fillo fillo = new Fillo();
+ Recordset rs = null, rs1 = null;
+ try {
+ conn = fillo.getConnection(System.getProperty("user.dir")
+ + "\\src\\main\\resources\\Framework.xlsx");
+ String testConfig = "select * from TestConfig where Browser='"
+ + tempParam + "'";
+ String allTestcases = "select * from TestCases";
+  rs = conn.executeQuery(allTestcases);
+ String strQuery2 = "select * from TestCases where TestCaseID='";
+ rs = conn.executeQuery(testConfig);
+ for (int i = 0; i &lt; rs.getCount(); i++) {
+ rs.next();
+ System.out.println(rs.getField("Browser"));
+ System.out.println(rs.getField("Execute_Flag"));
+ if (rs.getField("Execute_Flag").equalsIgnoreCase("y")) {
+ rs1 = conn.executeQuery(testcases
+ + rs.getField("TestCaseID") + "'");
+
+ System.out.println("Rs1 count: " + rs1.getCount());
+ for (int j = 0; j &lt; rs1.getCount(); j++) {
+ rs1.next();
+ tempMap = new HashMap&lt;String, String&gt;();
+ tempMap.put("TestCaseID", rs1.getField("TestCaseID"));
+ tempMap.put("TestStepID", rs1.getField("TestStepID"));
+ tempMap.put("Object", rs1.getField("Object"));
+ tempMap.put("Data", rs1.getField("Data"));
+ tempMap.put("Keyword", rs1.getField("Keyword"));
+ tempList.add((HashMap) tempMap);
+ }
+ }
+ }
+ objectArray = noRecords;
+ objectArray = new Object[tempList.size()][5];
+ for (int i = 0; i &lt; tempList.size(); i++) {
+ objectArray[i][0] = tempList.get(i).get("TestCaseID");
+ objectArray[i][1] = tempList.get(i).get("TestStepID");
+ objectArray[i][2] = tempList.get(i).get("Object");
+ objectArray[i][3] = tempList.get(i).get("Data");
+ objectArray[i][4] = tempList.get(i).get("Keyword");
+ }
+<span> } catch (FilloException e) {</span>
+ return noRecords;
+ }
+ String timestamp1 = <span>new SimpleDateFormat("yyyyMMMddHHmmss")</span>
+ .format(new java.util.Date());
+ System.out.println("Ending " + tempParam + timestamp1);
+ return objectArray;
+ }
+
+</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec63"></a>Having a separate DataProvider class</h3></div></div></div><p>In the preceding code, we have used a data <span>provider</span><a id="id325444760" class="indexterm"></a> in the same class. A data provider with the <code class="literal">@DataProvider</code> annotation can be used in a different class. The changes that need to be done are shown here.</p><p>The fact is that the change has to be done only at one place and that is in the <code class="literal">@Test annotation</code> as shown here:</p><p><code class="literal">@Test(dataProvider = "Data1" , dataProviderClass = ExternalProvider.class)</code></p><p>Next, we will see how to signal whenever any event happens. For this we use what are called <span>TestNG Listeners.</span></p></div></div>

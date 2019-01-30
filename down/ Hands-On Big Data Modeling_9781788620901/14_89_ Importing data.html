@@ -1,0 +1,23 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch14lvl1sec84"></a>Importing data</h2></div></div><hr /></div><p>There are two files used in this exercise. Both of them can be <span>downloaded</span><a id="id325884126" class="indexterm"></a> from Kaggle (<a class="ulink" href="https://www.kaggle.com/berkeleyearth/climate-change-earth-surface-temperature-data" target="_blank">https://www.kaggle.com/berkeleyearth/climate-change-earth-surface-temperature-data</a>) or from the GitHub repository. </p><p>If you are using the repository, the data file can be located inside <a class="link" href="#" linkend="ch13">Chapter 14</a>, <span class="emphasis"><em>Modeling Weather Data Points with Python</em></span>. As always, let's start running iPython Notebook. The instructions can be found in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Modeling Structured Data</em></span>. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec95"></a>Forecasting Nepal's temperature change</h3></div></div></div><p>The first step is importing the required packages. This can be <span>done</span><a id="id325884113" class="indexterm"></a> with the following code snippet:</p><pre class="programlisting">#import the packages
+import math
+import pandas as pd
+import numpy as np
+import os
+from pandas import DataFrame
+from sklearn.cluster import KMeans
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+from matplotlib import style
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn import neighbors, datasets
+style.use('ggplot')
+import matplotlib.pylab as plt
+
+from matplotlib.pylab import rcParams
+from pandas import read_csv
+from pandas import datetime
+from matplotlib import pyplot
+import sklearn
+from sklearn.metrics import mean_squared_error</pre><p>Once these packages are imported, let's import the file into memory:</p><pre class="programlisting">bycountry= pd.read_csv("GlobalLandTemperaturesByCountry.csv", index_col=None)
+bycountry.head(10)</pre><p> </p><p>The preceding <span>snippet</span><a id="id325337693" class="indexterm"></a> should display the first 10 entries from the file, as shown in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/2276d912-bc3a-4d97-8572-31a401928c59.png" /></div><p>Screenshot 14.1: First ten entries from the file</p></div></div>

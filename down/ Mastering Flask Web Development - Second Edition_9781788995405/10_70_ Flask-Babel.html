@@ -1,0 +1,72 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec69"></a>Flask-Babel</h2></div></div><hr /></div><p>In this section, we will explore a way to enable <span>internationalization</span><a id="id324974906" class="indexterm"></a> for our blog. This is an essential feature for building global websites with multi-language support. We will be using the Flask-Babel extension, again created by the author of Flask. As always, we will make sure this dependency exists in our <code class="literal">requirements.txt</code>:</p><pre class="programlisting">...
+Flask-Babel
+...</pre><p>Flask-Babel uses the Babel Python library for i18 and localization, and adds some utilities and Flask integration. To use Flask-Babel, first we need to configure Babel in the <code class="literal">babel/babel.cfg</code> file:</p><pre class="programlisting"><span class="strong"><strong>[python: webapp/**.py]</strong></span>
+<span class="strong"><strong>[jinja2: webapp/templates/**.html]</strong></span>
+encoding = utf-8
+extensions=jinja2.ext.autoescape,jinja2.ext.with_</pre><p>We configure Babel to look for text to translate in Python files in the <code class="literal">webapp</code> directory only, and to extract text from <code class="literal">Jinja2</code> templates in the <code class="literal">webapp/templates</code> directory.</p><p>Then, we need to create a translations directory on <code class="literal">webapp/translations</code>, where all the translations for our supported languages will be.</p><p>Babel comes with a command-line utility, named <code class="literal">pybabel</code>. We will use it to set up all the languages that our blog will support, in addition to triggering an extract process, updating, and compiling. First, to create a new language, enter the following command:</p><pre class="programlisting"><span class="strong"><strong>$ pybabel init -i ./babel/messages.pot -d ./webapp/translations -l pt</strong></span></pre><p>Portuguese, or <code class="literal">pt</code>, is already initialized in the provided support code, but you could try creating a new language. Just change <code class="literal">pt</code> to some other language. After this, you can check <code class="literal">webapp/translations</code>, and should see that Babel has created a new directory with our language code. This directory contains a <code class="literal">messages.po</code> file, where we are going to write the translations necessary for the extracted text, and a <code class="literal">messages.mo</code> compiled version of the <code class="literal">messages.po</code> file.</p><p> </p><p>Next, to trigger Babel to search for text to be translated on our application, use this command:</p><pre class="programlisting">$ <span class="strong"><strong>pybabel extract -v -F ./babel/babel.cfg -o ./babel/messages.pot .</strong></span></pre><p> This will update the <code class="literal">messages.pot</code> main file with all the text that needs to be translated. Then, we tell Babel to update all the <code class="literal">messages.po</code> files for all the supported languages with the following command:</p><pre class="programlisting"><span class="strong"><strong>$ pybabel update -i ./babel/messages.pot -d webapp/translations</strong></span></pre><p>Now, the <code class="literal">messages.po</code> files will contain something like this:</p><pre class="programlisting"># Portuguese translations for PROJECT.
+# Copyright (C) 2018 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR &lt;EMAIL@ADDRESS&gt;, 2018.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+...
+
+#: webapp/templates/head.html:5
+msgid "Welcome to this Blog"
+msgstr ""
+
+#: webapp/templates/macros.html:57
+msgid "Read More"
+msgstr ""
+
+...</pre><p>Here, the translator will need to update <code class="literal">msgstr</code> with the translated text from <code class="literal">msgid</code>. <span>English to some target language</span>. After this is done, we will tell Babel to compile the <code class="literal">messages.po</code> files and generate updated <code class="literal">messages.mo</code> files with the following command:</p><pre class="programlisting"><span class="strong"><strong>$ pybabel compile -d ./webapp/translations</strong></span></pre><p>How does Babel identify which text to translate on our application? Simple—<code class="literal">Jinja2</code> is already prepared for Babel, so on our templates, we just have to enter the following:</p><pre class="programlisting">&lt;h1&gt;{{_('Some text to translate')}}&lt;/h1&gt;</pre><p><code class="literal">_('text')</code> is an alias for the <code class="literal">gettext</code> function, and will return a translation for the string if one exists, and <code class="literal"><span>ngettext</span></code> for text that can become plural.</p><p>For Flask<span class="strong"><strong> </strong></span>integration, we are going to create a new module named <code class="literal">webapp/babel</code>. This is where we will initialize the extension. To do this, add the following to the <code class="literal">babel/__init__.py</code> file:</p><pre class="programlisting">from flask importhas_request_context, session
+from flask_babel import Babel
+
+babel = Babel()
+...
+def create_module(app, **kwargs):
+    babel.init_app(app)
+from .controllers import babel_blueprint
+    app.register_blueprint(babel_blueprint)</pre><p>Then, we need to define a function that returns the current locale code to Flask-Babel. The best place to add it is in the <code class="literal">babel/__init__.py</code> file:</p><pre class="programlisting">...
+<span class="strong"><strong>@</strong></span><span class="strong"><strong>babel.localeselector</strong></span>
+def get_locale():
+if has_request_context():
+        locale = session.get('locale')
+if locale:
+return locale
+        session['locale'] = 'en'
+return session['locale']
+...</pre><p>We will use the session to hold the currently selected locale, and if none exists, we'll fall back to English. Our function is decorated with <code class="literal">@babel.localeselector</code> to register our function on Flask-Babel.</p><p>Next, we need to define an endpoint that can be called to switch the current selected language. This endpoint will set the session locale to the new language and redirect to the home page. Do this by adding the following code to the <code class="literal">babel/controllers.py</code> file:</p><pre class="programlisting">from flask import Blueprint, session, redirect, url_for
+
+babel_blueprint = Blueprint(
+'babel',
+__name__,
+url_prefix="/babel"
+)
+
+
+@babel_blueprint.route('/&lt;string:locale&gt;')
+def index(locale):
+    session['locale'] = locale
+return redirect(url_for('blog.home'))</pre><p>Finally, we will create a way for our users to change the current language. This will be done on the navigation bar. To do this, add the following to the <code class="literal">templates/navbar.html</code> file:</p><pre class="programlisting">...
+&lt;ul class="navbar-nav ml-auto"&gt;
+    &lt;li class="nav-item dropdown"&gt;
+        &lt;a class="nav-link dropdown-toggle" href="#" 
+        id="navbarDropdown" role="button" data-toggle="dropdown"&gt;
+Lang
+&lt;/a&gt;
+        &lt;div class="dropdown-menu"&gt;
+            &lt;a class="dropdown-item" href="<span class="strong"><strong>{{url_for('babel.index', 
+            locale='en')}}</strong></span>"&gt;en&lt;/a&gt;
+            &lt;a class="dropdown-item" href="<span class="strong"><strong>{{url_for('babel.index', 
+            locale='pt')}}</strong></span>"&gt;pt&lt;/a&gt;
+        &lt;/div&gt;
+    &lt;/li&gt;
+...
+&lt;/ul&gt;</pre><p>The new navigation bar options will send us to our Babel index endpoint with the selected language. Any new languages that we want to support should be added here. Finally, we just have to call Babel's <code class="literal">create_module</code> function on our main <code class="literal">__init__.py</code> file:</p><pre class="programlisting">def create_app():
+...
+    from babel import create_module as babel_create_module
+...
+    babel_create_module(app)</pre><p>And that's it. We now have all the necessary configurations in place to <span>support</span><a id="id325378740" class="indexterm"></a> any language on our blog application.</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/5d953407-8d47-4130-afcf-1392332df482.png" /></div><p> </p></div>

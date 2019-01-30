@@ -1,0 +1,156 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec33"></a>Qualifiers</h2></div></div><hr /></div><p>Qualifiers are required in some <span>cases</span><a id="id325816097" class="indexterm"></a> to resolve conflicts during dependency injection by identifying the correct bean with a qualified name. In the last section, we discussed injecting the dependencies. We injected <code class="literal">defaultPreferredLanguage</code> in the <code class="literal">IdentityCreator</code> class that was produced by the <code class="literal">Producer</code> function of the <code class="literal">PreferredLanguageProducer</code> class. If we want to inject another field of the same type, we then have a problem. If we have another function that produces a bean of the <code class="literal">PreferredLanguage</code> type, the CDI wouldn't know which one to consider and inject. In order to solve this, we can specify qualifiers, such as the <code class="literal">@Named</code> annotation.</p><p><code class="literal">@Named</code> is a qualifier that is shipped by the CDI. It is annotated with <code class="literal">@Qualifier</code> and can qualify string values for instances to be injected.</p><p>Let's say that we want to have several <code class="literal">preferredLanguage</code> types, based on a context such as <code class="literal">NativeEnglishSpeaker</code>. In this case, we would need to specify <code class="literal">@Named</code> with the <code class="literal">native-english-speaker</code> string value. This is shown in the following code:</p><pre class="programlisting">class IdentityCreator {
+@Inject
+    @Named("native-english-speaker")
+private lateinit var defaultPreferredLanguage: PreferredLanguage
+
+fun createPerson(inputData: InputData): Person {
+val person = Person()
+        person.preferredLanguage = if (inputData.preferredLanguage == null)
+defaultPreferredLanguage
+else
+inputData.preferredLanguage
+return person
+    }
+}</pre><p>In order to know which function or which producer is the correct one, we have to specify the <code class="literal">Named</code> annotation on the <code class="literal">Producer</code> function as well:</p><pre class="programlisting">class PreferredLanguageProducer {
+@Produces
+    @Named("native-english-speaker")
+fun exposeDefaultPreferredLanguage(): PreferredLanguage {
+return PreferredLanguage.EN_US
+}
+}</pre><p> </p><p> </p><p>We can also specify another <code class="literal">preferredLanguage</code> to be injected in the <code class="literal">IdentityCreator</code> class that comes from another producer and has a different qualifier:</p><pre class="programlisting">class PreferredLanguageProducer {
+@Produces
+    @Named("hindi")
+fun exposeDefaultPreferredLanguage(): PreferredLanguage {
+return PreferredLanguage.HI
+}
+}</pre><p>This can be injected as follows:</p><pre class="programlisting">@Inject
+@Named("hindi")</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note19"></a>Note</h3><p>These qualifiers are not only annotated on producer functions; they can also be annotated directly on beans, as follows:
+</p><p><code class="literal">@Named("hindi")</code><code class="literal">class PreferredLanguageProducer {</code><code class="literal">  @Produces</code><code class="literal">  fun exposeDefaultPreferredLanguage(): PreferredLanguage {</code><code class="literal">    return PreferredLanguage.HI</code><code class="literal">  }</code><code class="literal">}</code></p></div><p>The <code class="literal">Named</code> qualifier with strings works fine, but this is not the best approach as it is not type safe. In this case, we are just relying on the string. If we make a typo, we don't get a warning until the application starts up. This means that we cannot just use the <code class="literal">Named</code> qualifier that comes with the string, but we can also use type-safe qualifiers if we define them in our application.</p><p>Let's say we want to have a <code class="literal">@NativeEnglishSpeaker</code> qualifier that itself is an annotation. We create a new annotation that we can use while creating <code class="literal">Person</code>:</p><pre class="programlisting">@Qualifier
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+annotation class NativeEnglishSpeaker
+</pre><p>These qualifiers are annotations that are annotated with <code class="literal">@Qualifier</code> from the CDI. An annotation in the Java EE world has to have a retention runtime policy so that it is visible at runtime.</p><p> </p><p> </p><p>Qualifiers need to be specified at the producer function. We can then inject <code class="literal">PreferredLanguage</code> in the <code class="literal">IdentityCreator</code> class in a type-safe way. Consider the following code:</p><pre class="programlisting">class PreferredLanguageProducer {
+
+@Produces
+    @NativeEnglishSpeaker
+    fun exposeDefaultPreferredLanguage(): PreferredLanguage {
+return PreferredLanguage.EN_US
+}
+}</pre><p>Here, we specified a producer function, <code class="literal">exposeDefaultPreferredLanguage()</code>, which is annotated with <code class="literal">@Produces</code> and a qualifier annotation, <code class="literal">@NativeEnglishSpeaker</code>.Now, in the<code class="literal">IdentityCreator</code>class, we annotate the <code class="literal">defaultPreferredLanguage</code>field with the <code class="literal">@NativeEnglishSpeaker</code> and <code class="literal">@Inject</code> annotations so that a <code class="literal">preferredLanguage</code> created in the producer function gets injected in it:</p><pre class="programlisting">class IdentityCreator {
+@Inject
+    @NativeEnglishSpeaker
+    private lateinit var defaultPreferredLanguage: PreferredLanguage
+
+fun createPerson(inputData: InputData): Person {
+val person = Person()
+        person.preferredLanguage = if (inputData.preferredLanguage == null)
+defaultPreferredLanguage
+else
+inputData.preferredLanguage
+return person
+    }
+}</pre><p>We can now implement the custom <span>qualifier</span><a id="id326500041" class="indexterm"></a> types that can be used to specify at the injection point. We can use CDI to manage these beans.</p><p>We can now specify as many qualifiers as we want for all the custom qualifier types we are using if the types themselves are not sufficient to uniquely identify the injected instances. These qualifiers are handy in combination with the producers.</p><p> </p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec35"></a>Scopes</h3></div></div></div><p>CDI has a <span>number</span><a id="id326559790" class="indexterm"></a> of scope annotations. Every managed bean either explicitly or implicitly defines the scope, and the scope specifies the life cycle of all the instances of the beans.
+For example, we have an EJB session bean of an application with a stateless scope, as shown in the following code:</p><pre class="programlisting">@Stateless
+class App {
+@Inject
+    private lateinit var identityCreator: IdentityCreator
+@Inject
+    private lateinit var identityRepository: IdentityRepository
+
+fun createIdentity(inputData: InputData): Identity {
+val person = identityCreator.createPerson(inputData)
+identityRepository.store(person)
+return person
+
+    }
+}</pre><p>Stateless beans are pooled by the application server. We have several instances of the bean, which is the concern of the application server. When we want to invoke a business function such as <code class="literal">createPerson()</code>, we receive an instance of the bean, execute the function, and the instance is returned back into the pool. We must not store any states in these instances as we don't know which instance we will get each time.</p><p>There are also other instance scopes, such as <code class="literal">@Stateful</code>. Stateful session beans are bound to a user's HTTP session. All the business functions we invoke will be invoked on the same instance. We could, therefore, store some state information in these instances. These are not shared with other users' sessions. An example of a stateful bean is shown here:</p><pre class="programlisting">@Stateful
+class App {
+@Inject
+    private lateinit var identityCreator: IdentityCreator
+@Inject
+    private lateinit var identityRepository: IdentityRepository
+
+fun createResource(inputData: InputData): Identity {
+val person = identityCreator.createPerson(inputData)
+identityRepository.store(person)
+return person
+    }
+}</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>There is a third scope, the <code class="literal">@Singleton</code> EJB scope. A singleton EJB is a bean that exists only once within a Java EE application. All invocations of the business functions will be invoked on the same instance, as shown in the following code:</p><pre class="programlisting">@Singleton
+class App {
+   //..
+}</pre><p>Context-managed beans, or CDI-managed beans, also have scopes. For example, <code class="literal">IdentityCreator</code> and <code class="literal">IdentityRepository</code> are CDI-managed beans and they don't have any annotations, as shown in the following code:</p><pre class="programlisting">package org.rao.kotlin.cdi
+
+class IdentityCreator {
+    //..
+}
+package org.rao.kotlin.cdi
+
+class IdentityRepository {
+    //..
+}</pre><p>CDI actually defines several scopes, more <span>than</span><a id="id325857978" class="indexterm"></a> the EJB. By default, CDI-managed beans have the <code class="literal">@Dependent</code> scope, even if we don't specify the <code class="literal">@Dependent</code> annotation:</p><pre class="programlisting">@Dependent
+class IdentityCreator {
+@Inject
+    @NativeEnglishSpeaker
+    private lateinit var defaultPreferredLanguage: PreferredLanguage
+
+fun createPerson(inputData: InputData): Person {
+val person = Person()
+        person.preferredLanguage = if (inputData.preferredLanguage == null)
+defaultPreferredLanguage
+else
+inputData.preferredLanguage
+return person
+    }
+}</pre><p>Beans annotated with <code class="literal">@Dependent</code> are the same as if we don't specify any annotation. By default, beans are dependent-scoped.</p><p> </p><p> </p><p>This means that the life cycle of these beans depends on the injection point at which the beans are injected. This is demonstrated in the following code:</p><pre class="programlisting">@Stateless
+class App {
+@Inject
+    private lateinit var identityCreator: IdentityCreator
+@Inject
+    private lateinit var identityRepository: IdentityRepository
+
+fun createResource(inputData: InputData): Identity {
+val person = resourceCreator.createPerson(inputData)
+resourceRepository.store(person)
+return person
+
+    }
+}</pre><p>Here, for the stateless EJB, we want to inject CDI-managed beans. This EJB instance will get one dedicated <code class="literal">IdentityCreator</code> bean and one dedicated <code class="literal">IdentityRepository</code> bean, which are active during the life cycle of EJB beans. These beans are not shared with any other managed beans. This means that the <code class="literal">IdentityCreator</code> class and the <code class="literal">IdentityRepository</code> bean are dependent on the EJB bean <code class="literal">App</code>.</p><p>In this case, the life cycle of the <code class="literal">identityCreator</code> class and the <code class="literal">identityRepository</code> bean is decided by the EJB bean <code class="literal">App</code>. As it is stateless, its life cycle lasts until the instance is returned to the pool. In the case of the stateful bean, the life cycle lasts for the duration of the particular HTTP session of the requesting client.</p><p>Similarly, we could define the CDI-managed bean that itself injects other dependent CDI beans. If we have all the dependent beans, the first one will specify the life cycle for the dependent objects.</p><p>An <code class="literal">@ApplicationScoped</code> CDI bean is similar to singleton EJBs—only one instance of the bean exists within the whole application. This means we only have one instance and everything will be invoked on the same instance of the bean. Consider the following code:</p><pre class="programlisting">@ApplicationScoped
+class IdentityCreator {
+@Inject
+    @NativeEnglishSpeaker
+    private lateinit var defaultPreferredLanguage: PreferredLanguage
+
+    //..
+}</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>There are two more CDI beans—<code class="literal">@RequestScoped</code> and <code class="literal">@SessionScoped</code>. A <code class="literal">RequestScoped</code> CDI bean has a life cycle that is limited to a particular request. A <code class="literal">SessionScoped</code> CDI bean, on the other hand, has a life cycle that lasts for the duration of the active HTTP session and is managed by the CDI.</p><p>We can use different scopes within a Java EE application. The overall platform will make sure everything works as expected. We can define a bean with a larger scope and inject a smaller scoped bean in it. We can have, for example, a stateful session bean, into which we can <span>then</span><a id="id325995736" class="indexterm"></a> inject other stateless EJBs. This is possible because although we don't directly hold a reference to an <code class="literal">IdentityCreator</code> dependent bean, the reference to its proxy object and the framework will take care of managing the beans.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec36"></a>CDI and domain events</h3></div></div></div><p>In this section, we will <span>look</span><a id="id325995754" class="indexterm"></a> at how to build a model of the <span>domain</span><a id="id325995764" class="indexterm"></a> events using CDI events. Let's say that our application specifies an event, such as a person being created. We will define an event. This event is modeled as part of the domain. We will define a listener listening to the event. The event will be fired at some point during the execution of the business logic.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec24"></a>Defining an event</h4></div></div></div><p><code class="literal">PersonCreationEvent</code> is an entity <span>that</span><a id="id325995782" class="indexterm"></a> resides in an entity package, more specifically a domain event. Let's say this event specifies some event information, such as identifying which person has been created:</p><pre class="programlisting">class PersonCreationEvent(val identifier: UUID)</pre><p>Now, the event can be created as part of our business logic. In the<code class="literal">createIdentity()</code>function, we will create a new event, the<code class="literal">PersonCreationEvent</code> class, indicating that a new person record has been created:</p><pre class="programlisting">@Stateless
+class App {
+@Inject
+    private lateinit var identityCreator: IdentityCreator
+@Inject
+    private lateinit var identityRepository: IdentityRepository
+
+fun createIdentity(inputData: InputData): Identity {</pre><pre class="programlisting">val person = identityCreator.createPerson(inputData)
+identityRepository.store(person)
+        PersonCreationEvent(person.identifier)
+return person
+    }
+}</pre><p>In the preceding code, we just created an event using the identifier of the resource being created. We can specify this new event within the execution of our domain logic.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec25"></a>Listening to the event</h4></div></div></div><p>Now, the application has to specify a <span>component</span><a id="id325995820" class="indexterm"></a> that listens to this event and executes some further logic. We need to define an event listener. We can do this as part of a new managed bean, such as <code class="literal">PersonCreationEventListener</code>. This managed bean will define an observer function. An observer function comes with the signature <code class="literal">void</code>. It is important to specify a parameter, which is actually the event that we fire. The event is annotated with the <code class="literal">@Observes</code> annotation. We then execute some logic on the event parameter of the event listener, as follows:</p><pre class="programlisting">class PersonCreationEventListener {
+fun onPersonCreation(@Observes event: PersonCreationEvent) {
+println("new person created with id " + event.identifier)
+    }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec26"></a>Firing the event</h4></div></div></div><p>Now we need to fire the event <span>that</span><a id="id326085246" class="indexterm"></a> we created. We can use CDI events for firing the event, which will loosely couple the event and the listener components. In order to do this, we need to inject a type that comes from the CDI—the <code class="literal">Event</code> type. This is shown in the following code:</p><pre class="programlisting">@Stateless
+class App {
+@Inject
+    private lateinit var identityCreator: IdentityCreator
+@Inject
+    private lateinit var identityRepository: IdentityRepository
+@Inject
+    private lateinit var event: Event&lt;PersonCreationEvent&gt;
+
+
+fun createIdentity(inputData: InputData): Identity {
+val person = identityCreator.createPerson(inputData)
+identityRepository.store(person)
+event.fire(PersonCreationEvent(person.identifier))
+return person
+    }
+}</pre><p>The <code class="literal">PersonCreationEvent</code> type is used to fire a new event. Events that are fired will be listened to by an observer function in the application.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note20"></a>Note</h3><p>By default, the event handling mechanism runs synchronously. This means that once the event is fired and listened to by the listener, our business logic continues the execution. </p></div></div></div></div>

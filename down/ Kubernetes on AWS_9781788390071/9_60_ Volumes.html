@@ -1,0 +1,112 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch09lvl1sec60"></a>Volumes</h2></div></div><hr /></div><p>Let's start by looking at how we can attach volumes to our pods. The simplest kind of volume available <code class="literal">emptyDir</code> is just a temporary directory that is linked to the life cycle of a pod. When the volume is created, it is empty as the name suggests, and <span>remains</span><a id="id325268188" class="indexterm"></a> on the node until the pod is removed from the node. The data you store inside the volume does persist between pod restarts on the same node, so can be useful for processes that need to cache expensive computations on the filesystem, or for processes that checkpoint their progress. In <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Google's Infrastructure for the Rest of Us</em></span>, we discussed some other possible uses for an <code class="literal">emptyDir</code> volume to share files between different containers within a pod.</p><p>In this example, we are going to make use of an <code class="literal">emptyDir</code> volume to deploy an application that expects to write to the <code class="literal">/data</code> directory in a container where the root filesystem has been made read-only.</p><p>This application has been designed to illustrate some of the properties of volumes in Kubernetes. When it starts up, it writes to a random filename in the <code class="literal">/data</code> directory. It then starts up a web server that shows the contents of that directory:</p><pre class="programlisting">apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: randserver 
+spec: 
+  selector: 
+    matchLabels: 
+      app: randserver 
+  template: 
+    metadata: 
+      labels: 
+        app: example 
+    spec: 
+      containers: 
+      - image: errm/randserver 
+        name: randserver 
+        volumeMounts: 
+        - mountPath: /data 
+          name: data 
+        securityContext: 
+          readOnlyRootFilesystem: true 
+      volumes: 
+      - name: data 
+        emptyDir: {} </pre><p>Looking at this configuration, there are a few things you should note about how we use volumes in a pod. These rules apply not only to <code class="literal">emptyDir</code> volumes, but also to every other type of volume that you might encounter:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Each volume is defined at the top level of the pod spec. Even if a volume is used by more than one container in a pod, we only need to define it once.</li><li style="list-style-type: disc">When you want to access a volume from within a container, you must specify a volume mount, mounting that volume into the container's filesystem at a particular point. When we mount a volume, we refer to it by the name we used when we defined it in the <code class="literal">volumes</code> section.</li></ul></div><p>Once you have deployed this example manifest, you should be able to use the <code class="literal">kubectl port-forward</code> command to access the web server running inside the pod:</p><pre class="programlisting"><span class="strong"><strong>$ kubectl port-forward deployment/randserver 3000:3000</strong></span>
+<span class="strong"><strong>Forwarding from 127.0.0.1:3000 -&gt; 3000</strong></span><span class="strong"><strong>Forwarding from [::1]:3000 -&gt; 3000</strong></span></pre><p>You should now be able to visit <code class="literal">http://localhost:3000</code> in your browser to see a random file that was created when the container started up:</p><div class="mediaobject"><img src="/graphics/9781788390071/graphics/2b45bd82-8b8d-405a-8622-77872894fb6d.png" /></div><p>If you delete this pod, then the deployment <span>will</span><a id="id325804723" class="indexterm"></a> recreate a new pod. Because the contents of an <code class="literal">emptyDir</code> volume are lost whenever the pod is destroyed, the file that was created when the first pod started will be gone, and a new file with a different name will have been created:</p><pre class="programlisting"><span class="strong"><strong>$ kubectl delete pod -l app=randserver</strong></span><span class="strong"><strong>pod "randserver-79559c5fb6-htnxm" deleted</strong></span></pre><p>You will need to rerun <code class="literal">kubectl port-forward</code> to select the new pod:</p><pre class="programlisting"><span class="strong"><strong>$ kubectl port-forward deployment/randserver 3000:3000</strong></span></pre><div class="mediaobject"><img src="/graphics/9781788390071/graphics/f5b17ee8-ed33-42e7-bcfd-9b5d9af2b130.png" /></div><p>A newly created file being served</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec89"></a>EBS volumes</h3></div></div></div><p>Getting Kubernetes to attach an EBS <span>volume</span><a id="id325919531" class="indexterm"></a> and then mount it into a container in our pod is almost as simple as using an <code class="literal">emptyDir</code> volume. The lowest level and simplest way to mount an EBS volume is by using the <code class="literal">awsElasticBlockStore</code> volume type. This volume type handles attaching the EBS volume to the node where our pod <span>will</span><a id="id325919546" class="indexterm"></a> run and then mounting the volume into a path in our container.</p><p>When using this volume type, Kubernetes does not handle actually creating the volume for us, so we need to do this manually. We can do this using the AWS CLI:</p><pre class="programlisting"><span class="strong"><strong>$ aws ec2 create-volume --availability-zone=us-east-1a --size=5 --volume-type=gp2</strong></span>
+<span class="strong"><strong>{</strong></span>
+<span class="strong"><strong>    "AvailabilityZone": "us-east-1a",</strong></span>
+<span class="strong"><strong>    "CreateTime": "2018-11-17T15:17:54.000Z",</strong></span>
+<span class="strong"><strong>    "Encrypted": false,</strong></span>
+<span class="strong"><strong>    "Size": 5,</strong></span>
+<span class="strong"><strong>    "SnapshotId": "",</strong></span>
+<span class="strong"><strong>    "State": "creating",</strong></span>
+<span class="strong"><strong>    "VolumeId": "vol-04e744aad50d4911",</strong></span>
+<span class="strong"><strong>    "Iops": 100,</strong></span>
+<span class="strong"><strong>    "Tags": [],</strong></span>
+<span class="strong"><strong>    "VolumeType": "gp2"</strong></span>
+<span class="strong"><strong>}</strong></span></pre><p>Remember that EBS volumes are tied to a particular availability zone (just like <code class="literal">ec2</code> instances) and can only be attached to instances in that same availability zone, so you will need to create volume(s) in the same zone(s) as the instances in your cluster.</p><p>Here, we have updated the deployment we created in the last example to use the <code class="literal">awsElasticBlockStore</code> volume type and attach the volume we just created to our pod. The ID of the EBS volume is passed to the volume configuration as a parameter:</p><pre class="programlisting">apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: randserver 
+spec: 
+  selector: 
+    matchLabels: 
+      app: randserver 
+  template: 
+    metadata: 
+      labels: 
+        app: randserver 
+    spec: 
+      containers: 
+      - image: errm/randserver 
+        name: randserver 
+        volumeMounts: 
+        - mountPath: /data 
+          name: data 
+        securityContext: 
+          readOnlyRootFilesystem: true 
+      volumes: 
+      - name: data 
+        awsElasticBlockStore: 
+          volumeID: vol-04e744aad50d4911 
+          fsType: ext4 
+      nodeSelector: 
+        "failure-domain.beta.kubernetes.io/zone": us-east-1a </pre><p>You will see that manually attaching an EBS volume in this way is very similar to using the simpler <code class="literal">emptyDir</code> volume.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note70"></a>Note</h3><p>The special <code class="literal">failure-domain.beta.kubernetes.io/zone</code> label is added to each node automatically by the AWS cloud provider. Here, we are using it in <code class="literal">nodeSelector</code> of our pod definition to schedule the pod to a node in the same availability zone as we created the volume in. There are several other labels that Kubernetes will automatically add to the nodes in your cluster. You can read about them in the Kubernetes documentation at <a class="ulink" href="https://kubernetes.io/docs/reference/kubernetes-api/labels-annotations-taints/" target="_blank"><span>https://kubernetes.io/docs/reference/kubernetes-api/labels-annotations-taints/</span></a>.</p></div><p>When you first submit <span>this</span><a id="id325955972" class="indexterm"></a> deployment, its behavior <span>will</span><a id="id325955980" class="indexterm"></a> be exactly the same as the previous version. But when we delete the pod and it is replaced, you will notice that the file(s) created on the previous runs of this container will remain, and a new file will be added to the list every time it starts up:</p><div class="mediaobject"><img src="/graphics/9781788390071/graphics/aab6564e-3a28-4d47-ab86-5a4ff4507dbe.png" /></div><p>When our application is backed by an EBS volume, files survive pod rescheduling</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch09lvl2sec90"></a>Persistent volumes</h3></div></div></div><p>While we certainly could manually create EBS volumes in this way and use their IDs in our manifests, there are <span>some</span><a id="id325956005" class="indexterm"></a> problems with this approach.</p><p>It is unwieldy and time consuming for users who want to run their applications on a cluster to <span>first</span><a id="id325956016" class="indexterm"></a> think about provisioning the EBS volumes that an application needs before modifying the manifests to refer to hardcoded IDs. It means that pod manifests will need to include a configuration that is specific to running the application in question on AWS. Ideally, we would want as much of our configuration as possible to be reusable between the different environments where we might deploy it, to avoid the risk of introducing errors caused by having to modify configurations.</p><p>Kubernetes provides two abstractions that will help us manage EBS volumes: <code class="literal">PersistentVolume</code> and <code class="literal">PersistentVolumeClaim</code>.</p><p>The <code class="literal">PersistentVolume</code> object represents a physical piece of storage in your cluster; on AWS this is an EBS volume, in much the same way that the <code class="literal">Node</code> object represents an EC2 instance in your cluster. The object captures the details of how the storage is implemented, so for an EBS volume it records its ID so that Kubernetes can attach it to the correct node when a pod using the volume is scheduled.</p><p><code class="literal">PersistentVolumeClaim</code> is the Kubernetes object that allows us to express a request for <code class="literal">PersistentVolume</code> to be used in a pod. When we request a persistent volume, we only need to request the amount of storage we require and optionally a storage class (see the next section). <code class="literal">PersistentVolumeClaim</code> is normally embedded within a pod spec. When a pod is scheduled, its <code class="literal">PersistentVolumeClaim</code> is matched to a particular <code class="literal">PersistentVolume</code> that is big enough to fulfill the requested amount of storage. <code class="literal">PersistentVolume</code> is bound to its requesting <code class="literal">PersistentVolumeClaim</code>, so that even if a pod is rescheduled, the same underlying volume will be attached to the pod.</p><p>This is a big improvement over manually provisioning EBS volumes and including the volume ID in our configuration, because we don't need to modify our manifest every time our pod is deployed to a new environment.</p><p>If you were operating Kubernetes manually (for example, in a bare metal deployment) the cluster administrator might pre-provision a pool of <code class="literal">PersistentVolume</code>, which would then be matched against and bound to each <code class="literal">PersistentVolumeClaim</code> as they are created. When using AWS, there is no need to pre-provision storage, as Kubernetes dynamically creates <code class="literal">PersistentVolume</code> using the AWS API as they are required.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch09lvl3sec20"></a>Persistent volumes example</h4></div></div></div><p>Let's look at how we can use <span>persistent</span><a id="id325975920" class="indexterm"></a> volumes to simplify the deployment of our example application.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip71"></a>Note</h3><p>To avoid additional charges on your AWS account, you might want to delete the EBS volume you created manually in the previous example.
+First, delete the deployment that we created so Kubernetes can detach the volume:<code class="literal"><span class="strong"><strong>$ kubectl delete deployment/randserver</strong></span></code><code class="literal"><span class="strong"><strong></strong></span></code> Then, you can use the AWS CLI to delete the EBS volume:<code class="literal"><span class="strong"><strong>$ aws ec2 delete-volume --volume-id vol-04e744aad50d4911</strong></span></code></p></div><p>Before you begin, make sure that you have added at least the general-purpose storage class to your cluster.</p><p>Creating an EBS volume using Kubernetes dynamic volume provisioning is as simple as creating any other resource with <code class="literal">kubectl</code>:</p><pre class="programlisting">apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata: 
+  name: randserver-data 
+spec: 
+  accessModes: 
+    - ReadWriteOnce 
+  storageClassName: general-purpose 
+  resources: 
+    requests: 
+      storage: 1Gi </pre><p>If you added the <code class="literal">storageclass.kubernetes.io/is-default-class</code> annotation to a storage class in your cluster, you could omit the <code class="literal">storageClassName</code> field if you wanted to.</p><p>Once you create <code class="literal">PersistantVolumeClaim</code> for a storage class using the <code class="literal">kubernetes.io/aws-ebs</code> provisioner, Kubernetes will provision an EBS volume matching the size and storage class parameters that you specified. Once this is completed, you can use <code class="literal">kubectl describe</code> to view the claim; you can see that the status has been updated to <code class="literal">Bound</code> and the <code class="literal">Volume</code> field shows the underlying <code class="literal">PersistentVolume</code> that the claim has been bound to:</p><pre class="programlisting"><span class="strong"><strong>$ kubectl describe pvc/randserver-data</strong></span><span class="strong"><strong>Name:          randserver-data</strong></span><span class="strong"><strong>Namespace:     default</strong></span><span class="strong"><strong>StorageClass:  general-purpose</strong></span><span class="strong"><strong>Status:        Bound</strong></span><span class="strong"><strong>Volume:        pvc-5c2dab0d-f017-11e8-92ac-0a56f9f52542</strong></span><span class="strong"><strong>Capacity:      1Gi</strong></span><span class="strong"><strong>Access Modes:  RWO</strong></span></pre><p>If we use <code class="literal">kubectl describe</code> to inspect this <code class="literal">PersistentVolume</code>, we can see the details of the underlying EBS volume that was automatically provisioned:</p><pre class="programlisting"><span class="strong"><strong>$ kubectl describe pv/pvc-5c2dab0d-f017-11e8-92ac-0a56f9f52542</strong></span>
+<span class="strong"><strong>Name: pvc-5c2dab0d-f017-11e8-92ac-0a56f9f52542</strong></span>
+<span class="strong"><strong>StorageClass: general-purpose</strong></span>
+<span class="strong"><strong>Status: Bound</strong></span>
+<span class="strong"><strong>Claim: default/randserver-data</strong></span>
+<span class="strong"><strong>Reclaim Policy: Delete</strong></span>
+<span class="strong"><strong>Access Modes: RWO</strong></span>
+<span class="strong"><strong>Capacity: 1Gi</strong></span>
+<span class="strong"><strong>Source:</strong></span>
+<span class="strong"><strong>    Type: AWSElasticBlockStore (a Persistent Disk resource in AWS)</strong></span>
+<span class="strong"><strong>    VolumeID: aws://us-east-1a/vol-04ad625aa4d5da62b</strong></span>
+<span class="strong"><strong>    FSType: ext4</strong></span>
+<span class="strong"><strong>    Partition: 0</strong></span>
+<span class="strong"><strong>    ReadOnly: false</strong></span></pre><p>In our deployment, we can update the <code class="literal">volumes</code> section of the pod spec to refer to <code class="literal">PersistentVolumeClaim</code> by name:</p><pre class="programlisting">apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: randserver 
+spec: 
+  selector: 
+    matchLabels: 
+      app: randserver 
+  template: 
+    metadata: 
+      labels: 
+        app: randserver 
+    spec: 
+      containers: 
+      - image: errm/randserver 
+        name: randserver 
+        volumeMounts: 
+        - mountPath: /data 
+          name: data 
+        securityContext: 
+          readOnlyRootFilesystem: true 
+      volumes: 
+      - name: data 
+        persistentVolumeClaim: 
+          claimName: randserver-data </pre></div></div></div>

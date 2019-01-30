@@ -1,0 +1,57 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec72"></a>Time for Action: Simple Animation</h2></div></div><hr /></div><p>Let's look at an example <span>covering</span><a id="id325357458" class="indexterm"></a> a simple animation technique:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open <code class="literal">ch05_01_simple-animation.html</code> in your browser:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/30c0fd8e-8767-489b-8184-dee1d58590c1.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Move the camera around (left mouse-click + drag) and see how the objects (sphere and cone) move independently of one another (local transformations) and the camera (global transformation).</li><li>You can also dolly the camera (left mouse-click + <span class="emphasis"><em>Alt</em></span> + drag).</li><li>Change the camera type to <strong class="userinput"><code>Tracking</code></strong>. If for any reason you lose your bearings, click on <strong class="userinput"><code>Go Home</code></strong>.</li><li>Let's examine the source code to see how we’ve implemented this example. Open <code class="literal">ch05_01_simple-animation.html</code> in a code editor.</li><li>Take a look at the <code class="literal">render</code>, <code class="literal">onFrame</code>, and <code class="literal">animate</code> functions. Which timing strategy are we using here?</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>The <code class="literal">spherePosition</code> and <code class="literal">conePosition</code> global variables contain the position of the sphere and the cone, respectively. Scroll up to the <code class="literal">draw</code> function. Inside the main loop where each object scene is rendered, a different local transformation is calculated depending on the current object being rendered. The code looks like the following:</li></ol></div><pre class="programlisting">function draw() {
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+<span class="strong"><strong>transforms.updatePerspective();
+</strong></span>
+try {
+    gl.uniform1i(program.uUpdateLight, fixedLight);
+
+scene.traverse(object =&gt; {
+<span class="strong"><strong>transforms.calculateModelView();
+transforms.push();
+
+if (object.alias === 'sphere') {</strong></span>
+<span class="strong"><strong>const sphereTransform = transforms.modelViewMatrix;
+mat4.translate(sphereTransform, sphereTransform, [0, 0, 
+         spherePosition]);
+}</strong></span>
+<span class="strong"><strong>else if (object.alias === 'cone') {</strong></span>
+<span class="strong"><strong>const coneTransform = transforms.modelViewMatrix;
+mat4.translate(coneTransform, coneTransform, [conePosition, 
+         0, 0]);
+}</strong></span>
+
+<span class="strong"><strong>      transforms.setMatrixUniforms();
+transforms.pop();
+</strong></span>
+gl.uniform4fv(program.uMaterialDiffuse, object.diffuse);
+gl.uniform4fv(program.uMaterialSpecular, object.specular);
+gl.uniform4fv(program.uMaterialAmbient, object.ambient);
+gl.uniform1i(program.uWireframe, object.wireframe);
+
+// Bind VAO
+gl.bindVertexArray(object.vao);
+
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
+
+if (object.wireframe) {
+        gl.drawElements(gl.LINES, object.indices.length, 
+         gl.UNSIGNED_SHORT, 0);
+}
+else {
+        gl.drawElements(gl.TRIANGLES, object.indices.length, 
+         gl.UNSIGNED_SHORT, 0);
+}
+
+// Clean
+gl.bindVertexArray(null);
+gl.bindBuffer(gl.ARRAY_BUFFER, null);
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+});
+}
+catch (error) {
+    console.error(error);
+}
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Using the transforms object (which is an instance of <code class="literal">Transforms</code>), we obtain the global Model-View matrix by calling <code class="literal">transforms.calculateModelView()</code>. Push it into a matrix stack by calling the <code class="literal">push</code> method. We can now apply any transform that we want, knowing that we can retrieve the global transform since it is available for the next object on the list. We do so at the end of the code snippet by calling the <code class="literal">pop</code> method. Between the <code class="literal">push</code> and <code class="literal">pop</code> calls, we determine which object is <span>currently</span><a id="id325647192" class="indexterm"></a> being rendered and use the <code class="literal">spherePosition</code> or <code class="literal">conePosition</code> global variable to apply a translation to the current Model-View matrix. By doing so, we create a local transform.</li><li>Take a second look at the preceding code. As you saw at the beginning of this exercise, the cone is moving in the x-axis while the sphere is moving in the z-axis. What do you need to change to animate the cone in the y-axis? Test your hypothesis by modifying this code, saving the web page, and opening it again in your web browser.</li><li>Let's return to the <code class="literal">animate</code> function. What should we modify here to make the objects move faster?</li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip60"></a>Note</h3><p><strong class="userinput"><code>Hint</code></strong><span class="strong"><strong></strong></span>Take a look at the global variables this function uses.</p></div><p><span class="emphasis"><em><span class="strong"><strong>What just happened?</strong></span></em></span></p><p>In this exercise, we saw a simple animation of two objects. We examined the source code to understand the call stack of functions that makes the animation possible.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec94"></a>Have a Go: Simulating Dropped and Frozen Frames</h3></div></div></div><p>Let's see how we can <span>control</span><a id="id325652529" class="indexterm"></a> the render rate:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch05_02_dropping-frames.html</code> file using your browser. Here, you will see the same scene we analyzed in the previous section. You’ll notice that the animation is not smooth because we are simulating dropping frames:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/5b39978f-11dd-4b01-a9a2-fa6523b8bc81.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Take a look at the source code in your editor.</li><li>Scroll to the <code class="literal">onFrame</code> function. You can see that we’ve included a new variable: <code class="literal">simulationRate</code>. In the <code class="literal">onFrame</code> function, this variable calculates how many simulation steps need to be performed when the time elapsed is around <code class="literal">300 ms</code> (<code class="literal">animationRate</code>). Given that <code class="literal">simulationRate</code> is <code class="literal">30 ms</code>, this will produce a total of <code class="literal">10</code> simulation steps. These steps can increase if there are unexpected delays and the elapsed time is considerably higher. This is the behavior that we expect.</li><li>Experiment with different values for the <code class="literal">animationRate</code> and <code class="literal">simulationRate</code> variables to answer the following questions:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">How do we get rid of the dropping frames issue?</li><li style="list-style-type: disc">How can we simulate frozen frames?</li><li style="list-style-type: disc">What is the relationship between the <code class="literal">animationRate</code>and<code class="literal">simulationRate</code>variables when simulating frozen frames?</li></ul></div></li></ol></div></div></div>

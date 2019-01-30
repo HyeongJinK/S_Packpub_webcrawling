@@ -1,0 +1,105 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec46"></a>Adjusting parameters for good query performance</h2></div></div><hr /></div><p>Writing good queries is the first step to <span>achieving</span><a id="id325872002" class="indexterm"></a> good performance. Without a good query, you will most likely suffer from bad performance. Writing good and intelligent code will therefore give you the greatest edge possible. Once your queries have been optimized from a logical and semantical point of view, good memory settings can provide you with a final nice speedup. In this section, we will learn what more memory can do for you and how PostgreSQL can use it for your benefit. Again, this section assumes that we are using single-core queries to make the plans more readable. To ensure that there is always just one core at work, use the following command:</p><pre class="programlisting"><span class="strong"><strong>test=# SET max_parallel_workers_per_gather TO 0;</strong></span>
+<span class="strong"><strong>SET</strong></span></pre><p>Here is a simple example demonstrating what memory parameters can do for you:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE </strong></span><span class="strong"><strong>TABLE t_test (</strong></span><span class="strong"><strong>id serial, </strong></span><span class="strong"><strong>name text</strong></span><span class="strong"><strong>);</strong></span>
+<span class="strong"><strong>CREATE TABLE</strong></span>
+<span class="strong"><strong>test=# INSERT </strong></span><span class="strong"><strong>INTO t_test (name) 
+   SELECT 'hans' FROM generate_series(1, 100000);</strong></span>
+<span class="strong"><strong>INSERT </strong></span><span class="strong"><strong>0 100000</strong></span>
+<span class="strong"><strong>test=# INSERT </strong></span><span class="strong"><strong>INTO t_test (name) 
+   SELECT 'paul' FROM generate_series(1, 100000);</strong></span>
+<span class="strong"><strong>INSERT </strong></span><span class="strong"><strong>0 100000</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>1 million rows containing <code class="literal">hans</code> will be added to the table. Then, 1 million rows containing <code class="literal">paul</code> are loaded. Altogether, there will be 2 million unique IDs, but just two different names.</p><p>Let's run a simple query now by using PostgreSQL's default memory settings:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT </strong></span><span class="strong"><strong>name, count(*) FROM t_test GROUP BY 1;
+</strong></span><span class="strong"><strong> name  | count</strong></span>
+<span class="strong"><strong>-------+--------</strong></span>
+<span class="strong"><strong> hans  | 100000</strong></span>
+<span class="strong"><strong> paul  | 100000</strong></span>
+<span class="strong"><strong>(2 rows)</strong></span></pre><p>Two rows will be returned, which <span>should</span><a id="id325565415" class="indexterm"></a> not come as a surprise. The important thing here is not the result, but what PostgreSQL is doing behind the scenes:</p><pre class="programlisting"><span class="strong"><strong>test=# EXPLAIN ANALYZE </strong></span><span class="strong"><strong>SELECT </strong></span><span class="strong"><strong>name, count(*) 
+</strong></span><span class="strong"><strong>  FROM t_test</strong></span>
+<span class="strong"><strong>  GROUP BY 1;</strong></span>
+<span class="strong"><strong>                           QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------- </strong></span>
+<span class="strong"><strong> HashAggregate (cost=4082.00..4082.01 rows=1 width=13) </strong></span>
+<span class="strong"><strong>   (actual time=51.448..51.448 rows=2 loops=1) </strong></span>
+<span class="strong"><strong>               Group Key: name </strong></span>
+<span class="strong"><strong>   -&gt; Seq Scan on t_test </strong></span>
+<span class="strong"><strong>         (cost=0.00..3082.00 rows=200000 width=5) </strong></span>
+<span class="strong"><strong>         (actual time=0.007..14.150 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong> Planning time: 0.032 ms </strong></span>
+<span class="strong"><strong> Execution time: 51.471 ms </strong></span>
+<span class="strong"><strong>(5 rows)</strong></span></pre><p>PostgreSQL figured out that the number of groups is actually very small. Therefore, it creates a hash and adds one hash entry per group and starts to count. Due to the low number of groups, the hash is really small and PostgreSQL can quickly do the count by incrementing the numbers for each group.</p><p>What happens if we group by ID and not by name? The number of groups will skyrocket:</p><pre class="programlisting"><span class="strong"><strong>test=# EXPLAIN ANALYZE </strong></span><span class="strong"><strong>SELECT </strong></span><span class="strong"><strong>id, count(*) </strong></span><span class="strong"><strong>FROM t_test </strong></span><span class="strong"><strong>GROUP BY 1;</strong></span>
+<span class="strong"><strong>QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------- </strong></span>
+<span class="strong"><strong> GroupAggregate (cost=23428.64..26928.64 rows=200000 width=12) </strong></span>
+<span class="strong"><strong>     (actual time=97.128..154.205 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong>     Group Key: id </strong></span>
+<span class="strong"><strong>     -&gt; Sort (cost=23428.64..23928.64 rows=200000 width=4) </strong></span>
+<span class="strong"><strong>        (actual time=97.120..113.017 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong>        Sort Key: id </strong></span>
+<span class="strong"><strong>        Sort Method: external sort Disk: 2736kB </strong></span>
+<span class="strong"><strong>        -&gt; Seq Scan on t_test </strong></span>
+<span class="strong"><strong>           (cost=0.00..3082.00 rows=200000 width=4) </strong></span>
+<span class="strong"><strong>           (actual time=0.017..19.469 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong> Planning time: 0.128 ms </strong></span>
+<span class="strong"><strong> Execution time: 160.589 ms </strong></span>
+<span class="strong"><strong>(8 rows)</strong></span></pre><p>PostgreSQL figures out that the number of groups is now a lot larger and quickly changes its strategy. The problem is that a hash containing so many entries does not fit into memory:</p><pre class="programlisting"><span class="strong"><strong>test=# </strong></span><span class="strong"><strong>SHOW work_mem ;</strong></span>
+<span class="strong"><strong> work_mem</strong></span>
+<span class="strong"><strong>----------</strong></span>
+<span class="strong"><strong> 4MB</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p>The <code class="literal">work_mem</code> variable governs the <span>size</span><a id="id325664442" class="indexterm"></a> of the hash used by the <code class="literal">GROUP BY</code> clause. As there are too many entries, PostgreSQL has to find a strategy that does not require holding the entire dataset in memory. The solution is to sort the data by ID and group it. Once the data is sorted, PostgreSQL can move down the list and form one group after the other. If the first type of value is counted, the partial result is read and can be emitted. Then, the next group can be processed. Once the value in the sorted list changes when moving down, it will never show up again; thus, the system knows that a partial result is ready.</p><p>To speed up the query, a higher value for the <code class="literal">work_mem</code> variable can be set on the fly (and, of course, globally):</p><pre class="programlisting"><span class="strong"><strong>test=# </strong></span><span class="strong"><strong>SET work_mem TO '1 GB';</strong></span>
+<span class="strong"><strong>SET</strong></span></pre><p>The plan will now, once again, feature a fast and efficient hash aggregate:</p><pre class="programlisting"><span class="strong"><strong>test=# EXPLAIN ANALYZE SELECT id, count(*) </strong></span><span class="strong"><strong>FROM t_test </strong></span><span class="strong"><strong>GROUP BY 1;
+                                 QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------- </strong></span>
+<span class="strong"><strong> HashAggregate (cost=4082.00..6082.00 rows=200000 width=12) </strong></span>
+<span class="strong"><strong>   (actual time=76.967..118.926 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong>   Group Key: id </strong></span>
+<span class="strong"><strong>   -&gt; Seq Scan on t_test </strong></span>
+<span class="strong"><strong>      (cost=0.00..3082.00 rows=200000 width=4) </strong></span>
+<span class="strong"><strong>      (actual time=0.008..13.570 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong> Planning time: 0.073 ms </strong></span>
+<span class="strong"><strong> Execution time: 126.456 ms </strong></span>
+<span class="strong"><strong>(5 rows)</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p>PostgreSQL knows (or at least assumes) that data will fit into memory and switch to the faster plan. As you can see, the execution time is lower. The query won't be as fast as in the <code class="literal">GROUP BY</code> name case because many more hash values have to be calculated, but you will be able to see a <span>nice</span><a id="id325869955" class="indexterm"></a> and reliable benefit in the vast majority of cases.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec72"></a>Speeding up sorting</h3></div></div></div><p>The <code class="literal">work_mem</code> variable does not only <span>speed</span><a id="id325869973" class="indexterm"></a> up grouping. It can also have a very nice impact on simple things such as sorting, which is an essential mechanism that's been mastered by every database system in the world.</p><p>The following query shows a simple operation using the default setting of 4 MB:</p><pre class="programlisting"><span class="strong"><strong>test=# SET work_mem TO default; </strong></span><span class="strong"><strong>SET</strong></span><span class="strong"><strong>test=# EXPLAIN ANALYZE SELECT * FROM t_test ORDER BY name, id;
+                       QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------- </strong></span>
+<span class="strong"><strong> Sort (cost=24111.14..24611.14 rows=200000 width=9) </strong></span>
+<span class="strong"><strong>      (actual time=219.298..235.008 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong>      Sort Key: name, id </strong></span>
+<span class="strong"><strong>      Sort Method: external sort Disk: 3712kB </strong></span>
+<span class="strong"><strong>      -&gt; Seq Scan on t_test </strong></span>
+<span class="strong"><strong>         (cost=0.00..3082.00 rows=200000 width=9) </strong></span>
+<span class="strong"><strong>         (actual time=0.006..13.807 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong> Planning time: 0.064 ms </strong></span>
+<span class="strong"><strong> Execution time: 241.375 ms </strong></span>
+<span class="strong"><strong>(6 rows)</strong></span></pre><p>PostgreSQL needs 13.8 milliseconds to read the data and over 200 milliseconds to sort the data. Due to the low amount of memory available, sorting has to be performed using temporary files. The <code class="literal">external sort Disk</code> method needs only small amounts of RAM, but has to send intermediate data to a comparatively slow storage device, which of course leads to poor throughput.</p><p>Increasing the <code class="literal">work_mem</code> variable setting will make PostgreSQL use more memory for sorting:</p><pre class="programlisting"><span class="strong"><strong>test=# SET work_mem TO '1 GB'; 
+SET</strong></span><span class="strong"><strong>test=# EXPLAIN ANALYZE SELECT * FROM t_test ORDER  BY name, id;
+                          QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------- </strong></span>
+<span class="strong"><strong> Sort (cost=20691.64..21191.64 rows=200000 width=9) </strong></span>
+<span class="strong"><strong>      (actual time=36.481..47.899 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong>      Sort Key: name, id </strong></span>
+<span class="strong"><strong>      Sort Method: quicksort Memory: 15520kB </strong></span>
+<span class="strong"><strong>      -&gt; Seq Scan on t_test </strong></span>
+<span class="strong"><strong>         (cost=0.00..3082.00 rows=200000 width=9) </strong></span>
+<span class="strong"><strong>         (actual time=0.010..14.232 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong> Planning time: 0.037 ms </strong></span>
+<span class="strong"><strong> Execution time: 55.520 ms </strong></span>
+<span class="strong"><strong>(6 rows)</strong></span></pre><p>As there is enough <span>memory</span><a id="id326020467" class="indexterm"></a> now, the database will do all the sorting in memory and therefore speed up the process dramatically. The sort takes just 33 milliseconds now, which is a seven-time improvement compared to the query we had previously. More memory will lead to faster sorting and will speed up the system.</p><p>Up until now, you have already seen two mechanisms to sort data: <code class="literal">external sort Disk</code> and <code class="literal">quicksort <span>Memory</span></code>. In addition to those two mechanisms, there is also a third algorithm, which is <code class="literal">top-N heapsort Memory</code>. It can be used to provide you with only the <code class="literal">top-N</code> rows:</p><pre class="programlisting"><span class="strong"><strong>test=# EXPLAIN ANALYZE SELECT * FROM t_test</strong></span><span class="strong"><strong>ORDER BY name, id</strong></span><span class="strong"><strong>LIMIT 10; </strong></span><span class="strong"><strong>                             QUERY PLAN </strong></span>
+<span class="strong"><strong>----------------------------------------------------------------- </strong></span>
+<span class="strong"><strong> Limit (cost=7403.93..7403.95 rows=10 width=9) </strong></span>
+<span class="strong"><strong>       (actual time=31.837..31.838 rows=10 loops=1) </strong></span>
+<span class="strong"><strong>       -&gt; Sort (cost=7403.93..7903.93 rows=200000 width=9) </strong></span>
+<span class="strong"><strong>          (actual time=31.836..31.837 rows=10 loops=1) </strong></span>
+<span class="strong"><strong>          Sort Key: name, id </strong></span>
+<span class="strong"><strong>          Sort Method: top-N heapsort Memory: 25kB </strong></span>
+<span class="strong"><strong>          -&gt; Seq Scan on t_test </strong></span>
+<span class="strong"><strong>             (cost=0.00..3082.00 rows=200000 width=9) </strong></span>
+<span class="strong"><strong>             (actual time=0.011..13.645 rows=200000 loops=1) </strong></span>
+<span class="strong"><strong> Planning time: 0.053 ms </strong></span>
+<span class="strong"><strong> Execution time: 31.856 ms </strong></span>
+<span class="strong"><strong>(7 rows)</strong></span></pre><p>The algorithm is lightning fast and the entire query will be done in just over 30 milliseconds. The sorting part is now only 18 milliseconds and is therefore almost as fast as reading the data in the first place.</p><p>Note that the <code class="literal">work_mem</code> variable is allocated per operation. It can theoretically happen that a query needs the <code class="literal">work_mem</code> variable more than once. It is not a global setting—it is really per operation. Therefore, you have to set it in a careful way.</p><p> </p><p>The one thing that we need to keep in mind is that there are many books which claim that setting the <code class="literal">work_mem</code> variable too high on an OLTP system might cause your server to run out of memory. Yes, if 1,000 people sort 100 MB at the same time, this can result in <span>memory</span><a id="id326445289" class="indexterm"></a> failures. However, do you expect the disk to be able to handle that? I doubt it. The solution can only be to rethink what you are doing. Sorting 100 MB 1,000 times concurrently is not what should happen in an OLTP system anyway. Consider deploying proper indexes, writing better queries, or simply rethinking your requirements. Under any circumstances, sorting so much data so often concurrently is a bad idea—stop before those things stop your application.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec73"></a>Speeding up administrative tasks</h3></div></div></div><p>There are more operations that <span>actually</span><a id="id326445333" class="indexterm"></a> have to do some sorting or <span>memory</span><a id="id326445341" class="indexterm"></a> allocation of some kind. The administrative ones such as the <code class="literal">CREATE INDEX</code> clause do not rely on the <code class="literal">work_mem</code> variable, but use the <code class="literal">maintenance_work_mem</code> variable instead. Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>test=# SET maintenance_work_mem TO '1 MB'; </strong></span><span class="strong"><strong>SET
+</strong></span><span class="strong"><strong>test=# timing</strong></span><span class="strong"><strong>Timing is on.
+</strong></span><span class="strong"><strong>test=# CREATE INDEX idx_id ON t_test (id);
+</strong></span><span class="strong"><strong>CREATE INDEX</strong></span><span class="strong"><strong>Time:  104.268 ms</strong></span></pre><p>As you can see, creating an index on 2 million rows takes around 100 milliseconds, which is really slow. Therefore, the <code class="literal">maintenance_work_mem</code> variable can be used to speed up sorting, which is essentially what the <code class="literal">CREATE INDEX</code> clause does:</p><pre class="programlisting"><span class="strong"><strong>test=# SET maintenance_work_mem TO '1 GB'; </strong></span><span class="strong"><strong>SET
+</strong></span><span class="strong"><strong>test=# CREATE INDEX idx_id2 ON t_test (id); 
+</strong></span><span class="strong"><strong>CREATE INDEX</strong></span><span class="strong"><strong>Time:  46.774 ms</strong></span></pre><p>The speed has now doubled just because sorting has been improved so much.</p><p>There are more administrative jobs that can benefit from more memory. The most prominent ones are the <code class="literal">VACUUM</code> clause (to clean out indexes) and the <code class="literal">ALTER TABLE</code> clause. The rules for the <code class="literal">maintenance_work_mem</code> variable are the same as for the <code class="literal">work_mem</code> variable. The setting is per operation and only the required memory is allocated on the fly.</p><p>In PostgreSQL 11, an additional feature was added to the database engine: PostgreSQL is now able to build <code class="literal">btree</code> indexes in parallel, which can dramatically speed up the indexing of large tables. The parameter in charge of configuring parallelism is the following one:</p><pre class="programlisting"><span class="strong"><strong>test=# SHOW max_parallel_maintenance_workers;</strong></span>
+<span class="strong"><strong> max_parallel_maintenance_workers </strong></span>
+<span class="strong"><strong>----------------------------------</strong></span>
+<span class="strong"><strong> 2</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p><code class="literal">max_parallel_maintenance_workers</code> controls the maximum number of worker processes, which can be used by <code class="literal">CREATE INDEX</code>. As for every <span>parallel</span><a id="id325648498" class="indexterm"></a> operation, PostgreSQL will <span>determine</span><a id="id325648506" class="indexterm"></a> the amount of workers based on table sizes. When indexing large tables, index creation can see drastic improvements. Here at Cybertec I did some extensive testing and summarized my <span>findings</span><a id="id325648515" class="indexterm"></a> in one of my blog posts: <a class="ulink" href="https://www.cybertec-postgresql.com/en/postgresql-parallel-create-index-for-better-performance/" target="_blank">https://www.cybertec-postgresql.com/en/postgresql-parallel-create-index-for-better-performance/</a>.</p></div></div>

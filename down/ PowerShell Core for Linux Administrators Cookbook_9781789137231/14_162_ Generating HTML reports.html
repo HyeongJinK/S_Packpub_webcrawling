@@ -1,0 +1,26 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch14lvl1sec158"></a>Generating HTML reports</h2></div></div><hr /></div><p>HTML is one of the most simple and <span>useful</span><a id="id325898676" class="indexterm"></a> formats of all types when it comes to reporting – and PowerShell is perfectly capable of working with it. For example, let's say I need to pull process information from multiple remote machines and put it onto an intranet web server. You can do this with very little effort. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec409"></a>Getting ready</h3></div></div></div><p>Let's pull the script from the GitHub repository for this book and pipe it to convert to HTML. We also need the <code class="literal">input.csv</code> file for remote machine traversing.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec410"></a>How to do it...</h3></div></div></div><p>Let's see what this looks like by following these steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Save the following content in the <code class="literal">PSHTMLReport.ps1</code> file:</li></ol></div><pre class="programlisting">$Top=@()
+$process=Import-Csv ./input.csv|% { Invoke-Command-HostName $_.Server-UserName $_.User-ScriptBlock { Param($Server)
+Get-Process| Sort-Object CPU-Descending |`
+Select-Object Handles, CPU,`
+ @{name ="NPM"; Expression = {[int]($_.NPM/1024)}},`
+ @{name ="PM"; Expression = {[int]($_.PM/1024)}},`
+ @{name ="WS"; Expression = {[int]($_.WS/1024)}},`
+ @{name ="VM"; Expression = {[int]($_.VM/1MB)}},`
+ @{name ="ServerName"; Expression = {($server)}},`
+  Id, ProcessName -First 5 }-Args $_.Server
+}
+foreach($procin$process)
+{
+$row=New-Object-Type PSObject -Property @{
+ ServerName =$proc.Servername    
+ ID =$proc.ID
+ ProcessName =$proc.ProcessName
+         NPM_KB =$proc.NPM
+ PM_KB =$proc.PM
+         WS_KB =$proc.WS
+ VM_MB =$proc.VM
+         CPU_S =$proc.CPU } 
+$Top+=$row
+ }
+$Top|ConvertTo-Html|Out-File/tmp/out.html </pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>To run the PowerShell script <code class="literal">PSHTMLReport.ps1</code>, run the following command:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; ./PSHTMLReport.ps1</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Navigate to the <code class="literal">/tmp/out.html</code> path to view the HTML content or use <code class="literal">Invoke-Expression</code>:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; Invoke-Expression /tmp/out.html</strong></span>
+</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec411"></a>How it works…</h3></div></div></div><p>Building HTML tags in PowerShell is relatively simple. To do this, use the <code class="literal">ConvertTo-Html</code> cmdlet. PowerShell provides this. It takes an input object and converts it into an HTML tag. As you can see, the output is a concatenated array object and is piped into <code class="literal">ConvertTo-Html</code>. The console output will return a string of HTML tags. The <span>string</span><a id="id325585854" class="indexterm"></a> isn't that useful, so pipe it to <code class="literal">out-file</code> and mention the path. After doing this, check out the <code class="literal">out.html</code> file that this generated.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch14lvl2sec412"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">To find out more about <code class="literal">ConvertTo-HTML</code>, refer to the following link: <a class="ulink" href="https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/convertto-html?view=powershell-6" target="_blank">https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/convertto-html?view=powershell-6</a>.</li></ul></div></div></div>

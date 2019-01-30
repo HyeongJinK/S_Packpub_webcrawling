@@ -1,0 +1,46 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch16lvl1sec178"></a>Running cross-platform T-SQL queries on multiple servers</h2></div></div><hr /></div><p>This recipe describes how to <span>run</span><a id="id325898682" class="indexterm"></a> a query on multiple instances of SQL Server on multiple platforms. Managing multiple servers on this cross-platform operating system has always had its own challenges.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch16lvl2sec472"></a>Getting ready</h3></div></div></div><p>Let's get started by capturing the server's details in an input CSV file:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Prepare the input file with instance and credentials details, separated by a comma:</li></ol></div><pre class="programlisting">InstanceName,UserName,Password
+10.2.6.50,SA,whoVista@2018
+10.2.6.55,SA,whoVista@2019</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Save the PowerShell script in a file and open the PowerShell Core console to execute the PowerShell script file.</li></ol></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch16lvl2sec473"></a>How to do it…</h3></div></div></div><p>In this recipe, we'll list all the SQL-Instances, along with the necessary credentials in a CSV file, by performing the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Explicitly load the <code class="literal">SqlServer</code> module.</li><li>Read the CSV fields using <code class="literal">Import-CSV</code> cmdlets.</li><li>Start the iteration using <code class="literal">Foreach-Object</code>.</li><li>Build a secure connection string with the <code class="literal">System.Management.Automation.PSCredential</code> class.</li><li>Instantiate the SQL Server <code class="literal">Microsoft.SqlServer.Management.Smo.Server</code> class library by creating an object.</li><li>Build the connection to the SQL instance.</li><li>Create a subobject for the main object to create a database named <code class="literal">PacktPub</code> on all the defined SQL instances.</li><li>Handle the exception using the <code class="literal">try</code>, <code class="literal">catch</code>, and <code class="literal">finally</code> clauses.</li><li>Close the connection.</li><li>Repeat the iteration until it reaches the end of the line. The following script takes care of the aforementioned tasks:</li></ol></div><pre class="programlisting">#Replace the path of the input file
+$filepath ='./Input.csv'
+#Import the SqlServer module
+Import-Module –Name SqlServer
+
+#Read the CSV file content using Import-CSV cmdlet
+Import-Csv -Path $filepath|ForEach-Object {
+
+#The Linux SQL Instance IP Address
+$SQLServer=$_.InstanceName                                                           
+
+#Define credential details
+$User=$_.Username
+
+#Convert password text to a secure string
+$Pass=ConvertTo-SecureString $_.Password -AsPlainText -Force
+
+#Build the credential using securing string
+$cred=New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User,$Pass
+$SQLServerObject=New-Object Microsoft.SqlServer.Management.Smo.Server $SQLServer            
+$SQLServerObject.ConnectionContext.LoginSecure=$false                                       
+$SQLServerObject.ConnectionContext.set_login($cred.Username)
+$SQLServerObject.ConnectionContext.set_SecurePassword($cred.Password)                  
+
+#Handle the exceptions using Try and Catch method
+try
+   {    #Build connection to the Local SQL Instance
+    $SQLServerObject.ConnectionContext.connect()
+    $db=New-Object Microsoft.SqlServer.Management.Smo.Database $SQLServerObject,'PacktPub'
+    $db.Create()
+    }
+catch
+    {
+    #Write the exception message
+    write-Error $_.Exception.message
+    }
+finally
+    {
+    #Close the connection
+    $SQLServerObject.ConnectionContext.Disconnect()
+    }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch16lvl2sec474"></a>How it works…</h3></div></div></div><p>In this topic, the database named <code class="literal">PackPub</code> is created on the entire listed instances of the CSV file. The CSV file provides the required data to build and manipulate the SQL instances. The reading of the CSV file is done through the <code class="literal">Import-Csv</code> cmdlet. The CSV file has Linux and Windows SQL instance IP addresses.</p><p>The <code class="literal">Import-Csv</code> cmdlet reads the text from the CSV file. To manipulate SQL Server instances and its objects programmatically, first, we need to instantiate the SMO class libraries by creating an object. The main object is created and referred for the instance type using the <code class="literal">Microsoft.SqlServer.Management.Smo.Server</code> namespace, like so:</p><pre class="programlisting">$SQLServerObject=New-Object Microsoft.SqlServer.Management.Smo.Server $SQLServer            </pre><p>The connection is built using a SQL login, and the credentials are managed via the <code class="literal">System.Management.Automation.PSCredential</code> class:</p><pre class="programlisting">$cred=New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User,$Pass</pre><p> </p><p>After reading a CSV file, the text inputs are parsed to <span>convert</span><a id="id325892273" class="indexterm"></a> the password text into a secure string. The username is passed to the <code class="literal">set_Login</code> method and the password, a <code class="literal">SecureString</code> type, is passed to <code class="literal">set_SecurePassword</code>:</p><pre class="programlisting">$SQLServerObject.ConnectionContext.LoginSecure=$false                                    
+$SQLServerObject.ConnectionContext.set_login($cred.Username)
+$SQLServerObject.ConnectionContext.set_SecurePassword($cred.Password)                  </pre><p>The <code class="literal">try</code>, <code class="literal">catch</code>, and <code class="literal">finally</code> clauses give you the flexibility to handle the error in an efficient manner. The trapping mechanism is used to catch any errors in the scope of the current script's execution.</p><p>The <code class="literal">try</code> block has some code that establishes the connection to an SQL instance and creates a database named <code class="literal">PacktPub</code> using the subobject, <code class="literal">$db</code>, which is created for the main object, <code class="literal">$SQLServerObject</code>.</p><p>To verify the output, connect to SQL instances using <code class="literal">sqlcmd</code>, or SSMS and query the database:</p><pre class="programlisting">Select name from sys.databases where name='PacktPub'</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch16lvl2sec475"></a>See also</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">Get-Help about_Try_Catch_Finally</code></li></ul></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <span class="emphasis"><em>Overview of SQL Server SMO</em></span> recipe of this chapter</li></ul></div></div></div>

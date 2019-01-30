@@ -1,0 +1,102 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec19"></a>Relationships between models</h2></div></div><hr /></div><p>Relationships between models in SQLAlchemy are links between two or more models that allow models to reference each other automatically. This allows naturally related data, such as comments on posts, to be easily retrieved from the database with its related data. This is where the R in RDBMS <span>comes</span><a id="id324847030" class="indexterm"></a> from, and it gives this type of database a large amount of power.</p><p>Let's create our first relation. Our blogging website is going to need some blog posts. Each blog post is going to be written by one user, so it makes sense to link posts back to the user who wrote them so that we can easily get all the posts by a user. This is an example of a <span class="strong"><strong>one-to-many</strong></span> relationship, as shown in the <span>following</span><a id="id325369000" class="indexterm"></a> code:</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note11"></a>Note</h3><p>SQLite and MySQL/MyISAM engines do not enforce relationship constraints. This might cause problems if you are using SQLite on your development environment and a different engine on production (MySQL with innodb), but you can tell SQLite to enforce foreign key constraints (with a performance penalty).</p></div><pre class="programlisting">@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec20"></a>One-to-many relationship</h3></div></div></div><p>Let's add a <span>model</span><a id="id325371654" class="indexterm"></a> to represent the <span>blog</span><a id="id325371660" class="indexterm"></a> posts on our website:</p><pre class="programlisting">class Post(db.Model): 
+  id = db.Column(db.Integer(), primary_key=True) 
+  title = db.Column(db.String(255)) 
+  text = db.Column(db.Text()) 
+  publish_date = db.Column(db.DateTime()) 
+  user_id = db.Column(db.Integer(), db.ForeignKey('user.id')) 
+ 
+  def __init__(self, title): 
+    self.title = title 
+ 
+  def __repr__(self): 
+    return "&lt;Post '{}'&gt;".format(self.title) </pre><p>Note the <code class="literal">user_id </code>column. Those who are familiar with RDBMSes will know that this represents a<span class="strong"><strong>foreign key constraint</strong></span>. A foreign key constraint is a rule in the <span>database</span><a id="id325371848" class="indexterm"></a> that forces the value of<code class="literal">user_id</code>to exist in the<code class="literal">id</code>column in the user table. This is a check in the database to make sure that<code class="literal">Post</code>will always refer to an existing user. The parameter to<code class="literal">db.ForeignKey</code>is a string representation of the user ID field. If you have decided to call your user table with<code class="literal">__table_name__</code>, then you must change this string. This string is used instead of a direct reference with<code class="literal">User.id</code>because during initialization of SQLAlchemy, the<code class="literal">User</code>object might not exist yet.</p><p>The <code class="literal">user_id</code> column itself is not enough to tell SQLAlchemy that we have a relationship. We must modify our <code class="literal">User</code> model as follows:</p><pre class="programlisting">class User(db.Model): 
+  id = db.Column(db.Integer(), primary_key=True) 
+  username = db.Column(db.String(255)) 
+  password = db.Column(db.String(255)) 
+  posts = db.relationship( 
+    'Post', 
+    backref='user', 
+    lazy='dynamic' 
+  ) </pre><p> </p><p> </p><p> </p><p> </p><p>The <code class="literal">db.relationship</code> function creates an attribute in SQLAlchemy that connects with <code class="literal">db.ForeignKey</code> in our <code class="literal">Post</code> model. The first parameter is the name of the class that we are referencing. We will cover what <code class="literal">backref</code> does soon, but what is the <code class="literal">lazy</code> parameter? The <code class="literal">lazy</code> parameter controls how SQLAlchemy will load our related objects. The <code class="literal">subquery</code> phrase would load our relations as soon as our <code class="literal">Post</code> object is loaded. This cuts down the number of queries, but will slow down when the number of returned items grows larger. In contrast, with the <code class="literal">dynamic</code> option, the related objects will be loaded upon access and can be filtered down before returning. This is best if the number of returned objects is or will become large.</p><p>We may now access the <code class="literal">User.posts</code> variable that will return a list of all the posts whose <code class="literal">user_id</code> field equals our <code class="literal">User.id</code>. Let's try this now in our shell, as follows:</p><pre class="programlisting"><span class="strong"><strong>&gt;&gt;&gt; user = User.query.get(1)</strong></span><span class="strong"><strong>&gt;&gt;&gt; new_post = Post('Post Title')</strong></span><span class="strong"><strong>&gt;&gt;&gt; new_post.user_id = user.id</strong></span><span class="strong"><strong>&gt;&gt;&gt; user.posts</strong></span>
+    []
+    <span class="strong"><strong>&gt;&gt;&gt; db.session.add(new_post)</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.commit()</strong></span><span class="strong"><strong>&gt;&gt;&gt; user.posts</strong></span>
+    [&lt;Post 'Post Title'&gt;]</pre><p>Note that we were not able to access our post from our relationship without committing our changes to the database.</p><p>The <code class="literal">backref</code> parameter gives us the ability to access and set our<code class="literal">User</code>class via<code class="literal">Post.user</code>. This is given by the following code:</p><pre class="programlisting"><span class="strong"><strong>&gt;&gt;&gt; second_post = Post('Second Title')</strong></span><span class="strong"><strong>&gt;&gt;&gt; second_post.user = user</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.add(second_post)</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.commit()</strong></span><span class="strong"><strong>&gt;&gt;&gt; user.posts</strong></span>
+    [&lt;Post 'Post Title'&gt;, &lt;Post 'Second Title'&gt;]</pre><p>Because <code class="literal">user.posts</code> is a list, we could have also added our <code class="literal">Post</code> model to the list to save it automatically, as follows:</p><pre class="programlisting"><span class="strong"><strong>&gt;&gt;&gt; second_post = Post('Second Title')</strong></span><span class="strong"><strong>&gt;&gt;&gt; user.posts.append(second_post)</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.add(user)</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.commit()</strong></span><span class="strong"><strong>&gt;&gt;&gt; user.posts</strong></span>
+    [&lt;Post 'Post Title'&gt;, &lt;Post 'Second Title'&gt;]</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>With the <code class="literal">backref</code> option as dynamic, we can treat our relation column as a query as well as a list, as follows:</p><pre class="programlisting"><span class="strong"><strong>&gt;&gt;&gt; user.posts</strong></span>
+    [&lt;Post 'Post Title'&gt;, &lt;Post 'Second Title'&gt;]<span class="strong"><strong>
+    &gt;&gt;&gt; user.posts.order_by(Post.publish_date.desc()).all()</strong></span>
+    [&lt;Post 'Second Title'&gt;, &lt;Post 'Post Title'&gt;]</pre><p>Before we move on to our next relationship type, let's add another model for user comments with a one-to-many relationship, which will be used in the book later on. We can do this using the following code:</p><pre class="programlisting">class Post(db.Model): 
+    id = db.Column(db.Integer(), primary_key=True) 
+    title = db.Column(db.String(255)) 
+    text = db.Column(db.Text()) 
+    publish_date = db.Column(db.DateTime()) 
+    comments = db.relationship( 
+      'Comment', 
+      backref='post', 
+      lazy='dynamic' 
+    ) 
+    user_id = db.Column(db.Integer(), db.ForeignKey('user.id'))
+    def __init__(self, title): 
+        self.title = title
+    def __repr__(self): 
+        return "&lt;Post '{}'&gt;".format(self.title)
+</pre><p>Note the <code class="literal">__repr__</code> method signature in the preceding code. This is a built-in function in Python that is used to return the string representation of the object. Next is the <code class="literal">Comment</code> model, as shown in the following code:</p><pre class="programlisting">class Comment(db.Model): 
+    id = db.Column(db.Integer(), primary_key=True) 
+    name = db.Column(db.String(255)) 
+    text = db.Column(db.Text()) 
+    date = db.Column(db.DateTime()) 
+    post_id = db.Column(db.Integer(), db.ForeignKey('post.id'))
+    def __repr__(self): 
+        return "&lt;Comment '{}'&gt;".format(self.text[:15]) </pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec21"></a>Many-to-many relationship</h3></div></div></div><p>What if we have two models that can reference each other, but each <span>model</span><a id="id325664237" class="indexterm"></a> needs to reference more than one of each type? In our example, our <span>blog</span><a id="id325664244" class="indexterm"></a> posts will need tags in order for our users to easily group similar posts. Each tag can refer to many posts, but each post can have multiple tags. This type of relationship is called a <span class="strong"><strong>many-to-many</strong></span> relationship. Consider the following example:</p><pre class="programlisting">tags = db.Table('post_tags', 
+    db.Column('post_id', db.Integer, db.ForeignKey('post.id')), 
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id')) 
+) 
+ 
+<span class="strong"><strong>class Post(db.Model): </strong></span>
+    id = db.Column(db.Integer(), primary_key=True) 
+    title = db.Column(db.String(255)) 
+    text = db.Column(db.Text()) 
+    publish_date = db.Column(db.DateTime()) 
+    comments = db.relationship( 
+      'Comment', 
+      backref='post', 
+      lazy='dynamic' 
+    ) 
+    user_id = db.Column(db.Integer(), db.ForeignKey('user.id')) 
+    tags = db.relationship( 
+        'Tag', 
+        secondary=tags, 
+        backref=db.backref('posts', lazy='dynamic') 
+    ) 
+
+    def __init__(self, title): 
+        self.title = title
+    def __repr__(self): 
+        return "&lt;Post '{}'&gt;".format(self.title) 
+ 
+<span class="strong"><strong>class Tag(db.Model):</strong></span> 
+    id = db.Column(db.Integer(), primary_key=True) 
+    title = db.Column(db.String(255))
+
+    def __init__(self, title): 
+        self.title = title 
+  
+    def __repr__(self): 
+        return "&lt;Tag '{}'&gt;".format(self.title) </pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>The <code class="literal">db.Table</code> object is a lower-level access to the <span>database</span><a id="id325665093" class="indexterm"></a> than the abstraction of <code class="literal">db.Model</code>. The <code class="literal">db.Model</code> object rests on top of <code class="literal">db.Table</code> and provides a representation of specific rows in the table. The <code class="literal">db.Table</code> object is used because there is no need to access the individual rows of the table.</p><p>The <code class="literal">tags</code> variable is used to represent the <code class="literal">post_tags</code> table, which contains two rows: one that represents an ID of a post, and another that represents the ID of a tag. To illustrate how this works, let's look at an example. Say that the table had the following data:</p><pre class="programlisting">post_id   tag_id 
+1         1 
+1         3 
+2         3 
+2         4 
+2         5 
+3         1 
+3         2 </pre><p>SQLAlchemy would translate this to the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">A post with an ID of <code class="literal">1</code> has the tags with the IDs of <code class="literal">1</code> and <code class="literal">3</code></li><li style="list-style-type: disc">A post with an ID of <code class="literal">2</code> has the tags with the IDs of <code class="literal">3</code>, <code class="literal">4</code>, and <code class="literal">5</code></li><li style="list-style-type: disc">A post with an ID of <code class="literal">3</code> has the tags with the IDs of <code class="literal">1</code> and <code class="literal">2</code></li></ul></div><p>You may describe this data as easily as tags being related to posts.</p><p>Before the <code class="literal">db.relationship</code> function sets up our relationship, this time it has the secondary parameter. The secondary parameter tells SQLAlchemy that this relationship is stored in the <code class="literal">tags</code> table, as shown in the following code:</p><pre class="programlisting"><span class="strong"><strong>&gt;&gt;&gt; post_one = Post.query.filter_by(title='Post Title').first()</strong></span><span class="strong"><strong>&gt;&gt;&gt; post_two = Post.query.filter_by(title='Second Title').first()</strong></span><span class="strong"><strong>&gt;&gt;&gt; tag_one = Tag('Python')</strong></span><span class="strong"><strong>&gt;&gt;&gt; tag_two = Tag('SQLAlchemy')</strong></span><span class="strong"><strong>&gt;&gt;&gt; tag_three = Tag('Flask')</strong></span><span class="strong"><strong>&gt;&gt;&gt; post_one.tags = [tag_two]</strong></span><span class="strong"><strong>&gt;&gt;&gt; post_two.tags = [tag_one, tag_two, tag_three]</strong></span><span class="strong"><strong>&gt;&gt;&gt; tag_two.posts</strong></span>
+    [&lt;Post 'Post Title'&gt;, &lt;Post 'Second Title'&gt;]<span class="strong"><strong>
+    &gt;&gt;&gt; db.session.add(post_one)</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.add(post_two)</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.commit()</strong></span></pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>As given in the one-to-many relationship, the main relationship column is just a list, the main difference being that the <code class="literal">backref</code> option is now also a list. Because it's a list, we may add posts to tags from the <code class="literal">tag</code> object, as follows:</p><pre class="programlisting"><span class="strong"><strong>&gt;&gt;&gt; tag_one.posts.append(post_one)</strong></span>
+    [&lt;Post 'Post Title'&gt;, &lt;Post 'Second Title'&gt;]<span class="strong"><strong>
+    &gt;&gt;&gt; post_one.tags</strong></span>
+    [&lt;Tag 'SQLAlchemy'&gt;, &lt;Tag 'Python'&gt;]
+    <span class="strong"><strong>&gt;&gt;&gt; db.session.add(tag_one)</strong></span><span class="strong"><strong>&gt;&gt;&gt; db.session.commit()</strong></span></pre></div></div>

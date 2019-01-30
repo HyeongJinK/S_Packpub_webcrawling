@@ -1,0 +1,103 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec73"></a>Implementing logging and reporting in the framework</h2></div></div><hr /></div><p>For implementing <span>logging</span><a id="id325161569" class="indexterm"></a> in the framework, define the <code class="literal">log</code> object in the <code class="literal">TestBase</code> class, as <span>shown</span><a id="id325162062" class="indexterm"></a> here:</p><p><code class="literal">protected static <span>Logger</span> log = null;</code></p><p>Mark the <code class="literal">AActionKeyword</code> class as shown here:</p><p><code class="literal">public class AActionKeyword extends TestBase implements IActionKeyword</code></p><p>Then initialize the <code class="literal">logger</code> object in the <code class="literal">OpenBrowser</code> constructor using the following code:</p><p><code class="literal">log = Logger.getLogger(OpenBrowser.class);</code><code class="literal">PropertyConfigurator.configure("log4j.properties");</code></p><p>With this, we can incorporate the <code class="literal">log4j logs</code> in the <code class="literal">OpenBrowser</code> class, as shown here:</p><pre class="programlisting">public class OpenBrowser extends AActionKeyword {
+    public OpenBrowser() throws IOException, FilloException {
+         super();
+         log = Logger.getLogger(OpenBrowser.class);
+         PropertyConfigurator.configure("log4j.properties");
+    }
+    static RemoteWebDriver driver;
+    static DesiredCapabilities capabilities;
+    public WebDriver openBrowser(List&lt;String&gt; browserName) {
+    if (browserName.get(0).equalsIgnoreCase("chrome")) {
+         log.info("Executing openBrowser");
+         System.setProperty("webdriver.chrome.driver",
+ System.getProperty("user.dir")
+ + "\\src\\main\\resources\\chromedriver.exe");
+        driver = new ChromeDriver();
+     } else if (browserName.get(0).equalsIgnoreCase("ie")) {
+         System.setProperty("webdriver.ie.driver",
+ System.getProperty("user.dir")
+ + "\\src\\main\\resources\\IEDriverServer.exe");
+        driver = new InternetExplorerDriver();
+     } else if (browserName.get(0).equalsIgnoreCase("firefox")) {
+         System.setProperty("webdriver.gecko.driver",
+ System.getProperty("user.dir")
+ + "\\src\\main\\resources\\geckodriver.exe");
+ driver = new FirefoxDriver();
+     }
+     return driver;
+ }
+}
+<span class="strong"><strong>Output:</strong></span>
+<span class="strong"><strong>2018-09-23 12:56:04 INFO  OpenBrowser:31 - Executing openBrowser</strong></span></pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec69"></a>Incorporating reporting in the framework</h3></div></div></div><p>Apart from extent reports, we can create Excel reports from <code class="literal">testng-results.xml</code>. <code class="literal">testng-results.xml</code> gets generated in a test-output folder. We can <span>make</span><a id="id325448843" class="indexterm"></a> use of this XML to generate the Excel reports.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch08lvl3sec22"></a>Creating a custom XL file from testng-results.xml</h4></div></div></div><p>The following code <span>shows</span><a id="id325448858" class="indexterm"></a> how to generate the Excel report:</p><pre class="programlisting">public class ReportGenerator {
+ public static void main(String[] args) throws ParserConfigurationException,
+ SAXException, IOException {
+     String destFile = "ReportGen.xls";
+     String path = ReportGenerator.class.getClassLoader().getResource("./")
+                     .getPath();
+     path = path.replaceAll("target/classes", "test-output");
+     File file = new File(path + "testng-results.xml");
+     DocumentBuilderFactory docFactory = DocumentBuilderFactory
+                                             .newInstance();
+     DocumentBuilder docbuilder = docFactory.newDocumentBuilder();
+     Document dcmt = docbuilder.parse(file);
+     dcmt.getDocumentElement().normalize();
+     XSSFWorkbook book = new XSSFWorkbook();
+     NodeList tlist = dcmt.getElementsByTagName("test");
+     for (int i = 0; i &lt; tlist.getLength(); i++) {
+         int rw = 0;
+         Node tnode = tlist.item(i);
+         String tname = ((Element) tnode).getAttribute("name");
+         XSSFSheet sheet = book.createSheet(tname);
+         NodeList classlist = ((Element) tnode)
+                                 .getElementsByTagName("class");
+         for (int j = 0; j &lt; classlist.getLength(); j++) {
+             Node cnode = classlist.item(j);
+             String cname = ((Element) cnode).getAttribute("name");
+             NodeList tmethodList = ((Element) cnode)
+                                     .getElementsByTagName("test-
+              method");
+             for (int k = 0; k &lt; tmethodList.getLength(); k++) {
+                 Node tmethodNode = tmethodList.item(k);
+                 String tmethodname = ((Element) tmethodNode)
+                                             .getAttribute("name");
+                 String tmethodstatus = ((Element) tmethodNode)
+                                             .getAttribute("status");
+                 XSSFRow row1 = sheet.createRow(rw++);
+                 XSSFCell cel1 = row1.createCell(0);
+                 cel1.setCellValue(cname + "." + tmethodname);
+                 XSSFCell cel2 = row1.createCell(1);
+                 cel2.setCellValue(tmethodstatus);
+             }
+         }
+     }
+     FileOutputStream fstream = new FileOutputStream(path + "report/"
+                                                         + destFile);
+     book.write(fstream);
+     fstream.close();
+     System.out.println("Report Generated");
+    }
+}</pre><p>Next, we will see the <span>approach</span><a id="id325448941" class="indexterm"></a> to be followed to add new keywords.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch08lvl3sec23"></a>Adding keywords to the framework</h4></div></div></div><p>We will see how the logic of the <span>framework</span><a id="id325448956" class="indexterm"></a> flows and this will give you an idea as to how to add new keywords to the framework:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>The TestNG file will be created, as shown in the preceding code.</li><li>Decide whether the run will be sequential or parallel.</li><li>Design the <code class="literal">ReadFillo</code> class, as shown previously, for reading the framework sheet based on the browser parameter passed.</li><li>Based on the keyword fetched from each row of Excel, create the object of that keyword.</li></ol></div><p>Next, we will look at another method for creating reports directly, using the Fillo API.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch08lvl3sec24"></a>Creating reports using Fillo</h4></div></div></div><p>During the test execution, reporting for each step is <span>possible</span><a id="id325450395" class="indexterm"></a> using a user-defined class, which can have all the <code class="literal">fillo</code> methods, such as <code class="literal">insertRecord</code> and <code class="literal">updateRecord</code>. <code class="literal">insertRecord</code> will insert a new record into the report file and <code class="literal">updateRecord</code> will <span>update</span><a id="id325450420" class="indexterm"></a> an existing record.</p><p>The following class provides the code for our class called <code class="literal">FilloReports.java</code>:</p><pre class="programlisting">public class FilloReports {
+
+  private Formatter x;
+
+  public void createFile() {
+    String timestamp1 = new SimpleDateFormat("yyyyMMMddHHmmss")
+        .format(new java.util.Date());
+    try {
+      x = new Formatter("Results.xls" + timestamp1);
+    } catch (FileNotFoundException e) {
+        throw new FileNotFoundException();
+    }
+  }
+
+  public void insertRecord(String testcaseID, String result) {
+    String query = "insert into report (TestcaseID, Result) values ('"
+ + testcaseID + "','" + result + "')";
+  }
+
+  public void updateRecord(String testcaseID, String result) {
+    String query = "update report set result='" + result
+        + "' where TestCaseID='" + testcaseID + "')";
+  }
+
+}</pre><p>With this, we complete <span>logging</span><a id="id325450471" class="indexterm"></a> and <span>reporting</span><a id="id325450480" class="indexterm"></a> in the framework. Next, let's see how we can generate screenshots in Selenium.</p></div></div></div>

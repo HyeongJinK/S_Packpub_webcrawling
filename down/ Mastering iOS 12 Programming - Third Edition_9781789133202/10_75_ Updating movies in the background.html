@@ -1,0 +1,79 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec74"></a>Updating movies in the background</h2></div></div><hr /></div><p>The final step in enabling <span>background</span><a id="id325333110" class="indexterm"></a> fetch for <span class="strong"><strong>MustC</strong></span> is to add the <code class="literal">application(_:performFetchWithCompletionHandler:)</code> method to <code class="literal">AppDelegate</code>. As explained before, this method is called by iOS whenever the app is woken up in the background, and it allows you to perform an arbitrary amount of work. Once the app is done performing its task, it must call the completion-handler that was passed to this method.</p><p>Upon calling the completion-handler, you should inform iOS about the results of the operations you performed. It's important to correctly report this status because background fetch is intended to improve the user experience. If you falsely report to iOS that you have new data all the time, so your app is woken up more often, you're degrading the user experience. You should trust the system to judge when your app is woken up. It's in the best interest of your users, their battery life, and ultimately your app to not abuse background fetch.</p><p>To efficiently implement background fetch, you will work through the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Updating the data model so you can query the movie database more efficiently.</li><li>Refactoring the existing code to use the improved data model.</li><li>Implementing background fetch with the existing helper struct.</li></ol></div><p>The first two steps are not directly tied to implementing background fetch, but they do illustrate that an efficient background fetch strategy may involve refactoring some of your app's existing code. Remember, there is nothing wrong with refactoring old code to implement a new feature. Both the new feature and the old code will usually benefit from refactoring.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec54"></a>Updating the data model</h3></div></div></div><p>The data model you currently have associates movies with a single family member. This means that the app potentially stores the same movie over and over again. When we were only storing data, this wasn't that big of a deal. This wasn't a big deal when you first implemented your database. However, now that the app will query the movie database in a <span>background</span><a id="id325602488" class="indexterm"></a> fetch task, it would be a waste of resources to ask the movie database for the same ratings multiple times. Also, you most certainly don't want to use the movie database search API in the same way you did before; you should refer to the movie you want as precisely as possible.</p><p>To facilitate this, the relationship between movies and family members must be changed to a many-to-many relationship. You'll also add a new field to the movie entity: <code class="literal">remoteId</code>. <code class="literal">remoteId</code> will hold the identifier the movie database uses for a particular movie so it can be used directly in later API calls.</p><p>Open the model editor in Xcode and add the new <code class="literal">remoteId</code> property to <span class="strong"><strong>Movie</strong></span>. Make sure that it's a 64-bit integer and that it's optional. Also, select the <span class="strong"><strong>familyMember</strong></span> relationship and change it to a <span class="strong"><strong>To Many</strong></span> relationship in the sidebar. It's also a good idea to rename the relationship to <span class="strong"><strong>familyMembers</strong></span>, since it's now related to more than one family member. Your model should resemble the model in the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/e53999e4-bb5a-43e5-8d61-c9c772d4aa92.png" /></div><p>Great, the model has been updated. There's still a lot of work to be done though. Because the name and nature of the family member relationship were changed, the project won't compile. Make the following modifications to the <code class="literal">managedObjectContextDidChange(_:)</code> method in <code class="literal">MoviesViewController.swift</code>:</p><pre class="programlisting">if let updatedObjects = userInfo[NSUpdatedObjectsKey] as? Set&lt;Movie&gt; {
+  for object in updatedObjects {
+    if let familyMember = self.familyMember,
+      let familyMembers = object.familyMembers,
+      familyMembers.contains(familyMember) {
+
+      tableView.reloadData()
+      break
+    }
+  }
+} </pre><p>There is just one more model-related <span>change</span><a id="id325604112" class="indexterm"></a> that you should incorporate. To efficiently search for an existing movie or create a new one, an extension to the <code class="literal">Movie</code> model should be created. Create a new group called <span class="strong"><strong>Models</strong></span> in your project and add a new Swift file named <code class="literal">Movie.swift</code> to it. Finally, add the following implementation to the file:</p><pre class="programlisting">import CoreData
+
+extension Movie {
+  static func find(byName name: String, orCreateIn moc: NSManagedObjectContext) -&gt; Movie {
+    let predicate = NSPredicate(format: "title ==[dc] %@", name)
+    let request: NSFetchRequest&lt;Movie&gt; = Movie.fetchRequest()
+    request.predicate = predicate
+
+    guard let result = try? moc.fetch(request)
+      else { return Movie(context: moc) }
+
+    return result.first ?? Movie(context: moc)
+  }
+}</pre><p>The preceding code queries Core Data for an existing movie with the provided name. The movies are matched case-insensitive by passing <code class="literal">[dc]</code> to the <code class="literal">==</code> operator in <code class="literal">NSPredicate</code>. It's important that this lookup is case-insensitive because people might write the same movie name with different capitalizations. If no movies could be found, or if the results come back empty, a new movie is created. Otherwise, the first, and presumably the only, result that Core Data has is returned. This wraps up the changes that need to be made to the app's data layer.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec55"></a>Refactoring the existing code</h3></div></div></div><p>The existing code compiles, but it's not optimal yet. <code class="literal">MovieDBHelper</code> doesn't pass the movie's remote ID to its callback, and the movie-insertion code doesn't use this remote ID yet. When the user wants to save a new movie, the app still defaults to creating a new movie instead of using the handy new helper you just wrote to avoid data duplication. You should update the code, so the callback is called with the fetched remote ID.</p><p>Let's update <code class="literal">MovieDBHelper</code> first. Replace the <span>following</span><a id="id325606060" class="indexterm"></a> lines in the <code class="literal">fetchRating(forMovie:callback:)</code> method:</p><pre class="programlisting">typealias MovieDBCallback = (Int?, Double?) -&gt; Void
+let apiKey = "d9103bb7a17c9edde4471a317d298d7e"
+
+func fetchRating(forMovie movie: String, callback: @escaping MovieDBCallback) {
+  guard let searchUrl = url(forMovie: movie) else {
+    callback(nil, nil)
+    return
+  }
+
+  let task = URLSession.shared.dataTask(with: searchUrl) { data, response, error in
+    var rating: Double? = nil
+    var remoteId: Int? = nil
+
+    defer {
+      callback(remoteId, rating)
+    }
+
+    let decoder = JSONDecoder()
+
+    guard error == nil, let data = data,
+      let lookupResponse = try? decoder.decode(MovieDBLookupResponse.self, from: data),
+      let movie = lookupResponse.results.first
+      else { return }
+
+    rating = movie.popularity
+    remoteId = movie.id
+  }
+
+  task.resume()
+}</pre><p>These updates change the callback-handler, so it takes both the remote ID and the rating as parameters. A variable to hold the remote ID is added and incorporated into the callback. With this code, <code class="literal">MovieDBHelper</code> is entirely up to date.</p><p>You should also update the response struct, so the <code class="literal">MovieDBMovie</code> struct includes the ID from the API response:</p><pre class="programlisting">struct MovieDBMovie: Codable {  
+  let popularity: Double?  
+  let id: Int?  
+}</pre><pre class="programlisting">moc.persist {
+  // 1
+  let movie = Movie.find(byName: name, orCreateIn: moc)
+
+  // 2
+  if movie.title == nil || movie.title?.isEmpty == true {
+    movie.title = name
+  }
+
+  let newFavorites: Set &lt;AnyHashable&gt; = familyMember.movies?.adding(movie) ?? [movie]
+  familyMember.movies = NSSet(set: newFavorites)
+
+  let helper = MovieDBHelper()
+  helper.fetchRating(forMovie: name) { remoteId, rating in
+    guard let rating = rating,
+      let remoteId = remoteId
+      else { return }
+
+    moc.persist {
+      movie.popularity = rating
+      movie.remoteId = Int64(remoteId)
+    }
+  }
+}</pre><p>First, the preceding code either fetches an existing movie or creates a new one with the <code class="literal">find(byName:orCreateIn:)</code> method you just created. Next, it checks whether the returned movie already has a name. If it doesn't have a name yet, the name is set. Also, if it does have a name, you can safely assume you were handed an existing movie object, so there is no need to set the name. Next, the rating and ID are fetched, and the corresponding properties on the movie object are set to their correct values in the callback.</p><p>This is all the code needed to prepare <span class="strong"><strong>MustC</strong></span> for background fetch. Let's implement this feature now.</p></div></div>

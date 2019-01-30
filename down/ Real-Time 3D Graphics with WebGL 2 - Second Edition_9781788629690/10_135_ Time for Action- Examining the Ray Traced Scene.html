@@ -1,0 +1,85 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec137"></a>Time for Action: Examining the Ray Traced Scene</h2></div></div><hr /></div><p>Let's cover an <span>example</span><a id="id325358845" class="indexterm"></a> showcasing the power of ray tracing:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch10_04_ray-tracing.html</code> file in your browser. You should see a scene with a simple lit, bobbing sphere like the one shown in the following screenshot:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/959d7c7c-7b9d-4644-be62-62a74bf1c76c.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>In order to trigger the shader, we need a way to draw a full-screen quad. Fortunately, we have a class from our post-processing examples earlier in this chapter to help us do just that. Since we don't have a scene to process, we can omit a large part of the rendering code and simplify JavaScript's <code class="literal">draw</code> function:</li></ol></div><pre class="programlisting">function draw() {
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+// Checks to see if the framebuffer needs to be re-sized to match
+  // the canvas
+post.validateSize();
+post.bind();
+
+// Render the fullscreen quad
+post.draw();
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>That's it. The remainder of our scene will be built in to the fragment shader.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>There are two functions at the core of our shader: one that determines if a ray is intersecting a sphere and one that determines <span>the</span><a id="id325643392" class="indexterm"></a> normal of a point on the sphere. We're using spheres because they're typically the easiest type of geometry to raycast, and they also happen to be a type of geometry that is difficult to represent accurately with polygons:</li></ol></div><pre class="programlisting">// ro is the ray origin.
+// rd is the ray direction.
+// s is the sphere
+float sphereIntersection(vec3 ro, vec3 rd, vec4 s) {
+  // Transform the ray into object space
+  vec3 oro = ro - s.xyz;
+
+  float a = dot(rd, rd);
+  float b = 2.0 * dot(oro, rd);
+  // w is the sphere radius
+  float c = dot(oro, oro) - s.w * s.w;
+
+  float d = b * b - 4.0 * a * c;
+
+  // No intersection
+  if (d &lt; 0.0) return d;
+
+  return (-b - sqrt(d)) / 2.0;
+}
+
+vec3 sphereNormaml(vec3 pt, vec4 s) {
+  return (pt - s.xyz) / s.w;
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Next, we will use these two functions to determine where the ray is intersecting with a sphere (if at all), along with what the normal and color of the sphere are at that point. To keep things simple, the sphere information is hardcoded as global variables, but they could just as easily be provided as uniforms from JavaScript:</li></ol></div><pre class="programlisting">vec4 sphere = vec4(1.0);
+vec3 sphereColor = vec3(0.9, 0.8, 0.6);
+float maxDistance = 1024.0;
+
+float intersect(vec3 ro, vec3 rd, out vec3 norm, out vec3 color) {
+  float distance = maxDistance;
+
+  // If we wanted multiple objects in the scene you would loop 
+  // through them here and return the normal and color with the
+  // closest intersection point (lowest distance).
+
+ float intersectionDistance = sphereIntersection(ro, rd, sphere);
+
+  if (intersectionDistance &gt; 0.0 &amp;&amp; intersectionDistance &lt; 
+   distance) {
+    distance = intersectionDistance;
+    // Point of intersection
+    vec3 pt = ro + distance * rd;
+    // Get normal for that point
+    norm = sphereNormaml(pt, sphere);
+    // Get color for the sphere
+    color = sphereColor;
+  }
+
+  return distance;
+}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Now that we can determine the normal and color of a point with a ray, we need to generate the rays for casting. We can do this by determining the pixel that the current fragment represents and then creating a ray that points from the camera position through that pixel. To do so, we will utilize the <code class="literal">uInverseTextureSize</code> uniform that the <code class="literal">PostProcess</code> class provides to the shader:</li></ol></div><pre class="programlisting">// Pixel coordinate of the fragment being rendered
+vec2 uv = gl_FragCoord.xy * uInverseTextureSize;
+float aspectRatio = uInverseTextureSize.y / uInverseTextureSize.x;
+
+// Cast a ray out from the eye position into the scene
+vec3 ro = eyePos;
+
+// The ray we cast is tilted slightly downward to give a better
+// view of the scene
+vec3 rd = normalize(vec3(-0.5 + uv * vec2(aspectRatio, 1.0), -1.0));</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Using the ray we just generated, we call the <code class="literal">intersect</code> function to get the information about the sphere's intersection. Then, we apply the same diffuse lighting calculations we've been using all along! To keep things simple, we're using directional lighting here, but it would be easy enough to update the lighting model to point or spot lights:</li></ol></div><pre class="programlisting">// Default color if we don't intersect with anything
+vec3 rayColor = backgroundColor;
+
+// See if the ray intersects with any objects.
+// Provides the normal of the nearest intersection point and color
+vec3 objectNormal, objectColor;
+float t = intersect(ro, rd, objectNormal, objectColor);
+
+if (t &lt; maxDistance) {
+  // Diffuse factor
+  float diffuse = clamp(dot(objectNormal, lightDirection), 0.0,
+   1.0);
+  rayColor = objectColor * diffuse + ambient;
+}
+
+fragColor = vec4(rayColor, 1.0);</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Thus far, our example is a static lit sphere. How do we add a bit of motion to the scene to give us a better sense of how fast the scene renders and how the lighting interacts with the sphere? We do so by adding a simple looping circular motion to the sphere by using the <code class="literal">uTime</code> uniform to modify the <code class="literal">x</code> and <code class="literal">z</code> coordinates at the beginning of the shader:</li></ol></div><pre class="programlisting">// Wiggle the sphere back and forth a bit
+sphere.x = 1.5 * sin(uTime);
+sphere.z = 0.5 * cos(uTime * 3.0);</pre><p><span class="strong"><strong><span class="emphasis"><em>What just happened?</em></span></strong></span></p><p>We covered how we can construct a 3D scene, lighting and all, entirely in a fragment shader. It's a simple scene, of course, but also one that would be nearly impossible to render using polygon-based rendering. That's because perfect spheres can only be approximated with triangles.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note94"></a>Note</h3><p><span class="strong"><strong><strong class="userinput"><code>Shader Toy</code></strong></strong></span>Now that you've seen how to construct 3D scenes entirely in fragment shaders, you will find the demos on <a class="ulink" href="https://www.shadertoy.com/" target="_blank">ShaderToy.com</a> both beautiful and inspiring.</p></div><p> </p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec164"></a>Have a Go: Multiple Spheres</h3></div></div></div><p>In our example, we've kept <span>things</span><a id="id325647132" class="indexterm"></a> simple by rendering only one single sphere. That being said, all of the pieces needed to render several spheres are in place! How would you render a scene of multiple spheres with different colors and motion?</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip95"></a>Note</h3><p><span class="strong"><strong><strong class="userinput"><code>Hint</code></strong></strong></span>The main shader function that needs editing is <code class="literal">intersect</code>.</p></div></div></div>

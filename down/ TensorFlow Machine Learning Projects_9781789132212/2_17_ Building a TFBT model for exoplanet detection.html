@@ -1,0 +1,70 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec24"></a>Building a TFBT model for exoplanet detection</h2></div></div><hr /></div><p>In this section, we shall <span>build</span><a id="id325091917" class="indexterm"></a> the gradient boosted trees model for detecting exoplanets using the Kepler dataset. Let us follow these steps in the Jupyter Notebook to build and train the exoplanet finder model:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>We will save the names of all the features in a vector with the following code:</li></ol></div><pre class="programlisting">numeric_column_headers = x_train.columns.values.tolist()</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>We will then bucketize the feature columns into two buckets around the mean since the TFBT estimator only takes bucketed features with the following code:</li></ol></div><pre class="programlisting">bc_fn = tf.feature_column.bucketized_column
+nc_fn = tf.feature_column.numeric_column
+bucketized_features = [bc_fn(source_column=nc_fn(key=column),
+boundaries=[x_train[column].mean()])
+for column in numeric_column_headers]</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Since we only have numeric bucketized features and no other kinds of features, we store them in the <code class="literal">all_features</code> variable with the following code:</li></ol></div><pre class="programlisting">all_features = bucketized_features</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>We will then define the batch size and create a function that will provide inputs from the label and feature vectors created from the training data. For creating this function we use a convenience function <code class="literal">tf.estimator.inputs.pandas_input_fn()</code> provided by TensorFlow. We will use the following code:</li></ol></div><pre class="programlisting">batch_size = 32
+pi_fn = tf.estimator.inputs.pandas_input_fn
+train_input_fn = pi_fn(x = x_train,
+y = y_train,
+batch_size = batch_size,
+shuffle = True,
+num_epochs = None)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Similarly, we will create another data input function that would be used to evaluate the model from the test features and label vectors and name it <code class="literal">eval_input_fn</code> using the following code:</li></ol></div><pre class="programlisting">eval_input_fn = pi_fn(x = x_test,
+y = y_test,
+batch_size = batch_size,
+shuffle = False,
+num_epochs = 1)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>We will define the number of trees to be created as <code class="literal">100</code> and the number of steps to be used for training as <code class="literal">100</code>. We also define the <code class="literal">BoostedTreeClassifier</code> as the <code class="literal">estimator</code> using the following code:</li></ol></div><pre class="programlisting">n_trees = 100
+n_steps = 100
+
+m_fn = tf.estimator.BoostedTreesClassifier
+model = m_fn(feature_columns=all_features,
+n_trees = n_trees,
+n_batches_per_layer = batch_size,
+model_dir='./tfbtmodel')</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip21"></a>Note</h3><p>Since we are doing classification, hence we use the <code class="literal">BoostedTreesClassifier</code>, for regression problems where a value needs to be predicted, TensorFlow also has an <code class="literal">estimator</code> named <code class="literal">BoostedTreesRegressor</code>.</p></div><p>One of the parameters provided to the <code class="literal">estimator</code> function is <code class="literal">model_dir</code> that defines where the trained model would be stored. The estimators are built such that they look for the model in that folder in further invocations for using them for inference and prediction. We name the folder as <code class="literal">tfbtmodel</code> to save the model.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note22"></a>Note</h3><p>We have used the minimum number of models to define the <code class="literal">BoostedTreesClassifier</code>. Please look up the definition of this estimator in the TensorFlow API documentation to find various other parameters that can be provided to further customize the estimator.</p></div><p>The following output in the Jupyter Notebook describes the classifier estimator and its various settings:</p><pre class="programlisting">INFO:tensorflow:Using default config.
+INFO:tensorflow:Using config: {'_model_dir': './tfbtmodel', '_tf_random_seed': None, '_save_summary_steps': 100, '_save_checkpoints_steps': None, '_save_checkpoints_secs': 600, '_session_config': None, '_keep_checkpoint_max': 5, '_keep_checkpoint_every_n_hours': 10000, '_log_step_count_steps': 100, '_train_distribute': None, '_device_fn': None, '_service': None, '_cluster_spec': &lt;tensorflow.python.training.server_lib.ClusterSpec object at 0x7fdd48c93b38&gt;, '_task_type': 'worker', '_task_id': 0, '_global_id_in_cluster': 0, '_master': '', '_evaluation_master': '', '_is_chief': True, '_num_ps_replicas': 0, '_num_worker_replicas': 1}</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Post this, we will train the model using the <code class="literal">train_input_fn</code> function that provides the exoplanets input data using 100 steps with the following code:</li></ol></div><pre class="programlisting">model.train(input_fn=train_input_fn, steps=n_steps)</pre><p>The Jupyter Notebook shows the following output to indicate the training in progress:</p><pre class="programlisting">INFO:tensorflow:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:tensorflow:Create CheckpointSaverHook.
+WARNING:tensorflow:Issue encountered when serializing resources.
+Type is unsupported, or the types of the items don't match field type in CollectionDef. Note this is a warning and probably safe to ignore.
+'_Resource' object has no attribute 'name'
+INFO:tensorflow:Graph was finalized.
+INFO:tensorflow:Restoring parameters from ./tfbtmodel/model.ckpt-19201
+INFO:tensorflow:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+WARNING:tensorflow:Issue encountered when serializing resources.
+Type is unsupported, or the types of the items don't match field type in CollectionDef. Note this is a warning and probably safe to ignore.
+'_Resource' object has no attribute 'name'
+INFO:tensorflow:Saving checkpoints for 19201 into ./tfbtmodel/model.ckpt.
+WARNING:tensorflow:Issue encountered when serializing resources.
+Type is unsupported, or the types of the items don't match field type in CollectionDef. Note this is a warning and probably safe to ignore.
+'_Resource' object has no attribute 'name'
+INFO:tensorflow:loss = 1.0475121e-05, step = 19201
+INFO:tensorflow:Saving checkpoints for 19202 into ./tfbtmodel/model.ckpt.
+WARNING:tensorflow:Issue encountered when serializing resources.
+Type is unsupported, or the types of the items don't match field type in CollectionDef. Note this is a warning and probably safe to ignore.
+'_Resource' object has no attribute 'name'
+INFO:tensorflow:Loss for final step: 1.0475121e-05.</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Use the <code class="literal">eval_input_fn</code> that provides batches from the <code class="literal">test</code> dataset to evaluate the model with the following code:</li></ol></div><pre class="programlisting">results = model.evaluate(input_fn=eval_input_fn)</pre><p>The Jupyter Notebook shows the following output as the progress of the evaluation:</p><pre class="programlisting">INFO:tensorflow:Calling model_fn.
+WARNING:tensorflow:Trapezoidal rule is known to produce incorrect PR-AUCs; please switch to "careful_interpolation" instead.
+WARNING:tensorflow:Trapezoidal rule is known to produce incorrect PR-AUCs; please switch to "careful_interpolation" instead.
+INFO:tensorflow:Done calling model_fn.
+INFO:tensorflow:Starting evaluation at 2018-09-07-04:23:31
+INFO:tensorflow:Graph was finalized.
+INFO:tensorflow:Restoring parameters from ./tfbtmodel/model.ckpt-19203
+INFO:tensorflow:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:tensorflow:Finished evaluation at 2018-09-07-04:23:50
+INFO:tensorflow:Saving dict for global step 19203: accuracy = 0.99122804, accuracy_baseline = 0.99122804, auc = 0.49911517, auc_precision_recall = 0.004386465, average_loss = 0.09851996, global_step = 19203, label/mean = 0.00877193, loss = 0.09749381, precision = 0.0, prediction/mean = 4.402521e-05, recall = 0.0
+WARNING:tensorflow:Issue encountered when serializing resources.
+Type is unsupported, or the types of the items don't match field type in CollectionDef. Note this is a warning and probably safe to ignore.
+'_Resource' object has no attribute 'name'
+INFO:tensorflow:Saving 'checkpoint_path' summary for global step 19203: ./tfbtmodel/model.ckpt-19203</pre><p>Note that during the evaluation the estimator loads the parameters saved in the checkpoint file: </p><pre class="programlisting">INFO:tensorflow:Restoring parameters from ./tfbtmodel/model.ckpt-19203</pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>The results of the evaluation are stored in the <code class="literal">results</code> collection. Let us print each item in the <code class="literal">results</code> collection using the <code class="literal">for</code> loop in the following code:</li></ol></div><pre class="programlisting">for key,value in sorted(results.items()):
+print('{}: {}'.format(key, value))</pre><p>The Notebook shows the following results:</p><pre class="programlisting">accuracy: 0.9912280440330505
+accuracy_baseline: 0.9912280440330505
+auc: 0.4991151690483093
+auc_precision_recall: 0.004386465065181255
+average_loss: 0.0985199585556984
+global_step: 19203
+label/mean: 0.008771929889917374
+loss: 0.09749381244182587
+precision: 0.0
+prediction/mean: 4.4025211536791176e-05
+recall: 0.0</pre><p>It is observed that we <span>achieve</span><a id="id325614939" class="indexterm"></a> an accuracy of almost 99% with the first model itself. This is because the estimators are prewritten with several optimizations and we did not need to set various values of hyperparameters ourselves. For some datasets, the default hyperparameter values in the estimators will work out of the box, but for other datasets, you will have to play with various inputs to the estimators.</p><p> </p></div>

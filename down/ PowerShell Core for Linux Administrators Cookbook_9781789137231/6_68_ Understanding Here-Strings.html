@@ -1,0 +1,49 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec72"></a>Understanding Here-Strings</h2></div></div><hr /></div><p>We now know how to write a literal string and an expanding string. The next string to cover is the Here-String, which is a little special. Most strings are declared in a single line at the Terminal. We use escape sequences to separate the lines.</p><p>Imagine that you are in a situation wherein <span>you</span><a id="id325905972" class="indexterm"></a> are asked to write an input file that's going to be used to create 20 directories in a specific structure. You do not have a text editor handy. All you have is the Terminal, and PowerShell loaded on it. Here are the paths that need to be created:</p><pre class="programlisting">./dir-01/dir-07/dir-09/dir-13/
+./dir-02/dir-05/dir-06/
+./dir-03/dir-08/dir-10/
+./dir-04/dir-11/dir-12/dir-14/
+./dir-04/dir-11/dir-12/dir-15/
+./dir-04/dir-11/dir-12/dir-16/
+./dir-04/dir-11/dir-12/dir-17/
+./dir-04/dir-11/dir-12/dir-18/dir-19/
+./dir-04/dir-11/dir-12/dir-18/dir-20/</pre><p>Don't worry about actually creating a directory. All you have to do is create the input file.</p><p> </p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec195"></a>How to do it…</h3></div></div></div><p>What we want to achieve is a block of text—a single string, without too many <span>complicated</span><a id="id325901980" class="indexterm"></a> notations such as escape characters or concatenation. Follow these steps to complete this recipe:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>At the prompt, type in the following:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; @'</strong></span>
+<span class="strong"><strong>./dir-01/dir-07/dir-09/dir-13/</strong></span>
+<span class="strong"><strong>./dir-02/dir-05/dir-06/</strong></span>
+<span class="strong"><strong>./dir-03/dir-08/dir-10/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-14/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-15/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-16/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-17/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-18/dir-19/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-18/dir-20/</strong></span>
+<span class="strong"><strong>'@</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Press the <span class="emphasis"><em>Enter </em></span>key to see what the output is.</li><li>Now, send this output to a text file. Name it whatever you want:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; @'</strong></span>
+<span class="strong"><strong>./dir-01/dir-07/dir-09/dir-13/</strong></span>
+<span class="strong"><strong>./dir-02/dir-05/dir-06/</strong></span>
+<span class="strong"><strong>./dir-03/dir-08/dir-10/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-14/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-15/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-16/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-17/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-18/dir-19/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-18/dir-20/</strong></span>
+<span class="strong"><strong>'@ | Out-File ./input-file.txt</strong></span></pre><p>Is this a string or an array?</p><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Either assign the whole text block to a variable and call the <code class="literal">Count</code> property, or do it this way:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; (@'</strong></span>
+<span class="strong"><strong>./dir-01/dir-07/dir-09/dir-13/</strong></span>
+<span class="strong"><strong>./dir-02/dir-05/dir-06/</strong></span>
+<span class="strong"><strong>./dir-03/dir-08/dir-10/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-14/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-15/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-16/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-17/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-18/dir-19/</strong></span>
+<span class="strong"><strong>./dir-04/dir-11/dir-12/dir-18/dir-20/</strong></span>
+<span class="strong"><strong>'@).Count</strong></span></pre><p>This way will create relative paths, based on the present working directory. What if you wanted these directories to be created within the home directory of the user who runs it?</p><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Run the following code to create an expanding here-string (double quotes), and if the output is satisfactory, send it to <code class="literal">input-file-expanding.txt</code>:</li></ol></div><pre class="programlisting"><span class="strong"><strong>PS&gt; @"</strong></span>
+<span class="strong"><strong>$HOME/dir-01/dir-07/dir-09/dir-13/</strong></span>
+<span class="strong"><strong>$HOME/dir-02/dir-05/dir-06/</strong></span>
+<span class="strong"><strong>$HOME/dir-03/dir-08/dir-10/</strong></span>
+<span class="strong"><strong>$HOME/dir-04/dir-11/dir-12/dir-14/</strong></span>
+<span class="strong"><strong>$HOME/dir-04/dir-11/dir-12/dir-15/</strong></span>
+<span class="strong"><strong>$HOME/dir-04/dir-11/dir-12/dir-16/</strong></span>
+<span class="strong"><strong>$HOME/dir-04/dir-11/dir-12/dir-17/</strong></span>
+<span class="strong"><strong>$HOME/dir-04/dir-11/dir-12/dir-18/dir-19/</strong></span>
+<span class="strong"><strong>$HOME/dir-04/dir-11/dir-12/dir-18/dir-20/</strong></span>
+<span class="strong"><strong>"@</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec196"></a>How it works…</h3></div></div></div><p>Here-Strings help you write text blocks, including line breaks. You do not <span>need</span><a id="id326352521" class="indexterm"></a> to use line break escape sequences to do this. Here, strings begin with <code class="literal">@'</code> or <code class="literal">@"</code>, and end with <code class="literal">'@</code> or <code class="literal">"@</code>. There are a few conditions to writing here-strings, though:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The string beginner (<code class="literal">@'</code> or <code class="literal">@"</code>) should not be followed by anything—even a trailing white space</li><li style="list-style-type: disc">The string terminator (<code class="literal">'@</code> or <code class="literal">"@</code>) should be at the very beginning of the prompt or the line—no leading characters</li></ul></div><p>This means that the content should not fall on either of these lines. </p><p>Here-strings preserve everything that you mention within the text block. Therefore, if your text block contains four spaces before the first character in every line, those would be preserved too. Here-strings also come in expanding and non-expanding variants, and, as shown by the <code class="literal">Count</code> property, the entire content is a single string, not an array.</p><p>Then how do you create multiple files? Let's worry about that in the <span class="emphasis"><em>Splitting and combining strings</em></span> recipe.</p><p> </p></div></div>

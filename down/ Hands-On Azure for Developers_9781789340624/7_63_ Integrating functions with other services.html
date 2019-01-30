@@ -1,0 +1,59 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec65"></a>Integrating functions with other services</h2></div></div><hr /></div><p>In the last part of this chapter, we will <span>focus</span><a id="id325120030" class="indexterm"></a> a little bit on understanding how Azure Functions integrate with other Azure services. We will take a look at the available triggers and bindings and try to figure out the best use cases for them and how they really work. This section is designed in a way that enables you to explore more by yourself, thanks to a common understanding of how Azure Functions work.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec69"></a>Function file</h3></div></div></div><p>When you take a look at your <code class="literal">bin </code>directory, where <span>compiled</span><a id="id325120011" class="indexterm"></a> functions are available, you will find a bit of a different structure than in traditional applications.</p><p>Here, you can find my folder from the exercise from this chapter:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/c64e790c-6580-4305-9e4d-baa4ae51dc30.png" /></div><p>As you can see, it contains the <code class="literal">Function1</code> directory, which contains one file named <code class="literal">function. json</code>. Here, you can find its content:</p><pre class="programlisting">{
+  "generatedBy": "Microsoft.NET.Sdk.Functions-1.0.14",
+  "configurationSource": "attributes",
+  "bindings": [
+    {
+      "type": "httpTrigger",
+      "methods": [
+        "get",
+        "post"
+      ],
+      "authLevel": "function",
+      "name": "req"
+    }
+  ],
+  "disabled": false,
+  "scriptFile": "../bin/HandsOnAzure.Function.dll",
+  "entryPoint": "HandsOnAzure.Function.Function1.Run"
+}</pre><p>It defines some metadata, which is further used by the function's runtime and the <code class="literal">bindings</code> field, which is a definition of used triggers. If you compare it with a code attribute, you will see that it is quite similar:</p><pre class="programlisting">[FunctionName("Function1")]
+public static async Task&lt;HttpResponseMessage&gt; Run(
+  [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]
+  HttpRequestMessage req, TraceWriter log)
+{
+}</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>When you compile your project, a compiler will produce a <code class="literal">function.json</code><span class="strong"><strong> </strong></span>file for each function defined in your code. Here, you can find the output for the event hub trigger:</p><pre class="programlisting">{
+  "generatedBy": "Microsoft.NET.Sdk.Functions-1.0.0.0",
+  "configurationSource": "attributes",
+  "bindings": [
+    {
+      "type": "eventHubTrigger",
+      "path": "myhub",
+      "connection": "EhConnection",
+      "name": "myEventHubMessage"
+    }
+  ],
+  "disabled": false,
+  "scriptFile": "..\\bin\\FunctionsTest.dll",
+  "entryPoint": "FunctionsTest.Hub.Run"
+}</pre><p>As you can see, it has the same structure and only the <code class="literal">bindings</code> field differs, so it reflects another trigger type.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip105"></a>Note</h3><p>Note that the content and structure of <code class="literal">function.json</code> may differ depending on the SDK version used. Do not use it in your application directly to avoid problems that have a lack of backward compatibility.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec70"></a>Input/output bindings</h3></div></div></div><p>Some bindings are bi-directional,  while some can be used <span>only</span><a id="id325115399" class="indexterm"></a> one way. What's more, not every binding can be used as a trigger. An example of both bi-directional and trigger binding is Azure Blob Storage<span class="emphasis"><em>.</em></span> Here, you can find an example of how it works as a trigger:</p><pre class="programlisting">[FunctionName("BlobTriggerCSharp")] 
+public static void Run([BlobTrigger("my-blobs/{name}")] Stream myBlob, string name, TraceWriter log)
+{
+}</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>Compare it with an example of a function triggered by a queue, but accepting blob as input:</p><pre class="programlisting">[FunctionName("BlobInput")]
+public static void BlobInput(
+  [QueueTrigger("myqueue-items")] string myQueueItem,
+  [Blob("samples-workitems/{queueTrigger}", FileAccess.Read)] Stream myBlob,
+  TraceWriter log)
+{
+}</pre><p>As you can see, I used the same syntax in both cases besides one thing—I declared <code class="literal">FileAccess.Read</code><span class="strong"><strong> </strong></span>to tell the runtime that this is not a trigger. Here is another example of output:</p><pre class="programlisting">[FunctionName("ResizeImage")]
+public static void ResizeImage_Run(
+  [BlobTrigger("sample-images/{name}")] Stream image,
+  [Blob("sample-images-sm/{name}", FileAccess.Write)] Stream imageSmall,
+  [Blob("sample-images-md/{name}", FileAccess.Write)] Stream imageMedium)
+{
+  // There goes your code...
+}</pre><p>As you can see, the syntax is still similar—the only thing that has changed is the <code class="literal">FileAccess</code> value. There are also other possibilities for using the return value of a function. Here, you can find out how to define the result by using an attribute:</p><pre class="programlisting">[FunctionName("QueueTrigger")]
+[return: Blob("output-container/{id}")]
+public static string QueueTrigger_Run([QueueTrigger("myqueue")] string input, TraceWriter log)
+{
+  return "Some string...";
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec71"></a>Custom bindings</h3></div></div></div><p>While Azure Functions offer a variety of <span>different</span><a id="id325128389" class="indexterm"></a> bindings for many different scenarios, sometimes, you want a custom functionality that is not available. In such cases, it is possible to create a custom binding, which I mentioned earlier in this chapter. To generate it, you need the following things:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">An attribute decorated with the <code class="literal">[Binding]</code><span class="strong"><strong> </strong></span>attribute</li><li style="list-style-type: disc">An implementation of the <code class="literal">IBindingProvider</code> interface
+</li><li style="list-style-type: disc">An implementation of the <code class="literal">IBinding</code> interface</li><li style="list-style-type: disc">An implementation of the <code class="literal">IExtensionConfigProvider</code> interface</li></ul></div><p>By providing all of the preceding implementations, your binding will be automatically fetched by the runtime and enabled. If everything is set correctly, you will be notified of this during runtime start:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/93267b93-fe9e-411e-a162-b98139d66afc.png" /></div><p>In the preceding screenshot, you can see that the runtime extracted <code class="literal">IdentityExtensionConfig Provider</code> from my code, which will be used later when resolving my custom binding.</p></div></div>

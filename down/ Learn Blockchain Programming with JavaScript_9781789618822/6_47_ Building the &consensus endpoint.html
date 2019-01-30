@@ -1,0 +1,98 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec49"></a>Building the /consensus endpoint</h2></div></div><hr /></div><p>Now, let's build the <code class="literal">/consensus</code> endpoint, which <span>will</span><a id="id325458919" class="indexterm"></a> use the <code class="literal">chainIsValid</code> method that we built in the previous section. Carry out the following steps to build the endpoint:  </p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Let's go to <code class="literal">networkNode.js</code> file and, after the <code class="literal">/register-node-bulk</code> endpoint, define the <code class="literal">/consensus</code> endpoint as follows:</li></ol></div><pre class="programlisting">app.get('/consensus', function(req, res) { 
+
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Next, inside of the <code class="literal">/consensus</code> endpoint, let's make a request to every other node inside of the blockchain network to get their copies of the blockchain and compare them to the copy of the blockchain that's hosted on the current node that we're currently on:</li></ol></div><pre class="programlisting">app.get('/consensus', function(req, res) {
+<span class="strong"><strong>bitcoin.networkNodes.forEach(networkNodeUrl =&gt; {</strong></span>
+
+<span class="strong"><strong>        });         </strong></span>
+
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Inside of this <code class="literal">forEach</code> loop, let's do the same things that we've done countless times while defining the other endpoints in the previous chapters. So, the first thing we have to do for the requests is define some options as follows:</li></ol></div><pre class="programlisting">app.get('/consensus', function(req, res) {
+        bitcoin.networkNodes.forEach(networkNodeUrl =&gt; {
+<span class="strong"><strong>const requestOptions = {</strong></span>
+<span class="strong"><strong>                        uri: networkNodeUrl + '/blockchain',</strong></span>
+<span class="strong"><strong>                        method: 'GET',</strong></span>
+<span class="strong"><strong>                        json: true </strong></span>
+<span class="strong"><strong>                }</strong></span>
+
+        });         
+
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>After defining the options, we need to <code class="literal">request-promise</code> the <code class="literal">requestOptions</code> and push all of these requests into a promise array because each of these requests returns a promise to us: </li></ol></div><pre class="programlisting">app.get('/consensus', function(req, res) {
+<span class="strong"><strong>const requestPromises = [];</strong></span>
+        bitcoin.networkNodes.forEach(networkNodeUrl =&gt; {
+                const requestOptions = {
+                        uri: networkNodeUrl + '/blockchain',
+                        method: 'GET',
+                        json: true 
+                }        
+<span class="strong"><strong>requestPromises.push(rp(requestOptions));</strong></span>
+        });         
+
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Once the <code class="literal">forEach</code> loop has ran, we'll have an array that's filled up with all of the requests. Next, let's run the requests as follows: </li></ol></div><pre class="programlisting">app.get('/consensus', function(req, res) {
+        const requestPromises = [];
+        bitcoin.networkNodes.forEach(networkNodeUrl =&gt; {
+                const requestOptions = {
+                        uri: networkNodeUrl + '/blockchain',
+                        method: 'GET',
+                        json: true 
+                }        
+                requestPromises.push(rp(requestOptions));
+        });         
+<span class="strong"><strong> Promise.all(requestPromises)</strong></span></pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Then, let's use the data that we receive from all of these promises. This data that we're receiving is going to be an array of blockchains from every node inside of the network. So, after the preceding line of code, let's define the code as follows: </li></ol></div><pre class="programlisting">.then(blockchains =&gt; {
+
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Now let's iterate through all of these <code class="literal">blockchains</code> that came from the other nodes inside of the network, and see if there is a blockchain inside of the other node that is longer than the copy of the blockchain hosted on the current node. We'll start by cycling through all of the blockchains that we got in the responses:</li></ol></div><pre class="programlisting">.then(blockchains =&gt; {
+<span class="strong"><strong>blockchains.forEach(blockchain =&gt; {                </strong></span>
+<span class="strong"><strong>            //....</strong></span>
+<span class="strong"><strong>        });</strong></span>
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="8" type="1"><li>Basically, all we want to do inside of the <code class="literal">forEach</code> loop is identify whether one of the blockchains from the other nodes in the network is <span>longer</span><a id="id325698326" class="indexterm"></a> than the blockchain hosted on the current node. In order to do this, let's define a couple of variables to keep track of all of the data, as follows. The first variable that we want to define is the length of the blockchain hosted on the current node:</li></ol></div><pre class="programlisting">.then(blockchains =&gt; {
+<span class="strong"><strong>const currentChainLength = bitcoin.chain.length;</strong></span>
+        blockchains.forEach(blockchain =&gt; {                
+            //....
+        });
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="9" type="1"><li>Next, let's define a variable that will change if we come across a longer blockchain in the <code class="literal">blockchains</code> array. The first thing we want to define is the <code class="literal">maxChainLength</code> variable:</li></ol></div><pre class="programlisting">.then(blockchains =&gt; {
+        const currentChainLength = bitcoin.chain.length;
+<span class="strong"><strong>let maxChainLength = currentChainLength;</strong></span>
+        blockchains.forEach(blockchain =&gt; {                
+            //....
+        });
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="10" type="1"><li>Next, we want to define a variable called <code class="literal">newLongestChain</code>. Initially we're going to set it as equal to null:</li></ol></div><pre class="programlisting">.then(blockchains =&gt; {
+        const currentChainLength = bitcoin.chain.length;
+        let maxChainLength = currentChainLength;
+<span class="strong"><strong> let newLongestChain = null;</strong></span>
+        blockchains.forEach(blockchain =&gt; {                
+            //....
+        });
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="11" type="1"><li>Then, the last variable that we'll define will be called <code class="literal">newPendingTransactions</code>. Let's set this as equal to <code class="literal">null</code> initially, as well:</li></ol></div><pre class="programlisting">.then(blockchains =&gt; {
+        const currentChainLength = bitcoin.chain.length;
+        let maxChainLength = currentChainLength;
+<span class="strong"><strong></strong></span>let newLongestChain = null;
+        let newPendingTransactions = null;
+        blockchains.forEach(blockchain =&gt; {                
+            //....
+        });
+});</pre><div class="orderedlist"><ol class="orderedlist arabic" start="12" type="1"><li>Now, inside the <code class="literal">forEach</code> loop, we're looking to see if there is a longer chain inside of the blockchain network than is currently on the node that we are on. If there is a longer chain inside the network, then change these aforementioned variables to reflect that. Consequently, inside of the <code class="literal">forEach</code> loop, define the <code class="literal">this</code> condition as follows:</li></ol></div><pre class="programlisting">.then(blockchains =&gt; {
+        const currentChainLength = bitcoin.chain.length;
+        let maxChainLength = currentChainLength;
+<span class="strong"><strong></strong></span>let newLongestChain = null;
+        let newPendingTransactions = null;
+        blockchains.forEach(blockchain =&gt; {                
+<span class="strong"><strong>if (blockchain.chain.length &gt; maxChainLength) {</strong></span>
+<span class="strong"><strong>                    maxChainLength = blockchain.chain.length;</strong></span>
+<span class="strong"><strong>                    newLongestChain = blockchain.chain;</strong></span>
+<span class="strong"><strong>                    newPendingTransactions =</strong></span>
+<span class="strong"><strong>                    blockchain.pendingTransactions;</strong></span>
+<span class="strong"><strong>            };</strong></span>
+        });
+});</pre><p>Now, after the <code class="literal">forEach</code> loop has ran, we'll have all of the data required to determine if we need to replace the chain that is hosted on this current node. Next, after the loop, let's define the following conditions: </p><pre class="programlisting">if (!newLongestChain || (newLongestChain &amp;&amp;
+    !bitcoin.chainIsValid(newLongestChain))) 
+{
+         res.json({
+             note: 'Current chain has not been replaced.',
+             chain: bitcoin.chain
+         });
+}</pre><p>Basically, what we're stating in this <code class="literal">if</code> statement is that if there is no <code class="literal">newLongestChain</code> meaning, then the current chain is the longest. Alternatively, if there is a new longest chain but that new chain is not valid, then in these two cases we don't want to replace the blockchain that's hosted on the current node. So we're going to send back the note that says 'Current chain has not been replaced'.</p><p>Otherwise, if there is a <code class="literal">newLongestChain</code> and that chain is valid, now is when we want to replace the blockchain that's hosted on the current node with the longest <span>chain</span><a id="id325704789" class="indexterm"></a> in the network. We'll define all this inside of the else block as follows: </p><pre class="programlisting">else {
+         bitcoin.chain = newLongestChain;
+         bitcoin.pendingTransactions = newPendingTransactions;
+         res.json({
+                       note: 'This chain has been replaced.',
+                       chain: bitcoin.chain
+         });
+}</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec40"></a>Quick review of the build process</h3></div></div></div><p>The first thing that we did in this <span>endpoint</span><a id="id326365056" class="indexterm"></a> is made requests to all of the other nodes in the network so that we could access the blockchain that is hosted on each of them. After we ran all of these requests, we then had access to all of the blockchains that are hosted on all of the other nodes inside of the network. We then iterate through all of the other blockchains inside of the network with the help of the <code class="literal">forEach</code> loop. And as we iterated through the other blockchains, and if we find a longer chain we then update the <code class="literal">maxChainLength</code>, <code class="literal">newLongestChain</code>, and <code class="literal">newPendingTransactions</code> variables to reflect that. Then, when the <code class="literal">forEach</code> loop is complete, we'll know if there is a chain on the network longer than the blockchain hosted on the current node. If there is a longer chain found inside of the network, we'll have access to the <code class="literal">pendingTransactions</code> of that blockchain. So, after the <code class="literal">forEach</code> loop has ran, we'll then have access to all of the data necessary to replace the erroneous blockchain that's hosted on the current node.</p><p><span>We then state</span> whether there is no new longer chain or if there is no chain longer than the blockchain hosted on the current node. If there is a longer chain inside of the network, but that chain is not valid, then in both of these cases we do not want to replace the blockchain that's hosted on the current node, so we simply send back a response that says the current chain has not been replaced.</p><p>On the other hand, if there is a longer chain inside of the network and that chain is valid, then we'll want to replace the blockchain that's hosted on the current node. We simply send back a response saying that this chain has been replaced, as well as sending back the new blockchain.</p><p>This is how the consensus algorithm and the <code class="literal">/consensus</code> endpoint will work.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec41"></a>Testing the /consensus endpoint</h3></div></div></div><p>Let's test the consensus <span>endpoint</span><a id="id326390907" class="indexterm"></a> that we just built. So, what should this <code class="literal">/consensus</code> endpoint do? When we call the <code class="literal">/consensus</code> endpoint on a specific node, it should confirm for us that that particular node has the correct blockchain data in it, and the node is in sync with the rest of the network. Let's get started with building the test:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Our first step is to make a network that consists of the first four nodes. So let's go to Postman and hit the register-and-broadcast-node endpoint on the node that's hosted on <code class="literal">3001</code>.</li><li>Let's add the second node to the network, as seen in the following screenshot. We'll then click on the <strong class="userinput"><code>Send</code></strong> button, receiving the response, <strong class="userinput"><code>New node registered with network successfully</code></strong>: </li></ol></div><div class="mediaobject"><img src="/graphics/9781789618822/graphics/4e3af0fa-8650-4192-a1fa-1d08ef2c1d65.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Similarly, you can register the remaining nodes, <code class="literal">3003</code> and <code class="literal">3004</code>, to the network. Now, if you go to the browser and check all the nodes, you will observe that all the nodes from <code class="literal">3001</code> to <code class="literal">3004</code> are connected to each other, but node 3005 is not. </li><li>Next, what we want to do is mine a couple of blocks on the blockchain network, except for the fifth node. So in the browser, let's hit <code class="literal">localhost: 3001/mine</code>. This will mine one block for us on node <code class="literal">3001</code>.</li><li>Similarly, let's mine two blocks on <code class="literal">localhost:3003</code> and one block on <code class="literal">localhost:3004</code>. Now, all of these nodes should have five blocks in them. You verify this by hitting <code class="literal">localhost:3001/blockchain</code>in the browser. You will get to observe all five of the blocks that we just added. </li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>At this point, we want to connect the fifth node to the blockchain network. So, let's go to Postman and send the request for 3005, as seen in the following screenshot: </li></ol></div><div class="mediaobject"><img src="/graphics/9781789618822/graphics/e1c82192-6f01-4bbb-ae87-5d0bbf24907e.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>So now, node <code class="literal">3005</code> should be connected to the network. You can verify this in the browser as follows: </li></ol></div><div class="mediaobject"><img src="/graphics/9781789618822/graphics/d9d70d47-2c9f-46d6-9ab6-a482de408227.png" /></div><p>Now that <code class="literal">3005</code> is part of the network, this is where the problem arises: node <code class="literal">3005</code> does not have the correct blockchain data inside of the blockchain. It <span>should</span><a id="id326269736" class="indexterm"></a> have all of the five blocks that the other nodes have. This is where the <code class="literal">/consensus</code> endpoint comes into play. We should be able to hit the <code class="literal">/consensus</code> endpoint and resolve this issue. After we do this, we should expect the blockchain on node <code class="literal">3005</code> to have the same data as all the other nodes inside of the network.</p><p>Let's try this now. Open another tab in the browser, and in the address bar, type <code class="literal">localhost:3005/consensus</code> and then run it by pressing <span class="emphasis"><em>Enter</em></span>. You should observe similar output to that seen in the following screenshot: </p><div class="mediaobject"><img src="/graphics/9781789618822/graphics/faa066e0-ea1a-4e20-ba1b-4abbe0e53aba.png" /></div><p>In the preceding screenshot, we get the response, <strong class="userinput"><code>This chain has been replaced</code></strong>, and the new blockchain data then replaces the old data on this node. Let's verify this node by going to another tab in the browser and hitting <code class="literal">localhost:3005/blockchain</code>. You'll see that all the blocks that were present in the network are added to the node on <code class="literal">3005</code>. Thus the node on <code class="literal">3005</code> now has the correct blockchain data. We achieved this by hitting the <code class="literal">/consensus</code> endpoint on node <code class="literal">3005</code>. Now, all of the nodes inside of the blockchain network should have exactly the same data.  </p><p>Now, if you again try to hit the <code class="literal">/consensus</code> endpoint on the node on <code class="literal">3005</code>, we would get the following response:</p><div class="mediaobject"><img src="/graphics/9781789618822/graphics/8bc60b83-16d1-46db-9d3a-323d8ee35ebd.png" /></div><p> </p><p> </p><p>We received such a response because all the blocks that were present in the network were already added to node <code class="literal">3005</code> when we previously ran the consensus endpoint. </p><p>From this test, we can <span>conclude</span><a id="id326292565" class="indexterm"></a> that the <code class="literal">/consensus</code> works perfectly and as expected. The <code class="literal">/consensus</code> endpoint has the ability to correct a node inside of the blockchain if it has the wrong data. </p><p>It is recommended that you mess around with the <code class="literal">/consensus</code> endpoint and test it in different ways. Add some transactions to the data and make sure that it correctly resolves nodes that hold the wrong data. By testing this endpoint a little bit more, you will become more familiar with how it is works under the hood.</p></div></div>

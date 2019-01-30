@@ -1,0 +1,40 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec55"></a>Implementing a RESTful service using Jersey</h2></div></div><hr /></div><p>So far, we have <span>discussed</span><a id="id325813061" class="indexterm"></a> what web services are, how to implement <span>them</span><a id="id325813052" class="indexterm"></a> in a REST style, and the different HTTP methods and status codes. Now that we're familiar with these, let's take a look at the RESTful services in action.</p><p>We use Jersey to implement a RESTful web service. <span class="strong"><strong>Jersey RESTful Web Services</strong></span> is an open source framework for developing RESTful web services. It is a reference implementation of JAX-RS and it provides support for JAX-RS APIs. It adds some of its own features and APIs that extend from the JAX-RS toolkit for the simplification of web service development. </p><p>We will create a Maven web project, add the Jersey dependency, and define resources and functions in order to respond to the HTTP request.</p><p>Create a Maven web project and add the dependencies as follows:</p><pre class="programlisting">&lt;dependency&gt;
+    &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+    &lt;artifactId&gt;jersey-server&lt;/artifactId&gt;
+    &lt;version&gt;${jersey.version}&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+    &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+    &lt;artifactId&gt;jersey-json&lt;/artifactId&gt;
+    &lt;version&gt;&gt;${jersey.version}&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+    &lt;groupId&gt;com.sun.jersey&lt;/groupId&gt;
+    &lt;artifactId&gt;jersey-client&lt;/artifactId&gt;
+    &lt;version&gt;&gt;${jersey.version}&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+    &lt;groupId&gt;org.jetbrains.kotlin&lt;/groupId&gt;
+    &lt;artifactId&gt;kotlin-stdlib&lt;/artifactId&gt;
+    &lt;version&gt;${kotlin.version}&lt;/version&gt;
+&lt;/dependency&gt;</pre><p>Let's write a really simple resource to start with. We will define a resource with a <code class="literal">@GET</code> annotation that returns a string as follows:</p><pre class="programlisting">@Path("/home")
+public class Controller { 
+    @GET
+    fun home(): String {
+        return "hello"
+    }
+}</pre><p>Here we have defined a resource, <code class="literal">/home</code>, and a function, <code class="literal">home()</code>, that just return a string. Build this application and deploy it on a server.</p><p>We have deployed the service developed on Tomcat on port <code class="literal">8080</code>. When we access <code class="literal">localhost:8080/home</code>, the browser sends a <code class="literal">GET</code> request and the endpoint, <code class="literal">/home</code>, is mapped to the <code class="literal">home()</code> function, which returns the string message. The following screenshot depicts this:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/b08e33c2-9b5f-4ad8-9c94-630aa7740b46.png" /></div><p>Similarly, let's <span>add</span><a id="id325601656" class="indexterm"></a> another <span>resource</span><a id="id325601665" class="indexterm"></a> called <code class="literal">/greet</code> like this:</p><pre class="programlisting">@Path("/greet")
+public class HelloWorld {
+
+    @GET
+    @Path("{parameter}")
+    fun greet(@PathParam("parameter") name: String): Response {
+        val response = "Hello : $name"
+        return Response.status(200)
+                       .entity(response)
+                       .build()
+    }
+}</pre><p>This resource is accessible via <code class="literal">localhost:8080/greet/{{name}}</code>. Once we invoke this resource, we get a greet message back. Consider the following screenshot:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/94786c09-cc25-4c8e-b49d-a9f1c65b04bb.png" /></div><p>We have now created a simple application to illustrate RESTful web services.</p></div>

@@ -1,0 +1,112 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec78"></a>User interface testing</h2></div></div><hr /></div><p>In order to test the high level of our application's code and to <span>create</span><a id="id324974901" class="indexterm"></a> system tests, we will write tests that work with browsers, and verify that the UI code is functioning properly. Using a tool called Selenium, we will create Python code that hooks into a browser and controls it purely from code. This works by finding elements on the screen, and then performing actions on those elements through Selenium. <span>Click on it or input keystrokes.</span> Also, Selenium allows you to perform checks on the page content by giving you access to the elements' content, such as their attributes and inner text. For more advanced checks, Selenium even has an interface which can run arbitrary JavaScript on the page. If the JavaScript returns a value, it is automatically converted into a Python type.</p><p>Before we touch the code, Selenium needs to be installed. Make sure you have your virtualenv activated, and that Selenium is included in the <code class="literal">requirements.txt</code> file:</p><pre class="programlisting">...    
+selenium
+...</pre><p> </p><p> </p><p>To begin with the code, our UI tests need a file of their own in the <code class="literal">tests</code> directory, named <code class="literal">test_ui.py</code>. Because system tests do not test one specific thing, the best way to write user interface tests is to think of the test as going through a typical user's flow. Before you write the test itself, write down the specific steps that our fake user is going to simulate:</p><pre class="programlisting">import unittest 
+ 
+ 
+class TestURLs(unittest.TestCase): 
+    def setUp(self): 
+        pass 
+ 
+    def tearDown(self): 
+        pass 
+ 
+    def test_add_new_post(self): 
+        """ Tests if the new post page saves a Post object to the 
+            database 
+ 
+            1. Log the user in 
+            2. Go to the new_post page 
+            3. Fill out the fields and submit the form 
+            4. Go to the blog home page and verify that the post  
+               is on the page 
+        """ 
+        pass </pre><p>Now that we know exactly what our test is going to do, let's start adding in the Selenium code. In the <code class="literal">setUp</code> and <code class="literal">tearDown</code> methods, we need code to start up a web browser that will Selenium control, and then close it when the test is over:</p><pre class="programlisting">import unittest 
+from selenium import webdriver
+ 
+class TestURLs(unittest.TestCase): 
+    def setUp(self): 
+        self.driver = webdriver.Chrome() 
+ 
+    def tearDown(self): 
+        self.driver.close()</pre><p> </p><p>This code spawns a new Firefox window with Selenium controlling it. For this to work, of course, you need Firefox installed on your computer. Selenium does have support for other browsers, but using others requires an extra program in order for it to work correctly. Firefox thus has the best support out of all the browsers.</p><p>Before we write the code for the test, let's explore the Selenium API as follows:</p><pre class="programlisting"><span class="strong"><strong>$ python</strong></span><span class="strong"><strong>&gt;&gt;&gt; from selenium import webdriver</strong></span><span class="strong"><strong>&gt;&gt;&gt; driver = webdriver.Chrome()</strong></span><span class="strong"><strong># load the Google homepage</strong></span><span class="strong"><strong>&gt;&gt;&gt; driver.get("http://www.google.com")</strong></span><span class="strong"><strong># find a element by its class</strong></span><span class="strong"><strong>&gt;&gt;&gt; search_field = driver.find_element_by_class_name("gsfi")</strong></span><span class="strong"><strong># find a element by its name</strong></span><span class="strong"><strong>&gt;&gt;&gt; search_field = driver.find_element_by_name("q")</strong></span><span class="strong"><strong># find an element by its id</strong></span><span class="strong"><strong>&gt;&gt;&gt; search_field = driver.find_element_by_id("lst-ib")</strong></span><span class="strong"><strong># find an element with JavaScript</strong></span><span class="strong"><strong>&gt;&gt;&gt; search_field = driver.execute_script(</strong></span><span class="strong"><strong>    "return document.querySelector('#lst-ib')"</strong></span><span class="strong"><strong>)</strong></span><span class="strong"><strong># search for flask</strong></span><span class="strong"><strong>&gt;&gt;&gt; search_field.send_keys("flask")</strong></span><span class="strong"><strong>&gt;&gt;&gt; search_button = driver.find_element_by_name("btnK")</strong></span><span class="strong"><strong>&gt;&gt;&gt; search_button.click()</strong></span></pre><p>These are the main functions from Selenium that we will be using, but there are many other ways to find and interact with elements on the web page.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip42"></a>Note</h3><p>For the full list of available features, refer to the Selenium-Python documentation at <a class="ulink" href="http://selenium-python.readthedocs.org" target="_blank"><span>http://selenium-python.readthedocs.org</span></a>.</p></div><p>There are two gotchas in Selenium that need to be kept in mind while writing your tests, or you will run into very odd bugs that are almost impossible to debug from their error messages:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Selenium is designed to work as if there is an actual person controlling the browser. This means that, if an element cannot be seen on the page, Selenium cannot interact with it. For example, if an element covers another element that you wish to click on—say, a modal window is in front of a button—then the button cannot be pushed. If the element's CSS has its display set to <code class="literal">none</code>, or its visibility set to <code class="literal">hidden</code>, the results will be the same.</li><li style="list-style-type: disc">All of the variables that point toward elements on the screen are stored as pointers to those elements in the browser, meaning they are not stored in Python's memory. If the page changes without using the <code class="literal">get</code> method, such as when a link is clicked and a new element pointer is created, then the test will crash. This happens because the driver will continuously be looking for the elements on the previous page, and not finding them on the new one. The <code class="literal">get</code> method of the driver clears out all those references.</li></ul></div><p>In the preceding tests, we used the test client in order to simulate a request to the application object. However, because we are now using something that needs to directly interface with the application through a web browser, we need an actual server to be running. This server needs to be run in a separate Terminal window before the user interface tests are run, so that the latter have something to request. To do this, we need a separate Python file in order to run the server with our test configuration, as well as needing to set up some models for our UI tests to use. At the root of the project directory, in a new file named <code class="literal">run_test_server.py</code>, add the following:</p><pre class="programlisting">from webapp import create_app 
+from webapp.models import db, User, Role 
+ 
+app = create_app('config.TestConfig') 
+ 
+db.app = app 
+db.create_all() 
+ 
+default = Role("default") 
+poster = Role("poster") 
+db.session.add(default) 
+db.session.add(poster) 
+db.session.commit() 
+ 
+test_user = User("test") 
+test_user.set_password("test") 
+test_user.roles.append(poster) 
+db.session.add(test_user) 
+db.session.commit() 
+ 
+app.run() </pre><p>Now that we have both the test server script and some knowledge of Selenium's API, we can finally write the code for our test:</p><pre class="programlisting">import time
+import unittest
+from selenium import webdriver
+
+
+class TestURLs(unittest.TestCase):
+def setUp(self):
+self.driver = webdriver.Chrome()
+
+def tearDown(self):
+self.driver.close()
+
+def test_add_new_post(self):
+""" Tests if the new post page saves a Post object to the
+            database
+
+            1. Log the user in
+            2. Go to the new_post page
+            3. Fill out the fields and submit the form
+            4. Go to the blog home page and verify that the post is
+               on the page
+        """
+# login
+self.driver.get("http://localhost:5000/auth/login")
+
+        username_field = self.driver.find_element_by_name("username")
+        username_field.send_keys("test")
+
+        password_field = self.driver.find_element_by_name("password")
+        password_field.send_keys("test")
+
+        login_button = self.driver.find_element_by_id("login_button")
+        login_button.click()
+
+# fill out the form
+self.driver.get("http://localhost:5000/blog/new")
+
+        title_field = self.driver.find_element_by_name("title")
+        title_field.send_keys("Test Title")
+
+#Locate the CKEditor iframe
+time.sleep(3)
+        basic_page_body_xpath = "//div[contains(@id, 'cke_1_contents')]/iframe"
+ckeditor_frame = self.driver.find_element_by_xpath(basic_page_body_xpath)
+
+#Switch to iframe
+self.driver.switch_to.frame(ckeditor_frame)
+        editor_body = self.driver.find_element_by_xpath("//body")
+        editor_body.send_keys("Test content")
+self.driver.switch_to.default_content()
+
+        post_button = self.driver.find_element_by_class_name("btn-primary")
+        post_button.click()
+
+# verify the post was created
+self.driver.get("http://localhost:5000/blog")
+self.assertIn("Test Title", self.driver.page_source)
+self.assertIn("Test content", self.driver.page_source)
+
+
+if __name__ == "__main__":
+    unittest.main()</pre><p>Most of this test uses the methods that we introduced earlier. However, there is a new method in this test, named <code class="literal">switch_to</code>. The <code class="literal">switch_to</code> method is the context of the driver that allows the selection of elements inside an <code class="literal">iframe</code> element. Normally, it's impossible for the parent window to select any elements inside an <code class="literal">iframe</code>element using JavaScript, but because we are directly interfacing with the browser itself, we can access an <code class="literal">iframe</code> element's contents. We need to <span>switch contacts like these</span>, because the WYSIWYG editor inside the post creation page uses <code class="literal">iframe</code> in order to <span>create</span><a id="id325378693" class="indexterm"></a> itself. After we are done with selecting elements within the <code class="literal">iframe</code>, we need to switch back to the parent context using the <code class="literal">parent_frame</code> method.</p><p>You now have the tools that you need to completely test both your server code and your user interface code. For the rest of the chapter, we will focus on tools and methodologies, in order to make your testing even more effective in ensuring your application's <span>correctness</span>.</p><p> </p></div>

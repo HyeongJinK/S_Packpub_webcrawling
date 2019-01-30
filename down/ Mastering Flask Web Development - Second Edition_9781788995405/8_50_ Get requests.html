@@ -1,0 +1,116 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch08lvl1sec51"></a>Get requests</h2></div></div><hr /></div><p>For some of our <code class="literal">GET</code>, <code class="literal">PUT</code>, and <code class="literal">DELETE</code> requests, our API will need the ID of the post that is to be modified.</p><p>The data to be sent to the client must be a <span>representation</span><a id="id324993893" class="indexterm"></a> of the <code class="literal">Post</code> objects in JSON, so how will our <code class="literal">Post</code> objects be translated? <span>Flask Restful</span> provides a way of translating any object into JSON through the <code class="literal">fields</code> object and the <code class="literal">marshal_with</code> function decorator.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec60"></a>Output formatting</h3></div></div></div><p>The output format is defined by <span>creating</span><a id="id324993926" class="indexterm"></a> a dictionary of <code class="literal">field</code> objects that represent basic types. The key of the field defines what attribute the field will try to translate. By passing the dictionary to the <code class="literal">marshal_with</code> decorator, any object that the <code class="literal"><span>get</span></code> method attempts to return will be first translated using the dictionary. This also works for lists of objects. Let's look at a simple way of implementing this API endpoint. The following example code takes pagination into account, but we will show you how this works later.</p><p><span>Look at the following</span><code class="literal">api/blog/controllers.py</code> file:</p><pre class="programlisting">import datetime
+
+from flask import abort
+from flask_restful import Resource, fields, marshal_with
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from webapp.blog.models import db, Post, Tag
+from webapp.auth.models import User
+...
+
+<span class="strong"><strong>post_fields = {</strong></span>
+<span class="strong"><strong>'id': fields.Integer(),
+'author': fields.String(attribute=lambda x: x.user.username),
+'title': fields.String(),
+'text': HTMLField(),
+'tags': fields.List(fields.Nested(nested_tag_fields)),
+'publish_date': fields.DateTime(dt_format='iso8601')</strong></span>
+<span class="strong"><strong>}</strong></span>
+
+
+class PostApi(Resource):
+<span class="strong"><strong>@marshal_with(post_fields)</strong></span>
+    @jwt_required
+def get(self, post_id=None):
+if post_id:
+            post = Post.query.get(post_id)
+if not post:
+                abort(404)
+return post
+else:
+            posts = Post.query.all()
+            return posts</pre><p>While reloading the API in the browser, every <code class="literal">Post</code> object will be shown in JSON format. Note the <code class="literal">HTMLField</code> on the fields declaration. The problem is that the API should not return HTML from the WYSIWYG editor in the post creation form. As stated earlier, the server should not be concerned with the UI, and the HTML is purely for output specification. To solve this, we will need a custom field object that strips HTML from the strings. In a new file in the <code class="literal">api/blog/</code> folder named <code class="literal">fields.py</code>, we have the following:</p><pre class="programlisting"><span class="strong"><strong>try:</strong></span>
+<span class="strong"><strong># Try python3
+from html.parser import HTMLParser</strong></span>
+<span class="strong"><strong>except Exception as e:</strong></span>
+<span class="strong"><strong># Nop python2
+from HTMLParser import HTMLParser</strong></span>
+
+from flask_restful import fields
+
+
+class HTMLStripper(HTMLParser):
+    fed = list()
+
+def __init__(self):
+self.reset()
+self.fed = []
+
+def handle_data(self, d):
+self.fed.append(d)
+
+def get_data(self):
+return ''.join(self.fed)
+
+
+def strip_tags(html):
+    s = HTMLStripper()
+    s.feed(html)
+return s.get_data()
+
+
+class HTMLField(fields.Raw):
+def format(self, value):
+return strip_tags(str(value))</pre><p>The exception block is to take into account Python2 and Python3 compatibility, since the standard library has changed for the <code class="literal">HTMLParser</code> module in Python3. We now have a<code class="literal">strip_tags</code>function that will return any string that has been cleaned of HTML tags. A new field type, called <code class="literal">HTMLfield</code>, is defined by inheriting from the<code class="literal">fields.Raw</code>class and sending values through the<code class="literal">strip_tags</code>function. If the page is reloaded, all HTML is gone and only the text will remain.</p><p><span>Flask Restful</span> provides many default fields, as shown in the following list:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">fields.String</code>: This converts the value using <code class="literal">str()</code>.</li><li style="list-style-type: disc"><code class="literal">fields.FormattedString</code>: This passes the formatted string in Python with the variable name in brackets.</li><li style="list-style-type: disc"><code class="literal">fields.Url</code>: This provides the same functionality as the Flask <code class="literal">url_for</code> function.</li><li style="list-style-type: disc"><code class="literal">fields.DateTime</code>: This converts a Python <code class="literal">date</code> or <code class="literal">datetime</code> object to a string. The <code class="literal">format</code> keyword argument specifies whether the string should be an <code class="literal">ISO8601</code> date or an <code class="literal">RFC822</code> date.</li><li style="list-style-type: disc"><code class="literal">fields.Float</code>: This converts the value to a string representation of a float.</li><li style="list-style-type: disc"><code class="literal">fields.Integer</code>: This converts the value to a string representation of an integer.</li><li style="list-style-type: disc"><code class="literal">fields.Nested</code>: This allows nested objects to be represented by another dictionary of field objects.</li><li style="list-style-type: disc"><code class="literal">fields.List</code>: Much like the MongoEngine API, this field takes another field type as an argument and tries to convert a list of values into a JSON list of the field types.</li><li style="list-style-type: disc"><code class="literal">fields.Boolean</code>: This converts the value to a string representation of a <code class="literal">boolean</code> argument.</li></ul></div><p>There are two more fields that are added to the returned data: the author and the tags. The comments will be left out because they should be contained under their own resource.</p><p> </p><p> </p><p>The <code class="literal">author</code> field uses the attribute keyword argument of the <code class="literal">field</code> class. This allows any attribute of the object to be represented rather than just base-level properties. Because the many-to-many relationship of the tags returns a list of objects, the same solution cannot be used with the tags. A list of tag dictionaries can now be returned using the<code class="literal">NestedField</code>type inside a<code class="literal">ListField</code>and another dictionary of fields. This has the added benefit of givingthe end users of the APIa tag ID so that they can query as easily as if there were a tag API.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch08lvl2sec61"></a>Request arguments</h3></div></div></div><p>While sending a <code class="literal">GET</code> request to the <span>base</span><a id="id325792425" class="indexterm"></a> of the resource, our API currently sends all the <code class="literal">Post</code> objects in the database. This is acceptable if the number of objects is low or the number of people using the API is low. However, if either increases, the API will put a large amount of stress on the database. Much like the web interface, the API should be paginated as well.</p><p>In order to achieve this, our API will need to accept a <code class="literal">GET</code> query string parameter called <code class="literal">page</code> that specifies which page is to be loaded. <span>Flask Restful</span> provides a method to grab request data and parse it. If the required arguments aren't there, or the types don't match, Flask Restful will autocreate a JSON error message. In a new file in the <code class="literal">api/blog/</code> folder named <code class="literal">parsers.py</code>, you will find the following code:</p><pre class="programlisting">...
+from flask_restful import reqparse 
+...
+post_get_parser = reqparse.RequestParser() 
+post_get_parser.add_argument( 
+  'page', 
+  type=int, 
+  location=['args', 'headers'], 
+  required=False,
+) </pre><p>The following code is what we should have on the <code class="literal">PostApi</code> class when the request has no post ID key:</p><pre class="programlisting">from .parsers import post_get_parser 
+...
+class PostApi(Resource): 
+  @marshal_with(post_fields)
+  @jwt_required 
+  def get(self, post_id=None):
+    if post_id: 
+      .. 
+      return post
+    else:
+      <span class="strong"><strong>args = post_get_parser.parse_args() 
+      page = args['page'] or 1 
+      ...
+      posts = Post.query.order_by( 
+        Post.publish_date.desc() 
+      ).paginate(page, current_app.config.get('POSTS_PER_PAGE', 10))</strong></span>
+      ...
+      return posts.items </pre><p>In the preceding example, <code class="literal">RequestParser</code> looks for the <code class="literal">page</code> variable in either the query string or the request header and returns the page of <code class="literal">Post</code> objects from that page. Again, we are making the page size configurable with the same value as for the web view page version. We use the <code class="literal">current_app</code> Flask proxy to fetch any value from our configuration.</p><p>After a <span>parser</span> object is created with <code class="literal">RequestParser</code>, arguments can be added using the <code class="literal">add_argument</code> method. The first argument of <code class="literal">add_argument</code> is the key of the argument that is to be parsed, but <code class="literal">add_argument</code> also takes a lot of keyword arguments, as shown in the following list:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">action</code>: This is what the parser does with the value after it has been successfully parsed. The two available options are <code class="literal">store</code> and <code class="literal">append</code>. The <code class="literal">store</code> option adds the parsed value to the returned dictionary. The <code class="literal">append</code> options adds the parsed value to the end of a list in the dictionary.</li><li style="list-style-type: disc"><code class="literal">case_sensitive</code>: This is a boolean argument to allow or disallow the keys to be case insensitive.</li><li style="list-style-type: disc"><code class="literal">choices</code>: This is like MongoEngine, a list of the allowed values for the argument.</li><li style="list-style-type: disc"><code class="literal">default</code>: This is the value that is produced if the argument is absent from the request.</li><li style="list-style-type: disc"><code class="literal">dest</code>: This is the key to add the parsed value to in the returned data.</li><li style="list-style-type: disc"><code class="literal">help</code>: This is a message to return to the user if validation fails.</li><li style="list-style-type: disc"><code class="literal">ignore</code>: This is a boolean argument to allow or disallow failures of the type conversion.</li><li style="list-style-type: disc"><code class="literal">location</code>: This indicates where to look for the data. The locations available are as follows:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">args</code> to look in the <code class="literal">GET</code> query string</li><li style="list-style-type: disc"><code class="literal">headers</code> to look in the HTTP request headers</li><li style="list-style-type: disc"><code class="literal">form</code> to look in the HTTP <code class="literal">POST</code> data
+</li><li style="list-style-type: disc"><code class="literal">cookies</code> to look in the HTTP cookies</li><li style="list-style-type: disc"><code class="literal">json</code> to look in any sent <span>JSON</span></li><li style="list-style-type: disc"><code class="literal">files</code> to look in the <code class="literal">POST</code> file data</li></ul></div></li><li style="list-style-type: disc"><code class="literal">required</code>: This is a boolean argument to determine whether the argument is optional.</li><li style="list-style-type: disc"><code class="literal">store_missing</code>: This is a boolean argument to determine whether the default value should be stored if the argument is not in the request.</li><li style="list-style-type: disc"><code class="literal">type</code>: This is the Python type to convert the passed value.</li></ul></div><p>Using the Flask Restful parser, it is very easy to add new parameters to the API. For example, let's add a user argument that allows us to search for all posts that have been made by a user. First, in the <code class="literal">api/blog/parsers.py</code> file, we have the following:</p><pre class="programlisting">post_get_parser = reqparse.RequestParser()
+post_get_parser.add_argument('page', type=int, location=['args', 'headers'])
+post_get_parser.add_argument('user', type=str, location=['args', 'headers'])</pre><p>Then, in the <code class="literal">api/blog/controllers.py</code> file, we have the following:</p><pre class="programlisting">class PostApi(Resource):
+    @marshal_with(post_fields)
+    @jwt_required
+def get(self, post_id=None):
+if post_id:
+            ...
+return post
+else:
+            args = post_get_parser.parse_args()
+            page = args['page'] or 1
+
+<span class="strong"><strong>if args['user']:</strong></span>
+<span class="strong"><strong>                user = User.query.filter_by(username=args['user']).first()</strong></span>
+<span class="strong"><strong>if not user:</strong></span>
+<span class="strong"><strong>                    abort(404)</strong></span>
+
+                posts = user.posts.order_by(
+                    Post.publish_date.desc()
+         ).paginate(page, current_app.config.get('POSTS_PER_PAGE', 10))
+else:
+                posts = Post.query.order_by(
+                    Post.publish_date.desc()
+        ).paginate(page, current_app.config.get('POSTS_PER_PAGE', 10))
+return posts.items</pre><p> </p><p>When Flask's <code class="literal">abort</code> function is called from <code class="literal">Resource</code>, Flask Restful will automatically create an error message to be returned with the status code.</p><p>To test the API, we use <code class="literal">curl</code><span class="strong"><strong> </strong></span>for the sake of simplicity, but feel free to use any other tool available to interact with HTTP APIs. After requesting an access token from our authentication endpoint, request <code class="literal">post</code> with <code class="literal">id=1</code>, as follows:</p><pre class="programlisting"><span class="strong"><strong>$ curl -H "Authorization: Bearer $ACCESS" "http://localhost:5000/api/post/1"</strong></span></pre><p>Or you can request all posts as follows:</p><pre class="programlisting"><span class="strong"><strong>$ curl -H "Authorization: Bearer $ACCESS" "http://localhost:5000/api/post"</strong></span></pre><p>Note that the response only fetches the first page, as intended. Now let's request page two, as follows:</p><pre class="programlisting"><span class="strong"><strong>$ curl -H "Authorization: Bearer $ACCESS" "http://localhost:5000/api/post?page=2"</strong></span></pre><p>Finally, you can <span>request</span><a id="id324994742" class="indexterm"></a> for posts from a certain user as follows:</p><pre class="programlisting"><span class="strong"><strong>$ curl -H "Authorization: Bearer $ACCESS" "http://localhost:5000/api/post?user=user1"</strong></span></pre></div></div>

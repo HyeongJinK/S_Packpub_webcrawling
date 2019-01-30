@@ -1,0 +1,87 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec26"></a>Flask WTForms</h2></div></div><hr /></div><p>Adding forms to your application seems to be an easy task, but when <span>you</span><a id="id325021342" class="indexterm"></a> start coding the server-side code, the task of validating user input grows bigger and bigger as the form becomes more complex. Security is paramount, as the data is from an untrustworthy source, and is going to be entered into the database. <span class="strong"><strong>WTForms</strong></span> is a library that handles server form validation for you by checking input against common form types. Flask WTForms is a Flask extension that is built on top of WTForms that adds features, such as Jinja HTML rendering, and protects you against attacks, such as SQL injection and cross-site request forgery. This extension is already installed in your virtualenv, because it's declared in the <code class="literal">requirements.txt</code> file.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note17"></a>Note</h3><p>Protecting yourself against SQL injection and cross-site request forgery is extremely important, as these are the most common forms of attacks that your website will receive. To learn more about these attacks, visit <a class="ulink" href="https://en.wikipedia.org/wiki/SQL_injection" target="_blank"><span>https://en.wikipedia.org/wiki/SQL_injection</span></a> and <a class="ulink" href="https://en.wikipedia.org/wiki/Cross-site_request_forgery" target="_blank"><span>https://en.wikipedia.org/wiki/Cross-site_request_forgery</span></a> for information on SQL injection and cross-site request forgery, respectively.</p></div><p>To have Flask WTForms' security measures <span>working</span><a id="id325643514" class="indexterm"></a> properly, we will need a <span class="strong"><strong>secret key</strong></span>. A <span>secret</span><a id="id325643527" class="indexterm"></a> key is a random string of characters that will be used to cryptographically sign anything that needs to be tested for its authenticity. This cannot be just any string; it must be randomized and be of a certain length so that brute-force or dictionary attacks won't be able to crack it in any viable amount of time. To generate a <span>random</span><a id="id325787725" class="indexterm"></a> string, enter a Python session and enter the following:</p><pre class="programlisting"><span class="strong"><strong>$ python
+&gt;&gt;&gt; import os
+&gt;&gt;&gt; os.urandom(24)        '\xa8\xcc\xeaP+\xb3\xe8|\xad\xdb\xea\xd0\xd4\xe8\xac\xee\xfaW\x072@O3'</strong></span></pre><p>You should generate a different secret key for each environment. Just copy the output from <code class="literal">os.urandom</code> and paste it into each environment <code class="literal">config</code> class, as follows:</p><pre class="programlisting">class ProdConfig(object): 
+  SECRET_KEY = 'Your secret key here'
+....</pre><pre class="programlisting">class DevConfig(object): 
+  SECRET_KEY = 'The other secret key here'
+....</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec30"></a>WTForms basics</h3></div></div></div><p>There are three <span>main</span><a id="id325425370" class="indexterm"></a> parts of WTForms—<span class="strong"><strong>forms</strong></span>, <span class="strong"><strong>fields</strong></span>, and <span class="strong"><strong>validators</strong></span>. Fields are <span>representations</span><a id="id325425392" class="indexterm"></a> of input fields and perform rudimentary type checking, and validators are functions that are attached to <span>fields</span><a id="id325425400" class="indexterm"></a> that make sure that the data submitted in the form is within our constraints. The form is a class that contains fields and validators, and validates itself on a <code class="literal">POST</code> request. Let's see this in action to get a better idea. In the <code class="literal">main.py</code> file, add the following:</p><pre class="programlisting">from flask_wtf import FlaskForm as Form 
+from wtforms import StringField, TextAreaField 
+from wtforms.validators import DataRequired, Length 
+... 
+class CommentForm(Form): 
+  name = StringField( 
+    'Name', 
+    validators=[DataRequired(), Length(max=255)] 
+  ) 
+  text = TextAreaField(u'Comment', validators=[DataRequired()]) </pre><p>Here, we have a class that inherits from Flask WTForm's <code class="literal">Form</code> object and defines inputs with class variables that equal WTForm fields. The fields take an optional parameter, <code class="literal">validators</code>, which is a list of WTForm validators that will be applied to our data. The most commonly used fields are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">fields.DateField</code> and <code class="literal">fields.DateTimeField</code>: Represents a Python <code class="literal">date</code> or <code class="literal">datetime</code> object and takes an optional parameter format that takes a <code class="literal">stftime</code> format string to translate the data.</li><li style="list-style-type: disc"><code class="literal">fields.IntegerField</code>: This attempts to coerce passed data to an integer and is rendered in the template as a number input.</li><li style="list-style-type: disc"><code class="literal">fields.FloatField</code>: This attempts to coerce passed data to a float and is rendered in the template as a number input.</li><li style="list-style-type: disc"><code class="literal">fields.RadioField</code>: This represents a set of radio inputs and takes a <code class="literal">choices </code>parameter , which is a list of tuples that act as the displayed value and the returned value.</li><li style="list-style-type: disc"><code class="literal">fields.SelectField</code>: Along with <code class="literal">SelectMultipleField</code>, this represents a set of radio inputs. It takes a <code class="literal">choices </code>parameter, which is a list of tuples that act as the displayed and returned values.</li><li style="list-style-type: disc"><code class="literal">fields.StringField</code>: This represents a normal text input, and will <span>attempt</span><a id="id325449580" class="indexterm"></a> to coerce the returned data to a string.
+</li></ul></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note18"></a>Note</h3><p>For a full list of validators and fields, visit the WTForms documentation at <a class="ulink" href="http://wtforms.readthedocs.org" target="_blank"><span>http://wtforms.readthedocs.org</span></a>.</p></div><p>The most common validators are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">validators.DataRequired()</code></li><li style="list-style-type: disc"><code class="literal">validators.Email()</code></li><li style="list-style-type: disc"><code class="literal">validators.Length(min=-1, max=-1)</code></li><li style="list-style-type: disc"><code class="literal">validators.NumberRange(min=None, max=None)</code></li><li style="list-style-type: disc"><code class="literal">validators.Optional()</code></li><li style="list-style-type: disc"><code class="literal">validators.Regexp(regex)</code></li><li style="list-style-type: disc"><code class="literal">validators.URL()</code></li></ul></div><p>Each of these validations follows the Pythonic naming scheme. Therefore, it is rather straightforward as to what they do. All validators take an optional parameter called <code class="literal">message</code>, which is the error message that will be returned if the validator fails. If a message is not set, it uses the library defaults.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec31"></a>Custom validations</h3></div></div></div><p>Writing a custom validation function is very simple. All that is <span>required</span><a id="id325494935" class="indexterm"></a> is to write a function that takes the <code class="literal">form</code> object and the <code class="literal">field</code> object as parameters and raises a WTForm. A <code class="literal">ValidationError</code> is raised if the data does not pass the test. Here is an example of a custom email validator:</p><pre class="programlisting">import re 
+import wtforms 
+def custom_email(form, field): 
+  if not re.match(r"[^@]+@[^@]+.[^@]+", field.data): 
+    raise wtforms.ValidationError('Field must be a valid email 
+       address.')</pre><p>To use this function, just add it to the list of validators for your field.</p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec32"></a>Posting comments</h3></div></div></div><p>Now that we have our comment form and we <span>understand</span><a id="id325529854" class="indexterm"></a> how to build it, we need to add it to the start of our post view, as follows:</p><pre class="programlisting">@app.route('/post/&lt;int:post_id&gt;', methods=('GET', 'POST'))
+def post(post_id):
+    form = CommentForm()
+if form.validate_on_submit():
+        new_comment = Comment()
+        new_comment.name = form.name.data
+        new_comment.text = form.text.data
+        new_comment.post_id = post_id
+try:
+            db.session.add(new_comment)
+            db.session.commit()
+except Exception as e:
+            flash('Error adding your comment: %s' % str(e), 'error')
+            db.session.rollback()
+else:
+            flash('Comment added', 'info')
+return redirect(url_for('post', post_id=post_id))
+
+    post = Post.query.get_or_404(post_id)
+    tags = post.tags
+    comments = post.comments.order_by(Comment.date.desc()).all()
+    recent, top_tags = sidebar_data()
+
+return render_template(
+'post.html',
+post=post,
+tags=tags,
+comments=comments,
+recent=recent,
+top_tags=top_tags,
+form=form
+    )</pre><p>First, we add the <code class="literal">POST</code> method to the list of our view's allowed methods. Then, a new instance of our form object is created. The <code class="literal">validate_on_submit()</code> method then checks whether the Flask request is a <code class="literal">POST</code> request. If it is a <code class="literal">POST</code> request, it sends the request form data to the form object. If the data is validated, then <code class="literal">validate_on_submit()</code> returns <code class="literal">True</code> and adds the data to the <code class="literal">form</code> object. We then take the data from each field, populate a new comment, and add it to the database. Note how we don't need to fill in the comment data, because we have set a default value for it in the SQLAlchemy model definition—in this case, the <code class="literal">datatime.now</code> function that is going to be evaluated upon the object creation.</p><p>It is also important to ensure that we wrap all our database calls with a <code class="literal">try</code>/<code class="literal">except</code> block, and in the case of an error, roll back the session transaction and send proper feedback to the users.</p><p>Note the final <code class="literal">redirect</code> Flask call to the same endpoint, this time with an <code class="literal">HTTP GET</code>. This means that after a user inserts a new comment, the same page is rendered again with a clean form and shows the newly added comment. </p><p>If the form does not validate, or if we are handling an <code class="literal">HTTP GET</code>, we fetch the <code class="literal">Post</code> object from the database <span>by</span><code class="literal">post_id</code>, collect all the related comments, and finally get all the necessary side-bar data.</p><p>The template itself is divided into three main sections. The first renders the post, the second displays the form where the user can submit a new comment about the post, and the third is where we render all the comments related to the post. Let's focus on the third section, as shown in the following code:</p><pre class="programlisting">&lt;div class="p-4 shadow-sm"&gt;
+    &lt;div class="row"&gt;
+        &lt;div class="col"&gt;
+            &lt;h4&gt;New Comment:&lt;/h4&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="row"&gt;
+        &lt;div class="col"&gt;
+<span class="strong"><strong>            &lt;form method="POST" action="{{ url_for('post', 
+            post_id=post.id) }}"</strong></span><span class="strong"><strong>&gt;</strong></span>
+<span class="strong"><strong>{{ form.hidden_tag() }}</strong></span>
+&lt;div class="form-group"&gt;
+<span class="strong"><strong>{{ form.name.label }}</strong></span>
+<span class="strong"><strong>{% if form.name.errors %}</strong></span>
+<span class="strong"><strong>                        {% for e in form.name.errors %}</strong></span>
+&lt;p class="help-block"&gt;{{ e }}&lt;/p&gt;
+<span class="strong"><strong>{% endfor %}</strong></span>
+<span class="strong"><strong>                    {% endif %}</strong></span>
+<span class="strong"><strong>                    {{ form.name(class_='form-control') }}</strong></span>
+&lt;/div&gt;
+                &lt;div class="form-group"&gt;
+<span class="strong"><strong>{{ form.text.label }}</strong></span>
+<span class="strong"><strong>                    {% if form.text.errors %}</strong></span>
+<span class="strong"><strong>{% for e in form.text.errors %}</strong></span>
+&lt;p class="help-block"&gt;{{ e }}&lt;/p&gt;
+<span class="strong"><strong>{% endfor %}</strong></span>
+<span class="strong"><strong>                    {% endif %}</strong></span>
+<span class="strong"><strong>                    {{ form.text(class_='form-control') }}</strong></span>
+&lt;/div&gt;
+                &lt;input class="btn btn-primary" type="submit" value="Add 
+              Comment"&gt;
+            &lt;/form&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</pre><p>There are several new things happening here. First, we declare an HTML form section and make it submit (using <code class="literal">HTTP POST</code>) to our <code class="literal">post</code> Flask endpoint function with the current post ID.</p><p>Next, the<code class="literal">form.hidden_tag()</code>method adds an anticross-site request forgery measure automatically.</p><p>Then, when calling <code class="literal">field.label</code>, an HTML label will automatically be created for our input. This can be customized when we define our <code class="literal">WTForm FlaskForm</code> class; if not, WTForm will pretty print the field name.</p><p>Next, we check for any errors using <code class="literal">field.errors</code>, and if there are any, we will iterate all of them and render the form validation message to the user. Finally, calling the field itself as a method will render the HTML code of that field. </p><p>This third section of the template will display the following:</p><div class="mediaobject"><img src="/graphics/9781788995405/graphics/87bfb787-057e-412f-becd-4aa729363d4e.png" /></div><p>One challenge for the reader is to make a macro <span>that</span><a id="id325572913" class="indexterm"></a> takes a <code class="literal">form</code> object and an endpoint to send the <code class="literal">POST</code> request to and autogenerates HTML for the entire form tag. Refer to the WTForms documentation if you get stuck. It's tricky, but not too difficult.</p></div></div>

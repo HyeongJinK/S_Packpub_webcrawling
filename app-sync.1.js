@@ -14,14 +14,14 @@ var request = require("sync-request");
 var fs =require('fs');
 
 let downloadDataPath = "./download/"
-const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YmI2Zjk3ZC1iMDRlLTRhYmYtODc5NC04ZmEyYmM5ZjAwMzciLCJ1c2VybmFtZSI6InBhY2twdWIxQGdtYWlsLmNvbSIsInBlcm1pc3Npb25zIjpbXSwic3Vic2NyaXB0aW9uIjpbImFsbCJdLCJwZXJtcyI6IkFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiaWF0IjoxNTQ4NzUwNjEyLCJleHAiOjE1NDg3NTQyMTJ9.TwXLC1ispjFX_1N3wArXGcLGQVx0IeRGv_oGQtxcPkaxjEhlf-M2MEU3QQ6oHS5MGeYLSb-tK3isKJxZwnItbNbMQE7lRWpBhzb_tdIpGdVT1xKfTLaswXibRDOEhu4qY74J7PKVWe4N3ItOStIWM8FbXo9QjK9LWdXKlCuMBeU7rwlOpl-F0haQBRML2XLD0rvpbzmkVwBpwMuNwj1iyJrLiExTd_b8NTeDBunT_vsHsxHdwhK5on42H6Ank41a4gGPp1lHDLxbbKowRe_KqPna_0dTGAiFv79SdWuAe5EYU8Kwy13YqQ1DhO30DsnOsbJ7vev34u5WtkRYaO1Lpg";
+const user = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YmI2Zjk3ZC1iMDRlLTRhYmYtODc5NC04ZmEyYmM5ZjAwMzciLCJ1c2VybmFtZSI6InBhY2twdWIxQGdtYWlsLmNvbSIsInBlcm1pc3Npb25zIjpbXSwic3Vic2NyaXB0aW9uIjpbImFsbCJdLCJwZXJtcyI6IkFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiaWF0IjoxNTQ4ODM0MTAyLCJleHAiOjE1NDg4Mzc3MDJ9.wlYAQgp9bCVHXZDqax-xC9MS_aFgpAGxvfk0DedfW-5L_jiZBK7Hw2x5t3FdvYDm1mF7E4s8R_g_ZTu7Ki4SPY3b9xRwJeuV0hdUs19eD1t3SoJNqOGqX7gznpiLx99qMPbEF24c9k4T8BX1ID_ZGDXRWYN498oIkD4me2xYkIPYVuFPZp138EmF_1Bv1Ix4HgUxPUHcxuq1mksDnx8LqywjP9Hi6TIIiOfU87nLtosggdzmYF75qapn-Q-MqODVLLMTyoyFgBpjh_94hbLnyf93XPLyMy9AgunpSZYlri5FN5s9Q8Lk-7x-5ld_upmd1yTApLmMc9ffnOa3O7osag";
 let me = request("GET", "https://services.packtpub.com/users-v1/users/me/metadata", {
 	headers: {
 		"Authorization" : user
 }});
 me.getBody("utf-8");
 
-let isbn = 9781789534207
+let isbn = 9781788997270
 	//https://www.packtpub.com/mapt-rest/products/9781789615265/metadata
 let menuUrl = "https://www.packtpub.com/mapt-rest/products/"+isbn+"/metadata";
 
@@ -46,7 +46,7 @@ if (menuParserData.data.title.indexOf("[Video]") == -1) {
 			let contentData;
 			let contentParserData;
 			element.children.forEach(element => {
-				if (element.index > 56) {
+				if (element.index > 57) {
 					if (parentID != element.id) {
 						contentUrl = baseContentUrl +"/"+ element.id
 					} else {

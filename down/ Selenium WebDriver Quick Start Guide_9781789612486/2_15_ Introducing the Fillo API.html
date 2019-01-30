@@ -1,0 +1,47 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec22"></a>Introducing the Fillo API</h2></div></div><hr /></div><p>In the subsequent chapters, we will be <span>dealing</span><a id="id325162069" class="indexterm"></a>with a lot Excel data. In order to make data manipulation simpler using Excel, <span class="strong"><strong>Codoid,</strong></span> a software firm, introduced the Fillo API. This API can be used for both XLS and XLSX files. It's an open source API. Fillo can be used to <span>trigger</span><a id="id325162080" class="indexterm"></a> select, insert, and update operations with <code class="literal">where</code> conditions. It also supports <code class="literal">like</code> and multiple <code class="literal">where</code> conditions. Let's understand how to make use of this useful API. First of all, let's add the Maven dependency for Fillo. Put the dependency shown here in <code class="literal">pom.xml</code>:</p><pre class="programlisting"><span>&lt;dependency&gt;
+</span><span>&lt;groupId&gt;</span><span>com.codoid.products</span><span>&lt;/groupId&gt;
+<span>&lt;artifactId&gt;</span><span>fillo</span><span>&lt;/artifactId&gt;
+</span></span><span>&lt;version&gt;</span><span>1.18</span><span>&lt;/version&gt;
+&lt;/dependency&gt;
+</span></pre><p> To start using <code class="literal">Fillo</code> in the code, create a <span>class</span><a id="id325447115" class="indexterm"></a> file in Eclipse and type the following code in a <code class="literal">main</code> method. This code first creates a <code class="literal">Fillo</code> object using the <code class="literal">Fillo()</code> no-argument constructor. After that it creates a <code class="literal">Connection</code> object. The value assigned to this object is obtained from the <code class="literal">getConnection()</code> method, which takes the full file path of the <code class="literal">.xls</code> or <code class="literal">.xlsx</code> file as an argument:</p><pre class="programlisting">package org.packt.selenium;
+
+import com.codoid.products.exception.FilloException;
+import com.codoid.products.fillo.Connection;
+import com.codoid.products.fillo.Fillo;
+import com.codoid.products.fillo.Recordset;
+
+  public static void main(String[] args) throws FilloException {
+    Fillo fillo = new Fillo();
+    Connection conn = null;
+    try {
+      conn = fillo
+          .getConnection("D:\\workspace\\hdfc1\\src\\test\\testAutomation\\resources\\Framework.xls");
+    } catch (FilloException e) {
+      throw new FilloException("File not found");
+
+    }
+    String query = "Select * from TestConfig where Execute_Flag='Y'";
+    Recordset rcrdset = null;
+    try {
+      rcrdset = conn.executeQuery(query);
+    } catch (FilloException e) {
+      throw new FilloException("Error executing query");
+
+    }
+    try {
+      while (rcrdset.next()) {
+        System.out.println(rcrdset.getField("TestCaseID"));
+      }
+    } catch (FilloException e) {
+      throw new FilloException("No records found");
+
+    } finally {
+      rcrdset.close();
+      conn.close();
+    }
+  }
+
+This piece of code will print out
+<span class="strong"><strong>TestCase1</strong></span>
+<span class="strong"><strong>TestCase3</strong></span>
+<span class="strong"><strong>TestCase4</strong></span></pre><p>The <code class="literal">Framework.xls</code> has the following content. As can be seen here, in the <code class="literal">TestConfig</code> tab, there are four test cases, out of which one has <code class="literal">'N'</code> set in the <code class="literal">Execute_Flag</code> field. Hence, only <span>three</span><a id="id325448953" class="indexterm"></a> test case IDs get printed in the console:</p><div class="mediaobject"><img src="/graphics/9781789612486/graphics/e68aa1b0-d135-4c2a-af5f-bf268bdb45fb.png" /></div><p>Notice that in the preceding code, we have hardcoded the path to the <code class="literal">Framework.xls</code> file. In <a class="link" href="#" linkend="ch07">Chapter 7</a>, <span class="emphasis"><em>The Command Pattern and Creating Components</em></span>, we will be creating a <code class="literal">config.properties</code> file, which will hold config level details, such as the URL and framework file path. The idea of having property files is to have config or object repository-level data at a central location. This helps when tests have to be done in different environments from time to time.</p><p><code class="literal">Update</code> is another common function that can be done using <code class="literal">Fillo</code>. We will look at <code class="literal">update</code> when we start creating the framework. </p></div>

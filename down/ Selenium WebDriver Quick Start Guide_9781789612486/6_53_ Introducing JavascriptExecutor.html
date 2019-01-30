@@ -1,0 +1,78 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch06lvl1sec56"></a>Introducing JavascriptExecutor</h2></div></div><hr /></div><p><code class="literal">JavascriptExecutor</code> is is an interface in Selenium, which indicates that a WebDriver instance can execute raw JavaScript, providing access to the <span>mechanism</span><a id="id325162073" class="indexterm"></a> for doing that.</p><p>It has two methods:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The <code class="literal">executeScript(String,Object...)</code> object: Executes JavaScript code in the context of the currently selected frame or window. The script fragment provided will be executed as an anonymous function.</li><li style="list-style-type: disc">The <code class="literal">executeAsyncScript(String, Object...)</code> object: Executes an asynchronous JavaScript in the context of the currently selected frame or window. In contrast to executing synchronous JavaScript, scripts executed with this method must specifically send a signal when they are complete by invoking the associated callback function. This callback function is injected into the executed function as the last argument.</li></ul></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch06lvl2sec50"></a>Various scenarios for JavascriptExecutor</h3></div></div></div><p>Let's have a look at few of the most <span>common</span><a id="id325441778" class="indexterm"></a> scenarios for <code class="literal">JavascriptExecutor</code>. All of the reusable methods are included in <code class="literal">TestBase.java</code>:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The following code waits for the page or document to load completely:</li></ul></div><pre class="programlisting"><span>public static boolean docState() {
+           docReady = ((JavascriptExecutor) driver)
+             .executeScript("return document.readyState").toString()
+           .equals("complete");
+           return docReady;
+           }</span></pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">  The following code waits for an AJAX call to complete:</li></ul></div><pre class="programlisting">      public static boolean ajaxState() {
+          int counter = 0;
+          while (counter &lt; 10) {
+            ajaxIsComplete = (Boolean) ((JavascriptExecutor) driver)
+                .executeScript("return jQuery.active == 0");
+            if (ajaxIsComplete) {
+              break;
+            } else {
+              counter = counter + 1;
+            }
+          }
+          return ajaxIsComplete;
+        } </pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The following code sets the <span>focus</span><a id="id325444758" class="indexterm"></a> and scrolls into view:</li></ul></div><pre class="programlisting">        public static void executeFocus(String elementID) {
+          jse = (JavascriptExecutor) driver;
+          jse.executeScript("document.getElementById('" + elementID
+              + "').focus();");
+        }
+
+       public static void scrollintoviewJS(WebElement element) {
+           jsscript1 = "arguments[0].scrollIntoView(false);";
+           js.executeScript(jsscript1, element);
+       }
+
+</pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The following code sets the style visibility by <code class="literal">id</code>:</li></ul></div><pre class="programlisting">        public static void setStyleVisibility(String id) {
+          jse = (JavascriptExecutor) driver;
+          jse.executeScript("document.getElementById('" + id
+              + "').style.visibility = 'visible';");
+
+        }</pre><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">The following code sets the style block by <code class="literal">id</code> and <code class="literal">name</code>:</li></ul></div><pre class="programlisting">        public static void setStyleVisibilityByidBlock(String id) {
+          jse = (JavascriptExecutor) driver;
+          jse.executeScript("document.getElementById('" + id
+                        + "').style.display='block';");
+        }
+        public static void setStyleVisibilityBynameBlock(String name) {
+          jse = (JavascriptExecutor) driver;
+          jse.executeScript("document.getElementsByName('"+name+"')        
+                                [0].style.display='block';");
+        }
+
+</pre><p>Let's see the scroll in <span>action</span><a id="id325447021" class="indexterm"></a> with an example.</p><p>The following code opens the JQueryUI URL, scrolls down to the <code class="literal">Easing</code> hyperlink, and clicks it:</p><pre class="programlisting">public class ScrollintoView {
+    public static void main(String[] args) {
+        String userDirectory = System.getProperty("user.dir");
+        System.setProperty("webdriver.chrome.driver",
+             userDirectory+"\\src\\main\\resources\\chromedriver.exe");
+        WebDriver driver = new ChromeDriver();
+        driver.manage().timeouts().implicitlyWait(15, 
+        TimeUnit.SECONDS);
+        driver.navigate().to("https://jqueryui.com");
+        driver.manage().window().maximize();
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        WebElement txtEasing = driver.findElement(By
+             .xpath("//a[text()='Easing']"));
+        js.executeScript("arguments[0].scrollIntoView(true);", 
+        txtEasing);
+        txtEasing.click();
+ }
+}</pre><p>The following piece of code will use the same HTML (<code class="literal">DoubleClick.html</code>) and, without double clicking the <code class="literal">h2</code> header, it will display the paragraph by altering the CSS appropriately:</p><pre class="programlisting">public class GetHiddenText {
+    public static void main(String[] args) {
+        String userDirectory = System.getProperty("user.dir");
+        System.setProperty("webdriver.chrome.driver",
+             userDirectory+"\\src\\main\\resources\\chromedriver.exe");
+        RemoteWebDriver driver = new ChromeDriver();
+        driver.manage().timeouts().implicitlyWait(15, 
+        TimeUnit.SECONDS);
+        driver.navigate().to(
+             "C:\\Users\\Bhagyashree\\Documents\\DoubleClick.html");
+        driver.manage().window().maximize();
+        String txtPara = driver.findElement(By.id("txtPara"))
+             .getAttribute("id");
+        driver.executeScript("document.getElementById('" + txtPara
+             + "').style.display='block';");
+ }
+}</pre><p>Next, we will <span>move</span><a id="id325447092" class="indexterm"></a> on to <code class="literal">EventFiringWebDriver</code>.</p></div></div>

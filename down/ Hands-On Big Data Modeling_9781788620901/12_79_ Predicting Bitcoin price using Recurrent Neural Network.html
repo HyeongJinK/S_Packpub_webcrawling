@@ -1,0 +1,58 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec76"></a>Predicting Bitcoin price using Recurrent Neural Network</h2></div></div><hr /></div><p>In this section, we are <span>going</span><a id="id325808141" class="indexterm"></a> to use the same dataset and apply <span class="strong"><strong>Recurrent Neural Network</strong></span> (<span class="strong"><strong>RNN</strong></span>) to predict the Bitcoin price. Create a new notebook in your <span>Jupyter</span><a id="id325806829" class="indexterm"></a> iPython. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec88"></a>Importing packages</h3></div></div></div><p>We are <span>going</span><a id="id325806811" class="indexterm"></a> to import libraries as we go:</p><pre class="programlisting"><span>import</span><span>numpy</span><span>as</span><span>np</span><span>import</span><span>pandas</span><span>as</span><span>pd</span><span>from</span><span>matplotlib</span><span>import</span><span>pyplot</span><span>as</span><span>plt</span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec89"></a>Importing datasets</h3></div></div></div><p>We can import the <span>datasets</span><a id="id325806678" class="indexterm"></a> using the <code class="literal">read_csv</code> function provided by <code class="literal">pandas</code>:</p><pre class="programlisting">dframe = pd.read_csv('bitcoin.csv')</pre><p><span class="emphasis"><em>Figure 12.2</em></span> shows how the dataset looks. We are using the same dataset. Since the timestamps are encoded in UNIX format, we are going to recode them:</p><pre class="programlisting">dframe['date'] = pd.to_datetime(dframe['Timestamp'],unit='s').dt.date
+group = dframe.groupby('date')
+Real_Price = group['Weighted_Price'].mean()</pre><p>The main reason we are transforming the timestamp is so that we can sort the dataset by date instead of by minutes. </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec90"></a>Preprocessing</h3></div></div></div><p>Let's assume we want to <span>predict</span><a id="id325337686" class="indexterm"></a> the price for a month. We need to take a subset of the dataset for the last 30 days as test data. We can do that by splitting the dataframe:</p><pre class="programlisting"># Split the dataset so that we can take last 30 days data as test dataset
+prediction_days = 30
+dframe_train= Real_Price[:len(Real_Price)-prediction_days]
+dframe_test= Real_Price[len(Real_Price)-prediction_days:]</pre><p> </p><p> </p><p> </p><p> </p><p>Now we have the test dataset. Let's normalize, reshape, and scale it:</p><pre class="programlisting"># Data preprocessing 
+training_set = dframe_train.values
+training_set = np.reshape(training_set, (len(training_set), 1))
+
+#import sklearn package and use MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
+sc = MinMaxScaler()
+training_set = sc.fit_transform(training_set)
+X_train = training_set[0:len(training_set)-1]
+y_train = training_set[1:len(training_set)]
+X_train = np.reshape(X_train, (len(X_train), 1, 1))</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec91"></a>Constructing the RNN model</h3></div></div></div><p>Having preprocessed the dataset, let's use the test dataset to construct the <span>RNN</span><a id="id325813597" class="indexterm"></a> model. We can do that using the following snippet:</p><pre class="programlisting"># Importing the Keras libraries and relevant packages
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+
+# Initialise the RNN model
+regressor = Sequential()
+
+# Add the input layer and the LSTM layer
+regressor.add(LSTM(units = 4, activation = 'sigmoid', input_shape = (None, 1)))
+
+# Add the output layer
+regressor.add(Dense(units = 1))
+
+# Compile the RNN
+regressor.compile(optimizer = 'adam', loss = 'mean_squared_error')
+
+# Fit the RNN to the Training set
+regressor.fit(X_train, y_train, batch_size = 5, epochs = 100)</pre><p> </p><p> </p><p> </p><p> </p><p>Each of these statements does something specific and is commented out. Please go through each of them one by one so that you have a better understanding of what we are trying to do and why that step is required. Once you run this script, the RNN model will start to be constructed. The script should output the progress as it's built on. The first few entries are shown in <span class="emphasis"><em>Figure 12.9</em></span>:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/766c6f7e-ddc7-4d49-a078-55ab279306bf.png" /></div><p>Figure 12.9: Output of the preceding snippet when constructing the RNN model
+</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec92"></a>Prediction</h3></div></div></div><p>Since our <span>RNN</span><a id="id325815957" class="indexterm"></a> model is ready, we can consume it to make the prediction. We are going to use the price of today to predict the price of the next day. It is possible to predict for a longer span of time, but since there are a lot of influencing factors, longer-duration predictions end up having more errors:</p><pre class="programlisting"># Make the predictions
+test_set = dframe_test.values
+inputs = np.reshape(test_set, (len(test_set), 1))
+inputs = sc.transform(inputs)
+inputs = np.reshape(inputs, (len(inputs), 1, 1))
+predicted_BTC_price = regressor.predict(inputs)
+predicted_BTC_price = sc.inverse_transform(predicted_BTC_price)</pre><p>Now let's visualize our prediction by plotting them on a graph and comparing the differences:</p><pre class="programlisting"># Visualize the results
+plt.figure(figsize=(25,15), dpi=80, facecolor='w', edgecolor='k')
+ax = plt.gca() 
+plt.plot(test_set, color = 'red', label = 'Real Bitcoin Price')
+plt.plot(predicted_BTC_price, color = 'blue', label = 'Predicted Bitcoin Price')
+plt.title('Bitcoin Price Prediction', fontsize=30)
+dframe_test = dframe_test.reset_index()
+x=dframe_test.index
+labels = dframe_test['date']
+plt.xticks(x, labels, rotation = 'vertical')
+for tick in ax.xaxis.get_major_ticks():
+ tick.label1.set_fontsize(18)
+for tick in ax.yaxis.get_major_ticks():
+ tick.label1.set_fontsize(18)
+plt.xlabel('Time', fontsize=20)
+plt.ylabel('BTC Price(USD)', fontsize=20)
+plt.legend(loc=2, prop={'size': 25})
+plt.show()</pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>The output of the preceding snippet is given as follows:</p><div class="mediaobject"><img src="/graphics/9781788620901/graphics/b32e5e9c-c7d9-4443-b9d3-15198e60219b.png" /></div><p>Figure 12.10: Real price versus predicted Bitcoin price for a month</p><p><span class="emphasis"><em>Figure 12.10</em></span> clearly shows that the difference is larger when the time is further to the training set. Go ahead and explore other types of algorithms on the training dataset; try to play around in order to get more ideas about why this is required. </p></div></div>

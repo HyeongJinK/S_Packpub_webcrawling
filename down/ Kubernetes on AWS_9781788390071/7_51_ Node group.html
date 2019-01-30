@@ -1,0 +1,98 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec53"></a>Node group</h2></div></div><hr /></div><p>Now that we have prepared an <span>image</span><a id="id325162570" class="indexterm"></a> for the worker nodes in our cluster, we can set up an autoscaling group to manage the launching of the EC2 instances that will form our cluster.</p><p>EKS doesn't tie us to managing our nodes in any particular way, so autoscaling groups are not the only option for managing the nodes in our cluster, but using them is one of the simplest ways of managing multiple worker instances in our cluster.</p><p>If you wanted to use multiple instance types in your cluster, you could repeat the launch configuration and autoscaling group configuration for each instance type that you wanted to use. In this configuration, we are launching <code class="literal">c5.large</code> instances on demand, but you should refer back to <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Planning for Production</em></span>, for more information about choosing appropriate instance sizes for your cluster.</p><p>The first part of the configuration sets up an IAM role for our instances to use. This is simple because AWS provides managed policies that have the permissions required by Kubernetes. The <code class="literal">AmazonEKSWorkerNodePolicy</code> code phrase allows the kubelet to query information about EC2 instances, attached volumes, and network settings, and to query information about EKS clusters. The <code class="literal">AmazonEKS_CNI_Policy</code> provides the permissions required by the <code class="literal">vpc-cni-k8s</code> network plugin to attach network interfaces to the instance and assign new IP addresses to those interfaces. The <code class="literal">AmazonEC2ContainerRegistryReadOnly</code> policy allows the instance to pull Docker images from the AWS Elastic Container Registry (you can read more about using this in <a class="link" href="#" linkend="ch10">Chapter 10</a>, <span class="emphasis"><em>Managing Container Images</em></span>). We will also manually specify a policy that will allow the <code class="literal">kube2iam</code> tool to assume roles in order to provide credentials to applications running on the cluster, as shown in the following code:</p><pre class="programlisting"><span class="strong"><strong>nodes.tf</strong></span>
+/* 
+  IAM policy for nodes 
+*/ 
+data "aws_iam_policy_document" "node" { 
+  statement { 
+    actions = ["sts:AssumeRole"] 
+ 
+    principals { 
+      type        = "Service" 
+      identifiers = ["ec2.amazonaws.com"] 
+    } 
+  } 
+} 
+... 
+ 
+ 
+resource "aws_iam_instance_profile" "node" { 
+  name = "${aws_iam_role.node.name}" 
+  role = "${aws_iam_role.node.name}" 
+} </pre><p>Before our worker nodes can register themselves with the Kubernetes API server, they need to have the correct permissions to do so. In EKS, the mapping between IAM roles and users is configured by submitting a config map to the cluster.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note62"></a>Note</h3><p>You can read more about how to map IAM users and roles to Kubernetes permissions in the EKS documentation at <a class="ulink" href="https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html" target="_blank"><span>https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html</span></a>.</p></div><p>Terraform will use the <code class="literal">kubeconfig</code> file that we produced while setting up the control plane in order to <span>submit</span><a id="id325751202" class="indexterm"></a> this configuration to <span>the</span><a id="id325751208" class="indexterm"></a> cluster using <code class="literal">kubectl</code> via the local-exec provisioner, as shown in the following <code class="literal">nodes.tf</code> continued code:</p><pre class="programlisting">/* 
+  This config map configures which IAM roles should be trusted by Kubernetes 
+*/ 
+ 
+resource "local_file" "aws_auth" { 
+  content = &lt;&lt;YAML 
+apiVersion: v1 
+kind: ConfigMap 
+metadata: 
+  name: aws-auth 
+  namespace: kube-system 
+data: 
+  mapRoles: | 
+    - rolearn: ${aws_iam_role.node.arn} 
+      username: system:node:{{EC2PrivateDNSName}} 
+      groups: 
+        - system:bootstrappers 
+        - system:nodes 
+YAML 
+  filename = "${path.module}/aws-auth-cm.yaml" 
+  depends_on = ["local_file.kubeconfig"] 
+ 
+  provisioner "local-exec" { 
+    command = "kubectl --kubeconfig=${local_file.kubeconfig.filename} apply -f ${path.module}/aws-auth-cm.yaml" 
+  } 
+} </pre><p>Next, we need to prepare security groups to control the network traffic to and from our nodes.</p><p>We will set up a number of rules to allow the following communication flows that are required for our cluster to function correctly:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Nodes need to communicate with each other for intracluster pod and service communication.</li><li style="list-style-type: disc">The Kubelet running on the nodes needs to connect to the Kubernetes API server in order to read and update information about the state of the cluster.</li><li style="list-style-type: disc">The control plane needs to connect to the Kubelet API on port <code class="literal">10250</code>; this is used for functionalities such as <code class="literal">kubectl exec</code> and <code class="literal">kubectl logs.</code></li></ul></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">In order to use the proxy functionality of the API to proxy traffic to pods and services, the control plane needs to connect to pods that are running in the cluster. In this example, we are opening all of the ports, but if, for example, you only open unprivileged ports on your pods, then you would only need to allow traffic to ports above 1024.</li></ul></div><p>We set these rules up using the following code. The code for <code class="literal">nodes.tf</code> is continued:</p><pre class="programlisting"> resource "aws_security_group" "nodes" { 
+  name        = "${var.cluster_name}-nodes" 
+  description = "Security group for all nodes in the cluster" 
+  vpc_id      = "${aws_vpc.k8s.id}" 
+ 
+  egress { 
+    from_port   = 0 
+    to_port     = 0 
+    protocol    = "-1" 
+    cidr_blocks = ["0.0.0.0/0"] 
+  } 
+ 
+... 
+resource "aws_security_group_rule" "nodes-control_plane-proxy" { 
+  description              = "API (proxy) communication to pods" 
+  from_port                = 0 
+  to_port                  = 65535 
+  protocol                 = "tcp" 
+  security_group_id        = "${aws_security_group.nodes.id}" 
+  source_security_group_id = \ 
+                          "${aws_security_group.control_plane.id}" 
+  type                     = "ingress" 
+} </pre><p>Now that we have prepared the infrastructure to run our nodes, we can prepare a launch configuration and assign it to an autoscaling group to actually launch our nodes, as shown in the following code.</p><p>Clearly, the instance type and disk size I have chosen here might not suit your cluster, so you will want to refer back to the information in <a class="link" href="#" linkend="ch06">Chapter 6</a>, <span class="emphasis"><em>Planning for Production</em></span>, when choosing an instance size for your cluster. The disk size required will be largely dependent on the average image size of your applications. The code for <code class="literal">nodes.tf</code> is continued:</p><pre class="programlisting">data "aws_ami" "eks-worker" { 
+  filter { 
+    name   = "name" 
+    values = ["eks-worker-${var.k8s_version}*"] 
+  } 
+ 
+  most_recent = true 
+  owners      = ["self"] 
+} 
+ 
+...                                                                    
+  resource "aws_autoscaling_group" "node" { 
+  launch_configuration = "${aws_launch_configuration.node.id}" 
+  max_size             = 2 
+  min_size             = 10 
+  name                 = "eks-node-${var.cluster_name}" 
+  vpc_zone_identifier  = ["${aws_subnet.private.*.id}"] 
+ 
+  tag { 
+    key                 = "Name" 
+    value               = "eks-node-${var.cluster_name}" 
+    propagate_at_launch = true 
+  } 
+ 
+  tag { 
+    key              = "kubernetes.io/cluster/${var.cluster_name}" 
+    value               = "owned" 
+    propagate_at_launch = true 
+  } 
+} 
+ </pre><p>The <code class="literal">kubernetes.io/cluster/&lt;node name&gt;</code> tag is used by the <code class="literal">ekstrap</code> tool to discover the EKS endpoint in order to register the node with the cluster and by the <code class="literal">kubelet</code> to verify that it has connected to the correct cluster.</p></div>

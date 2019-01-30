@@ -1,0 +1,19 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec28"></a>Dictionaries for text analysis</h2></div></div><hr /></div><p>A common use of dictionaries is to <span>count</span><a id="id325585030" class="indexterm"></a> the occurrences of like items in a sequence; a typical example is counting the occurrences of words in a body of text. The following code creates a dictionary where each word in the text is used as a key and the number of occurrences as its value. This uses a very common idiom of nested loops. Here we are using it to traverse the lines in a file in an outer loop and the keys of a dictionary on the inner loop:</p><pre class="programlisting">def wordcount(fname):  
+   try: 
+        fhand=open(fname) 
+   except:
+        print('File can not be opened') 
+        exit() 
+
+   count=dict() 
+   for line in fhand: 
+        words=line.split() 
+        for word in words: 
+            if word not in count: 
+                count[word]=1  
+            else: 
+                count[word]+=1 
+   return(count)
+
+</pre><p>This will return a dictionary with an element for each unique word in the text file. A common task is to filter items such as these into subsets we are interested in. You will need a text file saved in the same directory as you run the code. Here we have used <code class="literal">alice.txt</code>, a short excerpt from <span class="emphasis"><em>Alice in Wonderland</em></span>. To obtain the same results, you can download <code class="literal">alice.txt</code> from <a class="ulink" href="http://davejulian.net/bo5630" target="_blank">davejulian.net/bo5630</a> or use a text file of your own. In the following code, we create another dictionary, filtered, containing a subset of items from <code class="literal">count</code>:</p><pre class="programlisting">count=wordcount('alice.txt') 
+filtered={key:value for key, value in count.items() if value &lt;20 and value&gt;16 }</pre><p>When we print the filtered dictionary, we get the following:</p><pre class="programlisting">{'once': 18, 'eyes': 18, 'There': 19, 'this,': 17, 'before': 19, 'take': 18, 'tried': 18, 'even': 17, 'things': 19, 'sort': 17, 'her,': 18, '`And': 17, 'sat': 17, '`But': 19, "it,'": 18, 'cried': 18, '`Oh,': 19, 'and,': 19, "`I'm": 19, 'voice': 17, 'being': 19, 'till': 19, 'Mouse': 17, '`but': 19, 'Queen,': 17}</pre><p>Note the use of the <span class="strong"><strong>dictionary comprehension</strong></span> used to <span>construct</span><a id="id326631292" class="indexterm"></a> the filtered dictionary. Dictionary comprehensions work in an identical way to the list comprehensions we looked at in <a class="link" href="#" linkend="ch01">Chapter 1</a>, <span class="emphasis"><em>Python Objects, Types, and Expressions</em></span>.</p></div>

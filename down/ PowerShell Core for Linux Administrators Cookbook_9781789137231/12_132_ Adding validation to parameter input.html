@@ -1,0 +1,22 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec130"></a>Adding validation to parameter input</h2></div></div><hr /></div><p>You may be in a situation where a null <span>value</span><a id="id326687841" class="indexterm"></a> is not acceptable for a parameter, or there may be situations that require you to restrict the input you receive. While such situations can be handled with branch-based validation, that would mean dedicating some amount of code to such validation. Parameter validation can help here, without you having to worry too much about what construct to use for the validation.</p><p>Moreover, parameter validation can also assist with tab completion!</p><p>The scenario for this recipe is to limit the value of <code class="literal">TotalTime</code> to one of <code class="literal">5</code>, <code class="literal">10</code>, <code class="literal">15</code> and <code class="literal">20</code> seconds.</p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec339"></a>How to do it…</h3></div></div></div><p>Modify the script we used in the previous recipe, <span class="emphasis"><em>Adding default values to a parameter</em></span>, to the following:</p><pre class="programlisting">function Start-Count {
+    param (
+        # The current time, or the starting point
+        [Parameter(Mandatory=$false)]
+        [Alias("CT", "From")]
+        [int]
+        $CurrentTime=0,
+
+        # The total number of seconds to count
+        [Parameter(Mandatory=$false, Position=1)]
+        [Alias("TT", "To")]
+        [ValidateSet(5, 10, 15, 20)]
+        [int]
+        $TotalTime=10
+    )
+
+    while ($CurrentTime -le $TotalTime) {
+        Write-Progress -Activity "Counting to $TotalTime" -Status "Counting: $CurrentTime seconds" -PercentComplete ($CurrentTime / $TotalTime * 100)
+        Start-Sleep 1
+        $CurrentTime++
+    }
+}</pre><p> </p><p>Run the following command and read the error:</p><pre class="programlisting"><span class="strong"><strong>PS&gt; Start-Count -TotalTime 6</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec340"></a>How it works…</h3></div></div></div><p>PowerShell provides a range of options for parameter validation. These are simply pre-recorded functions that reduce the amount of time you spend validating the input, and at the same time give errors that are readable. PowerShell also allows us to create our own parameter validation logic. However, that is out of the scope of this book.</p><p>In our recipe, we use the <code class="literal">ValidateSet</code> attribute, which <span>accept</span><a id="id326689427" class="indexterm"></a>s a series of inputs as a set and ensures that the input sent to <code class="literal">TotalTime</code> is one of <code class="literal">5</code>, <code class="literal">10</code>, <code class="literal">15</code>, or <code class="literal">20</code> seconds. There are more validation options available, such as <code class="literal">ValidateNotNullOrEmpty</code>, <code class="literal">ValidateRange</code>, <code class="literal">ValidateCount</code>, <code class="literal">ValidatePattern</code>, or even—when you have your own script block —<code class="literal">ValidateScript</code>.</p></div></div>

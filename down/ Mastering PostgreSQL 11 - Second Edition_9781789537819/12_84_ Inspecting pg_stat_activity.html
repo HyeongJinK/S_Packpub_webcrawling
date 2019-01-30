@@ -1,0 +1,54 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec81"></a>Inspecting pg_stat_activity</h2></div></div><hr /></div><p>The first thing that is <span>recommended</span><a id="id325565395" class="indexterm"></a> is checking out <code class="literal">pg_stat_statements</code>. Answer the following questions:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">How many concurrent queries are currently being executed on your system?</li><li style="list-style-type: disc">Do you see similar types of query showing up in the query column all the time?</li><li style="list-style-type: disc">Do you see queries that have been running for a long time?</li><li style="list-style-type: disc">Are there any locks that have not been granted?</li><li style="list-style-type: disc">Do you see connections from suspicious hosts?</li></ul></div><p>The <code class="literal">pg_stat_activity</code> view should always be checked first because it will give us an idea of what is happening on the system. Of course, graphical monitoring is supposed to give you a first impression of the system. However, at the end of the day, it really boils down to the queries actually running on the server. Therefore, a good overview of the system that's provided by <code class="literal">pg_stat_activity</code> is more than vital for tracking down issues.</p><p>To make it easier for you, I have compiled a couple of queries that I find useful for spotting problems as quickly as possible.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec127"></a>Querying pg_stat_activity</h3></div></div></div><p>The following query shows you how many <span>queries</span><a id="id325895981" class="indexterm"></a> are currently being executed on your database:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT datname, </strong></span>
+<span class="strong"><strong>        count(*) AS open, </strong></span>
+<span class="strong"><strong>        count(*) FILTER (WHERE state = 'active') AS active, </strong></span>
+<span class="strong"><strong>        count(*) FILTER (WHERE state = 'idle') AS idle, </strong></span>
+<span class="strong"><strong>        count(*) FILTER (WHERE state = 'idle in transaction') </strong></span>
+<span class="strong"><strong>                 AS idle_in_trans </strong></span>
+<span class="strong"><strong>FROM pg_stat_activity </strong></span>
+<span class="strong"><strong>WHERE backend_type = 'client backend'</strong></span>
+<span class="strong"><strong>GROUP BY ROLLUP(1);</strong></span>
+<span class="strong"><strong> datname | open | active | idle | idle_in_trans </strong></span>
+<span class="strong"><strong>---------+------+--------+------+---------------</strong></span>
+<span class="strong"><strong> test    | 2    | 1      | 0    | 1</strong></span>
+<span class="strong"><strong>         | 2    | 1      | 0    | 1</strong></span>
+<span class="strong"><strong>(2 rows)</strong></span></pre><p>To show as much information as possible on the same screen, partial aggregates are used. We can see active, idle, and idle-in-transaction queries. If we can see a high number of idle in transaction queries, it is definitely important to dig deeper to figure out how long those transactions have been kept open:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT pid, xact_start, now() - xact_start AS duration 
+   FROM pg_stat_activity 
+   WHERE state LIKE '%transaction%' 
+   ORDER BY 3 DESC;
+ pid    | xact_start                    | duration</strong></span>
+<span class="strong"><strong>--------+-------------------------------+-----------------</strong></span>
+<span class="strong"><strong>  19758 | 2017-11-26 20:27:08.168554+01 | 22:12:10.194363</strong></span>
+
+<span class="strong"><strong>(1 row)</strong></span></pre><p>The transaction in the listing has been open for more than 22 hours. The main question now is: how can a transaction be open for that long? In most applications, a transaction that takes so long is highly suspicious and potentially highly dangerous. Where does the danger come from? As we learned earlier in this book, the <code class="literal">VACUUM</code> command can only clean up dead rows if no transaction can see it anymore. Now, if a transaction stays open for hours or even days, the <code class="literal">VACUUM</code> command cannot produce useful results, which will lead to table bloat.</p><p>It is therefore highly <span>recommended</span><a id="id326265790" class="indexterm"></a> to ensure that long transactions are monitored or killed in case they are too long. From version 9.6 onward, PostgreSQL has a feature called <span class="strong"><strong>snapshot too old</strong></span>, which allows us to terminate long transactions if snapshots are around for too long.</p><p>It is also a good idea to check whether there are any long-running queries going on:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT</strong></span>
+<span class="strong"><strong>         now() - query_start AS duration, datname, query</strong></span>
+<span class="strong"><strong>       FROM pg_stat_activity</strong></span>
+<span class="strong"><strong>       WHERE state = 'active'</strong></span>
+<span class="strong"><strong>       ORDER BY 1 DESC;</strong></span>
+<span class="strong"><strong> duration         </strong></span><span class="strong"><strong>| datname | query</strong></span>
+<span class="strong"><strong>------------------+---------+---------------------------</strong></span>
+<span class="strong"><strong> 00:00:38.814526  </strong></span><span class="strong"><strong>| dev     | SELECT pg_sleep(10000);</strong></span>
+<span class="strong"><strong> 00:00:00         </strong></span><span class="strong"><strong>| test    | SELECT now() - query_start AS duration, 
+                                     datname, query 
+                              FROM  pg_stat_activity 
+                              WHERE state = 'active' 
+                              ORDER BY 1 DESC;</strong></span>
+<span class="strong"><strong>(2 rows)</strong></span></pre><p>In this case, all active queries are taken and the statements calculate how long each query has already been active. Often, we see similar queries coming out on top, which can give us some valuable clues about what is happening on your system.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec89"></a>Treating Hibernate statements</h4></div></div></div><p>Many ORMs such as Hibernate <span>generate</span><a id="id326300478" class="indexterm"></a> insanely long SQL statements. The trouble is this: <code class="literal">pg_stat_activity</code> will only store the first <code class="literal">1024</code> bytes of the query in the system view. The rest is truncated. In case of a long query generated by an ORM such as Hibernate, the query is cut off before the interesting parts (the <code class="literal">FROM</code> clause, among others) actually start.</p><p>The solution to the problem is to set a config parameter in the <code class="literal">postgresql.conf</code> file:</p><pre class="programlisting"><span class="strong"><strong>test=# </strong></span><span class="strong"><strong>SHOW track_activity_query_size;</strong></span>
+<span class="strong"><strong> track_activity_query_size</strong></span>
+<span class="strong"><strong>---------------------------</strong></span>
+<span class="strong"><strong> 1024</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p>If we increase this parameter to a reasonably high value (maybe 32,768) and restart PostgreSQL, we will then be able to see much longer queries and be able to detect issues more easily.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch12lvl3sec90"></a>Figuring out where queries come from</h4></div></div></div><p>When inspecting <code class="literal">pg_stat_activity</code>, there are some fields <span>that</span><a id="id326508954" class="indexterm"></a> will tell us where a query comes from:</p><pre class="programlisting"><span class="strong"><strong>client_addr     | inet    |</strong></span>
+<span class="strong"><strong>client_hostname | text    |</strong></span>
+<span class="strong"><strong>client_port     | integer |</strong></span></pre><p>These fields will contain IP addresses and hostnames (if configured). But what happens if every application sends their requests from the very same IP because all of the applications reside on the same application server? It will be very hard for us to see which application generated a certain query.</p><p>The solution to this problem is to ask the developers to set an <code class="literal">application_name</code> variable:</p><pre class="programlisting"><span class="strong"><strong>test=# </strong></span><span class="strong"><strong>SHOW application_name ;</strong></span>
+<span class="strong"><strong> application_name</strong></span>
+<span class="strong"><strong>------------------ 
+ psql</strong></span>
+<span class="strong"><strong>(1 row)</strong></span>
+
+<span class="strong"><strong>test=# </strong></span><span class="strong"><strong>SET application_name TO 'some_name'; 
+SET</strong></span>
+
+<span class="strong"><strong>test=# </strong></span><span class="strong"><strong>SHOW application_name ;</strong></span>
+<span class="strong"><strong> application_name</strong></span>
+<span class="strong"><strong>------------------ 
+ some_name</strong></span>
+<span class="strong"><strong>(1 row)</strong></span></pre><p>If people are cooperative, the <code class="literal">application_name</code> variable will show up in the system view and make it a lot easier to see where a query comes from. The <code class="literal">application_name</code> variable can also be set as part of the connect string.</p></div></div></div>

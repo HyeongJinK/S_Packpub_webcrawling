@@ -1,0 +1,26 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec17"></a>Time for Action: Accessing the WebGL Context</h2></div></div><hr /></div><p>A WebGL context is a handle (more strictly a JavaScript object) through which we can access WebGL functions and attributes. These available <span>features</span><a id="id325628670" class="indexterm"></a> constitute the WebGL API.</p><p>We are going to create a JavaScript function that will check whether a WebGL context can be obtained. Unlike other technologies that need to be downloaded into your project, WebGL is <span class="emphasis"><em>already in your browser</em></span>. In other words, if you are using one of the supported browsers, you don't need to install or include any library.</p><p>Let's modify the previous example to add a JavaScript function to check the WebGL availability in your browser. This function is going to be called when the page has loaded. For this, we will use the standard DOM <code class="literal">onload</code> event:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Open the <code class="literal">ch01_01_canvas.html</code>file in your favorite text editor.</li><li>Add the following code right below the closing <code class="literal">&lt;style&gt;</code> tag:</li></ol></div><pre class="programlisting">&lt;script type="text/javascript"&gt;
+'use strict';
+
+function init() {
+const canvas = document.getElementById('webgl-canvas');
+
+// Ensure we have a canvas
+if (!canvas) {
+      console.error('Sorry! No HTML5 Canvas was found on 
+       this page');
+return;
+}
+
+const gl = canvas.getContext('webgl2');
+
+// Ensure we have a context
+const message = gl
+      ? 'Hooray! You got a WebGL2 context'
+: 'Sorry! WebGL is not available';
+
+alert(message);
+}
+
+// Call init once the document has loaded
+window.onload = init;
+&lt;/script&gt;</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Save the file as <code class="literal">ch01_02_context.html</code>.</li><li>Open the <code class="literal">ch01_02_context.html</code>file using one of the WebGL 2 supported browsers.</li><li>If you can run WebGL 2, you will see a dialog similar to the following:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788629690/graphics/1e9be976-797d-4eb0-b5a8-929de15de436.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip6"></a>Note</h3><p><strong class="userinput"><code>Strict Mode</code></strong>The Strict Mode, declared by <code class="literal">'use strict';</code>, is a feature that allows you to place a program, or a function, in a "strict" operating context. This strict context prevents certain actions from being taken and throws more exceptions. For more information, please visit the following link: <a class="ulink" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode" target="_blank">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode</a>.</p></div><p><span class="emphasis"><em><span class="strong"><strong>What just happened? </strong></span></em></span></p><p>Assigning a JavaScript variable (<code class="literal">gl</code>), we obtained a reference to a WebGL context. Let's go back and check the code that allows accessing WebGL:</p><pre class="programlisting">const gl = canvas.getContext('webgl2');</pre><p>The <code class="literal">canvas.getContext</code> method gives us access to WebGL. <code class="literal">getContext</code> also provides access to the HTML5 2D graphics library when using <code class="literal">2D</code> as <span>the</span><a id="id325638060" class="indexterm"></a> context name. The HTML5 2D graphics API is completely independent from WebGL and is beyond the scope of this book.</p></div>

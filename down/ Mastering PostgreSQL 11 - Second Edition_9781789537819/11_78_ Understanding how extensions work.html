@@ -1,0 +1,76 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec76"></a>Understanding how extensions work</h2></div></div><hr /></div><p>Before digging into the <span>extensions</span><a id="id326087293" class="indexterm"></a> available out there, it is a good idea to take a look at how extensions work in the first place. Understanding the inner workings of the extension machinery can be quite beneficial.</p><p>Let's take a look at the syntax first:</p><pre class="programlisting"><span class="strong"><strong>test=# \h CREATE EXTENSION </strong></span>
+<span class="strong"><strong>Command: CREATE EXTENSION</strong></span>
+<span class="strong"><strong>Description: install an extension</strong></span>
+<span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>CREATE EXTENSION [ IF NOT EXISTS ] extension_name</strong></span>
+<span class="strong"><strong>    [ WITH ] [ SCHEMA schema_name ]</strong></span>
+<span class="strong"><strong>             [ VERSION version ]</strong></span>
+<span class="strong"><strong>             [ FROM old_version ]</strong></span>
+<span class="strong"><strong>             [ CASCADE ]</strong></span></pre><p>When you want to deploy an extension, simply call the <code class="literal">CREATE EXTENSION</code> command. It will check for the extension and load it into your database. Note that the extension will be loaded into a database and not into the entire database instance.</p><p>If we are loading an extension, we can decide on the schema that we want to use. Many extensions can be relocated so that the user has the choice of which schema to use. Then, it is possible to decide on a specific version of the extension. Often, we don't want to deploy the latest version of an extension because it is possible that the client is running outdated software. In such cases, it might be handy to be able to deploy any version available on the system.</p><p>The <code class="literal">FROM old_version</code> clause requires some more attention. Back in the old days, PostgreSQL did not support extensions, so a lot of unpackaged code is still around. This option causes the <code class="literal">CREATE EXTENSION</code> clause to run an alternative installation script that absorbs the existing objects into the extension, instead of creating new objects. Make sure that the <code class="literal">SCHEMA</code> clause specifies the schema containing these preexisting objects. Only use it when you have old modules around.</p><p>Finally, there is the <code class="literal">CASCADE</code> clause. Some extensions depend on other extensions. The <code class="literal">CASCADE</code> option will automatically deploy those software packages, too. Here is an example:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE EXTENSION earthdistance;</strong></span>
+<span class="strong"><strong>ERROR: </strong></span><span class="strong"><strong>required extension "cube" is not installed</strong></span>
+<span class="strong"><strong>HINT: Use CREATE EXTENSION ... CASCADE to install required extensions too.</strong></span></pre><p>The <code class="literal">earthdistance</code> module implements great circle distance calculations. As you might know, the shortest distance between two points on earth is not in a straight line; instead, a pilot has to adjust his/her course constantly to find the fastest route to fly from one point to the other. The thing is, the <code class="literal">earthdistance</code> extension depends on the cube extension, which allows you to perform operations on a sphere.</p><p>To automatically <span>deploy</span><a id="id325623196" class="indexterm"></a> the dependency, the <code class="literal">CASCADE</code> clause can be used, as just described:</p><pre class="programlisting"><span class="strong"><strong>test=# CREATE EXTENSION earthdistance CASCADE;</strong></span>
+<span class="strong"><strong>NOTICE: </strong></span><span class="strong"><strong>installing required extension "cube" CREATE EXTENSION</strong></span></pre><p>In this case, both extensions will be deployed.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch11lvl2sec113"></a>Checking for available extensions</h3></div></div></div><p>PostgreSQL offers various views to <span>figure</span><a id="id325623230" class="indexterm"></a> out which extensions are on the system and which ones are actually deployed. One of those views is <code class="literal">pg_available_extensions</code>:</p><pre class="programlisting"><span class="strong"><strong>test=# \h CREATE EXTENSION </strong></span>
+<span class="strong"><strong>Command: CREATE EXTENSION</strong></span>
+<span class="strong"><strong>Description: install an extension</strong></span>
+<span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>CREATE EXTENSION [ IF NOT EXISTS ] extension_name</strong></span>
+<span class="strong"><strong>    [ WITH ] [ SCHEMA schema_name ]</strong></span>
+<span class="strong"><strong>             [ VERSION version ]</strong></span>
+<span class="strong"><strong>             [ FROM old_version ]</strong></span>
+<span class="strong"><strong>             [ CASCADE ]</strong></span></pre><p>It contains a list of all of the extensions that are available, including their names, their default version, and the version currently installed. To make it easier for the end user, there is also a description available, telling us more about the extension.</p><p>The following listing contains two lines taken from <code class="literal">pg_available_extensions</code>:</p><pre class="programlisting"><span class="strong"><strong>test=# \x</strong></span>
+<span class="strong"><strong>Expanded display </strong></span><span class="strong"><strong>is on.</strong></span>
+<span class="strong"><strong>test=# SELECT * FROM pg_available_extensions LIMIT 2;</strong></span>
+<span class="strong"><strong>-[ RECORD 1 ]-----+--------------------------------------------------</strong></span>
+<span class="strong"><strong>name              | unaccent</strong></span>
+<span class="strong"><strong>default_version   | 1.1</strong></span>
+<span class="strong"><strong>installed_version | </strong></span>
+<span class="strong"><strong>comment           | text search dictionary that removes accents</strong></span>
+<span class="strong"><strong>-[ RECORD 2 ]-----+--------------------------------------------------</strong></span>
+<span class="strong"><strong>name              | tsm_system_time</strong></span>
+<span class="strong"><strong>default_version   | 1.0</strong></span>
+<span class="strong"><strong>installed_version | </strong></span>
+<span class="strong"><strong>comment           | TABLESAMPLE method which accepts time in milliseconds as a limit</strong></span>
+
+</pre><p>As you can see, the <code class="literal">earthdistance</code> and <code class="literal">plpgsql</code> extensions are both enabled in my database. The <code class="literal">plpgsql</code> extension is there by default and <code class="literal">earthdistance</code> was added too. The beauty of this view is that you can quickly get an overview of what is installed and what can be installed.</p><p>However, in some cases, extensions are <span>available</span><a id="id325865344" class="indexterm"></a> in more than just one version. To find out more about versioning, consider checking out the following view:</p><pre class="programlisting"><span class="strong"><strong>test=# \</strong></span><span class="strong"><strong>d pg_available_extension_versions</strong></span>
+<span class="strong"><strong>View "pg_catalog.pg_available_extension_versions" 
+ Column       | Type    | Modifiers</strong></span>
+<span class="strong"><strong>--------------+---------+-----------</strong></span>
+<span class="strong"><strong> name         | name    |</strong></span>
+<span class="strong"><strong> version      </strong></span><span class="strong"><strong>| text    |</strong></span>
+<span class="strong"><strong> installed    </strong></span><span class="strong"><strong>| boolean |</strong></span>
+<span class="strong"><strong> superuser    </strong></span><span class="strong"><strong>| boolean |</strong></span>
+<span class="strong"><strong> relocatable  </strong></span><span class="strong"><strong>| boolean |</strong></span>
+<span class="strong"><strong> schema       </strong></span><span class="strong"><strong>| name    |</strong></span>
+<span class="strong"><strong> requires     </strong></span><span class="strong"><strong>| name[]  |</strong></span>
+<span class="strong"><strong> comment      </strong></span><span class="strong"><strong>| text    |</strong></span></pre><p>Some more detailed information is available here, as shown in the following listing:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT </strong></span><span class="strong"><strong>* FROM pg_available_extension_versions LIMIT 1;</strong></span>
+<span class="strong"><strong>-[ RECORD 1 ]---------------------------------------------</strong></span>
+<span class="strong"><strong>name        | earthdistance</strong></span>
+<span class="strong"><strong>version     </strong></span><span class="strong"><strong>| 1.1 
+installed   | t 
+superuser   | t 
+relocatable | t 
+schema      | 
+requires    | {cube}</strong></span>
+<span class="strong"><strong>comment     </strong></span><span class="strong"><strong>| calculate great-circle distances on the surface of the Earth</strong></span></pre><p>PostgreSQL will also tell you whether the extension can be relocated, which schema it has been deployed in, and what other extensions are needed. Then, there is the comment describing the extension, which was shown previously.</p><p>One might wonder, where does PostgreSQL find all of this information about extensions on the system? Assuming that you have deployed PostgreSQL 10.0 from the official PostgreSQL RPM repository, the <code class="literal">/usr/pgsql-11/share/extension</code> directory will <span>contain</span><a id="id325874210" class="indexterm"></a> a couple of files:</p><pre class="programlisting"><span class="strong"><strong>... </strong></span>
+<span class="strong"><strong>-bash-4.3$ ls -l citext* </strong></span>
+<span class="strong"><strong>ls -l citext*</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 1028 Sep 11 19:53 citext--1.0--1.1.sql</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 2748 Sep 11 19:53 citext--1.1--1.2.sql</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 307 Sep 11 19:53 citext--1.2--1.3.sql</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 668 Sep 11 19:53 citext--1.3--1.4.sql</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 2284 Sep 11 19:53 citext--1.4--1.5.sql</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 13466 Sep 11 19:53 citext--1.4.sql</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 158 Sep 11 19:53 citext.control</strong></span>
+<span class="strong"><strong>-rw-r--r--. 1 hs hs 9781 Sep 11 19:53 citext--unpackaged--1.0.sql</strong></span>
+
+<span class="strong"><strong>... </strong></span></pre><p>The default version of the <code class="literal">citext</code> (case-insensitive text) extension is 1.4, so there is a file called <code class="literal">citext--1.3.sql</code>. In addition to that, there are files that are used to move from one version to the next (1.0 → 1.1, 1.1 → 1.2, and so on).</p><p>Then, there is the <code class="literal">.control</code> file:</p><pre class="programlisting"><span class="strong"><strong>-bash-4.3$ </strong></span><span class="strong"><strong>cat citext.control</strong></span>
+<span class="strong"><strong># citext extension</strong></span>
+<span class="strong"><strong>comment </strong></span><span class="strong"><strong>= 'data type for case-insensitive character strings' 
+default_version = '1.4'</strong></span>
+<span class="strong"><strong>module_pathname </strong></span><span class="strong"><strong>= '$libdir/citext' 
+relocatable = true</strong></span></pre><p>This file contains all of the metadata related to the extension; the first entry contains the comment. Note that this contents is what will be shown in the syst<span>em views we just discu</span>ssed. When you access those views, PostgreSQL will go to this directory and read all of the <code class="literal">.control</code> files. Then, there is the default version and the path to the binaries.</p><p>If you are installing a typical extension from RPM, the directory is going to be <code class="literal">$libdir</code>, which is inside your PostgreSQL binary directory. However, if you have written your own commercial extension, it might very well reside somewhere else.</p><p>The last setting will tell PostgreSQL whether the <span>extension</span><a id="id325895941" class="indexterm"></a> can reside in any schema or whether it has to be in a fixed, predefined schema.</p><p>Finally, there is the unpackaged file. Here is an extract from it:</p><pre class="programlisting"><span class="strong"><strong>...</strong></span>
+<span class="strong"><strong>ALTER EXTENSION citext ADD type citext;</strong></span>
+<span class="strong"><strong>ALTER EXTENSION citext ADD function citextin(cstring); 
+ALTER EXTENSION citext ADD function citextout(citext); 
+ALTER EXTENSION citext ADD function citextrecv(internal);</strong></span>
+<span class="strong"><strong>...</strong></span></pre><p>The unpackaged file will turn existing code into an extension. It is therefore important to consolidate existing things in your database.</p></div></div>

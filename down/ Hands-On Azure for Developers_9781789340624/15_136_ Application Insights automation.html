@@ -1,0 +1,73 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch15lvl1sec130"></a>Application Insights automation</h2></div></div><hr /></div><p>Monitoring is not something you like to <span>spend</span><a id="id325115453" class="indexterm"></a> time on on a daily basis. In fact, the more automated the service is, the better results you can get. It is always easier to let the machine look at different dimensions and find problems based on some preset rules; it will do it quicker and more carefully. In Azure Application Insights, you have many options when it comes to automation: ARM templates, alerts in the portal, or integrating external services (such as Microsoft Flow). In the last section of this chapter, you will learn how to get started with automation and make sure you focus on development, instead of log analysis and service maintenance.</p><p> </p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch15lvl2sec157"></a>Alerts</h3></div></div></div><p>An alert is a feature which enables you to be <span>notified</span><a id="id325120028" class="indexterm"></a> when an anomaly occurs. There are plenty of different possibilities when it comes to setting up an alert, starting with an ARM template:</p><pre class="programlisting">{
+  "name": "[variables('myFirstAlertName')]",
+  "type": "Microsoft.Insights/alertrules",
+  "apiVersion": "2014-04-01",
+  "location": "[parameters('appLocation')]",
+  "dependsOn": [
+    "[resourceId('Microsoft.Insights/components', parameters('myApplicationName'))]"
+  ],
+  "tags": {
+    "[concat('hidden-link:', resourceId('Microsoft.Insights/components', parameters('myApplicationName')))]": "Resource"
+  },
+  "properties": {
+    "name": "[variables('responseAlertName')]",
+    "description": "response time alert",
+    "isEnabled": true,
+    "condition": {
+      "$type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.ThresholdRuleCondition, Microsoft.WindowsAzure.Management.Mon.Client",
+      "odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+      "dataSource": {
+        "$type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleMetricDataSource, Microsoft.WindowsAzure.Management.Mon.Client",
+        "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+        "resourceUri": "[resourceId('microsoft.insights/components', parameters('myApplicationName'))]",
+        "metricName": "request.duration"
+      },
+      "threshold": "[parameters('responseTime')]",
+      "windowSize": "PT15M"
+    },
+    "actions": [{
+      "$type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleEmailAction, Microsoft.WindowsAzure.Management.Mon.Client",
+      "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+      "sendToServiceOwners": true,
+      "customEmails": []
+    }]
+  }
+}</pre><p>While initially such an ARM template may be a little bit overwhelming, in fact it contains a fixed set of parameters which can be easily found using Resource Explorer (you can find a link to it in the <span class="emphasis"><em>Further reading</em></span><span class="strong"><strong> </strong></span>section). Here you can find out how existing alert rules can be discovered:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/8fbdc5de-4520-44c4-8d12-4c975c7df43b.png" /></div><p>In the preceding screenshot, I displayed the available alert rules inside an Azure Application Insights instance, which I created inside a particular resource group. When you click on it, you will see a full description of the resource inside Azure.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip182"></a>Note</h3><p>Resource Explorer is a great tool when you work with ARM templates and search for a reference to a particular resource. It displays all parameters describing a service from the ARM point of view.</p></div><p>Here, you can find the default alert, created when a service is deployed:</p><pre class="programlisting">{
+  "id": "/subscriptions/.../resourceGroups/handsonazure-rg/providers/microsoft.insights/alertrules/Failure Anomalies - handsonazure-ai",
+  "name": "Failure Anomalies - handsonazure-ai",
+  "type": "Microsoft.Insights/alertRules",
+  "location": "West Europe",
+  "properties": {
+    "name": "Failure Anomalies - handsonazure-ai",
+    "description": "",
+    "isEnabled": true,
+    "condition": {
+      "$type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.ThresholdRuleCondition, Microsoft.WindowsAzure.Management.Mon.Client",
+      "odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+      "dataSource": {
+        "$type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleMetricDataSource, Microsoft.WindowsAzure.Management.Mon.Client",
+        "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+        "resourceUri": "/subscriptions/.../resourcegroups/handsonazure-rg/providers/microsoft.insights/components/handsonazure-ai",
+        "resourceLocation": null,
+        "metricNamespace": null,
+        "metricName": "...",
+        "legacyResourceId": null
+      },
+      "operator": "GreaterThan",
+      "threshold": 2,
+      "windowSize": "PT1H",
+      "timeAggregation": null
+    },
+    "action": null,
+    "lastUpdatedTime": "2018-09-14T12:04:57.6355645Z",
+    "provisioningState": "Succeeded",
+    "actions": [
+      {
+        "$type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleEmailAction, Microsoft.WindowsAzure.Management.Mon.Client",
+        "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+        "sendToServiceOwners": true,
+        "customEmails": []
+      }
+    ]
+  }
+}</pre><p>To make things a little bit easier to understand, let's check how to set an <span>alert</span><a id="id325117154" class="indexterm"></a> inside a portal. You can access the <strong class="userinput"><code>Alerts </code></strong>blade in the <strong class="userinput"><code>Configure </code></strong>section:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/ce036c29-4722-4795-8ab7-6b99f929cb53.png" /></div><p>To get started you need to click on the <strong class="userinput"><code>+ New alert rule</code></strong> button. What you will see is a detailed wizard, providing a quick way to set up an alert. The most important thing here is the conditions—they define how an alert is triggered:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/fa91a422-2243-41d5-812b-7934b3886835.png" /></div><p>Of course, an alert can have more than only one trigger as it all depends on its characteristics. What is more, the conditions can be quite complex; they can refer to multiple resources and introduce the concept of composite alert rules. The next thing defined here is the alert details—you have to provide some metadata which describes them:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/4cdb6b3a-d1ca-4509-b5f9-ff463336a214.png" /></div><p>The important thing is the severity of an alert: the higher it is, the more crucial an alert will be. The last part of the wizard is the actual action, and you have multiple options available:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Email/SMS/Push/Voice</li><li style="list-style-type: disc">Azure Function</li><li style="list-style-type: disc">LogicApp</li><li style="list-style-type: disc">Webhook</li><li style="list-style-type: disc">ITSM</li><li style="list-style-type: disc">Automation runbook</li></ul></div><p>Some of them require you to already have a service which will handle an <span>alert</span><a id="id324830080" class="indexterm"></a>—you have to select the option that suits your needs the most. When you create an alert, it will be active and visible in the service:</p><div class="mediaobject"><img src="/graphics/9781789340624/graphics/cbb185c0-3be0-4dcd-b867-850e9653ed02.png" /></div></div></div>

@@ -1,0 +1,25 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec134"></a>Adding support for pipeline input</h2></div></div><hr /></div><p>Administrators <span>who</span><a id="id326258006" class="indexterm"></a> are used to shell scripting cannot live without the pipeline. Without one cmdlet interacting with another, the extent of automation is drastically reduced. Adding support for pipeline input is also one of the configuration options you set in the <code class="literal">param()</code> block of a function.</p><p>Let's add support for pipeline input to the <code class="literal">New-File</code> cmdlet so that you can send an array of strings through the pipeline for the filename.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec347"></a>How to do it…</h3></div></div></div><p>This capability will require a single change to the existing script. Follow these steps to get started:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Copy the content from <code class="literal">07-New-File.ps1</code> and paste it into a new file.</li><li>Change the <code class="literal">[Parameter()]</code> declaration for the <code class="literal">Path</code> parameter:</li></ol></div><pre class="programlisting">function New-File {
+    [CmdletBinding(
+        ConfirmImpact='High',
+        SupportsShouldProcess=$true
+    )]
+    param (
+        # The path to the file (or the name)
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline)]
+        [string[]]
+        $Path
+    )
+    begin {
+        Write-Host "$(Get-Date)"
+    }
+    process {
+        foreach ($Item in $Path) {
+            if ($PSCmdlet.ShouldProcess("$PsScriptRoot", "Create $Path")) {
+                New-Item -Path $Item -ItemType File
+            }
+        }
+    }
+    end {}
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec348"></a>How it works…</h3></div></div></div><p>There are really two ways to make a cmdlet accept input through the pipeline. Each of these two ways has two sub-ways to accept input, so to speak:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Accept input by type:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">With coercion</li><li style="list-style-type: disc">Without coercion</li></ul></div></li><li style="list-style-type: disc">Accept input by parameter name:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">With coercion</li><li style="list-style-type: disc">Without coercion</li></ul></div></li></ul></div><p>In this recipe, we will make the cmdlet accept input without coercion. In this case, the data type of the <code class="literal">Path</code> parameter is the same as the content being passed through the pipeline: a <code class="literal">string</code> array. In the case of accepting input with coercion, PowerShell will try to convert the content passed through the pipeline to the type that is accepted by the parameter, such as a valid date-like <code class="literal">string</code> to a <code class="literal">datetime</code> object.</p><p>In the case of accepting input by parameter name, the input will be chosen based on whether the property name matches the name of the parameter. If we had to implement this in our case, we could have sent a <code class="literal">PsCustomObject</code> through the pipeline, with <code class="literal">Path</code> as one of the property names in the object. This would have been matched with the <span>parameter</span><a id="id325885507" class="indexterm"></a> name in the <code class="literal">New-File</code> cmdlet, and the new files would have been created.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec349"></a>There's more…</h3></div></div></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Make the <code class="literal">New-File</code> cmdlet accept input based on the property name</li><li style="list-style-type: disc">Read the Help text for both the types (parameter by type and by name) and observe the differences</li></ul></div></div></div>

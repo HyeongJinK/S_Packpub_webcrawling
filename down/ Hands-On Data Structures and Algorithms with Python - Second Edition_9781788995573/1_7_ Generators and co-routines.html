@@ -1,0 +1,99 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec15"></a>Generators and co-routines</h2></div></div><hr /></div><p>We can create functions that do <span>not</span><a id="id326637744" class="indexterm"></a> just return one result but rather an entire sequence of results, by using the yield statement. These functions are called <span class="strong"><strong>generators.</strong></span> Python contains <span>generator</span><a id="id326637732" class="indexterm"></a> functions, which are an easy way to create iterators and are especially useful as a replacement for unworkably long lists. A generator yields items rather than builds lists. For example, the following code shows why we might choose to use a generator, as opposed to creating a list:</p><pre class="programlisting">#compares the running time of a list compared to a generator 
+import time
+#generator function creates an iterator of odd numbers between n and m 
+def oddGen(n,m):
+    while n&lt;m:
+      yield n
+      n+=2
+
+#builds a list of odd numbers between n and m 
+def oddLst(n,m):
+     lst=[]
+     while n&lt;m:
+        lst.append(n)
+        n+=2
+     return lst
+
+#the time it takes to perform sum on an iterator
+t1=time.time()
+sum(oddGen(1,1000000))
+print("Time to sum an iterator: %f" % (time.time() - t1))
+#the time it takes to build and sum a list
+t1=time.time()
+sum(oddLst(1,1000000))
+print("Time to build and sum a list: %f" % (time.time() - t1))
+
+</pre><p>This prints out the following:</p><div class="mediaobject"><img src="/graphics/9781788995573/graphics/442aa87e-b5c7-473c-ac6f-8e2639e50b63.png" /></div><p>As we can see, building a list to do this calculation takes significantly longer. The performance improvement as a result of using generators is because the values are generated on demand, rather than saved as a list in memory. A calculation can begin before all the elements have been generated and elements are generated only when they are needed.</p><p>In the preceding example, the sum method loads each number into memory when it is needed for the calculation. This is achieved by the generator object repeatedly calling the <code class="literal">__next__ ()</code> special method. Generators never return a value other than <code class="literal">None</code>.</p><p>Typically, generator objects are used in for loops. For example, we can make use of the <code class="literal">oddLst</code> generator function created in the preceding code to print out odd integers between <code class="literal">1</code> and <code class="literal">10</code>:</p><pre class="programlisting">for i in oddLst (1,10):print(i)</pre><p>We can also create a <span class="strong"><strong>generator expression</strong></span>, which, apart from replacing square brackets with parentheses, uses the same syntax and carries out the same operation as <span>list</span><a id="id326637506" class="indexterm"></a> comprehensions. Generator expressions, however, do not create a list; they create a <span class="strong"><strong>generator object</strong></span>. This <span>object</span><a id="id326637496" class="indexterm"></a> does not create the data, but rather creates that data on demand. This means that generator objects do not support sequence methods such as <code class="literal">append()</code> and <code class="literal">insert()</code>.</p><p>You can, however, change a generator into a list using the <code class="literal">list()</code> function:</p><div class="mediaobject"><img src="/graphics/9781788995573/graphics/2a0679c6-deca-4a63-b4f4-ab5510eb4937.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec12"></a>Classes and object programming</h3></div></div></div><p>Classes are a way to <span>create</span><a id="id325837800" class="indexterm"></a> new kinds of <span>objects</span><a id="id325837806" class="indexterm"></a> and they are central to object-oriented programming. A class defines a set of attributes that are shared across instances of that class. Typically, classes are sets of functions, variables, and properties.</p><p>The object-oriented paradigm is compelling because it gives us a concrete way to think about and represent the core functionality of our programs. By organizing our programs around objects and data rather than actions and logic, we have a robust and flexible way to build complex applications. The actions and logic are still present, of course, but by embodying them in objects, we have a way to encapsulate functionality, allowing objects to change in very specific ways. This makes our code less error-prone, easier to extend and maintain, and able to model real-world objects.</p><p> </p><p> </p><p>Classes are created in Python using the class statement. This defines a set of shared attributes associated with a collection of class instances. A class usually consists of a number of methods, class variables, and computed properties. It is important to understand that defining a class does not, by itself, create any instances of that class. To create an instance, a variable must be assigned to a class. The class <span>body</span><a id="id325837824" class="indexterm"></a> consists of a series of statements that execute during the class definition. The functions defined inside a class are called <span class="strong"><strong>instance methods.</strong></span> They apply some operations to the class instance by passing an instance of that class as the first argument. This argument is called self by convention, but it can be any legal identifier. Here is a simple example:</p><pre class="programlisting"><span>class Employee(object):</span>
+    numEmployee=0
+    def init (self,name,rate):
+        self.owed=0 
+        self.name=name
+        self.rate=rate 
+      Employee.numEmployee += 1
+
+    def del (self): 
+        Employee.numEmployee-=1
+
+    def hours(self,numHours):
+         self.owed += numHours*self.rate
+         return ("%.2f hours worked" % numHours)
+
+    def pay(self):
+        self.owed=0
+        return("payed %s " % self.name)</pre><p>Class variables, such as <code class="literal">numEmployee</code>, share values among all the instances of the class. In this example, <code class="literal">numEmployee</code> is used to count the number of employee instances. Note that the <code class="literal">Employee</code> class implements the <code class="literal">__init__ and __del__</code> special methods, which we will discuss in the next section.</p><p>We can create instances of the <code class="literal">Employee</code> objects, run methods, and return class and instance variables by doing the following:</p><div class="mediaobject"><img src="/graphics/9781788995573/graphics/a175e1fd-62d1-435b-9b1d-f21174cb02f6.png" /></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec13"></a>Special methods</h3></div></div></div><p>We can use the <code class="literal">dir(object)</code> function to get a list of attributes of a particular object. The methods that begin and end with two underscores are called <span class="strong"><strong>special methods.</strong></span> Apart from <span>the</span><a id="id325855477" class="indexterm"></a> following exception<span class="strong"><strong>,</strong></span> special methods are generally called by the Python interpreter rather than the programmer; for example, when we use the <code class="literal">+</code> operator, we are actually invoking a <code class="literal">to _add_ ()</code> call. For example, rather than using <code class="literal">my_object._len_ ()</code>, we can use <code class="literal">len(my_object)</code>; using <code class="literal">len()</code> on a string object is actually much faster, because it returns the value representing the object's size in memory, rather than making a call to the object's <code class="literal">_len_</code> method.</p><p>The only special method we actually call in our programs, as common practice, is the <code class="literal">_init_</code> method, to invoke the initializer of the superclass in our own class definitions. <span>It is strongly advised not to use the double underscore syntax for your own</span> objects because of potential current or future conflicts with Python's own special methods.</p><p>We may, however, want to implement special methods in <span>custom</span><a id="id325855555" class="indexterm"></a> objects, to give them some of the behavior of built-in types. In the following code, we create a class that implements the <code class="literal">_repr_</code> method. This method creates a string representation of our object that is useful for inspection purposes:</p><pre class="programlisting">class my_class():
+    def __init__(self,greet):
+        self.greet=greet 
+    def __repr__(self):
+        return 'a custom object (%r) ' % (self.greet)</pre><p>When we create an instance of this object and inspect it, we can see we get our customized string representation. Notice the use of the <code class="literal">%r</code> format placeholder to return the standard representation of the object. This is useful and best practice because, in this case, it shows us that the <code class="literal">greet</code> object is a string indicated by the quotation marks:</p><div class="mediaobject"><img src="/graphics/9781788995573/graphics/9f0591d7-92dc-4e23-8a81-2cc4d08736a0.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch01lvl3sec1"></a>Inheritance</h4></div></div></div><p>Inheritance is one of <span>the</span><a id="id325855594" class="indexterm"></a> most powerful features of object-oriented programming languages. It allows us to inherit the functionality from other classes. It is possible to create a new class that modifies the behavior of an existing class through inheritance. Inheritance means that if an object of one class is created by inheriting another class, then the object would have all the <span>functionality, methods, and variables</span> of both the classes; that is, the parent class and new class. The existing class from which we inherit the functionalities is called the parent/base class, and the new class is called the derived/child class.</p><p>Inheritance can be explained with a very simple example—we create an <code class="literal">employee</code> class with attributes such as name of employee and rate at which he is going to be paid hourly. We can now create a new <code class="literal">specialEmployee</code> class inheriting all the attributes from the <code class="literal">employee</code> class.</p><p>Inheritance in Python is done by passing the inherited class as an argument in the class definition. It is often used to modify the behavior of existing methods.</p><p><span>An instance of the</span><code class="literal">specialEmployee</code> class is identical to an <code class="literal">Employee</code> instance, except for the changed <code class="literal">hours()</code> method. For example, in the following <span>code</span><a id="id325895058" class="indexterm"></a> we create a new <code class="literal">specialEmployee</code> class that inherits all the functionalities of the <code class="literal">Employee</code> class, and also <span>change</span> the  <code class="literal">hours()</code> method:</p><pre class="programlisting">class specialEmployee(Employee):
+    def hours(self,numHours):
+        self.owed += numHours*self.rate*2 
+        return("%.2f hours worked" % numHours)</pre><p> </p><p> </p><p>For a subclass to define new class variables, it needs to define an <code class="literal">__init__()</code> method, as follows:</p><pre class="programlisting">class specialEmployee(Employee):
+    def __init__(self,name,rate,bonus):
+        Employee.__init__(self,name,rate)    #calls the base classes                                                     
+        self.bonus=bonus
+
+    def   hours(self,numHours):
+        self.owed += numHours*self.rate+self.bonus     
+        return("%.2f hours worked" % numHours)
+
+</pre><p>Notice that the methods of the base class are not automatically invoked and it is necessary for the derived class to call them. We can test for the class membership using the built-in <code class="literal">isinstance(obj1,obj2)</code> function. This returns <code class="literal">True</code> if <code class="literal">obj1</code> belongs to the class of <code class="literal">obj2</code> or any class derived from <code class="literal">obj2</code>. Let's consider the following example to understand this, where <code class="literal">obj1</code> and <code class="literal">obj2</code> are the objects of the <code class="literal">Employee</code> and <code class="literal">specialEmployee</code> classes respectively:</p><pre class="programlisting">#Example issubclass() to check whether a class is a subclass of another class  
+#Example isinstance() to check if an object belongs to a class or not 
+
+print(issubclass(specialEmployee, Employee))
+print(issubclass(Employee, specialEmployee)) 
+
+d = specialEmployee("packt", 20, 100) 
+b = Employee("packt", 20)  
+print(isinstance(b, specialEmployee)) 
+print(isinstance(b, Employee)) 
+
+# the output prints  
+True 
+False 
+False 
+True</pre><p>Generally, all the methods operate on the instance of a class defined within a class. However, it is not a requirement. There are two types of methods—<span class="strong"><strong>static methods</strong></span> and <span class="strong"><strong>class methods</strong></span>. A static method is quite similar to a class method, which is mainly bound to the class, and not bound with the object of the class. It is defined <span>within</span><a id="id326096708" class="indexterm"></a> a class and <span>does</span><a id="id326168201" class="indexterm"></a> not require an instance of a class to execute. It does not perform any operations on the instance and it is defined using the <code class="literal">@staticmethod</code> class decorator. Static methods cannot access the attributes of an instance, so their most common usage is as a convenience to group utility functions together.</p><p>A class method operates on the class itself and does not work with the instances. A class method works in the same way that class variables are associated with the classes rather than instances of that class. Class methods are defined using the <code class="literal">@classmethod</code> decorator and are distinguished from instance methods in the class. It is passed as the first argument, and this is named <code class="literal">cls</code> by convention. The<code class="literal">exponentialB</code> class inherits from the <code class="literal">exponentialA</code> class and changes the base class variable to <code class="literal">4</code>. We can also run the parent class's <code class="literal">exp()</code> method as follows:</p><pre class="programlisting">class exponentialA(object):
+    base=3
+    @classmethod
+    def exp(cls,x):
+        return(cls.base**x) 
+
+    @staticmethod  
+def addition(x, y):  
+        return (x+y)
+
+class exponentialB(exponentialA):
+        base=4
+
+a = exponentialA() 
+b= a.exp(3) 
+print("the value: 3 to the power 3 is", b) 
+print('The sum is:', exponentialA.addition(15, 10)) 
+print(exponentialB.exp(3))
+
+#prints the following output
+the value: 3 to the power 3 is 27 
+The sum is: 25 
+64</pre><p>The difference between a static method and a class method is that a static method doesn't know anything about the class, it only deals with the parameters, whereas the class method works only with the class, and its parameter is always the class itself.</p><p><span>There</span> are several reasons why class methods may be useful. For example, because a subclass inherits all the same features of its parent, there is the potential for it to break inherited methods. Using class methods is a way to define exactly what methods are run.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch01lvl3sec2"></a>Data encapsulation and properties</h4></div></div></div><p>Unless otherwise specified, all <span>attributes</span><a id="id326168372" class="indexterm"></a> and methods are accessible without restriction. This also means that everything defined in a base class is accessible from a derived class. This may cause problems when we are building object-oriented applications where we may want to hide the internal <span>implementation</span><a id="id326168381" class="indexterm"></a> of an object. This can lead to namespace conflicts between objects defined in derived classes with the base class. To prevent this, the methods we define private attributes with have a double underscore, such as <code class="literal"><span>__privateMethod()</span></code>. These method names are automatically changed to <code class="literal">__Classname_privateMethod()</code> to prevent name conflicts with methods defined in base classes. Be aware that this does not strictly hide private attributes, rather it just provides a mechanism for preventing name conflicts.</p><p>It is recommended to use private attributes <span>when</span><a id="id326312589" class="indexterm"></a> using a class <span class="strong"><strong>property</strong></span> to define mutable attributes. A property is a kind of attribute that rather than returning a stored value computes its value when called. For example, we could redefine the <code class="literal">exp()</code> property with the following:</p><pre class="programlisting">class Bexp(Aexp):
+    base=3
+    def exp(self):
+        return(x**cls.base)</pre></div></div></div>

@@ -1,0 +1,54 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec72"></a>The dynamic routing algorithm</h2></div></div><hr /></div><p>As mentioned earlier, it is necessary for the capsule in the lower layer to <span>decide</span><a id="id325585521" class="indexterm"></a> how to send its output to the higher-level capsules. This is achieved through the novel concept of the dynamic routing algorithm, which was introduced in the<span> paper (<a class="ulink" href="https://arxiv.org/pdf/1710.09829.pdf" target="_blank">https://arxiv.org/pdf/1710.09829.pdf</a>)</span>. The key idea behind this algorithm is that the lower layer capsule will send their output to the higher-level capsules that <span class="emphasis"><em>match</em></span> the input. </p><p>This is achieved through the weights (<span class="strong"><strong>c<sub>ij</sub></strong></span>) mentioned in the last section. These weights multiply the outputs from the lower layer capsule <span class="strong"><strong>i</strong></span> before pushing them as the input to the higher level capsule <span class="strong"><strong>j</strong></span>. Some of the properties of these weights are as follows:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>c<sub>ij</sub></strong></span>s are non-negative in nature and are determined by the dynamic-routing algorithm</li><li style="list-style-type: disc">The number of weights in the lower layer capsule is equal to the number of higher-level capsules</li><li style="list-style-type: disc">The sum of the weights of each lower layer capsule <span class="strong"><strong>i</strong></span> amounts to 1</li></ul></div><p>Implement the iterative routing algorithm using the following code:</p><pre class="programlisting">def routing(u):
+"""
+    This function performs the routing algorithm as mentioned in the paper
+    :parameter u: Input tensor with [batch_size, num_caps_input_layer=1152, 1, caps_dim_input_layer=8, 1] shape.
+                NCAPS_CAPS1: num capsules in the PrimaryCaps layer l
+                CAPS_DIM_CAPS2: dimensions of output vectors of Primary caps layer l
+
+    :return: "v_j" vector (tensor) in Digitcaps Layer
+             Shape:[batch_size, NCAPS_CAPS1=10, CAPS_DIM_CAPS2=16, 1]
+    """
+    #local variable b_ij: [batch_size, num_caps_input_layer=1152,
+                           num_caps_output_layer=10, 1, 1]
+    #num_caps_output_layer: number of capsules in Digicaps layer l+1
+b_ij = tf.zeros([BATCH_SIZE, NCAPS_CAPS1, NCAPS_CAPS2, 1, 1], dtype=np.float32, name="b_ij")
+
+# Preparing the input Tensor for total number of DigitCaps capsule for multiplication with W
+u = tf.tile(u, [1, 1, b_ij.shape[2].value, 1, 1])   # u =&gt; [batch_size, 1152, 10, 8, 1]
+
+    # W: [num_caps_input_layer, num_caps_output_layer, len_u_i, len_v_j] as mentioned in the paper
+W = tf.get_variable('W', shape=(1, u.shape[1].value, b_ij.shape[2].value,    
+        u.shape[3].value, CAPS_DIM_CAPS2),dtype=tf.float32,
+        initializer=tf.random_normal_initializer(stddev=STDEV))
+    W = tf.tile(W, [BATCH_SIZE, 1, 1, 1, 1]) # W =&gt; [batch_size, 1152, 10, 8, 16]
+
+    #Computing u_hat (as mentioned in the paper)
+u_hat = tf.matmul(W, u, transpose_a=True)  # [batch_size, 1152, 10, 16, 1]
+
+    # In forward, u_hat_stopped = u_hat;
+    # In backward pass, no gradient pass from  u_hat_stopped to u_hat
+u_hat_stopped = tf.stop_gradient(u_hat, name='gradient_stop')
+</pre><p>Note that, in the previous code, we are dividing the actual routing function in the code into two parts so that we can focus on the dynamic routing algorithm part. The first part of the function takes vector <span class="strong"><strong>u </strong></span>as input from the lower layer capsule(s). First, it generates the vector </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/78b7d62f-29a3-47da-b9b3-8e6e738344ae.png" /></div><p> using the weight vector <span class="strong"><strong>W</strong></span>. Also, observe that we define a temporary variable called </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/649a218e-8f83-484f-be49-5f98546d3b5f.png" /></div><p>, which is initialized to zero at the start of training. The values of </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/629d709c-be8b-4fdb-94dc-8f983d6fc454.png" /></div><p> will be updated in the algorithm and will be stored in <span class="strong"><strong>c<sub>ij </sub></strong></span>at the end of the algorithm. The second part of the function implements the actual iterative routing algorithm, as follows:</p><pre class="programlisting"># Routing Algorithm Begins here
+for r in range(ROUTING_ITERATIONS):
+with tf.variable_scope('iterations_' + str(r)):
+c_ij = tf.nn.softmax(b_ij, axis=2) # [batch_size, 1152, 10, 1, 1]
+
+        # At last iteration, use `u_hat` in order to back propagate gradient
+if r == ROUTING_ITERATIONS - 1:
+s_j = tf.multiply(c_ij, u_hat) # [batch_size, 1152, 10, 16, 1]
+            # then sum as per paper
+s_j = tf.reduce_sum(s_j, axis=1, keep_dims=True) # [batch_size, 1, 10, 16, 1]
+
+v_j = squash(s_j) # [batch_size, 1, 10, 16, 1]
+
+elif r &lt; ROUTING_ITERATIONS - 1:  # No backpropagation in these iterations
+s_j = tf.multiply(c_ij, u_hat_stopped)
+            s_j = tf.reduce_sum(s_j, axis=1, keepdims=True)
+            v_j = squash(s_j)
+            v_j = tf.tile(v_j, [1, u.shape[1].value, 1, 1, 1]) # [batch_size, 1152, 10, 16, 1]
+
+            # Multiplying in last two dimensions: [16, 1]^T x [16, 1] yields [1, 1]
+u_hat_dot_v = tf.matmul(u_hat_stopped, v_j, transpose_a=True) # [batch_size, 1152, 10, 1, 1]
+
+b_ij = tf.add(b_ij,u_hat_dot_v)
+return tf.squeeze(v_j, axis=1) # [batch_size, 10, 16, 1]</pre><p>First, we define a loop over <code class="literal">ROUTING_ITERATIONS</code>. This is the parameter that is defined by the user. Hinton mentions in his paper that the typical values of <code class="literal">3</code> should suffice for this. </p><p>Next, we perform a softmax on </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/9270eaf4-ff44-4daf-a8bc-334be8a46e1e.png" /></div><p> to compute the initial values of the <span class="strong"><strong>c<sub>ij</sub></strong></span>s. Note that <span class="strong"><strong>c<sub>ij</sub></strong></span>s are not to be included in the back propagation since these can only be obtained through the iterative algorithm. For this reason, all of the routing iterations before the last one are performed on </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/a8685841-5802-44a6-8a2e-8043cc5eeefb.png" /></div><p> (which helps to stop gradients, as defined earlier).</p><p>For each routing iteration, we use the following operations for each higher-level capsule <span class="strong"><strong>j</strong></span>:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/65112e4b-4145-4396-85a0-d3cfa723a350.png" /></div><p> </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/06f0ec1f-a46a-47b0-9cd5-255801a0fb57.png" /></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/87a60035-91eb-479b-9789-d357871328a3.png" /></div><p>We have explained the first two equations already. Now let's try to understand the third equation.</p><p>The third equation is the essence of the iterative <span>routing</span><a id="id325748220" class="indexterm"></a> algorithm. It updates the weights </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/866e399b-8a9f-4894-afd9-fdafdd292f68.png" /></div><p>. The formula states that the new weight value is the sum of the old weights: the predicted vector from lower layer capsules and the output of the higher layer capsule. The dot product is essentially trying to capture the notion of similarity between the input vector and the output vector of the capsule. This way, the output from the lower capsule <span class="strong"><strong>i </strong></span>is only sent to the higher-level capsule <span class="strong"><strong>j</strong></span>, which agrees to its input. The dot product achieves the agreement. This algorithm is repeated a number of times equal to the <code class="literal">ROUTING_ITERATIONS</code> parameter in the code.</p><p>This concludes our discussion on the innovative routing algorithm and its applications.</p></div>

@@ -2,8 +2,8 @@ var sqlite3 = require('sqlite3').verbose();
 var request = require("sync-request"); 
 var db = new sqlite3.Database('./DB/books.db');
 let p = 0;
-
-db.all("SELECT isbn FROM book WHERE imgUrl = '' or imgUrl ISNULL", function(err, rows) {
+//          
+db.all("SELECT isbn FROM book WHERE imgUrl = '' or imgUrl ISNULL AND category = 'Application Development'", function(err, rows) {
     rows.forEach(function (row) {
         let isbn = row.isbn;
         //console.log(isbn);
@@ -18,7 +18,11 @@ db.all("SELECT isbn FROM book WHERE imgUrl = '' or imgUrl ISNULL", function(err,
             
             stmt.run(imgUrl, isbn);
             p++;
-            console.log(p*100/rows.length+"%")
+            //console.log(p*100/rows.length+"%")
+            var percent = (p*100/rows.length).toFixed(2);
+            process.stdout.cursorTo(0);
+            process.stdout.clearLine(1);
+            process.stdout.write(percent + '%');
             stmt.finalize();
         }); 
     })

@@ -1,0 +1,98 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec13"></a>Working with PostgreSQL transactions</h2></div></div><hr /></div><p>PostgreSQL provides you with a highly <span>advanced</span><a id="id326623226" class="indexterm"></a> transaction machinery that offers countless features to developers and administrators alike. In this section, it is time to look at the basic concept of transactions.</p><p> </p><p>The first important thing to know is that in PostgreSQL, everything is a transaction. If you send a simple query to the server, it is already a transaction. Here is an example:</p><pre class="programlisting"><span class="strong"><strong>test=# SELECT now(), now();</strong></span>
+<span class="strong"><strong>             now               |             now               
+-------------------------------+------------------------------
+ 2018-08-24 16:03:27.174253+02 | 2018-08-24 16:03:27.174253+02
+(1 row)
+</strong></span></pre><p>In this case, the <code class="literal">SELECT</code> statement will be a separate transaction. If the same command is executed again, different timestamps will be returned.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip4"></a>Note</h3><p>Keep in mind that the <code class="literal">now()</code> function will return the transaction time. The <code class="literal">SELECT</code> statement will, therefore, always return two identical timestamps. If you want "real time" consider using clock_timestamp() instead of now().</p></div><p>If more than one statement has to be a part of the same transaction, the <code class="literal">BEGIN</code> statement must be used, shown as follows:</p><pre class="programlisting"><span class="strong"><strong>test=# \h BEGIN</strong></span>
+<span class="strong"><strong>Command: BEGIN</strong></span>
+<span class="strong"><strong>Description: Start a transaction block</strong></span>
+<span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>BEGIN  [ WORK | TRANSACTION ] [ transaction_mode [, ...]  ]</strong></span>
+
+<span class="strong"><strong>where transaction_mode is one of: </strong></span>
+
+<span class="strong"><strong>    ISOLATION LEVEL { SERIALIZABLE | REPEATABLE READ </strong></span>
+<span class="strong"><strong>   | READ COMMITTED | READ UNCOMMITTED } </strong></span>
+<span class="strong"><strong>    READ WRITE | READ ONLY </strong></span>
+<span class="strong"><strong>    [ NOT ] DEFERRABLE</strong></span></pre><p>The <code class="literal">BEGIN</code> statement will ensure that more than one <span>command</span><a id="id326300003" class="indexterm"></a> will be packed into a transaction. Here is how it works:</p><pre class="programlisting"><span class="strong"><strong>test=# BEGIN; 
+BEGIN 
+test=# SELECT now(); 
+              now               
+------------------------------- 
+ 2018-08-24 16:04:08.105131+02 
+(1 row) 
+test=# SELECT now(); 
+              now               
+-------------------------------</strong></span></pre><p> </p><p> </p><pre class="programlisting"><span class="strong"><strong> 2018-08-24 16:04:08.105131+02 
+(1 row) 
+test=# COMMIT; 
+COMMIT</strong></span></pre><p>The important point here is that both timestamps will be identical. As mentioned earlier, we are talking about transaction time.</p><p>To end the transaction, <code class="literal">COMMIT</code> can be used:</p><pre class="programlisting"><span class="strong"><strong>test=# \h COMMIT</strong></span>
+<span class="strong"><strong>Command: COMMIT
+</strong></span><span class="strong"><strong>Description: Commit the current transaction
+</strong></span><span class="strong"><strong>Syntax:
+</strong></span><span class="strong"><strong>COMMIT [ WORK | TRANSACTION ]</strong></span></pre><p>There are a couple of syntax elements here. You can just use <code class="literal">COMMIT</code>, <code class="literal">COMMIT WORK</code>, or <code class="literal">COMMIT TRANSACTION</code>. All three options have the same meaning. If this is not enough, there is more:</p><pre class="programlisting"><span class="strong"><strong>test=# \h END  
+Command:  END 
+Description: commit the current transaction 
+Syntax: 
+END [ WORK | TRANSACTION ]</strong></span></pre><p>The <code class="literal">END</code> clause is the same as the <code class="literal">COMMIT</code> clause.</p><p><code class="literal">ROLLBACK</code> is the counterpart of <code class="literal">COMMIT</code>. Instead of <span>successfully</span><a id="id326374078" class="indexterm"></a> ending a transaction, it will simply stop the transaction without ever making things visible to other transactions:</p><pre class="programlisting"><span class="strong"><strong>test=# \h ROLLBACK</strong></span>
+<span class="strong"><strong>Command: ROLLBACK</strong></span>
+<span class="strong"><strong>Description: Abort the current transaction</strong></span>
+<span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>ROLLBACK [ WORK | TRANSACTION ]</strong></span></pre><p>Some applications use <code class="literal">ABORT</code> instead of <code class="literal">ROLLBACK</code>. The meaning is the same.</p><p> </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec10"></a>Handling errors inside a transaction</h3></div></div></div><p>It is not always the case that transactions are <span>correct</span><a id="id326623213" class="indexterm"></a> from beginning to end. Things might just go wrong for whatever reason. However, in PostgreSQL, only error-free transactions can be committed. The following listing shows a failing transaction, which errors out due to a division by zero error:</p><pre class="programlisting"><span class="strong"><strong>test=# BEGIN; 
+BEGIN
+test=# SELECT 1; 
+ ?column? </strong></span>
+<span class="strong"><strong>----------
+</strong></span><span class="strong"><strong>      1</strong></span>
+<span class="strong"><strong>(1 row)
+</strong></span><span class="strong"><strong>test=# SELECT 1 / 0; 
+ERROR: division by zero  
+test=# SELECT 1; 
+ERROR: current transaction is aborted, commands ignored until end of transaction block 
+test=# COMMIT;  
+ROLLBACK</strong></span></pre><p>Note that <code class="literal">division by zero</code> did not work out.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip5"></a>Note</h3><p>In any proper database, an instruction similar to this will instantly error out and make the statement fail.</p></div><p>It is important to point out that PostgreSQL will error out, unlike MySQL, which is far less strict. After an error has occurred, no more instructions will be accepted, even if those instructions are semantically and syntactically correct. It is still <span>possible</span><a id="id326648416" class="indexterm"></a> to issue a <code class="literal">COMMIT</code>. However, PostgreSQL will roll back the transaction because it is the only correct thing to be done at this point.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec11"></a>Making use of SAVEPOINT</h3></div></div></div><p>In professional applications, it can be <span>pretty</span><a id="id326648437" class="indexterm"></a> hard to write <span>reasonably</span><a id="id326648449" class="indexterm"></a> long transactions without ever encountering a single error. To solve the problem, users can utilize something called <code class="literal">SAVEPOINT</code>. As the name indicates, a savepoint is a safe place inside a transaction that the application can return to in the event things go terribly wrong. Here is an example:</p><p> </p><pre class="programlisting"><span class="strong"><strong>test=# BEGIN; 
+BEGIN 
+test=# SELECT 1; 
+ ?column?  
+---------- 
+        1 
+(1 row) 
+
+test=# SAVEPOINT a; 
+SAVEPOINT 
+test=# SELECT 2 / 0; 
+ERROR:  division by zero
+test=# SELECT 2; 
+ERROR:  current transaction is aborted, commands ignored until end of transaction block 
+test=# ROLLBACK TO SAVEPOINT a; 
+ROLLBACK 
+test=# SELECT 3; 
+ ?column?  
+---------- 
+        3
+</strong></span><span class="strong"><strong>(1 row) 
+
+test=# COMMIT; 
+COMMIT</strong></span></pre><p>After the first <code class="literal">SELECT</code> clause, I decided to create a savepoint to make sure that the application can always return to this point inside the transaction. As you can see, the savepoint has a name, which is referred to later.</p><p>After returning to the savepoint called <code class="literal">a</code>, the <span>transaction</span><a id="id326649886" class="indexterm"></a> can proceed normally. The code has jumped back before the error, so everything is fine.</p><p>The number of savepoints inside a transaction is <span>practically</span><a id="id326649897" class="indexterm"></a> unlimited. We have seen customers with over 250,000 savepoints in a single operation. PostgreSQL can easily handle this.</p><p>If you want to remove a savepoint from inside a transaction, there is a <code class="literal">RELEASE SAVEPOINT</code> command:</p><pre class="programlisting"><span class="strong"><strong>test=# \h RELEASE SAVEPOINT
+
+Command: RELEASE SAVEPOINT</strong></span>
+<span class="strong"><strong>Description: Destroy a previously defined </strong></span>SAVEPOINT<code class="literal">
+</code><span class="strong"><strong>Syntax:</strong></span>
+<span class="strong"><strong>RELEASE [ SAVEPOINT ] savepoint_name </strong></span></pre><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>Many people ask what will happen if you try to reach a savepoint after a transaction has ended? The answer is, the life of a savepoint ends as soon as the <span>transaction</span><a id="id326663349" class="indexterm"></a> ends. In other words, there is no way to return to a certain point in time after the transactions have been completed.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch02lvl2sec12"></a>Transactional DDLs</h3></div></div></div><p>PostgreSQL has a very nice <span>feature</span><a id="id326663365" class="indexterm"></a> that is unfortunately not present in many commercial database systems. In PostgreSQL, it is possible to run DDLs (commands that change the data structure) inside a transaction block. In a typical commercial system, a DDL will implicitly commit the current transaction. This does not occur in PostgreSQL.</p><p>Apart from some minor exceptions (<code class="literal">DROP DATABASE</code>, <code class="literal">CREATE TABLESPACE</code>, <code class="literal">DROP TABLESPACE</code>, and so on), all DDLs in PostgreSQL are transactional, which is a huge plus and a real benefit to end users.</p><p>Here is an example:</p><pre class="programlisting"><span class="strong"><strong>test=# \d</strong></span>
+<span class="strong"><strong>No relations found. 
+test=# BEGIN; 
+BEGIN 
+test=# CREATE TABLE t_test (id int); 
+CREATE TABLE 
+test=# ALTER TABLE t_test ALTER COLUMN id TYPE int8; 
+ALTER TABLE 
+test=# \d t_test 
+    Table "public.t_test" 
+ Column |  Type  | Modifiers  
+--------+--------+----------- 
+ id     | bigint |  
+ 
+test=# ROLLBACK; 
+ROLLBACK 
+test=# \d </strong></span>
+<span class="strong"><strong>No relations found.</strong></span></pre><p>In this example, a table has been created and modified, and the entire transaction is aborted. As you can see, there is no implicit <code class="literal">COMMIT</code> or any other strange behavior. PostgreSQL simply acts as expected.</p><p>Transactional DDLs are especially important if you want to deploy software. Just imagine running a <span class="strong"><strong>content management system</strong></span> (<span class="strong"><strong>CMS</strong></span>). If a <span>new</span><a id="id325887801" class="indexterm"></a> version is released, you'll want to upgrade. Running the old version would still be OK; running the new version is also OK but you really don't want a mixture of old and new. Therefore, deploying an upgrade in a single <span>transaction</span><a id="id325887808" class="indexterm"></a> is definitely highly beneficial as it upgrades an atomic operation.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note6"></a>Note</h3><p>In order to facilitate good software practices, we can include several separately coded modules from our source control system into a single deployment transaction.</p></div></div></div>

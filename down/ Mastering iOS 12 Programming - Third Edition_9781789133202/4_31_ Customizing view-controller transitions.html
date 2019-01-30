@@ -1,0 +1,307 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec36"></a>Customizing view-controller transitions</h2></div></div><hr /></div><p>Implementing a custom view-controller <span>transition</span><a id="id325333104" class="indexterm"></a> is one of those things that can take a little while to get used to. Implementing custom transitions involves implementing several objects and it's not always easy to make sense of how this works. This section aims to explain exactly how custom view-controller transitions work so you can add one more powerful tool to your developer toolbox.</p><p> </p><p>A nicely-implemented custom view controller transition will entertain and amaze your users. Making your transitions interactive could even ensure that your users spend some extra time playing around with your app, which is exactly what you want. You will implement a custom transition for the <span class="strong"><strong>Hello-Contacts</strong></span> app.</p><p>First, you'll learn how you can implement a custom modal transition. Once you've implemented that, you will learn about custom transitions for <code class="literal">UINavigationController</code> so you can show and hide the contact details page with a custom transition. The dismissal of both the modal view controller and the contact detail page will be interactive, so users can swipe to go back to where they came from.</p><p>In this section, you will work through the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Implement a custom modal presentation transition.</li><li>Make the transition interactive.</li><li>Implement a custom <code class="literal">UINavigationController</code> transition.</li></ol></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec20"></a>Implementing a custom modal presentation transition</h3></div></div></div><p>A lot of applications implement modally-presented <span>view</span><a id="id325369920" class="indexterm"></a> controllers. A modally-presented view controller is typically a view controller that is presented on top of the current screen as an overlay. By default, modally-presented view controllers animate upward from the bottom of the screen and are often used to present forms or other temporary content to the user. In this section, you'll take a look at the default modal presentation transition and how to customize it to suit your own needs.</p><p>The first thing you should do is create a view controller that will be presented modally. Start by creating a new Cocoa Touch Class and name it <code class="literal">CustomPresentedViewController</code>. Make sure that it subclasses <code class="literal">UIViewController</code>. After creating the file, open <code class="literal">Main.storyboard</code> and drag out a new <code class="literal">UIViewController</code> from the Object Library and set its class to <code class="literal">CustomPresentedViewController</code> in the <strong class="userinput"><code>Identity Inspector</code></strong> panel. Next, drag out a bar button item to the left side of the navigation bar on the contacts overview page. Set the bar button's label text to <strong class="userinput"><code>Show Modal</code></strong>.</p><p> </p><p>Then press <span class="emphasis"><em>Ctrl</em></span>, and drag from the bar button item to the new view controller to set up a segue from the contacts overview page to the view controller you just added. Select the <strong class="userinput"><code>Present Modally</code></strong> segue:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/42c57fc5-f4e9-48c8-ba7b-0648408670f5.png" /></div><p>Finally, give the new view controller's <span>view</span><a id="id325580586" class="indexterm"></a> a bright blue background color, so it will be easier to see the transition later. If you run your app now, you can click on the <strong class="userinput"><code>Show Modal</code></strong> button and you'll see an empty view controller pop up from the bottom. You can't dismiss this view controller right now. That's okay; you will get to that later. Let's work on a custom transition to display this view controller first.</p><p>Custom view-controller transitions use several objects to facilitate the animation. The first object you will look at is <code class="literal">transitioningDelegate</code> for <code class="literal">UIViewController</code>. The <code class="literal">transitioningDelegate</code> property is responsible for providing an animation controller that provides the custom transition.</p><p>The animation controller uses a transitioning context object that provides information about the view controllers that are involved in the transition. Typically, these view controllers will be the current view controller and the view controller that is about to be presented.</p><p>The transitioning flow can be described in the following steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>A transition begins; the target view controller is asked for its <code class="literal">transitioningDelegate</code>.</li><li>The <code class="literal">transitioningDelegate</code> is asked for an animation controller.</li><li>The animation controller is asked for the animation duration.</li><li>The animation controller is told to perform the animation.</li><li>When the animation is complete, the animation controller calls <code class="literal">completeTransition(_:)</code> on the transitioning context to mark the animation as completed.</li></ol></div><p>If step 1 or step 2 returns <code class="literal">nil</code>, or isn't implemented at all, the default animation for the transition is used. The objects involved in a custom transition are displayed in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/765da052-1cf5-4fde-b4bf-8362110dcb66.png" /></div><p>Creating a separate object to control the animation is often a good idea because it allows you to reuse a transition and it keeps your code nice and clean. The animation controller should be an object that conforms to <code class="literal">UIViewControllerAnimatedTransitioning</code>. This object will take care of animating the presented <span>view</span><a id="id325604100" class="indexterm"></a> onto the screen. Let's create the animation controller object next.</p><p>Create a new <strong class="userinput"><code>Cocoa Touch</code></strong> class and name it <code class="literal">CustomModalShowAnimator</code>. Pick <code class="literal">NSObject</code> as its superclass. This class will act as the animation controller. After creating the new file, open it and add the following extension to make <code class="literal">CustomModalShowAnimator</code> conform to <code class="literal">UIViewControllerAnimatedTransitioning</code>:</p><pre class="programlisting">extension CustomModalShowAnimator: UIViewControllerAnimatedTransitioning {
+
+}</pre><p>This makes the new class conform to the protocol that's required to be an animation controller. Xcode will show a build error because you haven't implemented all the methods to conform to <code class="literal">UIViewControllerAnimatedTransitioning</code> yet. Let's go over the methods one by one so you end up with a full implementation for the animation controller.</p><p>The first method that must be implemented for the animation controller is <code class="literal">transitionDuration(using:)</code>. The implementation of this method is shown here:</p><pre class="programlisting">func transitionDuration(using transitionContext: UIViewControllerContextTransitioning?) -&gt; TimeInterval {   
+    return 0.6   
+} </pre><p>This method is used to determine the total transition duration in seconds. In this case, the implementation is simple – the animation should last 0.6 seconds.</p><p>The second method that needs to be implemented is <code class="literal">animateTransition(using:)</code>. Its purpose is to take care of the actual animation for the custom transition. The implementation will take the target <span>view</span><a id="id325333420" class="indexterm"></a> controller and its view will be animated from the top of the screen downward to its final position. It will also do a little bit of scaling, and the opacity of the view will be animated; to do this, <code class="literal">UIViewPropertyAnimator</code> will be used. Add the following implementation to the animator:</p><pre class="programlisting">func animateTransition(using transitionContext: UIViewControllerContextTransitioning) {
+  // 1
+  guard let toViewController = transitionContext.viewController(forKey: UITransitionContextViewControllerKey.to)
+    else { return }
+
+  // 2
+  let transitionContainer = transitionContext.containerView
+
+  // 3
+  var transform = CGAffineTransform.identity
+  transform = transform.concatenating(CGAffineTransform(scaleX: 0.6,
+                                                        y: 0.6))
+  transform = transform.concatenating(CGAffineTransform(translationX:
+    0, y: -200))
+
+  toViewController.view.transform = transform
+  toViewController.view.alpha = 0
+
+  // 4
+  transitionContainer.addSubview(toViewController.view)
+
+  // 5
+  let animationTiming = UISpringTimingParameters(
+    dampingRatio: 0.8,
+    initialVelocity: CGVector(dx: 1, dy: 0))
+
+  let animator = UIViewPropertyAnimator(
+    duration: transitionDuration(using: transitionContext),
+    timingParameters: animationTiming)
+
+  animator.addAnimations {
+    toViewController.view.transform = CGAffineTransform.identity
+    toViewController.view.alpha = 1
+  }
+
+
+  // 6
+  animator.addCompletion { finished in
+    transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
+  }
+
+  // 7
+  animator.startAnimation()
+} </pre><p>A lot is going on in the preceding code snippet. Let's go through the code step by step to see what's happening:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>The target view controller is extracted from the transition context. This allows you to use the view controller's view in the animation that you're about to perform.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Obtain the animation's container view. The container <span>view</span><a id="id325333454" class="indexterm"></a> is a regular <code class="literal">UIView</code> and its intention is to contain all the animated views.</li></ol></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Prepare the target-view controller's view for the animation. The view is transformed so it's off the screen and the transparency is set to make the view completely transparent.</li><li>Once the view is prepared, it is added to the container view.</li><li>The animations are set up and added to a property animator.</li><li>The completion-handler for the property animator is configured so <code class="literal">completeTransition(_:)</code> is called on the context. The <code class="literal">transitionWasCancelled</code> variable is used to determine whether the animation completed normally.</li><li>Start the property animator so the animations begin.</li></ol></div><p>Now that the animation controller is complete, the <code class="literal">UIViewControllerTransitioningDelegate</code> protocol should be implemented on <code class="literal">CustomPresentedViewController</code> so it can act as its own <code class="literal">transitioningDelegate</code>. Open the file and add the following implementation code:</p><pre class="programlisting">class CustomPresentedViewController: UIViewController {
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    transitioningDelegate = self
+  }
+}
+
+extension CustomPresentedViewController: UIViewControllerTransitioningDelegate {
+
+  func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -&gt; UIViewControllerAnimatedTransitioning? {
+    return CustomModalShowAnimator()
+  }
+
+  func animationController(forDismissed dismissed: UIViewController) -&gt; UIViewControllerAnimatedTransitioning? {
+    return nil
+  }
+}</pre><p>This code adds conformance to the <code class="literal">UIViewControllerTransitioningDelegate</code> protocol and assigns the view controller as its own transitioning delegate. The <code class="literal">animationController(forPresented:presenting:source:)</code> method returns the animation controller you created before. The <code class="literal">animationController(forDismissed:)</code> method returns <code class="literal">nil</code> for now. Go ahead and test your custom transition! This is all the code required to create a custom display transition. Now that the app can display the modal view controller with a custom transition, let's add an interactive dismissal transition.</p><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec21"></a>Making an interactive dismissal transition</h3></div></div></div><p>Implementing an interactive <span>transition</span><a id="id325333564" class="indexterm"></a> requires a bit more work than the non-interactive presentation animation, and the way it works is also somewhat harder to grasp. For the non-interactive transition, <code class="literal">transitioningDelegate</code> simply returns an animation controller from <code class="literal">animationController(forPresented:presenting:source:)</code>.</p><p>To implement an interactive dismiss transition, two methods should be implemented. These two methods work together to make the interactive animation happen. The first method is <code class="literal">animationController(forDismissed:)</code>. This method will return an object that performs and controls the interactive animation, similar to the animation controller you implemented before.</p><p>However, to make the animation interactive, you must also implement the <code class="literal">interactionControllerForDismissal(using:)</code> method. This method should return an object that works together with the object that is returned from <code class="literal">animationController(forDismissed:)</code>. The way this ties together can roughly be summed up as follows:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>A <code class="literal">UIViewControllerAnimatedTransitioning</code> object is requested by calling <code class="literal">animationController(forDismissed:)</code>.</li><li>A <code class="literal">UIViewControllerInteractiveTransitioning</code> object is requested by calling <code class="literal">interactionControllerForDismissal(using:)</code>. The <code class="literal">UIViewControllerAnimatedTransitioning</code> object that was retrieved earlier is passed to this method. If this method returns <code class="literal">nil</code>, the transition will be executed without being interactive.</li><li>If both methods return a valid object, the <span>transition</span><a id="id325333659" class="indexterm"></a> is interactive.
+</li></ol></div><p>Let's take a look at how this compares to the previous animation flow we looked at <span>earlier</span>:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/729ec973-7cfa-470c-ac55-10d254a6dfc4.png" /></div><p>For convenience, you will implement both <code class="literal">UIViewControllerAnimatedTransitioning</code> and <code class="literal">UIViewControllerInteractiveTransitioning</code> in a single class. This will make it a little bit easier to see how everything ties together.</p><p>Create a new <code class="literal">Cocoa Touch</code> class and name it <code class="literal">CustomModalHideAnimator</code>. Choose <code class="literal">UIPercentDrivenInteractiveTransition</code> as its superclass. This class implements convenience methods to easily update the interactive transition. It also conforms to <code class="literal">UIViewControllerInteractiveTransitioning</code>, so you don't have to add conformance yourself. However, you should make sure to add conformance to <code class="literal">UIViewControllerAnimatedTransitioning</code> to <code class="literal">CustomModalHideAnimator</code> declaration yourself.</p><p>Let's start off by implementing a custom initializer that will connect the <code class="literal">CustomPresentedViewController</code> instance to <code class="literal">CustomModalHideAnimator</code>. This allows you to add a gesture-recognizer to the modal view and update the animation based on the status of the gesture-recognizer. Add the following code to the implementation for <code class="literal">CustomModalHideAnimator</code>:</p><pre class="programlisting">let viewController: UIViewController
+
+// 1
+init(withViewController viewController: UIViewController) {
+  self.viewController = viewController
+
+  super.init()
+
+  // 2
+  let panGesture = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handleEdgePan(gestureRecognizer:)))
+  panGesture.edges = .left
+
+  viewController.view.addGestureRecognizer(panGesture)
+}
+
+@objc func handleEdgePan(gestureRecognizer: UIScreenEdgePanGestureRecognizer) {
+  // 3
+  let panTranslation = gestureRecognizer.translation(in: viewController.view)
+  let animationProgress = min(max(panTranslation.x / 200, 0.0), 1.0)
+
+  // 4
+  switch gestureRecognizer.state {
+  case .began:
+    viewController.dismiss(animated: true, completion: nil)
+  case .changed:
+    update(animationProgress)
+    break
+  case .ended:
+    if animationProgress &lt; 0.5 {
+      cancel()
+    } else {
+      finish()
+    }
+    break
+  default:
+    cancel()
+    break
+  }
+}</pre><p>This snippet starts off with a custom initializer that immediately ties a <code class="literal">UIViewController</code> instance to itself. It completes the initialization by calling the superclass's initializer, and then the pan gesture is added to the view. <code class="literal">UIScreenEdgePanGestureRecognizer</code> is used so the pan gesture is bound to swiping from the left edge of the screen. This mimics the standard gesture that's usually used to go back one page in a navigation-view controller.</p><p>In <code class="literal">handleEdgePan(_:)</code>, the distance that the user has swiped is determined and this distance is translated into a completion percentage for the animation. Finally, the state of the gesture recognizer is used to determine the appropriate action. If the user just started the gesture, the view controller is told to begin performing the dismissal.</p><p>If the gesture has changed, the animation's progress is updated by calling the <code class="literal">update(_:)</code> method of <code class="literal">UIPercentDrivenInteractiveTransition</code>. If the gesture has ended, the current progress is determined. If there is enough progress, the <span>transition</span><a id="id325333756" class="indexterm"></a> is finished automatically. For all other states, it is assumed that the gesture got canceled so the transition is canceled as well. If you noticed some similarities between this implementation and the interactive drawer animation example you saw before, that means you're paying close attention! The implementations for tracking a gesture and updating an animation's progress are pretty similar.</p><p>So far, you have implemented the interactive part of the animation, but you don't have a complete animation controller just yet. To have a complete animation controller, you need to implement the actual dismissal animation and make <code class="literal">CustomModalHideAnimator</code> conform to the <code class="literal">UIViewControllerAnimatedTransitioning</code> protocol. Before you do this, add the following variable to the <code class="literal">CustomModalHideAnimator</code> class:</p><pre class="programlisting">var currentAnimator: UIViewPropertyAnimator?</pre><p>You didn't have to add a variable like this to the animator you wrote for the custom show animation. The reason you have to implement this property for the interactive animation is that we need to keep a reference to it so it can be returned from the <code class="literal">interruptibleAnimator(using:)</code> method. This method is part of the <code class="literal">UIViewControllerAnimatedTransitioning</code> protocol and is used specifically for interactive animations that use <code class="literal">UIViewPropertyAnimator</code>. To finish your custom dismiss transition, add the following extension to <code class="literal">CustomModalHideAnimator.swift</code>:</p><pre class="programlisting">extension CustomModalHideAnimator: UIViewControllerAnimatedTransitioning {
+  func transitionDuration(using transitionContext: UIViewControllerContextTransitioning?) -&gt; TimeInterval {
+    return 0.6
+  }
+
+  // 1
+  func animateTransition(using transitionContext: UIViewControllerContextTransitioning) {
+    let animator = interruptibleAnimator(using: transitionContext)
+    animator.startAnimation()
+  }
+
+  // 2
+  func interruptibleAnimator(using transitionContext: UIViewControllerContextTransitioning) -&gt; UIViewImplicitlyAnimating {
+
+    // 3
+    if let animator = currentAnimator {
+      return animator
+    }
+
+    guard let fromViewController = transitionContext.viewController(
+      forKey: UITransitionContextViewControllerKey.from),
+      let toViewController = transitionContext.viewController(
+        forKey: UITransitionContextViewControllerKey.to) else {
+          return UIViewPropertyAnimator()
+    }
+
+    let transitionContainer = transitionContext.containerView
+
+    transitionContainer.addSubview(toViewController.view)
+    transitionContainer.addSubview(fromViewController.view)
+
+    let animationTiming = UISpringTimingParameters(
+      dampingRatio: 0.8,
+      initialVelocity: CGVector(dx: 1, dy: 0))
+
+    let animator = UIViewPropertyAnimator(
+      duration: transitionDuration(using: transitionContext),
+      timingParameters: animationTiming)
+
+    // 4
+    self.currentAnimator = animator
+
+    animator.addAnimations {
+      var transform = CGAffineTransform.identity
+      transform = transform.concatenating(CGAffineTransform(scaleX:
+        0.6, y: 0.6))
+      transform = transform.concatenating(CGAffineTransform(translationX: 0, y: -200))
+
+      fromViewController.view.transform = transform
+      fromViewController.view.alpha = 0
+    }
+
+    animator.addCompletion { [weak self] finished in
+      // 5
+      self?.currentAnimator = nil
+      transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
+    }
+
+    return animator
+  }
+}</pre><p>The preceding code is very similar to the code you wrote for the custom show animation. However, instead of configuring and starting the animation in <code class="literal">animateTransition(using:)</code> (step 1), you obtain the animator object from <code class="literal">interruptibleAnimator(using:)</code> and then start the animations. This takes care of implementing a non-interactive version of the dismiss animation.</p><p>The second step highlights <code class="literal">interruptibleAnimator(using:)</code>; this method is expected to return an object that conforms to <code class="literal">UIViewImplicitlyAnimating</code>. <code class="literal">UIViewPropertyAnimator</code> conforms to this protocol automatically. The documentation for <code class="literal">interruptibleAnimator(using:)</code> states that you must return the same animator instance for the duration of a certain transition. This is why you had to store the current animator on the <code class="literal">CustomModalHideAnimator</code> class. When this method is called and an animator exists, the current animator is returned, as shown in step 3. Step 4 highlights storing the animator on <code class="literal">CustomModalHideAnimator</code>. The last step is to set <code class="literal">currentAnimator</code> to <code class="literal">nil</code> once the <span>transition</span><a id="id325333838" class="indexterm"></a> is completed.</p><p>The final step is to add and use the custom animator you just created in <code class="literal">CustomPresentedViewController</code>. Create a property for the hide animator and update <code class="literal">viewDidLoad()</code> as follows:</p><pre class="programlisting">var hideAnimator: CustomModalHideAnimator?
+
+override func viewDidLoad() {
+  super.viewDidLoad()
+  transitioningDelegate = self
+
+  hideAnimator = CustomModalHideAnimator(withViewController: self)
+}</pre><p>The preceding code creates an instance of <code class="literal">CustomModalHideAnimator</code> and binds the view controller to it by passing it to the initializer. Next, update the code in <code class="literal">animationController(forDismissed:)</code> so it returns <code class="literal">hideAnimator</code> instead of <code class="literal">nil</code>:</p><pre class="programlisting">func animationController(forDismissed dismissed: UIViewController) -&gt; UIViewControllerAnimatedTransitioning? {   
+  return hideAnimator
+} </pre><p>Finally, add the <code class="literal">interactionControllerForDismissal(using:)</code> method to the <code class="literal">UIViewControllerTransitioningDelegate</code> extension on <code class="literal">CustomPresentedViewController</code> so the transition becomes interactive:</p><pre class="programlisting">func interactionControllerForDismissal(using animator: UIViewControllerAnimatedTransitioning) -&gt; UIViewControllerInteractiveTransitioning? {   
+  return hideAnimator   
+} </pre><p>Try to run your app now and swipe from the left edge of the screen once you've presented your custom modal view. You can now interactively make the view go away by performing a gesture. Clever implementations of custom transitions can make users feel in control of the application and the way it responds to how they interact with it.</p><p>Implementing a custom <span>transition</span><a id="id325333934" class="indexterm"></a> isn't an easy task. There are a lot of moving parts involved and the amount of delegation and protocols used can be daunting. Take the time to go over the code you've written a few more times to figure out what exactly is going on if you need to. Again, this isn't an easy topic to grasp right away.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec22"></a>Implementing a custom UINavigationController transition</h3></div></div></div><p>The view-controller <span>transition</span><a id="id325333949" class="indexterm"></a> technique that you just explored is very nice when you want to create a custom modal presentation. However, if you want to customize transitions in <code class="literal">UINavigationController</code> or <code class="literal">UITabBarController</code> that persist throughout your app, you need to implement the transitions in a slightly different way.</p><p>Let's take a look at how the setup for animating push transitions for <code class="literal">UINavigationController</code> differs from the setup that is used for the transition you saw <span>earlier</span>:</p><div class="mediaobject"><img src="/graphics/9781789133202/graphics/892d09c7-9278-4558-8e67-428e1dfbe346.png" /></div><p>The depicted flow is one for an interactive transition. It's very similar to the way a normal view-controller transition works, except that for this type of transition, <code class="literal">UINavigationControllerDelegate</code> is the object that provides the <code class="literal">UIViewControllerAnimatedTransitioning</code> and <code class="literal">UIViewControllerInteractiveTransitioning</code> objects that are used to perform transitions between views as they are pushed onto the navigation stack and when they are popped off.</p><p>Because the delegate that is responsible for the transitions is set on the navigation controller instead of on a displayed view controller, every push and pop that is performed by the navigation controller that has a custom delegate will use the same custom transition. This can come in handy when you want to have consistent behavior throughout your app without manually assigning transitioning delegates all of the time.</p><p>To see how a custom navigation controller transition can be implemented, you will create a custom transition that zooms in on a contact from the contact overview page. When a user taps a contact, the contact's detail page will expand and grow from the contact's picture until the detail page covers the entire window, like it's supposed to. Pressing the Back button will shrink the view back down onto the tapped contact's image. Swiping from the left edge of the screen will interactively shrink the view, using the same animation that is triggered by tapping the back button.</p><p>To implement this custom transition, you will implement three classes. A <code class="literal">NavigationDelegate</code> class will implement the <code class="literal">UINavigationController</code> delegate and it will contain the <code class="literal">UIPercentDrivenInteractiveTransition</code> object to manage the interactive <span>transition</span><a id="id325337017" class="indexterm"></a> to go back to the overview page. The other two classes are the animator classes; they both implement the <code class="literal">UIViewControllerAnimatedTransitioning</code> protocol. One is responsible for the hide transition; the other will handle the show transition. Create three files and name them <code class="literal">NavigationDelegate</code>, <code class="literal">ContactDetailShowAnimator</code>, and <code class="literal">ContactDetailHideAnimator</code>. All three should have <code class="literal">NSObject</code> as their superclass.</p><p>Let's begin by implementing <code class="literal">ContactDetailShowAnimator</code>. The first thing you should do with this class is added conformance to the <code class="literal">UIViewControllerAnimatedTransitioning</code> protocol by adding an extension in <code class="literal">ContactDetailShowAnimator.swift</code>. Just like you did for the regular view-controller transition, you have to implement two methods: one that returns the transition duration and one that performs the animation. Add the following implementation to your extension:</p><pre class="programlisting">extension ContactDetailShowAnimator: UIViewControllerAnimatedTransitioning {
+  func transitionDuration(using transitionContext: UIViewControllerContextTransitioning?) -&gt; TimeInterval {
+    return 0.3
+  }
+
+  func animateTransition(using transitionContext: UIViewControllerContextTransitioning) {
+    // 1
+    guard let toViewController = transitionContext.viewController(forKey: .to),
+      let fromViewController = transitionContext.viewController(forKey: .from),
+      let overviewViewController = fromViewController as? ViewController,
+      let tappedIndex = overviewViewController.collectionView.indexPathsForSelectedItems?.first,
+      let tappedCell = overviewViewController.collectionView.cellForItem(at: tappedIndex) as? ContactCollectionViewCell
+      else { return }
+
+    // 2
+    let contactImageFrame = tappedCell.contactImage.frame
+    let startFrame = overviewViewController.view.convert(contactImageFrame, from: tappedCell)
+
+    toViewController.view.frame = startFrame
+    toViewController.view.layer.cornerRadius = startFrame.height / 2
+
+    transitionContext.containerView.addSubview(toViewController.view)
+
+    let animationTiming = UICubicTimingParameters(animationCurve: .easeInOut)
+
+    let animator = UIViewPropertyAnimator(duration: transitionDuration(using: transitionContext), timingParameters: animationTiming)
+
+    animator.addAnimations {
+      toViewController.view.frame = transitionContext.finalFrame(for: toViewController)
+      toViewController.view.layer.cornerRadius = 0
+    }
+
+    animator.addCompletion { finished in
+      transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
+    }
+
+    animator.startAnimation()
+  }
+}</pre><p>The first step in the preceding snippet shows how you can extract information about the tapped cell by casting <code class="literal">fromViewController</code> to an instance of <code class="literal">ViewController</code>, which is the page that contains an overview of all the contacts. This view controller's collection view is asked for for the selected index path, which is then used to determine the cell that the user has tapped on. All of the work that's done in this first part of the code deals with <code class="literal">Optionals</code>, which means that the values might not be present according to the compiler. Even though under normal conditions none of these operations should return <code class="literal">nil</code>, they are <span>safely</span><a id="id325337075" class="indexterm"></a> unwrapped and accessed using a <code class="literal">guard</code> statement.</p><p>Then, the detail view controller's initial frame is set up. To determine this frame, the frame for <code class="literal">contactImage</code> in <code class="literal">sourceCell</code> is extracted. Then, this frame is converted to the coordinates of <code class="literal">overviewViewController</code>. If you don't do this, the position of the frame will typically be off by about 64 points. That's because the collection view has a content inset of <code class="literal">64</code> so it can extend beneath the navigation bar. Converting to the proper coordinate space ensures that this won't be a problem for you.</p><p>After converting the image's frame, it's used as the starting frame for the target view. The target also gets rounded corners to aid the zooming-in effect. The animation is set up to remove the rounded corners and to adjust the frame to the planned end frame so the detail page covers the screen.</p><p>The next step is to implement the back transition. This transition is nearly identical to the "show" transition. Open the <code class="literal">ContactDetailHideAnimator.swift</code> file and add an extension to make <code class="literal">ContactDetailHideAnimator</code> conform to <code class="literal">UIViewControllerAnimatedTransitioning</code>. After adding the delegate, you should be able to implement <code class="literal">transitionDuration(using:)</code> on your own. Make sure it returns a duration of <code class="literal">0.3</code> seconds.</p><p>The following snippet contains the code you need to implement the back animation. Try implementing this on your own first; you can deduct all the code you need from the show animation and the custom modal hide transition you built:</p><pre class="programlisting">func interruptibleAnimator(using transitionContext: UIViewControllerContextTransitioning) -&gt; UIViewImplicitlyAnimating {
+  if let currentAnimator = self.animator {
+    return currentAnimator
+  }
+
+  guard let toViewController = transitionContext.viewController(forKey: .to),
+    let fromViewController = transitionContext.viewController(forKey: .from),
+    let overviewViewController = toViewController as? ViewController,
+    let tappedIndex = overviewViewController.collectionView.indexPathsForSelectedItems?.first,
+    let tappedCell = overviewViewController.collectionView.cellForItem(at: tappedIndex) as? ContactCollectionViewCell
+    else { return UIViewPropertyAnimator() }
+
+  transitionContext.containerView.addSubview(toViewController.view)
+  transitionContext.containerView.addSubview(fromViewController.view)
+
+  let animationTiming = UICubicTimingParameters(animationCurve: .easeInOut)
+
+  let animator = UIViewPropertyAnimator(duration: transitionDuration(using: transitionContext), timingParameters: animationTiming)
+
+  animator.addAnimations {
+    let imageFrame = tappedCell.contactImage.frame
+
+    let targetFrame = overviewViewController.view.convert(imageFrame, from: tappedCell)
+
+    fromViewController.view.frame = targetFrame
+    fromViewController.view.layer.cornerRadius = tappedCell.contactImage.frame.height / 2
+  }
+
+  animator.addCompletion { finished in
+    transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
+  }
+
+  self.animator = animator
+
+  return animator
+}
+
+func animateTransition(using transitionContext: UIViewControllerContextTransitioning) {
+  let animator = interruptibleAnimator(using: transitionContext)
+  animator.startAnimation()
+}</pre><p>The animations are now <span>fully</span><a id="id325337132" class="indexterm"></a> implemented. The last object you need to implement is <code class="literal">UINavigationControllerDelegate</code>. As discussed before, this delegate is responsible for providing animations and managing interactive back gestures. First, you will implement the basics for your navigation delegate. Add the following code to the <code class="literal">NavigationDelegate</code> class:</p><pre class="programlisting">let navigationController: UINavigationController   
+var interactionController: UIPercentDrivenInteractiveTransition?   
+
+init(withNavigationController navigationController: UINavigationController) {   
+    self.navigationController = navigationController   
+
+    super.init()   
+
+    let panRecognizer = UIPanGestureRecognizer(target: self,   
+                         action: #selector(handlePan(gestureRecognizer:)))   
+    navigationController.view.addGestureRecognizer(panRecognizer)   
+} </pre><p>The initializer for <code class="literal">NavigationDelegate</code> takes a navigation controller as an argument. This immediately associates a navigation controller with the navigation delegate instance. <code class="literal">UIPanGestureRecognizer</code> is added to the view of the navigation controller directly. This gesture recognizer will drive the interactive transition. The next step is to implement the handler for the pan gesture-recognizer:</p><pre class="programlisting">@objc func handlePan(gestureRecognizer: UIPanGestureRecognizer) {
+  guard let view = self.navigationController.view
+    else { return }
+
+  switch gestureRecognizer.state {
+  case .began:
+    let location = gestureRecognizer.location(in: view)
+    if location.x &lt; view.bounds.midX &amp;&amp;
+      navigationController.viewControllers.count &gt; 1 {
+
+      interactionController = UIPercentDrivenInteractiveTransition()
+      navigationController.popViewController(animated: true)
+    }
+    break
+  case .changed:
+    let panTranslation = gestureRecognizer.translation(in: view)
+    let animationProgress = fabs(panTranslation.x / view.bounds.width)
+    interactionController?.update(animationProgress)
+    break
+  default:
+    if gestureRecognizer.velocity(in: view).x &gt; 0 {
+      interactionController?.finish()
+    } else {
+      interactionController?.cancel()
+    }
+
+    interactionController = nil
+  }
+}</pre><p>This method is very similar to the one you saw before for the regular view-controller transition. The major difference here is that you create <code class="literal">UIPercentDrivenInteractiveTransition</code> when the gesture begins. The percentage-driven interactive transition is then destroyed when the gesture ends.</p><p>Add the following extension to <code class="literal">NavigationDelegate</code> to make it conform to <code class="literal">UINavigationControllerDelegate</code>:</p><pre class="programlisting">extension NavigationDelegate: UINavigationControllerDelegate {
+  func navigationController(_ navigationController: UINavigationController, animationControllerFor operation: UINavigationController.Operation, from fromVC: UIViewController, to toVC: UIViewController) -&gt; UIViewControllerAnimatedTransitioning? {
+    if operation == .pop {
+      return ContactDetailHideAnimator()
+    } else {
+      return ContactDetailShowAnimator()
+    }
+  }
+
+  func navigationController(_ navigationController: UINavigationController, interactionControllerFor animationController: UIViewControllerAnimatedTransitioning) -&gt; UIViewControllerInteractiveTransitioning? {
+    return interactionController
+  }
+}</pre><p>These two methods are responsible for providing the required objects for the animations. Previously, we had one method that got called whenever a view controller was shown, and one when it was dismissed. <code class="literal">UINavigationControllerDelegate</code> has only one method for this. You can check whether the navigation controller is pushing or popping a view controller and, based on that, you can return a different animator.</p><p>The final step is to connect the animators to <code class="literal">ViewController</code>. Declare the following variable in <code class="literal">ViewController.swift</code>:</p><pre class="programlisting">var navigationDelegate: NavigationDelegate?</pre><p>Next, add the following lines of code to <code class="literal">viewDidLoad()</code>:</p><pre class="programlisting">if let navigationController = self.navigationController {  
+    navigationDelegate = NavigationDelegate(withNavigationController: navigationController)  
+    navigationController.delegate = navigationDelegate  
+}</pre><p>If you run the app now, you can see your <span>custom</span><a id="id325337213" class="indexterm"></a> transition in action. However, there's still one problem. You'll notice that the drawer you added to the contact detail view controller earlier is visible outside the boundaries of the detail view controller. Also, the rounded-corner effect you added to the show and hide animations doesn't seem to be working yet. Add the following line of code to the <code class="literal">viewDidLoad()</code> method in <code class="literal">ContactDetailViewController</code>:</p><pre class="programlisting">view.clipsToBounds = true</pre><p>That's it! You have successfully implemented an interactive transition for a navigation controller. Build and run your app, tap on a cell, and see the freshly-created zoom-in and -out effect in action. Also, try swiping from the left edge of the screen to go back to the overview page. Pretty awesome, right?</p></div></div>

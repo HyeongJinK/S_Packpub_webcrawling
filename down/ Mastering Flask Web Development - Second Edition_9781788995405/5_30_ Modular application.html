@@ -1,0 +1,78 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch05lvl1sec34"></a>Modular application</h2></div></div><hr /></div><p>Currently, your folder structure should look like <span>the</span><a id="id325021332" class="indexterm"></a> following (take a look at the code provided for the previous chapter):</p><pre class="programlisting">./ 
+  config.py 
+  database.db 
+  main.py 
+  manage.py 
+  env/ 
+  migrations/ 
+    versions/ 
+  templates/ 
+    blog/ </pre><p> </p><p> </p><p> </p><p> </p><p>To convert our code into a more modular application, our files will be structured as follows:</p><pre class="programlisting">./ 
+  manage.py
+  main.py
+  config.py 
+ database.db 
+  webapp/ 
+    __init__.py
+    blog/
+      __init__.py 
+      controllers.py
+      forms.py
+      models.py
+    main/
+      __init__.py
+      controllers.py
+    templates/ 
+      blog/ 
+  migrations/ 
+    versions/ </pre><p>The first change to make is to create a folder in your application that will hold the module. In this example, it will be called <code class="literal">webapp</code>.</p><p>Next, for each module in our application, we will create a respective Python module. If the module is a classic web application using web templates and forms, we would create the following files:</p><pre class="programlisting"><span class="strong"><strong>./&lt;MODULE_NAME&gt;
+</strong></span> __init__.py -&gt; Declare a python module
+  controllers.py -&gt; where our blueprint definition and views are
+  models.py -&gt; The module database models definitions
+  forms.py -&gt; All the module's web Forms </pre><p>The idea is to have separation of concerns, so each module will contain all the necessary views (declared and contained inside a Flask blueprint), web forms, and modules. This modular structure will translate into predictable namespaces for URIs, templates, and Python modules. Continuing to reason with an abstract approach, each module will have the following:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Python module (folder with <code class="literal">__init__.py</code>) using its name: <code class="literal">MODULE_NAME</code>. Inside the module is a <code class="literal">controllers</code> Python module that declares a blueprint named <code class="literal">&lt;MODULE_NAME&gt;_blueprint</code> attached to a URL, <code class="literal">prefix /&lt;MODULE_NAME&gt;</code>.</li></ul></div><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Template folder inside <code class="literal">templates</code> named <code class="literal">&lt;MODULE_NAME&gt;</code>.</li></ul></div><p> </p><p>This pattern will make the code very predictable to other team members, and very easy to change and extend. If you want to create a brand new feature, just create a new module using the proposed structure, and all team members will immediately guess the new feature's URI namespace, where all views are declared, and where the database models are defined for this feature. If some bug is identified, you can easily identify where to look for it, and have a much more restricted code base to worry about.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch05lvl2sec34"></a>Refactoring the code</h3></div></div></div><p>At first, it looks like a lot has changed but you will see that, taking into account <span>the</span><a id="id325378788" class="indexterm"></a> previously explained structure, the changes are simple and natural.</p><p>First, we have moved our SQLAlchemy code to the <code class="literal">models.py</code> file inside the <code class="literal">blog module</code> folder. We just want to move the model definitions, not any database initialization code. All initialization code will be kept in the main application module, <code class="literal">webapp</code>, inside <code class="literal">__init__.py</code>. The import section and database-related object creation appear as follows:</p><pre class="programlisting">from flask import Flask, render_template
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
+<span class="strong"><strong>db = SQLAlchemy()</strong></span>
+<span class="strong"><strong>migrate = Migrate()</strong></span>
+
+
+def page_not_found(error):
+return render_template('404.html'), 404
+
+def create_app(config):
+...</pre><p>The main application module will be responsible for creating the Flask application (factory pattern, explained in the next section) and initializing SQLAlchemy.</p><p>The <code class="literal">blog/models.py</code> file will import the initialized <code class="literal">db</code> object:</p><pre class="programlisting"><span class="strong"><strong>from .. import db</strong></span>
+
+...
+class User(db.Model):
+...
+class Post(db.Model):
+...
+class Comment(db.Model):
+...
+class Tag(db.Model):
+...</pre><p>Next, the <code class="literal">CommentForm</code> object, along with all the WTForms imports, should be moved to the <code class="literal">blog/forms.py</code> file. The <code class="literal">forms.py</code> file will hold all the WTForms objects related to the blog feature.</p><p>The <code class="literal">forms.py</code> file should look like this:</p><pre class="programlisting">from flask_wtf import Form 
+from wtforms import StringField, TextAreaField 
+from wtforms.validators import DataRequired, Length 
+
+class CommentForm(Form): 
+  ... </pre><p>The <code class="literal">blog_blueprint</code> object, all its routes, and the <code class="literal">sidebar_data</code> data function need to be moved to the <code class="literal">blog/controllers.py</code> file in the <code class="literal">controllers</code> folder.</p><p>The <code class="literal">blog/controllers.py</code> file should now look like this:</p><pre class="programlisting">from sqlalchemy import func
+from flask import render_template, Blueprint, flash, redirect, url_for
+from .models import db, Post, Tag, Comment, User, tags
+from .forms import CommentForm
+
+blog_blueprint = Blueprint(
+'blog',
+__name__,
+template_folder='../templates/blog',
+url_prefix="/blog"
+)
+
+
+def sidebar_data():
+...</pre><p>So, whenever a new feature is needed that is big enough to be a candidate for an application module, a new Python module (folder with an <code class="literal">__init__.py</code> file) with the name of the <span>feature</span><a id="id325672518" class="indexterm"></a> is needed with the previously described files. We will be breaking down the application code into logical groups.</p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p>Then, we need to import the new feature blueprint into the main <code class="literal">__init__.py</code> file and register it in Flask:</p><pre class="programlisting">from .blog.controllers import blog_blueprint
+from .main.controllers import main_blueprint
+
+...
+app.register_blueprint(main_blueprint)
+app.register_blueprint(blog_blueprint)</pre></div></div>

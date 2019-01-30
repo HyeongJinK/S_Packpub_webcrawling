@@ -1,0 +1,29 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch11lvl1sec85"></a>Pre-processing the data</h2></div></div><hr /></div><p>Fields <code class="literal">visitorid</code> and <code class="literal">itemid</code> are already numeric, but we <span>still</span><a id="id326543962" class="indexterm"></a> need to convert the events into numeric values.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>We convert <code class="literal">view</code> events to <code class="literal">1</code>, <code class="literal">addtocart</code> events to <code class="literal">2</code>, and <code class="literal">transaction</code> events to <code class="literal">3</code> with the following code:</li></ol></div><pre class="programlisting">events.event.replace(to_replace=dict(view=1, 
+                                     addtocart=2, 
+                                     transaction=3), 
+                     inplace=True)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Drop the <code class="literal">transcationid</code> and <code class="literal">timestamp</code> columns that we don't need:</li></ol></div><pre class="programlisting">events.drop(['transactionid'],axis=1,inplace=True)
+events.drop(['timestamp'],axis=1,inplace=True)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Shuffle the dataset to get random data for training and test datasets:</li></ol></div><pre class="programlisting">events = events.reindex(np.random.permutation(events.index))</pre><p>The dataset can also be shuffled with the following command:</p><pre class="programlisting">events = events.sample(frac=1).reset_index(drop=True)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Split the data in <code class="literal">train</code>, <code class="literal">valid</code>, and <code class="literal">test</code> sets, as follows:</li></ol></div><pre class="programlisting">split_1 = int(0.8 * len(events))
+split_2 = int(0.9 * len(events))
+train = events[:split_1]
+valid = events[split_1:split_2]
+test = events[split_2:]
+print(train.head())
+print(valid.head())
+print(test.head())</pre><p>The <code class="literal">train</code> and <code class="literal">test</code> data is <span>printed</span><a id="id325290165" class="indexterm"></a> as follows:</p><pre class="programlisting">             timestamp  visitorid  event  itemid
+1621867  1431388649092     896963      1  264947
+1060311  1440610461477    1102098      1  431592
+114317   1433628249991    1241997      1  283584
+1658382  1431543289648     198153      1   97879
+2173151  1436211020113    1278262      1  218178
+             timestamp  visitorid  event  itemid
+1903213  1432567070061      85425      1  344338
+1722815  1431708672912    1085328      1   59691
+1388040  1442124865777    1366284      1  248032
+2669880  1438030300131     478634      1  388940
+1893864  1432416049191    1052918      1  328647
+             timestamp  visitorid  event  itemid
+1004940  1440383070554     193171      1   11565
+642906   1438664048047     704648      1  262522
+902126   1439869996568      10212      1   46971
+569976   1435624889084     753933      1   29489
+1517206  1430856529370     261457      1  154821</pre><p> </p></div>

@@ -1,0 +1,149 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec34"></a>Interceptors</h2></div></div><hr /></div><p>In an enterprise application, it's <span>common</span><a id="id326296186" class="indexterm"></a> to have several cross-cutting concerns that are common across different components. As a rule of thumb, this common code should be kept separate from the actual business logic and shouldn't be bound to the core business logic of the component.</p><p>We will now take a look at the interceptors, including what they are, how we can utilize them to deal with cross-cutting concerns, and how to bind and activate them. We will also look at how to intercept functions that contain business logic and how to use CDI-provided annotations for this.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec37"></a>Interceptor</h3></div></div></div><p>An interceptor is a component that intercepts the invocation of functions and life cycle events, such as instance creation/destruction of the associated business classes. Generally, <span>interceptors</span><a id="id326255990" class="indexterm"></a> are used for handing cross-cutting concerns, such as logging, auditing, and security.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec27"></a>Implementing the interceptor</h4></div></div></div><p>Let's consider the example that we wrote earlier, where we <span>created</span><a id="id326255973" class="indexterm"></a> a person identity. Let's say we want to invoke some functionality around this identity creation function and that we don't necessarily want to mix this logic with the existing business function.</p><p>For instance, let's say we want to add audit functionality, which is a common cross-cutting concern. We can use interceptors to write a function to add audit messages, which will be invoked around the execution of the business function. We use the <code class="literal">@Interceptors</code> annotation to do this and then we can provide one or more interceptors for common applicationconcerns:</p><pre class="programlisting">@Stateless
+@Interceptors(AuditInterceptor.class)
+class App {
+    @Inject
+    private lateinit var identityCreator: IdentityCreator
+    @Inject
+    private lateinit var identityRepository: IdentityRepository
+
+    fun createIdentity(inputData: InputData): Identity {
+        val person = identityCreator.createPerson(inputData)
+        identityRepository.store(person)
+        return person
+    }
+}</pre><p>We will create an <code class="literal">AuditInterceptor</code> class in the interceptor package that is annotated with the <code class="literal">@Interceptor</code> annotation.</p><p>This interceptor will specify a <code class="literal">handle</code> function that is annotated with <code class="literal">@AroundInvoke</code>. The <code class="literal">@AroundInvoke</code> annotation declares the <code class="literal">handle()</code> function to be invoked around our business functionality.</p><p>By injecting the <code class="literal">InvocationContext</code>, we can simply use the <code class="literal">context.proceed()</code> function to proceed with our business functionality, as follows:</p><pre class="programlisting">@Interceptor
+public class AuditInterceptor {
+
+    @AroundInvoke
+    fun handle(context: InvocationContext){
+        context.proceed()
+    }
+}</pre><p>When the <code class="literal">createIdentity()</code> function is called, the handler function will be invoked by intercepting the invocation of the <code class="literal">createIdentity()</code> function call.</p><p> </p><p> </p><p>We can now include a CDI-managed bean, namely the <code class="literal">Auditor</code>. This class has a single <code class="literal">audit()</code> function that simply prints a message to the console once the function has been invoked:</p><pre class="programlisting">class Auditor {
+    fun audit(message: String) {
+        println(message)
+    }
+}</pre><p>Let's inject the <code class="literal">Auditor</code> bean in the <code class="literal">AuditInterceptor</code> class and call the <code class="literal">audit()</code> function from <code class="literal">handle()</code>:</p><pre class="programlisting">@Interceptor
+class AuditInterceptor {
+    @Inject
+    private lateinit var auditor: Auditor
+
+    fun handle(context: InvocationContext) {
+        auditor.audit("message")
+        context.proceed()
+    }
+}</pre><p>Now, the interceptor's <code class="literal">handle()</code> function has been invoked around the business logic of creating a person.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip21"></a>Note</h3><p>We could also use a <code class="literal">context</code> object to get some more information about the invocation intercepted, for example, arguments with which the function is invoked. An example code is shown here:</p></div><pre class="programlisting">@Interceptor
+class AuditInterceptor {
+@Inject
+    private lateinit var auditor: Auditor
+
+fun handle(context: InvocationContext) {
+auditor.audit("message")
+        context.parameters.forEach { param -&gt; println(param) }
+context.proceed()
+    }
+}</pre><p> </p><p> </p><p>This section has shown how we can <span>intercept</span><a id="id325813048" class="indexterm"></a> some logic in our application without binding too much of the intercepting logic to the business code. The <code class="literal">@Interceptors</code> annotation controls whether the interceptor is invoked. This is not tightly bound to the business logic.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec38"></a>Building custom interceptors</h3></div></div></div><p>In the previous section, we used the <code class="literal">@Interceptors</code> annotation to <span>intercept</span><a id="id325813069" class="indexterm"></a> our business logic. We can also define and bind the custom interceptors. This means that we can define our own interceptors. In this section, we will look at how to use the interceptors' API to define <code class="literal">@InterceptorBinding</code> annotations, and how we can activate the custom interceptors.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec28"></a>Defining a custom interceptor</h4></div></div></div><p>Let's create a <span>custom</span><a id="id325816193" class="indexterm"></a> annotation, such as <code class="literal">Auditable</code>, to audit a business function in an application:</p><pre class="programlisting">@InterceptorBinding
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+annotation class Auditable</pre><p>The <code class="literal">Auditable</code> annotation is itself annotated with <code class="literal">@InterceptorBinding</code> and has a runtime retention policy to make the annotation visible at runtime.</p><p>We can use <code class="literal">Auditable</code> in business functions as follows:</p><pre class="programlisting">@Stateless
+class App {
+    @Inject
+    private lateinit var identityCreator: IdentityCreator
+    @Inject
+    private lateinit var identityRepository: IdentityRepository
+
+    @Auditable
+    fun createIdentity(inputData: InputData): Identity {
+        val person = identityCreator.createPerson(inputData)
+        identityRepository.store(person)
+        return person
+    }
+}</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec29"></a>Enhancing the auditable interceptor</h4></div></div></div><p>We can also specify types of audit messages. We can <span>choose</span><a id="id325818966" class="indexterm"></a> to intercept the request based on its type:</p><pre class="programlisting">@InterceptorBinding
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+annotation class Auditable(val value: Auditor.AuditType)</pre><p>The <code class="literal">AuditType</code> is defined in the <code class="literal">Auditor</code> class. We have defined <code class="literal">CREATE</code>, <code class="literal">READ</code>, <code class="literal">UPDATE</code>, and <code class="literal">DELETE</code> as audit types in this case:</p><pre class="programlisting">class Auditor {
+    fun audit(message: String) {
+        println(message)
+    }
+
+    enum class AuditType () {
+        CREATE, READ, UPDATE, DELETE
+    }
+}</pre><p>We might want to use the <code class="literal">@Auditable</code> annotation in cases where we need to perform an audit event based on the type of operation.</p><p>Let's say we are going to carry out an audit on the <code class="literal">CREATE</code> type:</p><pre class="programlisting">@Stateless
+class App {
+    @Inject
+    private lateinit var identityCreator: IdentityCreator
+    @Inject
+    private lateinit var identityRepository: IdentityRepository
+
+    @Auditable(Auditor.AuditType.CREATE)
+    fun createResource(inputData: InputData): Identity {
+        val person = identityCreator.createPerson(inputData)
+        identityRepository.store(person)
+        return person
+    }
+}</pre><p> </p><p> </p><p>Now, in the <code class="literal">AuditInterceptor</code> class, we can define the <code class="literal">@Auditable</code> interceptor binding annotation for any type. In this case, we will do this for <code class="literal">CREATE</code>:</p><pre class="programlisting">@Interceptor
+@Auditable(Auditor.AuditType.CREATE)
+class AuditInterceptor {
+    @Inject
+    private lateinit var auditor: Auditor
+
+    @AroundInvoke
+    fun handle(context: InvocationContext) {
+        auditor.audit("message")
+        context.proceed()
+    }
+}</pre><p>The <code class="literal">handle()</code> function should always be invoked, once the <code class="literal">@Auditable</code> interceptor binding is annotated. We can also retrieve the <code class="literal">@Auditable</code> annotation from the contextto get the value and do something with it. Let's say we want to use the value that comes from the annotation in the audit message that we process:</p><pre class="programlisting">@Interceptor
+@Auditable(Auditor.AuditType.CREATE)
+class AuditInterceptor {
+    @Inject
+    private lateinit var auditor: Auditor
+
+    @Inject
+    private lateinit var auditProcessor: AuditProcessor
+
+    @AroundInvoke
+    fun handle(context: InvocationContext) {
+        auditor.audit("message")
+        auditProcessor
+                .processMessage(context.method.getAnnotation(Auditable::class.java).value)
+        context.proceed()
+    }
+}</pre><p>The <code class="literal">AuditProcessor</code> class defines a function that takes <code class="literal">AuditType</code> as argument and prints it to console. The code looks like:</p><pre class="programlisting">class AuditProcessor {
+    fun processMessage(type: Auditor.AuditType) {
+        println("Audit message type$type")
+    }
+}</pre><p> </p><p> The interceptor binding can also be specified at the class:</p><pre class="programlisting">@Stateless
+@Auditable(Auditor.AuditType.CREATE)
+class App {
+    @Inject
+    private lateinit var identityCreator: IdentityCreator
+    @Inject
+    private lateinit var identityRepository: IdentityRepository
+
+    fun createIdentity(inputData: InputData): Identity {
+        val person = identityCreator.createPerson(inputData)
+        identityRepository.store(person)
+        return person
+    }
+}</pre><p>In this way, we can retrieve the annotations of the <span>invocation</span><a id="id326166572" class="indexterm"></a> context that has been invoked by the binding of the interceptor.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch04lvl3sec30"></a>Activating the interceptor</h4></div></div></div><p>We can now activate <code class="literal">AuditInterceptor</code>. One way of <span>doing</span><a id="id326166592" class="indexterm"></a> this is to specify the interceptor in the <code class="literal">beans.xml</code> files, as shown here:</p><pre class="programlisting">&lt;interceptors&gt;
+  &lt;class&gt;
+     &lt;AuditInterceptor&gt;
+  &lt;/class&gt;
+&lt;/interceptors&gt;</pre><p>Alternatively, we can specify this with the <code class="literal">@Priority</code> annotation, which indicates the interceptor's priority. For example, we can annotate the <code class="literal">AuditInterceptor</code> class with the <code class="literal">@Priority</code> annotation <code class="literal">APPLICATION</code> level:</p><pre class="programlisting">@Interceptor
+@Auditable
+@Priority(Interceptor.Priority.APPLICATION)
+class AuditInterceptor {
+    @Inject
+    private lateinit var auditor: Auditor
+
+    @Inject
+    private lateinit var auditProcessor: AuditProcessor
+
+    @AroundInvoke
+    fun handle(context: InvocationContext) {
+        auditor.audit("message")
+        auditProcessor
+                .processMessage(context.method.getAnnotation(Auditable::class.java).value)
+        context.proceed()
+    }
+}</pre><p>The <code class="literal">AuditInterceptor</code> class's <code class="literal">handle()</code> function is invoked at the application level, which is usually the case for the interceptor. This means that each application request is intercepted by the <code class="literal">AuditInterceptor</code> class.</p></div></div></div>

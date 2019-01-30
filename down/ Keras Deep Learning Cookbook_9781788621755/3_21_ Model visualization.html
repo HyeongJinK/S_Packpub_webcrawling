@@ -1,0 +1,21 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec28"></a>Model visualization</h2></div></div><hr /></div><p>For simpler models, a simple model summary is sufficient, but for <span>more</span><a id="id324879982" class="indexterm"></a> complex topologies, Keras provides a way to visualize the model. It is a layer on top of the <code class="literal">graphviz</code> library.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec32"></a>Getting ready</h3></div></div></div><p>Please make sure <code class="literal">graphviz</code> is installed:</p><pre class="programlisting"><span class="strong"><strong>sudo apt-get install graphviz</strong></span></pre><p>Also, install <code class="literal">pydot</code>, which is needed in the underlying implementation:</p><pre class="programlisting"><span class="strong"><strong>sudo pip install pydot</strong></span></pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec33"></a>How to do it...</h3></div></div></div><p>Let's take a look at an example where we create a simple model and call <code class="literal">plot_model</code> on it.</p><p>The <code class="literal">plot_model()</code> function in Keras creates a plot of the neural network. This function takes the following arguments:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">model</code>: (required) The model that is to be plotted</li><li style="list-style-type: disc"><code class="literal">to_file</code>: (required) The name of the file to save the plot</li><li style="list-style-type: disc"><code class="literal">show_shapes</code>: (optional, defaults to <code class="literal">False</code>) Boolean to show the output shapes of each layer</li><li style="list-style-type: disc"><code class="literal">show_layer_names</code>: (optional, defaults to <code class="literal">True</code>) Boolean to show the name for each layer</li></ul></div><p>The following sections show how <code class="literal">plot_model</code> can be used.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch03lvl3sec32"></a>Code listing</h4></div></div></div><p>The <span>following</span><a id="id325348283" class="indexterm"></a> code creates a <code class="literal">Sequential</code> model with two <code class="literal">Dense</code> layers:</p><pre class="programlisting">from keras.models import Sequential
+from keras.layers import Dense
+from keras.utils.vis_utils import plot_model
+model = Sequential()
+model.add(Dense(16, input_dim=1, activation='relu'))
+model.add(Dense(16, activation='sigmoid'))
+print(model.summary())</pre><p>Keras provides the ability to summarize using the <code class="literal">summary()</code> method:</p><pre class="programlisting">Using TensorFlow backend.
+
+_________________________________________________________________
+Layer (type) Output Shape Param # 
+=================================================================
+dense_1 (Dense) (None, 16) 32 
+_________________________________________________________________
+dense_2 (Dense) (None, 16) 272 
+=================================================================
+Total params: 304
+Trainable params: 304
+Non-trainable params: 0
+_________________________________________________________________
+
+</pre><p>Let's call the <code class="literal">plot_model()</code> function on this model:</p><pre class="programlisting">plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)</pre><p>The plot is saved in the following file:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/db7c36d5-f1aa-454c-bba5-9042cc0748f1.png" /></div></div></div></div>

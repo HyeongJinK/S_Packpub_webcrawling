@@ -1,0 +1,81 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch12lvl1sec93"></a>Learning about TensorFlowOnSpark</h2></div></div><hr /></div><p>In the year 2016, Yahoo open sourced TensorFlowOnSpark, a Python framework for performing TensorFlow-based distributed deep learning on Spark clusters. Since then, it has <span>undergone</span><a id="id325614944" class="indexterm"></a> a lot of developmental changes and is one of the most active repositories regarding the distributed deep learning framework.</p><p>The <span class="strong"><strong>TensorFlowOnSpark</strong></span> (<span class="strong"><strong>TFoS</strong></span>) framework allows you to run distributed TensorFlow applications from within Spark programs. It runs on the existing Spark and Hadoop clusters. It can use existing Spark libraries such as SparkSQL or MLlib (the Spark machine learning library).</p><p>TFoS is automatic, so we do not need to define the nodes as PS nodes, nor do we need to upload the same code to all of the nodes in the cluster. By just performing a few modifications, we can run our existing TensorFlow code. It allows us to scale up the existing TensorFlow apps with minimal changes. It supports all of the existing TensorFlow functionality such as synchronous/asynchronous training, data parallelism, and TensorBoard. Basically, it's a PySpark wrapper for the TensorFlow code. It launches distributed TensorFlow clusters using Spark executors. To support TensorFlow data ingestion, it adds <code class="literal">feed_dict</code> and <code class="literal">queue_runner</code>, allowing direct HDFS access from TensorFlow. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec44"></a>Understanding the architecture of TensorFlowOnSpark </h3></div></div></div><p>The following diagram <span>depicts</span><a id="id325611700" class="indexterm"></a> the architecture of TFoS. We can see that TFoS does not involve Spark drivers in tensor communication, giving the same scalability as standalone TensorFlow clusters:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/3635be30-ce83-4f8d-9307-ddadf7d48e2e.png" /></div><p>TFoS provides two input modes to take in data for training and inference:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Spark RDD</strong></span>: Spark RDD data is <span>fed</span><a id="id325611669" class="indexterm"></a> to each Spark executor. The executor, in turn, feeds the data to the TensorFlow graph using <code class="literal">feed_dict</code>. However, in this mode, TensorFlow worker failures stay hidden from Spark.</li><li style="list-style-type: disc"><span class="strong"><strong>TensorFlow QueueRunners</strong></span>: Here, the TensorFlow worker runs in the foreground. TFoS <span>takes</span><a id="id325611561" class="indexterm"></a> advantage of the TensorFlow file readers and QueueRunners to read data directly from HDFS files. TensorFlow worker failures are retired as Spark Tasks, and it restores them from the checkpoint. </li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec45"></a>Deep delving inside the TFoS API</h3></div></div></div><p>The use of TFoS can be <span>divided</span><a id="id325610518" class="indexterm"></a> into three basic steps:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li> Launch the TensorFlow cluster. We can launch the cluster using <code class="literal">TFCluster.run</code>:</li></ol></div><pre class="programlisting">cluster = TFCluster.run(sc, map_fn, args, num_executors, num_ps, tensorboard, input_mode)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Feed the data into the TensorFlow app. The data is given for both training and inference. To train, we use the <code class="literal">train</code> method:</li></ol></div><pre class="programlisting">cluster.train(dataRDD, num_epochs)</pre><p>We perform the inference with the help of <code class="literal">cluster.inference(dataRDD)</code>. </p><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Finally, shut down the TensorFlow cluster with <code class="literal">cluster.shutdown()</code>.</li></ol></div><p>We can modify any TensorFlow program to work with TFoS. In the following section, we'll look at how we can train a model to recognize handwritten digits using TFoS.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch12lvl2sec46"></a>Handwritten digits using TFoS</h3></div></div></div><p>In this section, we'll look at how to <span>convert</span><a id="id325290156" class="indexterm"></a> our TensorFlow code to run on TFoS. To do this, first, we need to build an EC2 cluster on Amazon AWS. One of the easy ways to do this is to use Flintrock, a CLI tool for launching Apache Spark clusters from your local machine.</p><p>The following are the prerequisites that you'll need to complete this section:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Hadoop</li><li style="list-style-type: disc">PySpark</li><li style="list-style-type: disc">Flintrock</li><li style="list-style-type: disc">Python</li><li style="list-style-type: disc">TensorFlow</li><li style="list-style-type: disc">TensorFlowOnSpark</li></ul></div><p>Now, let's see how we can do this. We're using the MNIST dataset (<a class="ulink" href="http://yann.lecun.com/exdb/mnist/" target="_blank">http://yann.lecun.com/exdb/mnist/</a>). The following <span>code</span><a id="id325601656" class="indexterm"></a> is taken from the TensorFlowOnSpark GitHub. The repository contains the links to documentation and more examples (<a class="ulink" href="https://github.com/yahoo/TensorFlowOnSpark" target="_blank">https://github.com/yahoo/TensorFlowOnSpark</a>):</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Define the model architecture and training in the <code class="literal">main(argv, ctx)</code> function, where the <code class="literal">argv</code> parameter contains the arguments supplied at the command line, and <code class="literal">ctx</code> contains the node metadata such as <code class="literal">job</code> and <code class="literal">task_idx</code>. The <code class="literal">cnn_model_fn</code> model function is the CNN model that's defined as a function:</li></ol></div><pre class="programlisting">def main(args, ctx):
+    # Load training and eval data
+    mnist = tf.contrib.learn.datasets.mnist.read_data_sets(args.data_dir)
+    train_data = mnist.train.images # Returns np.array
+    train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
+    eval_data = mnist.test.images # Returns np.array
+    eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
+
+    # Create the Estimator
+    mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir=args.model)
+
+    # Set up logging for predictions
+    # Log the values in the "Softmax" tensor with label "probabilities"
+
+    tensors_to_log = {"probabilities": "softmax_tensor"}
+    logging_hook = tf.train.LoggingTensorHook( tensors=tensors_to_log, every_n_iter=50)
+
+    # Train the model
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+         x={"x": train_data}, y=train_labels, 
+         batch_size=args.batch_size, num_epochs=None, 
+         shuffle=True)
+
+      eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+         x={"x": eval_data},
+         y=eval_labels,
+         num_epochs=1,
+         shuffle=False)
+
+    #Using tf.estimator.train_and_evaluate
+    train_spec = tf.estimator.TrainSpec(
+        input_fn=train_input_fn, 
+        max_steps=args.steps, 
+        hooks=[logging_hook])
+    eval_spec = tf.estimator.EvalSpec(
+        input_fn=eval_input_fn)
+    tf.estimator.train_and_evaluate(
+        mnist_classifier, train_spec, eval_spec)
+</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>In the <code class="literal">if  __name__=="__main__"</code> block, add the following imports:</li></ol></div><pre class="programlisting">from pyspark.context import SparkContext
+from pyspark.conf import SparkConf
+from tensorflowonspark import TFCluster
+import argparse</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Launch the Spark Driver and initiate the TensorFlowOnSpark cluster:</li></ol></div><pre class="programlisting">sc = SparkContext(conf=SparkConf()
+        .setAppName("mnist_spark"))
+executors = sc._conf.get("spark.executor.instances")
+num_executors = int(executors) if executors is not None else 1</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li>Parse the arguments:</li></ol></div><pre class="programlisting">parser = argparse.ArgumentParser()
+parser.add_argument("--batch_size", 
+            help="number of records per batch", 
+            type=int, default=100)
+parser.add_argument("--cluster_size", 
+            help="number of nodes in the cluster", 
+            type=int, default=num_executors)
+parser.add_argument("--data_dir", 
+            help="path to MNIST data", 
+            default="MNIST-data")
+parser.add_argument("--model", 
+            help="path to save model/checkpoint", 
+            default="mnist_model")
+parser.add_argument("--num_ps", 
+            help="number of PS nodes in cluster", 
+            type=int, default=1)
+parser.add_argument("--steps", 
+            help="maximum number of steps", 
+            type=int, default=1000)
+parser.add_argument("--tensorboard", 
+            help="launch tensorboard process", 
+            action="store_true")
+
+
+args = parser.parse_args()</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Use <code class="literal">TFCluster.run</code> to manage the cluster:</li></ol></div><pre class="programlisting">cluster = TFCluster.run(sc, main, args, 
+        args.cluster_size, args.num_ps, 
+        tensorboard=args.tensorboard, 
+        input_mode=TFCluster.InputMode.TENSORFLOW, 
+        log_dir=args.model, master_node='master')</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Once the training is over, shut down the cluster:</li></ol></div><pre class="programlisting">cluster.shutdown()</pre><p>The complete code is available in the GitHub repository in the <code class="literal">Chapter12/mnist_TFoS.py</code> directory.</p><p>To execute the code on the EC2 cluster, you'll need to submit it to Spark cluster using <code class="literal">spark-submit</code>:</p><pre class="programlisting">${SPARK_HOME}/bin/spark-submit \
+--master ${MASTER} \
+--conf spark.cores.max=${TOTAL_CORES} \
+--conf spark.task.cpus=${CORES_PER_WORKER} \
+--conf spark.task.maxFailures=1 \
+--conf spark.executorEnv.JAVA_HOME="$JAVA_HOME" \
+${TFoS_HOME}/examples/mnist/estimator/mnist_TFoS.py \
+--cluster_size ${SPARK_WORKER_INSTANCES} \
+--model ${TFoS_HOME}/mnist_model</pre><p>The model learned in 6.6 minutes on the EC2 <span>cluster</span><a id="id325951733" class="indexterm"></a> with two workers:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/88ebc000-d6d2-455e-b450-119071c9784c.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip68"></a>Note</h3><p>We can use TensorBoard to visualize the model architecture. Once we run the code successfully, the event file is created and it can be viewed on the TensorBoard. </p></div><p>When we visualize loss, we can see that the loss decreases as the network learns:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/bd5e37de-9e8e-4f3c-9aae-1c1319f7e8c6.png" /></div><p>The model provides 75% accuracy on the <span>test</span><a id="id326008776" class="indexterm"></a> data set on only 1,000 steps, with a very basic CNN model. We can further optimize the result by using a better model architecture and tuning hyperparameters. </p></div></div>

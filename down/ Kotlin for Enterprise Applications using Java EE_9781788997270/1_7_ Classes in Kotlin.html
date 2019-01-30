@@ -1,0 +1,58 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch01lvl1sec14"></a>Classes in Kotlin</h2></div></div><hr /></div><p>Classes in Kotlin are <span>created</span><a id="id325812912" class="indexterm"></a> using the <code class="literal">class</code> keyword, which is <span>depicted</span><a id="id325812917" class="indexterm"></a> as follows:</p><pre class="programlisting">class User {
+
+}</pre><p>The structure of the class is as follows:</p><pre class="programlisting">Class className {
+         //properties and constructor
+         //member functions
+}</pre><p>Let's write a class for <code class="literal">User</code>.</p><p>Consider the following code for <code class="literal">14_Class.kts</code>:</p><pre class="programlisting">class User {
+    var name = "George"
+}
+
+val user = User()
+println(user.name) </pre><p>The output is as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/c88b3d8f-6819-4156-80c6-662aba76c8c7.png" /></div><p>This class has a property called <code class="literal">name</code>. Classes are instantiated with just the class name, followed by parentheses. Note that there is no <code class="literal">new</code> keyword in Kotlin to create an object, unlike in Java.</p><p>Classes in Kotlin are final by default. We cannot extend from a class directly. To inherit from the classes, we have to open the classes explicitly. Classes need to have an <code class="literal">open</code> keyword in their declaration, as shown in the following code:</p><pre class="programlisting">open class Person {
+
+}</pre><p>Alternatively, we can use <span class="emphasis"><em>all-open compiler</em></span> plugins to make all the classes extendable or accessible to frameworks such as JPA and Spring. We will discuss compiler plugins further in the next chapter.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch01lvl2sec13"></a>Constructors </h3></div></div></div><p>Constructors are used to initialize class properties. As in Java, a <span>constructor</span><a id="id326538427" class="indexterm"></a> is a special member function that is invoked when an object is instantiated. However, they work slightly different in Kotlin.</p><p>In Kotlin, there are two constructors:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Primary constructor</strong></span>: This is a concise way to <span>initialize</span><a id="id326012648" class="indexterm"></a> the properties of a class</li><li style="list-style-type: disc"><span class="strong"><strong>Secondary constructor</strong></span>: This is where additional <span>initialization</span><a id="id326013395" class="indexterm"></a> logic goes</li></ul></div><p>The <span class="strong"><strong>primary constructor</strong></span> is part of the <span>class</span><a id="id326013461" class="indexterm"></a> header. Here's an example:</p><pre class="programlisting">class User() {
+
+}</pre><p>The block of code surrounded by parentheses is the primary constructor. Consider the following code for <code class="literal">14a_PrimaryConstructor.kts</code>:</p><pre class="programlisting">class User(var firstName: String, var lastName: String) {
+
+}
+
+val user = User("Norman", "Lewis")
+println("First Name= ${user.firstName}")
+println("Last Name= ${user.lastName}")</pre><p>The output is as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/060d73ed-aa90-4508-83c5-b75696797034.png" /></div><p>The constructor goes here as part of the class header. The constructor declares two properties—<code class="literal">firstName</code> and <code class="literal">lastName</code>. Let's look at another example for<span class="emphasis"><em> </em></span><code class="literal">14b_PrimaryConstructor.kts</code>:</p><pre class="programlisting">class User(var firstName: String, val id: String) {
+
+}
+val user = User("Norman", "myId")
+println("First Name = ${user.firstName}")
+println("User Id = ${user.id}")</pre><p>The output of the preceding code is as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/9acc5f8c-7f04-4bc1-83f0-9371af813955.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip11"></a>Note</h3><p>For the primary constructor, properties have to be declared using <code class="literal">var</code> or <code class="literal">val</code>. Otherwise, the code fails to compile.</p></div><p>The secondary constructor is created using the <code class="literal">constructor</code> keyword. The <span>class</span><a id="id326013627" class="indexterm"></a> can declare a secondary constructor to initialize its properties. This is shown in the following code:</p><pre class="programlisting">class AuditData {
+    constructor(message: String) {
+        //init logic
+    }
+    constructor(message: String, locale: String) {
+        // init logic
+    }
+}</pre><p>In the preceding code snippet, we wrote two constructors. One had a message as an argument and one had two arguments—<code class="literal">message</code> and <code class="literal">locale</code>. Consider the following code for <code class="literal">14c_SecondaryConstructor.kts</code>:</p><pre class="programlisting">var audit = AuditData("record added")
+println("Message ${audit.message}")
+
+audit = AuditData("record updated", "en-US")
+println("Message: ${audit.message}")
+println("Locale: ${audit.locale}")</pre><p>When we call <code class="literal">AuditData</code> with only a message, the <span>constructor</span><a id="id326166583" class="indexterm"></a> with one argument will be invoked. Similarly, when we pass two arguments, a message and a locale, the constructor with two arguments will be invoked. </p><p>The output is as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/719704c0-90b2-48e9-bf6f-0b18ffb57ee5.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch01lvl3sec8"></a>Static functions</h4></div></div></div><p>Static functions are functions that can be invoked without creating <span>multiple</span><a id="id326218795" class="indexterm"></a> instances of a class. Static functions avoid code duplication and can be reused.</p><p>Let's take a look at how to write a static function in Kotlin.</p><p>Consider the following code for <code class="literal">15a_StaticMethods.kts</code>:</p><pre class="programlisting">object MyUtil {
+ fun foo(){
+        println("Static function foo() is invoked")
+    }
+}
+
+MyUtil.foo()</pre><p>Note that we declared an object <code class="literal">MyUtil</code> and defined a function <code class="literal">foo()</code>. This is known as object declaration.</p><p>We invoked the function <code class="literal">foo()</code> directly using the object <code class="literal">MyUtil</code>. </p><p>The output of the preceding code is as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/fd4688e3-4e8b-4a59-b7ca-1650335b09b3.png" /></div><p>There are different ways to write static functions in Kotlin. We can define a <code class="literal">companion object</code> inside a class and define a static function in it. Consider the <span>following</span><a id="id326538452" class="indexterm"></a> code for <code class="literal">15b_StaticMethods.kts</code>:</p><pre class="programlisting">class Person {
+    companion object {
+        fun foo(){
+            println("Static function foo() is invoked")
+        }
+    }
+}
+Person.foo()</pre><p>The output is as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/55841add-7706-40ec-af3d-581af32ee448.png" /></div><p>We can also give a name to the companion object. Consider the following code for <code class="literal">15c_StaticMethods.kts</code>:</p><pre class="programlisting">class Person {
+    companion object Util {
+        fun foo(){
+            println("Static function foo() is invoked")
+        }
+    }
+}
+Person.Util.foo()</pre><p>The output is as follows:</p><div class="mediaobject"><img src="/graphics/9781788997270/graphics/2187077e-1b4d-4151-b02e-014a8da63401.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip12"></a>Note</h3><p>We can invoke the static method shown in the preceding example with <code class="literal">companion</code> as <code class="literal">Person.Companion.foo()</code>. The static method <code class="literal">foo</code> can be invoked using either the class name or a named companion object prefixed with the class name, such as <code class="literal">Person.Util.foo()</code>.</p></div><p>In this section, we have covered the constructs that Kotlin provides. We will be using these constructs in the <span>next</span><a id="id325849454" class="indexterm"></a> few chapters.</p></div></div></div>

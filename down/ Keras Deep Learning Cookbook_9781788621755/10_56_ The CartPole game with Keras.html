@@ -1,0 +1,121 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec56"></a>The CartPole game with Keras</h2></div></div><hr /></div><p>CartPole is one of the <span>simpler</span><a id="id324812542" class="indexterm"></a> environments in the OpenAI Gym (a game simulator). The goal of CartPole is to <span>balance</span><a id="id324812555" class="indexterm"></a> a pole connected with one joint on top of a moving cart. Instead of pixel information, there are two kinds of information given by the state: the angle of the pole and position of the cart. An agent can move the cart by performing a sequence of actions of 0 or 1 to the cart, pushing it left or right:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/8cf93aa8-bef5-4d73-b071-6cdaeaae0899.png" /></div><p>The OpenAI Gym makes interacting with the game environment really simple:</p><pre class="programlisting">next_state, reward, done, info = env.step(action)</pre><p>In the preceding code, an action can be either 0 or 1. If we pass those numbers, <code class="literal">env</code>, which is the game environment, will emit the results. The <code class="literal">done</code> variable is a Boolean value saying whether the game ended or not. The old state information is paired with <code class="literal">action</code>, <code class="literal">next_state</code>, and <code class="literal">reward</code> is the information we need for training the agent.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec75"></a>How to do it...</h3></div></div></div><p>We will be using a neural network to build the AI agent that plays Cartpole. The neural network will have input with four parameters, three hidden layers, and output with two possible outputs: 0 or 1:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Keras makes it simple to implement a basic neural network. The following code creates an empty sequential model:</li></ol></div><pre class="programlisting">model = Sequential()
+model.add(Dense(24, input_dim=self.state_size, activation='relu'))
+model.add(Dense(24, activation='relu'))
+model.add(Dense(self.action_size, activation='linear'))
+model.compile(loss='mse',
+optimizer=Adam(lr=self.learning_rate))</pre><p>We are using linear activation, <span class="strong"><strong>mean square error</strong></span> (<span class="strong"><strong>MSE</strong></span>) loss, and the Adam <span>optimizer</span><a id="id325498228" class="indexterm"></a> as the characteristics of the neural network.</p><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>For a neural net to predict based on the environment data, it has to be fed the information. The <code class="literal">fit()</code> method feeds input and output pairs to the model. The model will train on the data fed, to approximate the output based on the input.</li></ol></div><p>This training process makes the neural net predict the reward value from a certain state:</p><pre class="programlisting">model.fit(state, reward_value, epochs=1, verbose=0)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>After training, the model now can predict the output from unseen input. When you call the <code class="literal">predict()</code> function on the model, the model will predict the reward of the current state based on the data you trained:</li></ol></div><pre class="programlisting">prediction = model.predict(state)</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec76"></a>Implementing the DQN agent</h4></div></div></div><p>In games, a reward is <span>directly</span><a id="id325504776" class="indexterm"></a> proportional to the score of the game. In the case of the CartPole game, if the pole is tilted right, the future reward of pushing the button toward the right will be higher than pushing it to the left; the pole will be vertical for longer. To logically represent this intuition and train it, it has to be expressed as a formula which has to be optimized. Loss is the difference between the prediction and the actual target.</p><p>The loss formula for CartPole can be shown as the following:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/1d5b7540-4f9e-4949-b150-ab64887c622b.png" /></div><p>Where:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="emphasis"><em>r</em></span>: Reward</li><li style="list-style-type: disc"><span class="emphasis"><em>γ</em></span>: Decay rate</li><li style="list-style-type: disc"><span class="emphasis"><em>s</em></span>: Sequence/state</li><li style="list-style-type: disc"><span class="emphasis"><em>a</em></span>: Action</li><li style="list-style-type: disc"><span class="emphasis"><em>a'</em></span>: Possible actions</li><li style="list-style-type: disc"><span class="emphasis"><em>s'</em></span>: Probable next state</li><li style="list-style-type: disc"><span class="emphasis"><em>Q</em></span>: Optimal action-value function <span class="emphasis"><em>Q(s, a)</em></span> as the maximum expected return achievable by following any strategy, after seeing some sequence <span class="emphasis"><em>s</em></span> and then taking some action <span class="emphasis"><em>a</em></span>.</li></ul></div><p>Keras takes care of the difficult tasks for us. We need to define our target, using a one-liner in Python:</p><pre class="programlisting">target = (reward + self.gamma *
+          np.amax(self.model.predict(next_state)[0]))</pre><p>The preceding formula does the work of subtracting the target from the predicted output and squaring it. It also applies the learning rate defined while creating the neural network model. This calculation happens inside the <code class="literal">fit()</code> function. This function decreases the gap between the prediction and target by the learning rate, using gradient descent with the loss function of Adam. The approximation of the Q-value converges to the true Q-value as the program repeats the updating process. The loss decreases and the score improves and becomes more accurate.</p><p>The two most notable features of the DQN algorithm are the <code class="literal">remember</code> and <code class="literal">replay</code> methods. Both are simple concepts and are explained in the next section.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec77"></a>The memory and remember</h4></div></div></div><p>One of the challenges that DQN <span>needs</span><a id="id325519107" class="indexterm"></a> to overcome is that the neural network used in the algorithm tends to forget the previous experiences as it overwrites them with new experiences. A list of previous experiences and observations is needed to <span>retrain</span><a id="id325519115" class="indexterm"></a> the model with the previous experiences. This array of experiences is called <span class="strong"><strong>memory</strong></span> and we have use <code class="literal">remember()</code> function to append <code class="literal">state</code>, <code class="literal">action</code>, <code class="literal">reward</code>, and <code class="literal">next_state</code> to the memory.</p><p>The <code class="literal">memory</code> list in the following implementation will have this form:</p><pre class="programlisting">memory = [(state, action, reward, next_state, done)...]</pre><p>The <code class="literal">remember</code> function will store states, actions, and resulting rewards to the memory, as shown in the following snippet:</p><pre class="programlisting"><span><span>def</span><span>remember</span><span>(self, state, action, reward, next_state, done)</span>: 
+</span>    self.memory.append((state, action, reward, next_state, done))</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec78"></a>The replay function</h4></div></div></div><p>A method that trains the neural <span>network</span><a id="id325527100" class="indexterm"></a> with experiences in the memory is called <code class="literal">replay()</code>:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>First, we take some experiences from the memory and call them <code class="literal">minibatch</code>:</li></ol></div><pre class="programlisting">minibatch = random.sample(self.memory, batch_size)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>The preceding code will make <code class="literal">minibatch</code>: randomly sampled elements of the memories of the size, <code class="literal">batch_size</code>. The batch size is 32 for this example.</li><li>To make the agent perform well in the long-term, we need to take into account not only the immediate rewards but also the future rewards that we are going to get. In order to do this, we have a <code class="literal">discount rate</code> or <code class="literal">gamma</code>. This way, the agent will learn to maximize the discounted future reward based on the given state:</li></ol></div><pre class="programlisting">
+def replay(self, batch_size):
+    minibatch = random.sample(self.memory, batch_size)
+for state, action, reward, next_state, done in minibatch:
+        target = reward
+if not done:
+            target = (reward + self.gamma *
+                      np.amax(self.model.predict(next_state)[0]))
+        target_f = self.model.predict(state)
+        target_f[0][action] = target
+self.model.fit(state, target_f, epochs=1, verbose=0)
+if self.epsilon &gt; self.epsilon_min:
+self.epsilon *= self.epsilon_decay</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec79"></a>The act function</h4></div></div></div><p>The agent will randomly select an <span>action</span><a id="id325571198" class="indexterm"></a> first by a certain percentage. This is called <span class="strong"><strong>exploration rate</strong></span> or <span class="strong"><strong>epsilon</strong></span>. At first, the agent tries all kinds of things before it starts to learns the patterns. Subsequently, the agent will predict the reward value based on the <span>current</span><a id="id325625079" class="indexterm"></a> state and <span>pick</span><a id="id325625085" class="indexterm"></a> the action that will give the highest reward. <code class="literal">np.argmax()</code> is the function that picks the highest value between two elements in <code class="literal">act_values[0]</code>:</p><pre class="programlisting">def act(self, state):
+if np.random.rand() &lt;= self.epsilon:
+return random.randrange(self.action_size)
+    act_values = self.model.predict(state)
+return np.argmax(act_values[0]) # returns action</pre><p><code class="literal">act_values[0]</code> looks like this: <code class="literal">[14.145181, 11.2012205]</code>. Each number represents the reward of picking action 0 and 1. The <code class="literal">argmax</code> function picks the index with the highest value. In the example of <code class="literal">[14.145181, 11.2012205]</code>, <code class="literal">argmax</code> returns 0 because the value in the 0<sup>th</sup> index is the highest.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec80"></a>Hyperparameters for the DQN</h4></div></div></div><p>The following hyperparameters <span>are</span><a id="id325625129" class="indexterm"></a> passed to the DQN agent:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">episodes</code>: The number of games the agent will play.</li><li style="list-style-type: disc"><code class="literal">gamma</code>: Decay or discount rate, to calculate the future discounted reward.</li><li style="list-style-type: disc"><code class="literal">epsilon</code>: Exploration rate. This is the rate at which an agent randomly decides its action rather than prediction.</li><li style="list-style-type: disc"><code class="literal">epsilon_decay</code>: A parameter that represents a decrease in the number of explorations as it becomes better at playing games.</li><li style="list-style-type: disc"><code class="literal">epsilon_min</code>: The agent should explore at least this amount.</li><li style="list-style-type: disc"><code class="literal">learning_rate</code>: Determines how much the neural network learns in each iteration.</li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec81"></a>DQN agent class</h4></div></div></div><p>The <code class="literal">DQNAgent</code> class has the following <span>methods</span><a id="id325633676" class="indexterm"></a> that embody, <code class="literal">model</code>, <code class="literal">remember</code>, and so on, which we discussed earlier:</p><pre class="programlisting">class DqnAgent:
+def __init__(self, state_size, action_size):
+
+def _build_model(self):
+
+def remember(self, state, action, reward, next_state, done):
+
+def act(self, state):
+
+def replay(self, batch_size):
+
+def load(self, name):
+
+def save(self, name):
+
+</pre><p>Each method has the following functions:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">__init__ (self, state_size, action_size)</code>: Initializes the class with <code class="literal">state_size</code> and <code class="literal">action_size</code> parameters:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">state_size = 4</code></li><li style="list-style-type: disc"><code class="literal">action_size = 2</code></li></ul></div></li><li style="list-style-type: disc"><code class="literal">_build_model(self)</code>: Builds the neural network model using the Keras sequential model and returns it. This model has two hidden layers with 24 neurons each. The last output layer has an output of <code class="literal">action_size</code>, which in our case is <code class="literal">2</code>.</li><li style="list-style-type: disc"><code class="literal">act(state)</code>: Acts based on the previous state and predicts the reward.</li><li style="list-style-type: disc"><code class="literal">replay(self, batch_size)</code>: A method that trains the neural network with experiences in the memory.</li><li style="list-style-type: disc"><code class="literal">load(self, name)</code>: Loads the model weights with the given name.</li><li style="list-style-type: disc"><code class="literal">save(self, name)</code>: Saves the model weights with the given name:</li></ul></div><pre class="programlisting">class DqnAgent:
+def __init__(self, state_size, action_size):
+self.state_size = state_size
+self.action_size = action_size
+self.memory = deque(maxlen=2000)
+self.gamma = 0.95    # discount rate
+self.epsilon = 1.0  # exploration rate
+self.epsilon_min = 0.01
+self.epsilon_decay = 0.995
+self.learning_rate = 0.001
+self.model = self._build_model()
+
+def _build_model(self):
+# Neural Net for Deep-Q learning Model
+model = Sequential()
+        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(self.action_size, activation='linear'))
+        model.compile(loss='mse',
+optimizer=Adam(lr=self.learning_rate))
+return model
+
+def remember(self, state, action, reward, next_state, done):
+self.memory.append((state, action, reward, next_state, done))
+
+def act(self, state):
+if np.random.rand() &lt;= self.epsilon:
+return random.randrange(self.action_size)
+        act_values = self.model.predict(state)
+return np.argmax(act_values[0]) # returns action
+
+def replay(self, batch_size):
+        minibatch = random.sample(self.memory, batch_size)
+for state, action, reward, next_state, done in minibatch:
+            target = reward
+if not done:
+                target = (reward + self.gamma *
+                          np.amax(self.model.predict(next_state)[0]))
+            target_f = self.model.predict(state)
+            target_f[0][action] = target
+self.model.fit(state, target_f, epochs=1, verbose=0)
+if self.epsilon &gt; self.epsilon_min:
+self.epsilon *= self.epsilon_decay
+
+def load(self, name):
+self.model.load_weights(name)
+
+def save(self, name):
+self.model.save_weights(name)</pre><p>In the next section, we will look at how the agent created by using the preceding class is trained.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec82"></a>Training the agent</h4></div></div></div><p>In this section, we look at how the <span>agent</span><a id="id325642195" class="indexterm"></a> is trained for <code class="literal">EPISODES</code>, improving the reward and recalculating the <code class="literal">epsilon</code>:</p><pre class="programlisting">if __name__ == "__main__":
+    env = gym.make('CartPole-v1')
+    output_file = open("cartpole_v1_output.csv","w+")
+    state_size = env.observation_space.shape[0]
+    action_size = env.action_space.n
+    agent = DqnAgent(state_size, action_size)
+# agent.load("./save/cartpole-dqn.h5")
+done = False
+batch_size = 32
+count = 0
+
+for e in range(EPISODES):
+        state = env.reset()
+        state = np.reshape(state, [1, state_size])
+for time in range(500):
+# env.render()
+action = agent.act(state)
+            next_state, reward, done, _ = env.step(action)
+            reward = reward if not done else -10
+next_state = np.reshape(next_state, [1, state_size])
+            agent.remember(state, action, reward, next_state, done)
+            state = next_state
+            output = str(e) + ", " + str( time) + ", " + str(agent.epsilon) + "\n"
+output_file.write(output)
+            output_file.flush()
+if done:
+print("episode: {}/{}, score: {}, e: {:.2}"
+.format(e, EPISODES, time, agent.epsilon))
+break
+            if len(agent.memory) &gt; batch_size:
+                agent.replay(batch_size)
+# if e % 10 == 0:
+        #     agent.save("./save/cartpole-dqn.h5")
+output_file.close()</pre><p>Having executed the sample, let's look at the <code class="literal">score</code> and <code class="literal">epsilon</code> value as a function of time:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/6665ffc1-31ee-4007-a2b5-460d33349e79.png" /></div><p>The score varies quite a bit over the period but the variations become less drastic as the agent learns how to become an expert player. Notice how the <code class="literal">epsilon</code> is also coming down drastically as it starts with a random value and then stabilizes.</p></div></div></div>

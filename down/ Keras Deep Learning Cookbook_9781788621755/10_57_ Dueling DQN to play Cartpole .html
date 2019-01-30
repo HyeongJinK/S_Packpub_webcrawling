@@ -1,0 +1,118 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch10lvl1sec57"></a>Dueling DQN to play Cartpole </h2></div></div><hr /></div><p>In this section, we will look at a modification of the original DQN network, called the <span class="strong"><strong>Dueling DQN network,</strong></span> the network architecture. It explicitly separates the representation of state values and (state-dependent) action advantages. The dueling <span>architecture</span><a id="id324812530" class="indexterm"></a> consists of two streams that represent the value and advantage functions while <span>sharing</span><a id="id324812538" class="indexterm"></a> a common convolutional feature learning module.</p><p>The two streams are combined via an aggregating layer to produce an estimate of the state-action value function <span class="emphasis"><em>Q,</em></span> as shown in the following diagram:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/995fbe60-e65c-4bd3-823a-54792a51fbe3.png" /></div><p><span class="strong"><strong>A <span>single</span> stream Q network (top) and the dueling Q network (bottom)</strong></span>.</p><p>The dueling network has two streams to separately estimate the (scalar) state value (referred to as <span class="emphasis"><em>V(...)</em></span>) and the advantages (referred to as <span class="emphasis"><em>A(...)</em></span>) for each action; the green output module implements the following equation to combine them. Both networks output <span class="emphasis"><em>Q</em></span> values for each action.</p><p>Instead of defining <span class="emphasis"><em>Q,</em></span> we will be using the simple following equation:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/2578ac63-e30c-49c1-923a-8a5d35bed233.png" /></div><p>A term is subtracted from the advantage function : <sub><div class="mediaobject"><img src="/graphics/9781788621755/graphics/e9efb405-c962-483b-97ef-235a84f2ad2e.png" /></div>:</sub></p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/7a5b0249-38ae-453c-b04e-faf282bac17f.png" /></div><p>On the one hand this loses the original semantics of <span class="emphasis"><em>V</em></span> and <span class="emphasis"><em>A</em></span> because they are now off-target by a constant, but on the other hand it increases the stability of the optimization: with <span class="emphasis"><em>()</em></span> the advantages only need to change as fast as the mean, instead of having to compensate any change to the optimal action's advantage in <span>equation a</span>.</p><p><span class="strong"><strong>Equation b:</strong></span></p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/292d3159-5dcd-4f47-8007-464728f14b56.png" /></div><p>Where,</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="emphasis"><em>s</em></span>: Sequence/state</li><li style="list-style-type: disc"><span class="emphasis"><em>a</em></span>: Action</li><li style="list-style-type: disc"><span class="emphasis"><em>a'</em></span>: Possible actions</li><li style="list-style-type: disc"><span class="emphasis"><em>s'</em></span>: Probable next state</li><li style="list-style-type: disc"><span class="emphasis"><em>Q</em></span>: Optimal action-value function <span class="emphasis"><em>Q(s, a)</em></span> as the maximum expected return <span>achievable</span><a id="id325345229" class="indexterm"></a> by following any strategy, after seeing some sequence <span class="emphasis"><em>s</em></span> and then taking some action <span class="emphasis"><em>a</em></span></li><li style="list-style-type: disc">One stream of fully-connected layers output a scalar,<div class="mediaobject"><img src="/graphics/9781788621755/graphics/57755c57-0b0f-4890-88ec-c76c33ac880b.png" /></div>also called <span class="strong"><strong>State network</strong></span></li><li style="list-style-type: disc">Other stream output a |A|- dimensional vector <div class="mediaobject"><img src="/graphics/9781788621755/graphics/90882e6d-a1ec-4798-a5c3-d87f6928b940.png" /></div>, also called <span class="strong"><strong>Advantage network</strong></span></li><li style="list-style-type: disc"><span class="emphasis"><em>θ</em></span> denotes the parameters of the convolutional layers: <span class="emphasis"><em>α</em></span> and <span class="emphasis"><em>β</em></span> are the parameters of the two <span>streams</span><a id="id325348291" class="indexterm"></a> of fully-connected layers</li></ul></div><p>This dueling network can be understood as a single Q network with two streams that replace the popular single-stream Q network in existing algorithms, such as DQNs (DQN; Mnih et al., 2015<sup>+</sup>). The dueling network automatically produces separate estimates of the state value function and advantage function, without any extra supervision:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><a class="ulink" href="https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf" target="_blank">https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf</a></li><li style="list-style-type: disc"><a class="ulink" href="http://proceedings.mlr.press/v48/wangf16.pdf" target="_blank">http://proceedings.mlr.press/v48/wangf16.pdf</a></li></ul></div><p>Now, let's look at the actual dueling network for the Cartpole game.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec76"></a>Getting ready</h3></div></div></div><p>We will be using the <code class="literal">keras<span class="emphasis"><em>-</em></span>rl</code> implementation of DQN (<a class="ulink" href="https://github.com/keras-rl/keras-rl" target="_blank">https://github.com/keras-rl/keras-rl</a>):</p><pre class="programlisting">import numpy as np
+import gym
+
+from keras.models import Sequential
+from keras.layers import Dense, Activation, Flatten
+from keras.optimizers import Adam
+
+from rl.agents.dqn import DQNAgent
+from rl.policy import BoltzmannQPolicy
+from rl.memory import SequentialMemory</pre><p>Let's now look at each of the three classes imported from <code class="literal">keras-rl</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec83"></a>DQN agent</h4></div></div></div><p>This class is already part of the <code class="literal">keras-rl</code> code base, so you don't need to implement it, but it is worth <span>looking</span><a id="id325350584" class="indexterm"></a> at what is happening behind the scenes:</p><pre class="programlisting">class DQNAgent(AbstractDQNAgent):
+# class methods and body</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch10lvl4sec11"></a>init method</h5></div></div></div><p>The <code class="literal">init</code> method <span>takes</span><a id="id325350622" class="indexterm"></a> the following parameters:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><code class="literal">model__</code>: A Keras model.</li><li style="list-style-type: disc"><code class="literal">policy__</code>: A <code class="literal">keras-rl</code> policy that is defined in (policy) (<a class="ulink" href="https://github.com/keras-rl/keras-rl/blob/master/rl/policy.py" target="_blank">https://github.com/keras-rl/keras-rl/blob/master/rl/policy.py</a>).</li><li style="list-style-type: disc"><code class="literal">test_policy__</code>: A <code class="literal">keras-rl</code> policy.</li><li style="list-style-type: disc"><code class="literal">enable_double_dqn__</code>: A Boolean that enables the target network as a second network, proposed by van Hasselt et al, to decrease overfitting.</li><li style="list-style-type: disc"><code class="literal">enable_dueling_dqn__</code>: A Boolean that enables the dueling architecture, proposed by Mnih et al [2].</li><li style="list-style-type: disc"><code class="literal">dueling_type__</code>: If <code class="literal">enable_dueling_dqn</code> is set to <code class="literal">True</code>, a type of dueling architecture must be chosen that calculates <span class="emphasis"><em>Q(s,a)</em></span> from <span class="emphasis"><em>V(s)</em></span> and <span class="emphasis"><em>A(s,a)</em></span> differently. Note that <code class="literal">avg</code> is recommended in the (paper) (<a class="ulink" href="https://arxiv.org/abs/1511.06581" target="_blank">https://arxiv.org/abs/1511.06581</a>).<code class="literal">avg: Q(s,a;theta) = V(s;theta) + (A(s,a;theta)-Avg_a(A(s,a;theta)))</code><code class="literal">max: Q(s,a;theta) = V(s;theta) + (A(s,a;theta)-max_a(A(s,a;theta)))</code><code class="literal">naive: Q(s,a;theta) = V(s;theta) + A(s,a;theta)</code>.</li></ul></div><p>Refer to the following papers referenced in the implementation:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Mnih et al: <a class="ulink" href="https://arxiv.org/pdf/1412.7755.pdf" target="_blank">https://arxiv.org/pdf/1412.7755.pdf</a></li><li style="list-style-type: disc">Zing Wang: <a class="ulink" href="https://arxiv.org/abs/1511.06581" target="_blank">https://arxiv.org/abs/1511.06581</a></li></ul></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec84"></a>Setting the last layer of the network</h4></div></div></div><p>The last layer of the network is <span>chosen</span><a id="id325354184" class="indexterm"></a> based on the dueling type chosen and passed to the <code class="literal">init</code> function. For example, the following code sets the output layer for the <code class="literal">avg</code> dueling type:</p><pre class="programlisting">if self.dueling_type == 'avg':
+                outputlayer = Lambda(lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:] - K.mean(a[:, 1:],
+keepdims=True), output_shape=(nb_action,))(y)</pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch10lvl4sec12"></a>Dueling policy</h5></div></div></div><p>There are various <span>dueling</span><a id="id325380948" class="indexterm"></a> policies available:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Eps greedy policy</strong></span>: The eps greedy <span>policy</span><a id="id325380965" class="indexterm"></a> either takes a random action with the probability epsilon or takes the current best action with prob (1 - epsilon).</li><li style="list-style-type: disc"><span class="strong"><strong>Softmax policy</strong></span>: The softmax <span>policy</span><a id="id325380980" class="indexterm"></a> takes action according to the probability distribution.</li><li style="list-style-type: disc"><span class="strong"><strong>Linear annealed policy</strong></span>: The linear annealed <span>policy</span><a id="id325498174" class="indexterm"></a> computes a current threshold value and transfers it to an inner policy, which chooses the action. The threshold value follows a linear function, decreasing over time.</li></ul></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec85"></a>Init code base</h4></div></div></div><p>The preceding described <span>code</span><a id="id325560054" class="indexterm"></a> is listed in the following snippet: </p><pre class="programlisting">class DQNAgent(AbstractDQNAgent):
+
+def __init__(self, model, policy=None, test_policy=None, enable_double_dqn=False, 
+              enable_dueling_network=False,
+              dueling_type='avg', *args, **kwargs):
+super(DQNAgent, self).__init__(*args, **kwargs)
+
+# Validate (important) input.
+if hasattr(model.output, '__len__') and len(model.output) &gt; 1:
+raise ValueError('Model "{}" has more than one output. DQN expects a model that has a single output.'.format(model))
+if model.output._keras_shape != (None, self.nb_actions):
+raise ValueError('Model output "{}" has invalid shape. DQN expects a model that has one dimension for each action, in this case {}.'.format(model.output, self.nb_actions))
+
+# Parameters.
+self.enable_double_dqn = enable_double_dqn
+self.enable_dueling_network = enable_dueling_network
+self.dueling_type = dueling_type
+if self.enable_dueling_network:
+# get the second last layer of the model, abandon the last layer
+layer = model.layers[-2]
+            nb_action = model.output._keras_shape[-1]
+# layer y has a shape (nb_action+1,)
+            # y[:,0] represents V(s;theta)
+            # y[:,1:] represents A(s,a;theta)
+y = Dense(nb_action + 1, activation='linear')(layer.output)
+# caculate the Q(s,a;theta)
+            # dueling_type == 'avg'
+            # Q(s,a;theta) = V(s;theta) + (A(s,a;theta)-Avg_a(A(s,a;theta)))
+            # dueling_type == 'max'
+            # Q(s,a;theta) = V(s;theta) + (A(s,a;theta)-max_a(A(s,a;theta)))
+            # dueling_type == 'naive'
+            # Q(s,a;theta) = V(s;theta) + A(s,a;theta)
+if self.dueling_type == 'avg':
+                outputlayer = Lambda(lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:] - K.mean(a[:, 1:], keepdims=True), output_shape=(nb_action,))(y)
+elif self.dueling_type == 'max':
+                outputlayer = Lambda(lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:] - K.max(a[:, 1:], keepdims=True), output_shape=(nb_action,))(y)
+elif self.dueling_type == 'naive':
+                outputlayer = Lambda(lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:], output_shape=(nb_action,))(y)
+else:
+assert False, "dueling_type must be one of {'avg','max','naive'}"
+
+model = Model(inputs=model.input, outputs=outputlayer)
+
+# Related objects.
+self.model = model
+if policy is None:
+            policy = EpsGreedyQPolicy()
+if test_policy is None:
+            test_policy = GreedyQPolicy()
+self.policy = policy
+self.test_policy = test_policy
+
+# State.
+self.reset_states()</pre></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec86"></a>BoltzmannQPolicy</h4></div></div></div><p>In the exploration, we would <span>like</span><a id="id325560071" class="indexterm"></a> to exploit all the information present in the estimated Q values produced by our network. The Boltzmann exploration does this. Instead of always taking a random or optimal action, this approach involves choosing an action with weighted probabilities. To accomplish this, it uses a softmax over the networks estimates of value for each action. In this case, the action that the agent estimates to be the optimal one is most likely (but not guaranteed) to be chosen. The biggest advantage over the e-greedy algorithm is that information about the likely value of the other actions can also be taken into consideration. If there are four actions available to an agent, in e-greedy the three actions estimated to be non-optimal are all considered equally, but in the Boltzmann exploration, they are weighed by their relative value. With this approach, the agent can ignore actions that it estimates to be sub-optimal and give more attention to potentially promising, but not necessarily ideal actions:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/c5507711-39fa-4a44-939f-18b13e6ec517.png" /></div><p>In the preceding diagram, each value corresponds to the Q value for a given action (<span class="emphasis"><em>a</em></span>) at a random state (<span class="emphasis"><em>s</em></span>) in an environment. The height of the light blue bars in the diagram corresponds to the probability of choosing a given action. The dark blue bar corresponds to a chosen action. </p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h5 class="title"><a id="ch10lvl4sec13"></a>Adjustment during training</h5></div></div></div><p>In practice, we utilize an additional temperature parameter (<span class="emphasis"><em>τ</em></span>), which is annealed over time. This parameter <span>controls</span><a id="id325498103" class="indexterm"></a> the spread of the softmax distribution so that all actions are considered equally at the start of training, and actions are sparsely distributed by the end of training.</p><p> </p><p>In mathematical terms, the policy can be written as shown in the following formula:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/ca862200-5a4e-4a48-aa9a-14b67c320012.png" /></div><p>The following code shows how this policy is initialized:</p><pre class="programlisting">class BoltzmannQPolicy(Policy):
+    """Implement the Boltzmann Q Policy
+    """
+    def __init__(self, tau=1., clip=(-500., 500.)):
+        super(BoltzmannQPolicy, self).__init__()
+        self.tau = tau
+        self.clip = clip</pre><p>The Boltzmann policy is defined using the formula. In the implementation, we use it is implemented in the following snippet:</p><pre class="programlisting">p = exp(Q/tau) / sum(Q[a]/tau)</pre><p>In the next section, let's look at how these rewards, actions, and states are stored.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec87"></a>Sequential memory</h4></div></div></div><p>Sequential memory is <span>used</span><a id="id325498157" class="indexterm"></a> by the DQN agent to store various states, actions, and rewards. It has the following data structures:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>observations (dict)</strong></span>: Observations <span>returned</span><a id="id325848520" class="indexterm"></a> by the environment</li><li style="list-style-type: disc"><span class="strong"><strong>actions (int)</strong></span>: Actions <span>taken</span><a id="id325848534" class="indexterm"></a> to obtain this observation</li><li style="list-style-type: disc"><span class="strong"><strong>rewards (float)</strong></span>: Rewards obtained <span>by</span><a id="id325848548" class="indexterm"></a> taking this action</li><li style="list-style-type: disc"><span class="strong"><strong>terminals (Boolean)</strong></span>: This is <span>the</span><a id="id325848562" class="indexterm"></a> state terminal:</li></ul></div><p>In the code, these data structures are defined as shown in the following snippet:</p><pre class="programlisting">self.actions = RingBuffer(limit)
+self.rewards = RingBuffer(limit)
+self.terminals = RingBuffer(limit)
+self.observations = RingBuffer(limit)</pre></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl2sec77"></a>How to do it...</h3></div></div></div><p>Let's go ahead and implement the Dueling DQN agent-based Cartpole playing program. Perform the following steps to get the agent in place:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Initialize the Open AI gym environment <code class="literal">env</code></li><li>Define the number of actions from <code class="literal">env</code></li><li>Create a sequential neural network</li><li>Initialize the <code class="literal">SequentualMemory</code> with a <code class="literal">limit</code> of 100 and <code class="literal">window_length</code> of 1</li><li>Initialize the <code class="literal">BoltzmannQPolicy</code> instance policy</li><li>Create <code class="literal">DQNAgent</code>, as follows:</li></ol></div><pre class="programlisting">dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=10,
+enable_dueling_network=True, target_model_update=1e-2, policy=policy)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>Compile the <code class="literal">DQNAgent</code> with the <code class="literal">optimization</code> method as Adam and the <code class="literal">loss</code> function as <span class="strong"><strong>mean absolute error</strong></span> (<span class="strong"><strong>MAE</strong></span>)</li><li>Call <code class="literal">dqn.fit</code> to find <span>the</span><a id="id325876752" class="indexterm"></a> rewards:</li></ol></div><pre class="programlisting">ENV_NAME = 'CartPole-v0'
+
+# Get the environment and extract the number of actions. initiate seed.
+env = gym.make(ENV_NAME)
+np.random.seed(123)
+env.seed(123)
+nb_actions = env.action_space.n
+
+# A simple model regardless of the dueling architecture
+# if you enable dueling network in DQN, DQN will build a dueling network base on your model automatically
+
+model = Sequential()
+model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+model.add(Dense(16))
+model.add(Activation('relu'))
+model.add(Dense(16))
+model.add(Activation('relu'))
+model.add(Dense(16))
+model.add(Activation('relu'))
+model.add(Dense(nb_actions, activation='linear'))
+print(model.summary())
+
+# Configure and compile the agent.
+memory = SequentialMemory(limit=100, window_length=1)
+policy = BoltzmannQPolicy()
+# enable the dueling network
+# dueling_type defined as {'max'}
+dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=10,
+enable_dueling_network=True, target_model_update=1e-2, policy=policy)
+dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+
+# now train the model
+dqn.fit(env, nb_steps=1000, visualize=False, verbose=2)</pre><p>We have modified the DQN agent to store the training <code class="literal">metrpet:</code><code class="literal">ics</code> in a file. When you run it, a <code class="literal">log</code> file is generated, as shown in the following snippet:</p><pre class="programlisting">20,0.46619212958547807,0.5126896699269613,-0.0582879309852918
+73,0.34128815,0.47138393,0.13162555
+106,0.13377163,0.5142502,0.5694133
+116,0.041925266,0.5914798,0.962825
+139,0.016332645,0.6163821,1.1230623
+198,0.0054321177,0.7427029,1.4339473
+225,0.008107586,0.8838398,1.7260511
+237,0.009388918,0.9404013,1.8322802
+...
+1000,0.1786698,4.1688085,8.251708</pre><p>The headers of the row are <code class="literal">episode</code>, <code class="literal">reward</code>, and <code class="literal">steps</code>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h4 class="title"><a id="ch10lvl3sec88"></a>Plotting the training and testing results</h4></div></div></div><p>First, let's plot the training results from <span>the</span><a id="id325876797" class="indexterm"></a> saved <code class="literal">log</code> file in the <code class="literal">output</code> folder. As can be seen, the <span>loss</span><a id="id325884698" class="indexterm"></a> comes down, but toward the end escalates to an abnormal value and again comes down.</p><p>MAE and <code class="literal">mean_q</code> steadily increases as a function of episodes.</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li><code class="literal">mean_q</code> is defined by the following function:</li></ol></div><pre class="programlisting">def mean_q(y_true, y_pred):
+  return K.mean(K.max(y_pred, axis=-1))</pre><div class="mediaobject"><img src="/graphics/9781788621755/graphics/f2690d6e-b4b7-464d-8724-b15adaaee64a.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Let's now plot the reward and steps as a function of the episode:</li></ol></div><div class="mediaobject"><img src="/graphics/9781788621755/graphics/f2efe190-b3e7-4131-95bd-c66fde20ccf9.png" /></div><p>In the preceding graph, it can be seen that the reward oscillates between <span class="strong"><strong>65</strong></span> and <span class="strong"><strong>95</strong></span> for <span class="strong"><strong>100</strong></span> episodes.</p></div></div></div>

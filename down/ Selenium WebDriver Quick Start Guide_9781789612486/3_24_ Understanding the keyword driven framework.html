@@ -1,0 +1,107 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec30"></a>Understanding the keyword driven framework</h2></div></div><hr /></div><p>Next, we come to a very <span>important</span><a id="id325162069" class="indexterm"></a> juncture, where we come to understand what a K<span>eyword-Driven framework is</span>. A K<span>eyword Driven framework</span> is one in which keywords are written in an external file, such as .xls or xlsx . The common practice is to use the <span>Keyword-Driven framework</span> along with test data. Such a framework is called a Hybrid Keyword Framework. </p><p>We will have a very simple <span>Excel</span> document for this framework, which will be called <code class="literal">Framework.xls</code>, and this sheet will have two tabs, namely <code class="literal">TestConfig</code> and <code class="literal">TestCases</code>. We have already seen in <a class="link" href="#" linkend="ch02">Chapter 2</a>, <span class="emphasis"><em>Understanding the Document Object Model and Creating Customized XPaths</em></span>, what the <code class="literal">TestConfig</code> tab looks like, and we also extracted records for which the Execute column was marked as <span class="emphasis"><em>Y</em></span>. Let's see what the <code class="literal">TestCases</code> tab looks like.</p><p>The following screenshot shows the <code class="literal">TestCases</code> tab:</p><div class="mediaobject"><img src="/graphics/9781789612486/graphics/cc7d07bf-4a76-4e9a-bc66-3149361b5c18.png" /></div><p>The <code class="literal">TestCaseID</code> in the <code class="literal">TestCases</code> tab should map to the <code class="literal">TestConfig</code> tab. If the Execute flag for test case <code class="literal">TC001</code> is <code class="literal">'Y'</code> in the <code class="literal">TestConfig</code> tab, then all the test steps for test case <code class="literal">TC001</code> should execute in order from top to bottom.</p><p><span>Let's first extract this data by modifying our initial query which was as shown here:</span></p><p><span> </span><code class="literal">select TestCaseID from TestConfig where Execute_Flag='Y'</code></p><p>The modified <span>query</span><a id="id325450469" class="indexterm"></a> is shown here:</p><p> <code class="literal">Select * from TestCases where TestCaseID in (select TestCaseID from TestConfig where Execute_Flag='Y')</code></p><p>Let's extract data from the <code class="literal">TestCases</code> tab now.</p><p><span>Let's have a look at an Extract Program. </span></p><p>The code shown below uses the previous query to extract <code class="literal">TestCases</code> steps based on Execute Flag:</p><pre class="programlisting">  public static void main(String[] args) throws FilloException {
+    Fillo fillo = new Fillo();
+    Connection conn = null;
+    Recordset rcrdset = null;
+    try {
+      conn = fillo
+          .getConnection("C:\\SeleniumWD\\src\\main\\resources\\Framework.xlsx");
+      String query = "Select * from TestCases where TestCaseID in (select TestCaseID from TestConfig where Execute_Flag='Y')";
+
+      rcrdset = conn.executeQuery(query);
+
+      while (rcrdset.next()) {
+        System.out.println(rcrdset.getField("TestCaseID") + ":::"
+            + rcrdset.getField("Keyword") + ":::"
+            + rcrdset.getField("Object") + ":::"
+            + rcrdset.getField("Data"));
+      }
+    } catch (FilloException e) {
+      throw new FilloException("Error in query");
+    } finally {
+      rcrdset.close();
+      conn.close();
+    }
+  }</pre><p>The output from the <span>previous</span><a id="id325487382" class="indexterm"></a> code is as follows:</p><pre class="programlisting">TC001:::OpenBrowser:::NULL:::NULL
+TC001:::Navigate:::NULL:::http://www.freecrm.com
+TC001:::EnterText:::USERNAME:::<span class="strong"><strong>USERNAME</strong></span>
+TC001:::EnterText:::PASSWORD:::<span class="strong"><strong>PASSWORD</strong></span>
+TC001:::Click:::LOGINBTN:::NULL
+TC001:::click:::LOGOUT:::NULL</pre><p>One important thing to be noted about this output is that, after getting it, we need to send it to the framework so that the UI automation can proceed. For this purpose, we will require an <code class="literal">ArrayList</code> of Map, which we will see in the next section. Let's first look at how we extract the test data.</p><p>The data in bold is extracted from the <code class="literal">Data</code> column of the Excel sheet. If you notice, for the Navigate keyword we have the data hardcoded, but the data in bold seems to be in the form of variables of some sort. <span>And, of course, they are variables</span>. They represent what are called the <code class="literal">Keys</code> of a property file—say, for example, the name of the property file is <code class="literal">Login.properties</code>, the contents of which are shown here:</p><pre class="programlisting"><span class="strong"><strong>USERNAME=admin</strong></span>
+<span class="strong"><strong>PASSWORD=adminpass</strong></span></pre><p>The value on the left side of <code class="literal">=</code> is the key and the one on the right is the value.</p><p>The code to <span>extract</span><a id="id325487514" class="indexterm"></a> the values of the corresponding <code class="literal">Keys</code> is given here:</p><pre class="programlisting">   public static void main(String[] args) throws IOException {
+    Properties prop = new Properties();
+    InputStream input = null;
+    try {
+      input = new FileInputStream(
+          "C:\\SeleniumWD\\src\\main\\resources\\Login.properties");
+      prop.load(input);
+      System.out.println("Username: " + prop.getProperty("USERNAME"));
+      System.out.println("Password: " + prop.getProperty("PASSWORD"));
+    } catch (FileNotFoundException e) {
+      throw new FileNotFoundException();
+    } finally {
+      input.close();
+    }
+  }
+}
+
+The output from the above program is
+Username: admin
+Password: adminpass </pre><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec30"></a>Concept of Map and HashMap</h3></div></div></div><p>Map is an <span>interface</span><a id="id325487537" class="indexterm"></a> in Java that <span>works</span><a id="id325487545" class="indexterm"></a> on a <span class="strong"><strong>Key and Value pair</strong></span> concept, which cannot contain duplicate keys and each Key maps to, at the most, one value. HashMap is the implementation class of Map, which we will be using to store the data from the Excel sheet, which will be related to test steps of a particular testcase. First of all, we will just require a Java HashMap to extract the test steps. One more testcase has been added to show what happens when only a HashMap is used to extract multiple test case steps.</p><p>The following code shows how to extract data in HashMap from the <code class="literal">Framework.xls</code>:</p><pre class="programlisting">  public static void main(String[] args) {
+    Fillo fillo = new Fillo();
+    Map&lt;String, String&gt; testcaseData = new HashMap&lt;String, String&gt;();
+    Connection conn = null;
+    Recordset rcrdset = null;
+    try {
+      conn = fillo
+          .getConnection("C:\\SeleniumWD\\src\\main\\resources\\Framework.xlsx");
+      String query = "Select * from TestCases where TestCaseID in (select                     TestCaseID from TestConfig where Execute_Flag='Y')";
+      rcrdset = conn.executeQuery(query);
+      while (rcrdset.next()) {
+        testcaseData.put("TestCaseID", rcrdset.getField("TestCaseID"));
+        testcaseData.put("Keyword", rcrdset.getField("Keyword"));
+        testcaseData.put("Object", rcrdset.getField("Object"));
+        testcaseData.put("Data", rcrdset.getField("Data"));
+      }
+      System.out.println(testcaseData);
+    } catch (FilloException e) {
+      throw new FilloException("Error in query processing");
+    } finally {
+      rcrdset.close();
+      conn.close();
+    }
+  }
+}
+
+
+The output of this program is 
+{Keyword=click, TestCaseID=TC002, Object=LOGOUT, Data=NULL}</pre><p>As seen from the <span>preceding</span><a id="id325487570" class="indexterm"></a> output, the last test step of the test case <code class="literal">TC002</code> is fetched into the HashMap. This happens because a HashMap does not allow <span>duplicate</span><a id="id325610224" class="indexterm"></a> values in the Key and it overwrites the last value every time a duplicate Key appears. Hence, we get only the last test step, since all initial steps were overwritten.</p><p>To overcome this issue, we require an <code class="literal">ArrayList</code> of HashMaps, which can be done using the following code:</p><pre class="programlisting">public class ExtractAllData {
+
+ public static void main(String[] args) throws FilloException {
+ Fillo fillo = new Fillo();
+ Map&lt;String, String&gt; testcaseData = new HashMap&lt;String, String&gt;();
+ List&lt;Map&gt; teststepList = new ArrayList&lt;Map&gt;();
+ Connection conn = null;
+ try {
+ conn = fillo
+ .getConnection("C:\\SeleniumWD\\src\\main\\resources\\Framework.xlsx");
+ String query = "Select * from TestCases where TestCaseID in (select TestCaseID from TestConfig where Execute_Flag='Y')";
+ Recordset rcrdset = null;
+ rcrdset = conn.executeQuery(query);
+ while (rcrdset.next()) {
+ testcaseData = new HashMap&lt;String, String&gt;();
+ testcaseData.put("TestCaseID", rcrdset.getField("TestCaseID"));
+ testcaseData.put("Keyword", rcrdset.getField("Keyword"));
+ testcaseData.put("Object", rcrdset.getField("Object"));
+ testcaseData.put("Data", rcrdset.getField("Data"));
+ teststepList.add(testcaseData);
+ }
+ System.out.println("List Content size: " + teststepList.size());
+ System.out.println("List Contents: " + teststepList);
+ rcrdset.close();
+ conn.close();
+ } catch (FilloException e) {
+ throw new FilloException("Error in query");
+ }
+ }
+}</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note9"></a>Note</h3><p>Do not forget to put this line of code in the <code class="literal">recordSet</code> iteration:                               <code class="literal">testcaseData = new HashMap&lt;String, String&gt;();</code> 
+Without this line, the <code class="literal">teststepList</code> will contain 12 duplicated entries of the last test step, which is not correct.</p></div><p>When the <span>preceding</span><a id="id325610259" class="indexterm"></a> code executes, we will <span>have</span><a id="id325610267" class="indexterm"></a> all the test steps that have to be executed. This completes the extraction process.</p></div></div>

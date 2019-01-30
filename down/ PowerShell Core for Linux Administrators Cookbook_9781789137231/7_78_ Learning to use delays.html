@@ -1,0 +1,24 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch07lvl1sec81"></a>Learning to use delays</h2></div></div><hr /></div><p>PowerShell usually runs one statement after another; the current statement must return the buffer (so to speak) for the next step to begin execution. However, in some cases, you still require a wait; situations where the buffer could be returned before the desired <span>outcome</span><a id="id325611655" class="indexterm"></a> is achieved.</p><p> </p><p>While setting up something like this may require some manipulation, to keep it simple, let's just assume that we need five seconds to register what day it is (sure, disbelief works), before being instructed what to wear.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec217"></a>How to do it…</h3></div></div></div><p>Let's combine the two scripts from the previous recipe, <span class="emphasis"><em>Using Switch-Case conditions to control script flow</em></span>.</p><p>Open a new file and type in the following:</p><pre class="programlisting">$Date = Get-Date
+
+if ($Date.DayOfWeek -in 'Saturday', 'Sunday') {
+    Write-Host 'We party on weekends!' -BackgroundColor Yellow -ForegroundColor Black
+}
+elseif ($Date.DayOfWeek -eq 'Wednesday') {
+    Write-Host 'Half the week is over, and I want to do so much more!'
+}
+else {
+    Write-Host 'Work is worship. Ahem!'
+}
+
+<span class="strong"><strong>Start-Sleep -Seconds 5</strong></span>
+
+$Date = Get-Date
+
+switch ($Date.DayOfWeek) {
+    'Monday' { Write-Output 'Wear red.'; break }
+    'Tuesday' { Write-Output 'Wear violet.'; break }
+    'Wednesday' { Write-Output 'Wear indigo.'; break }
+    'Thursday' { Write-Output 'Wear blue.'; break }
+    'Friday' { Write-Output 'Wear green.'; break }
+    Default { Write-Output 'Poor you, working today. Wear orange.'; break }
+}</pre><p>Here is a sample output:</p><div class="mediaobject"><img src="/graphics/9781789137231/graphics/530e03ee-0be2-4700-9e80-3d2831af2955.png" /></div><p> </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch07lvl2sec218"></a>How it works…</h3></div></div></div><p>The reason this is a separate recipe is that it is part of flow control, and is useful in <span>some</span><a id="id326666625" class="indexterm"></a> specific situations. The <code class="literal">Start-Sleep</code> cmdlet accepts <code class="literal">Seconds</code> or <code class="literal">Milliseconds</code> as input, and waits for that amount of time to pass before processing the next instruction.</p></div></div>

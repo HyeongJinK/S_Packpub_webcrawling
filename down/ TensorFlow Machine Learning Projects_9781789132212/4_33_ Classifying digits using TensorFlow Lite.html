@@ -1,0 +1,116 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch04lvl1sec38"></a>Classifying digits using TensorFlow Lite</h2></div></div><hr /></div><p>To complete this project, we will use the MNIST digit dataset, which is available in the <span>TensorFlow datasets library (<a class="ulink" href="https://www.tensorflow.org/guide/datasets" target="_blank">https://www.tensorflow.org/guide/datasets</a>)</span>. It consists of images of handwritten <span>digits</span><a id="id325610402" class="indexterm"></a> from 0 to 9. The training dataset has 60,000 images and the testing set has 10,000 images. Some of the <span>images</span><a id="id325608622" class="indexterm"></a> in the dataset are as follows:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/e5f9a81c-80ce-443b-8a69-5def4ab85cfc.png" /></div><p>If we take a look at TensorFlowLite tutorials, we will see that the focus is on using pre-trained models such as Mobilenet or retraining the existing ones. However, none of these tutorials talk about building new models, which is something we will be doing here. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note31"></a>Note</h3><p>Note that we specifically choose a simple model because at the time of writing this book, TensorFlow Lite doesn't have adequate support for all types of complex models</p></div><p>We will use categorical cross entropy as the loss function for this classification problem. Categorical cross entropy was explained in detail in <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Sentiment Analysis in Your Browser Using TensorFlow.js</em></span>, of this book. In this chapter, we have 10 different digits in the dataset, so we will use the categorical cross entropy over 10 classes.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec25"></a>Pre-processing data and defining the model</h3></div></div></div><p>We need to pre-process our data for <span>making</span><a id="id325601678" class="indexterm"></a> it ready to feed into our model, define our model, and create an evaluation metric:</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Pre-process the data by ensuring the <span>images</span><a id="id325290166" class="indexterm"></a> are of shape 28x28x1 and converting the pixels into a float type variable for training. Also, here we define NUM_CLASSES = 10 as there are 10 different digits in the images.</li></ol></div><pre class="programlisting">x_train = x_train.reshape(x_train.shape[0], IMAGE_SIZE, IMAGE_SIZE, 1)
+x_test = x_test.reshape(x_test.shape[0], IMAGE_SIZE, IMAGE_SIZE, 1)
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+Next, we normalize the image pixels by 255 as follows:
+x_train /= 255
+x_test /= 255
+And finally, we convert the class labels to one hot for training as follows:
+y_train = keras.utils.to_categorical(y_train, NUM_CLASSES)
+y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
+
+</pre><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Define the model as having two convolutional layers with the same filter sizes, two fully connected layers, two dropout layers with dropout probabilities of 0.25 and 0.5 respectively, a Rectified Linear (ReLU) after every fully connected or convolutional layer except the last one, and one max pool layer. Also we add a Softmax activation to convert the output of the model to probabilities for each of the 10 digits. Note that we use this model as it produces good results. You can try improving the model by adding more layers or trying different shapes of the existing layers.</li></ol></div><pre class="programlisting">model = Sequential()
+model.add(Conv2D(32, kernel_size=(3, 3),
+activation='relu',
+input_shape=INPUT_SHAPE))
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(NUM_CLASSES))model.add(Activation('softmax', name = 'softmax_tensor'))</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note32"></a>Note</h3><p>Note that we have named our output tensor <code class="literal">softmax_tensor</code>, which will come in pretty handy when we try to convert this model into a TensorFlow Lite format.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Further define the following parameters for the model:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Loss = Categorical Cross Entropy</li><li style="list-style-type: disc">Optimizer = AdaDelta. Adam optimizer, defined in  <a class="link" href="#" linkend="ch03">Chapter 3</a>, <span class="emphasis"><em>Sentiment Analysis in Your Browser Using TensorFlow.js</em></span>, is an extension of AdaDelta. We use AdaDelta as it gives good result for this model. You can find more details about AdaDelta in the original paper (<a class="ulink" href="https://arxiv.org/abs/1212.5701" target="_blank">https://arxiv.org/abs/1212.5701</a>).</li><li style="list-style-type: disc">Evaluation Metric = Classification Accuracy </li></ul></div></li></ol></div><p>Code for defining these is as follows:</p><pre class="programlisting">model.compile(loss=keras.losses.categorical_crossentropy,
+
+optimizer=keras.optimizers.Adadelta(),
+
+metrics=['accuracy'])</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li> Enable <span>Tensorboard</span><a id="id326324366" class="indexterm"></a> logging to <span>visualize</span><a id="id326324375" class="indexterm"></a> the model graph and training progress. Code is defined as follows:</li></ol></div><pre class="programlisting">tensorboard = TensorBoard(log_dir=MODEL_DIR)</pre><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Train the model using the following parameters:
+<div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Epochs = 12</li><li style="list-style-type: disc">Batch Size = 128:</li></ul></div></li></ol></div><pre class="programlisting">self.model.fit(self.x_train, self.y_train,
+batch_size=BATCH_SIZE,
+
+epochs=EPOCHS,
+
+verbose=1,
+
+validation_data=(self.x_test, self.y_test),
+
+callbacks = [self.tensorboard])
+
+score = self.model.evaluate(self.x_test, self.y_test, verbose=0)</pre><p>We achieved <span class="strong"><strong>99.24% </strong></span>accuracy on the test dataset with just 12 epochs.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note33"></a>Note</h3><p>Note that we use the <code class="literal">callbacks</code> parameter to log the training progress on TensorBoard.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch04lvl2sec26"></a>Converting TensorFlow model to TensorFlow Lite</h3></div></div></div><p>Now that we have trained the <span>model</span><a id="id326483289" class="indexterm"></a> in the usual way, let's look at how we can convert this model into a TensorFlow Lite format.</p><p>The general procedure for conversion is illustrated in the followin<span>g diagr</span>am:</p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/0d93f9cb-7440-40f3-aa5c-bd58f400d679.png" /></div><p>The procedure is simple: we take a trained model, freeze the graph, optimize it for inference/prediction, and convert it into <code class="literal">.tflite</code> format. Before going further, let's understand what we mean by Freeze Graph and Optimize For Inference:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc"><span class="strong"><strong>Freeze Graph : </strong></span>Freeze <span>graph</span><a id="id326527861" class="indexterm"></a> operation effectively freezes the weights of the model by converting all the of the TF Variables as Constants. As you can imagine, having all of the weights as constants can save space compared to keeping them as variables. As we only perform inference on mobile (and not training), we don't want to change the model weights anyway</li><li style="list-style-type: disc"><span class="strong"><strong>Optimize For Inference</strong></span>: Once the <span>graph</span><a id="id326527875" class="indexterm"></a> is frozen, we remove all the operations in the graph which are not useful for inference. For example, Dropout operation is used to train the model such that it doesn't overfit. However, there is absolutely no use of this operation during prediction on mobile.</li></ul></div><p>For the rest of this section, we will heavily use TensorBoard visualization (<a class="ulink" href="https://www.tensorflow.org/guide/summaries_and_tensorboard" target="_blank">https://www.TensorFlow.org/guide/summaries_and_tensorboard</a>) for graph visualization. :</p><div class="orderedlist"><ol class="orderedlist arabic" type="1"><li>Once you have trained the model, you must have a file with the prefix <code class="literal">events.out.tfevents.</code> in your model folder. Go to the <code class="literal">logs</code> folder and type the following into t<span>erminal</span>:</li></ol></div><pre class="programlisting"><span class="strong"><strong>tensorboard --logdir &lt;model_folder&gt;</strong></span></pre><p>TensorBoard will start in port <code class="literal">6006</code> by default. Launch it by going to your browser and typing <code class="literal">localhost:6006</code> into the address bar<span class="emphasis"><em>. </em></span>Once the Tensorboard opens, if you navigate to the Graphs tab at the top, you will be able to see the Tensorflow Graph of your model. In the following diagram, we illustrate the main graph, with annotations for the input tensor, output tensor, and training part of the graph. As we can see, we shouldn't keep anything from the training graph for inference/making predictions on mobile. </p><div class="mediaobject"><img src="/graphics/9781789132212/graphics/66f49ccd-8852-4c1a-b225-1d18ddba0ba4.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="2" type="1"><li>Next implement a function <code class="literal">freeze_sesssion</code> which takes TF session as input, converts all variables into constants, and returns the frozen graph. After <span>executing</span><a id="id325617749" class="indexterm"></a> this function, you will obtain a frozen graph file named <code class="literal">MNIST_model.pb</code> in the <code class="literal">&lt;model_folder&gt;/logs/freeze</code> folder.</li></ol></div><pre class="programlisting">from TensorFlow.python.framework.graph_util import convert_variables_to_constants
+
+def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
+
+graph = session.graph
+
+with graph.as_default():
+
+freeze_var_names = list(set(v.op.name for v in tf.global_variables()).difference(keep_var_namesor []))
+
+output_names = output_namesor []
+
+output_names += [v.op.name for v in tf.global_variables()]
+
+input_graph_def = graph.as_graph_def()
+
+ifclear_devices:
+
+for node in input_graph_def.node:
+
+node.device = ""
+
+frozen_graph = convert_variables_to_constants(session, input_graph_def,
+
+output_names, freeze_var_names)
+
+return frozen_graph
+</pre><div class="orderedlist"><ol class="orderedlist arabic" start="3" type="1"><li>Now, here is where it gets really strange: you can't visualize the <code class="literal">MNIST_model.pb</code> file directly through TensorBoard. You need to write the graph in a format that TensorBoard can pick up. Execute the function <code class="literal">pb_to_tensorboard</code> mentioned below and you will see another file in<code class="literal">&lt;model_folder&gt;/logs/freeze</code> folder with prefix <code class="literal">events.out.tfevents</code>.</li></ol></div><pre class="programlisting">
+def pb_to_tensorboard(input_graph_dir,graph_type ="freeze"):
+
+  file_name = ""
+
+  ifgraph_type == "freeze":
+
+      file_name = FREEZE_FILE_NAME
+
+  elifgraph_type == "optimize":
+
+      file_name = OPTIMIZE_FILE_NAME
+
+  with tf.Session() as sess:
+
+      model_filename = input_graph_dir + "/" + file_name
+
+      with gfile.FastGFile(model_filename, 'rb') as f:
+
+           graph_def = tf.GraphDef()
+
+           graph_def.ParseFromString(f.read())
+
+  train_writer = tf.summary.FileWriter(input_graph_dir)
+
+  train_writer.add_graph(sess.graph)
+</pre><div class="orderedlist"><ol class="orderedlist arabic" start="4" type="1"><li> Next, start TensorBoard again with <code class="literal">logdir</code> as <code class="literal">&lt;model_folder&gt;/logs/freeze</code> and visualize the frozen graph. You will observe the you have stripped out most of the variables from the graph. The following diagram illustrates the frozen graph you will obtain:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/74a4b041-2f50-411a-87ad-e12b625223b6.png" /></div><div class="orderedlist"><ol class="orderedlist arabic" start="5" type="1"><li>Next step is further trim to optimize it for inference. As explained before, we will remove Dropout variables from the graph as they are not useful for inference on mobile. However, there is no perfect way to remove those from the graph based on the existing TensorFlow functions/programs. The new improvements to TensorFlow Lite don't work for this example, which suggests that they are <span>still</span><a id="id325641107" class="indexterm"></a> under development. Instead, you will have to manually specify the operations you want to remove and connect the input of the Dropout operations to the operations after them in the graph. For example, in the frozen graph, let's say we want to remove the <code class="literal">dropout_3</code> operation. The following diagram shows the zoomed-in version of the frozen graph:</li></ol></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/f3aef9a3-466d-4bb3-b125-d7bc2619696a.png" /></div><p>In such a case, you will have to connect the <code class="literal">max_pooling2</code> operation directly to the <code class="literal">flatten_2</code> operation, thereby skipping the <code class="literal">dropout_3</code> op in the graph.</p><p>Execute the function <code class="literal">optimize_graph</code> mentioned below to remove all of the dropout ops in the graph. It manually flushes out all the Dropout operations from the graph. This will result in a new file named <code class="literal">MNIST_optimized.pb</code> under the <code class="literal">&lt;model_folder&gt;/logs/optimized</code> folder.</p><pre class="programlisting">def optimize_graph(input_dir, output_dir):
+input_graph = os.path.join(input_dir, FREEZE_FILE_NAME)
+output_graph = os.path.join(output_dir, OPTIMIZE_FILE_NAME)
+input_graph_def = tf.GraphDef()
+with tf.gfile.FastGFile(input_graph, "rb") as f:
+input_graph_def.ParseFromString(f.read())
+output_graph_def = strip(input_graph_def, u'dropout_1', u'conv2d_2/bias', u'dense_1/kernel', u'training')
+output_graph_def = strip(output_graph_def, u'dropout_3', u'max_pooling2d_2/MaxPool', u'flatten_2/Shape',
+u'training')
+output_graph_def = strip(output_graph_def, u'dropout_4', u'dense_3/Relu', u'dense_4/kernel', u'training')
+output_graph_def = strip(output_graph_def, u'Adadelta_1', u'softmax_tensor_1/Softmax',
+u'training/Adadelta/Variable', u'training')
+output_graph_def = strip(output_graph_def, u'training', u'softmax_tensor_1/Softmax',
+u'_', u'training')
+with tf.gfile.GFile(output_graph, "wb") as f:
+f.write(output_graph_def.SerializeToString())</pre><div class="orderedlist"><ol class="orderedlist arabic" start="6" type="1"><li>Again, to visualize the graph in TensorBoard, you need to convert it using the function <code class="literal">pb_to_tensorboar</code> defined in step 3 so that it's TensorBoard-friendly and obtain a new file with the prefix <code class="literal">events.out.tfevents</code> in the same folder. The following figure illustrates the graph you will obtain after removing the Dropout operations. </li></ol></div><div class="mediaobject"><img src="/graphics/9781789132212/graphics/fe78df32-8c1f-4eac-afe2-8dee60ddd3f0.png" /></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="tip34"></a>Note</h3><p>Note that getting rid of Dropout from the graph will not affect testing set accuracy as Dropout is not used for inference.</p></div><div class="orderedlist"><ol class="orderedlist arabic" start="7" type="1"><li>The last step in obtaining the <span>model</span><a id="id325655536" class="indexterm"></a> in a mobile-friendly format is to convert it into a <code class="literal">.tflite</code> file. For this step, you will use <code class="literal">toco</code> command, which stands for TensorFlow Lite Optimizing Converter (<a class="ulink" href="https://www.tensorflow.org/lite/convert/" target="_blank">https://www.tensorflow.org/lite/convert/</a>). The code is provided as follows:</li></ol></div><pre class="programlisting">toco \
+--input_file=&lt;model_folder&gt;/logs/optimized/MNIST_optimized.pb\
+--input_format=TensorFlow_GRAPHDEF \
+--output_format=TFLITE \
+--inference_type=FLOAT \
+--input_type=FLOAT \
+--input_arrays=conv2d_1_input \
+--output_arrays=softmax_tensor_1/Softmax \
+--input_shapes=1,28,28,1 \
+--output_file=&lt;model_folder&gt;//mnist.tflite</pre><p>This will produce a file named <code class="literal">mnist.tflite</code> in <code class="literal">&lt;model_folder&gt;</code>. Essentially, this step is trying to convert the optimized graph into a Flatbuffer for efficient on-device inference.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title"><a id="note35"></a>Note</h3><p>We will not cover deploying our project to the mobile device as its development is outside the scope of this book. However, feel free to take a look at TensorFlow Lite tutorials on how to deploy the TF Lite models Android (<a class="ulink" href="https://www.tensorflow.org/lite/demo_android" target="_blank">https://www.tensorflow.org/lite/demo_android</a>) or iOS (<a class="ulink" href="https://www.tensorflow.org/lite/demo_ios" target="_blank">https://www.tensorflow.org/lite/demo_ios</a>)<span>.</span></p></div></div></div>

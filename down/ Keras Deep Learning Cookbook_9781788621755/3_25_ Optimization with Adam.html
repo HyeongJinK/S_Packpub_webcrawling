@@ -1,0 +1,56 @@
+<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch03lvl1sec32"></a>Optimization with Adam</h2></div></div><hr /></div><p>SGD, in contrast to batch gradient descent, performs a parameter update for <span class="emphasis"><em>each</em></span> training example, <span class="emphasis"><em>x<sup>(i</sup><sup>)</sup></em></span> and label <span class="emphasis"><em>y</em></span><sup><span class="emphasis"><em>(i)</em></span></sup>:</p><p><span class="emphasis"><em>Θ = </em></span><span class="emphasis"><em>Θ - η∇<sub>Θ</sub>j(Θ, x<sup>(i)</sup>, y<sup>(i)</sup>)</em></span></p><p><span class="strong"><strong>Adaptive Moment Estimation</strong></span> (<span class="strong"><strong>Adam</strong></span>) computes adaptive <span>learning</span><a id="id324812585" class="indexterm"></a> rates for <span>each</span><a id="id324812594" class="indexterm"></a> parameter. Like AdaDelta, Adam not only stores the decaying average of past squared gradients but additionally stores the momentum change for each parameter. Adam works well in practice and is one of the most used optimization methods today.</p><p>Adam stores the exponentially decaying average of past gradients (<span class="emphasis"><em>mt</em></span>) in addition to the decaying average of past squared gradients (like Adadelta and RMSprop). Adam behaves like a heavy ball with friction running down the slope leading to a flat minima in the error surface. Decaying averages of past and past squared gradients <span class="emphasis"><em>mt</em></span> and <span class="emphasis"><em>vt</em></span> are computed with the following formulas:</p><p><span class="emphasis"><em>m<sub>t</sub>=β<sub>1</sub>m<sub>t−1</sub>+(1−β<sub>1</sub>)g<sub>t</sub></em></span></p><p><span class="emphasis"><em>v<sub>t</sub>=β<sub>2</sub>v<sub>t−1</sub>+(1−β<sub>2</sub>)g<sub>t</sub></em></span></p><p><span class="emphasis"><em>m<sub>t</sub> </em></span>and <span class="emphasis"><em>v<sub>t</sub> </em></span>are estimates of the first moment (the mean) and the second moment (the uncentered variance) of the gradients, respectively, hence the name of the method. As <span class="emphasis"><em>m<sub>t</sub> </em></span>and <span class="emphasis"><em>v<sub>t</sub> </em></span>are initialized as vectors of zeros, the authors of Adam observed that they are biased toward zero, especially during the initial time steps, and especially when the decay rates are small (that is, <span class="emphasis"><em>β<sub>1</sub></em></span> and <span class="emphasis"><em>β<sub>2</sub></em></span> are close to 1).</p><p>The authors counteract these biases by computing bias-corrected first and second-moment estimates. With this, the update rule looks like the following:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/6f1b0859-ad2f-4a02-b37d-83c1ed6eb16d.png" /></div><div class="mediaobject"><img src="/graphics/9781788621755/graphics/f3257cb7-5683-4e31-911a-398d93ca210d.png" /></div><div class="mediaobject"><img src="/graphics/9781788621755/graphics/46f8e0bb-6758-4f11-92c5-650a3d614cf1.png" /></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec36"></a>Getting ready</h3></div></div></div><p>Make sure that the preceding common code list is added before the main code snippet in the following code in the next section.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="ch03lvl2sec37"></a>How to do it...</h3></div></div></div><p>Create a sequential model with the appropriate network topology:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Input layer with shape <span class="emphasis"><em>(*, 784)</em></span>, and output <span class="emphasis"><em>(*, 512)</em></span></li><li style="list-style-type: disc">Hidden layer with input <span class="emphasis"><em>(*</em></span><span class="emphasis"><em>, 512)</em></span> and output <span class="emphasis"><em>(*, 512)</em></span></li><li style="list-style-type: disc">Output layer with input dimension as <span class="emphasis"><em>(*, 512)</em></span> and output <span class="emphasis"><em>(*, 10)</em></span></li></ul></div><p>Activation functions for layer 1 and layer 3 are shown in the points:</p><div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">Layer 1 and Layer 1-<code class="literal">relu</code></li><li style="list-style-type: disc">Layer 3-<code class="literal">softmax</code></li></ul></div><pre class="programlisting">y_train = keras.utils.to_categorical(y_train, num_classes)
+y_test = keras.utils.to_categorical(y_test, num_classes)
+
+model = Sequential()
+model.add(Dense(512, activation='relu', input_shape=(784,)))
+model.add(Dropout(0.2))
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(num_classes, activation='softmax'))
+
+model.summary()
+adam = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+model.compile(loss='categorical_crossentropy', optimizer=adam,metrics=['accuracy'])
+
+
+history = model.fit(x_train, y_train,
+ batch_size=batch_size,
+ epochs=epochs,
+ verbose=1,
+ validation_data=(x_test, y_test))</pre><p>Here, we are creating a network with two <span>hidden</span><a id="id325431596" class="indexterm"></a> layers and a dropout of <code class="literal">0.2</code>.</p><p>The following is the output of the preceding code:</p><pre class="programlisting">Layer (type) Output Shape Param # 
+=================================================================
+dense_10 (Dense) (None, 512) 401920 
+_________________________________________________________________
+dropout_7 (Dropout) (None, 512) 0 
+_________________________________________________________________
+dense_11 (Dense) (None, 512) 262656 
+_________________________________________________________________
+dropout_8 (Dropout) (None, 512) 0 
+_________________________________________________________________
+dense_12 (Dense) (None, 10) 5130 
+=================================================================
+Total params: 669,706
+Trainable params: 669,706
+Non-trainable params: 0</pre><p>Let's print the model accuracy and loss:</p><pre class="programlisting">print(history.history.keys())
+import matplotlib.pyplot as plt
+%matplotlib inline
+# summarize history for accuracy
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+# summarize history for loss
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()</pre><p>The graph output for the model accuracy for testing and training data is <span>shown</span><a id="id325730427" class="indexterm"></a> in the following graph. As you can see, both of them converge toward 95%:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/30d54457-5f43-4447-9947-ab7181919297.png" /></div><p>The model loss is <span>shown</span><a id="id325730449" class="indexterm"></a> in the following graph:</p><div class="mediaobject"><img src="/graphics/9781788621755/graphics/14588148-7974-4700-8ac3-5bdaa71addef.png" /></div><p>Let's print the <span>final</span><a id="id325730470" class="indexterm"></a> accuracy number:</p><pre class="programlisting">score = model.evaluate(x_test, y_test, verbose=0)
+print('Test loss:', score[0])
+print('Test accuracy:', score[1])</pre><p>It comes to <code class="literal">0.982</code>, which is much higher than SGD:</p><pre class="programlisting">Test loss: 0.0721200712588
+Test accuracy: 0.982
+</pre><p>In this next recipe, we will look at using RMSProp as another adaptive learning rate method.</p></div></div>
