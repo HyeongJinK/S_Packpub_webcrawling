@@ -1,9 +1,0 @@
-<div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="ch02lvl1sec23"></a>Membership, identity, and logical operations</h2></div></div><hr /></div><p>Membership operators (<code class="literal">in</code> and <code class="literal">not in</code>) test for variables in sequences, such as lists or strings, and do <span>what</span><a id="id326174791" class="indexterm"></a> you would expect; <code class="literal">x in y</code> returns <code class="literal">True</code> if an <code class="literal">x</code>variable is found in <code class="literal">y</code>. The <code class="literal">is</code> operator <span>compares</span><a id="id326174802" class="indexterm"></a> object identity. For example, the <span>following</span><a id="id326174804" class="indexterm"></a> snippet shows contrast equivalence with object identity:</p><pre class="programlisting">&gt;&gt;&gt; x=[1,2,3]
-&gt;&gt;&gt; y=[1,2,3]
-&gt;&gt;&gt; x==y  # test equivalence 
-True
-&gt;&gt;&gt; x is y   # test object identity
-False
-&gt;&gt;&gt; x=y   # assignment
-&gt;&gt;&gt; x is y
-True</pre></div>
