@@ -6,3 +6,4 @@ books.db
 package-lock.json
 /.vscode/
 .vscode
+/down/
